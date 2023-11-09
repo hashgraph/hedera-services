@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -40,12 +41,16 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/* ! WARNING - Requires a RecordCache TTL of 3s to pass ! */
+/**
+ * ! WARNING - Requires a RecordCache TTL of 3s to pass !
+ *
+ * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
+ * */
 @HapiTestSuite
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TxnRecordRegression().runSuiteSync();
     }
 
@@ -66,6 +71,7 @@ public class TxnRecordRegression extends HapiSuite {
         });
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec recordAvailableInPayerState() {
         return defaultHapiSpec("RecordAvailableInPayerState")
                 .given(
@@ -79,6 +85,7 @@ public class TxnRecordRegression extends HapiSuite {
                         getTxnRecord("recordTxn").hasPriority(recordWith().status(SUCCESS)));
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
@@ -92,6 +99,7 @@ public class TxnRecordRegression extends HapiSuite {
                 .then(getTxnRecord("recordTxn").hasCostAnswerPrecheck(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
@@ -99,24 +107,27 @@ public class TxnRecordRegression extends HapiSuite {
                 .then(getTxnRecord("").useDefaultTxnId().hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
                         usableTxnIdNamed("rightAccountWrongId").payerId("misc"))
                 .when()
-                .then(getTxnRecord("rightAccountWrongId").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord("rightAccountWrongId").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    @HapiTest
     private HapiSpec recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
                 .then(
                         cryptoCreate("misc").via("success").balance(1_000L).deferStatusResolution(),
-                        getTxnRecord("success").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                        getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))

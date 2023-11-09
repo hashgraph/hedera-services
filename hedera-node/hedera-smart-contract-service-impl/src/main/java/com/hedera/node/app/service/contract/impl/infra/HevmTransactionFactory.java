@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -46,6 +47,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -65,6 +67,7 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -79,6 +82,7 @@ public class HevmTransactionFactory {
 
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
+    private final HederaConfig hederaConfig;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
@@ -94,6 +98,7 @@ public class HevmTransactionFactory {
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
@@ -110,6 +115,7 @@ public class HevmTransactionFactory {
         this.networkInfo = requireNonNull(networkInfo);
         this.accountStore = requireNonNull(accountStore);
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
@@ -238,9 +244,17 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
         validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
+
+        final var contract = accountStore.getContractById(body.contractIDOrThrow());
+        if (contract != null) {
+            validateFalse(contract.deleted(), CONTRACT_DELETED);
+        }
     }
 
     private void assertValidCreation(@NonNull final ContractCreateTransactionBody body) {
+        if (body.hasFileID()) {
+            validateTrue(body.fileIDOrThrow().fileNum() >= hederaConfig.firstUserEntity(), INVALID_FILE_ID);
+        }
         final var autoRenewPeriod = body.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         validateTrue(autoRenewPeriod >= 1, INVALID_RENEWAL_PERIOD);
         attributeValidator.validateAutoRenewPeriod(autoRenewPeriod);
@@ -275,16 +289,16 @@ public class HevmTransactionFactory {
         expiryValidator.resolveCreationAttempt(
                 true,
                 new ExpiryMeta(
-                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null));
+                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null),
+                HederaFunctionality.CONTRACT_CREATE);
     }
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {
         if (body.hasInitcode()) {
             return body.initcode();
         } else {
-            final var maybeInitcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
-            validateTrue(maybeInitcode.isPresent(), INVALID_FILE_ID);
-            final var initcode = maybeInitcode.get();
+            final var initcode = fileStore.getFileLeaf(body.fileIDOrElse(FileID.DEFAULT));
+            validateFalse(initcode == null, INVALID_FILE_ID);
             validateFalse(initcode.deleted(), FILE_DELETED);
             validateTrue(initcode.contents().length() > 0, CONTRACT_FILE_EMPTY);
             try {

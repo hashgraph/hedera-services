@@ -17,8 +17,8 @@
 package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.atomic.AtomicDouble;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Platform-implementation of {@link DoubleAccumulator}
@@ -89,7 +88,7 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .appendSuper(super.toString())
                 .append("value", get())
                 .toString();

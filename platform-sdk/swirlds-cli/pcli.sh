@@ -85,6 +85,7 @@ JVM_ARGS=()
 LOG4J_SET=false
 IGNORE_JARS=false
 COLOR=true
+NO_PIPING=false
 for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
 
   # The current argument we are considering.
@@ -122,6 +123,11 @@ for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
       CURRENT_INDEX=$NEXT_INDEX
 
       JVM_ARGS+=("-Xmx${NEXT_ARG}g")
+  elif [[ "$ARG" = 'jtr' ]]; then
+    # The jtr suite of commands does not want its output passed through the log colorizer or spam squelcher.
+    # Piping output streams disrupts dynamic loading bars.
+    NO_PIPING=true
+    PROGRAM_ARGS+=("${ARG}")
   else
     # The argument should be passed to the PCLI java process.
 
@@ -162,12 +168,17 @@ if [[ "$JVM_CLASSPATH" = '' ]]; then
   exit 1
 fi
 
+if [[ "$NO_PIPING" = true ]]; then
+  COLOR=false
+  SQUELCH_SPAM=false
+fi
+
 run () {
   java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
 }
 
 colorize () {
-  java -cp "${JVM_CLASSPATH}" com.swirlds.cli.utility.StdInOutColorize "${PROGRAM_ARGS[@]}"
+  java -cp "${JVM_CLASSPATH}" com.swirlds.cli.logging.StdInOutColorize "${PROGRAM_ARGS[@]}"
 }
 
 if [[ "$COLOR" = true ]]; then

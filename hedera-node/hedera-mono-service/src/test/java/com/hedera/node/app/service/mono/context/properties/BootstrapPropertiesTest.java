@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -193,14 +193,13 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -237,7 +236,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
@@ -298,6 +296,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BootstrapProperties subject = new BootstrapProperties();
+
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
     private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
@@ -319,7 +323,7 @@ class BootstrapPropertiesTest {
             entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
             entry(ACCOUNTS_ADDRESS_BOOK_ADMIN, 55L),
             entry(BALANCES_EXPORT_DIR_PATH, "/opt/hgcapp/accountBalances/"),
-            entry(BALANCES_EXPORT_ENABLED, true),
+            entry(BALANCES_EXPORT_ENABLED, false),
             entry(BALANCES_EXPORT_PERIOD_SECS, 900),
             entry(BALANCES_EXPORT_TOKEN_BALANCES, true),
             entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, 0L),
@@ -333,7 +337,7 @@ class BootstrapPropertiesTest {
             entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
             entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
             entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
-            entry(ACCOUNTS_STORE_ON_DISK, false),
+            entry(ACCOUNTS_STORE_ON_DISK, true),
             entry(ACCOUNTS_TREASURY, 2L),
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),
@@ -366,7 +370,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
             entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
             entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
-            entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
+            entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 16_384_000),
             entry(CONTRACTS_CHAIN_ID, 295),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
             entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, EnumSet.of(CustomFeeType.FIXED_FEE)),
@@ -501,12 +505,11 @@ class BootstrapPropertiesTest {
             entry(STAKING_REWARD_BALANCE_THRESHOLD, 0L),
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
-            entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
-            entry(STAKING_REWARD_RATE, 48630136986000L),
+            entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.noneOf(StakeStartupHelper.RecomputeType.class)),
+            entry(STAKING_PER_HBAR_REWARD_RATE, 6_849L),
             entry(STAKING_START_THRESH, 25000000000000000L),
             entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
             entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
-            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 6849L),
             entry(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED, 1024),
             entry(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
             entry(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS, 50L),
@@ -519,9 +522,9 @@ class BootstrapPropertiesTest {
             entry(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, 10),
             entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
             entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
-            entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
+            entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 10_000_000L),
             entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
-            entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
+            entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, true),
             entry(UPGRADE_ARTIFACTS_PATH, "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
             entry(HEDERA_ALLOWANCES_MAX_TXN_LIMIT, 20),
             entry(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, 100),
@@ -529,7 +532,7 @@ class BootstrapPropertiesTest {
             entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
             entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
             entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
-            entry(ACCOUNTS_MAX_NUM, 5_000_000L),
+            entry(ACCOUNTS_MAX_NUM, 20_000_000L),
             entry(CONTRACTS_MAX_NUM, 5_000_000L),
             entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
             entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, 31536000L),
@@ -550,19 +553,12 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
+            entry(ACCOUNTS_BLOCKLIST_PATH, "hedera-node/data/onboard/evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
-            entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private BootstrapProperties subject = new BootstrapProperties();
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, true));
 
     @Test
     void containsProperty() {

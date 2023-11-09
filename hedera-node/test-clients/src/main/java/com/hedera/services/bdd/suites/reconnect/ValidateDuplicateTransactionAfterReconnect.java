@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateDuplicateTransactionAfterReconnect.class);
 
@@ -52,19 +50,19 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
         return customHapiSpec("validateDuplicateTransactionAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
-                        sleepFor(Duration.ofSeconds(50).toMillis()),
+                        sleepFor(Duration.ofSeconds(20).toMillis()),
                         getAccountBalance(GENESIS).setNode("0.0.8").unavailableNode())
                 .when(
                         cryptoCreate("repeatedTransaction").via(transactionId),
                         getAccountBalance(GENESIS).setNode("0.0.8").unavailableNode())
                 .then(
                         withLiveNode("0.0.8")
-                                .within(180, TimeUnit.SECONDS)
+                                .within(150, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(10)
                                 .sleepingBetweenRetriesFor(5),
                         // the target node is back online, but may enter reconnect session soon,
                         // add some delay to wait for it to finish
-                        sleepFor(Duration.ofSeconds(30).toMillis()),
+                        sleepFor(Duration.ofSeconds(60).toMillis()),
                         cryptoCreate("repeatedTransaction")
                                 .txnId(transactionId)
                                 .hasPrecheck(DUPLICATE_TRANSACTION)

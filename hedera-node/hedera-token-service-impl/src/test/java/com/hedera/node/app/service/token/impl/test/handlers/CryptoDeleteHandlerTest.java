@@ -44,12 +44,16 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -72,6 +76,12 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private ExpiryValidator expiryValidator;
+
+    @Mock
+    private StakingValidator stakingValidator;
+
+    @Mock
+    private WritableStates writableStates;
 
     @Mock
     private CryptoDeleteRecordBuilder recordBuilder;
@@ -279,7 +289,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void failsIfDeleteAccountIsDetached() {
         updateWritableStore(
                 Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
@@ -395,6 +404,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
+        final var impl = new TokenServiceApiImpl(configuration, stakingValidator, writableStates, op -> false);
+        given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

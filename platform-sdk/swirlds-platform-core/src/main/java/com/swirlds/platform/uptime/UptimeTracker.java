@@ -30,8 +30,8 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -113,7 +113,7 @@ public class UptimeTracker {
         final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
-        reportUptime(uptimeData, round.getLastEvent().getConsensusTimestamp(), round.getRoundNum());
+        reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
 
         final Instant end = time.now();
         final Duration elapsed = Duration.between(start, end);

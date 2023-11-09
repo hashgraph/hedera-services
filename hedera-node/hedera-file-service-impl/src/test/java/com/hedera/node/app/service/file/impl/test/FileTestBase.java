@@ -98,7 +98,7 @@ public class FileTestBase {
 
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
-    protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
+    protected final Bytes ledgerId = Bytes.wrap(new byte[] {0});
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
@@ -279,16 +279,16 @@ public class FileTestBase {
     }
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
-        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
-        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted);
-        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
-        fileSystem =
-                new File(fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
+        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted, 0L);
+        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted, 0L);
+        fileSystem = new File(
+                fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
     }
 
     protected void givenValidUpgradeFile(boolean deleted, boolean withKeys) {
         upgradeFile = new File(
-                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
     }
 
     protected File createFile() {

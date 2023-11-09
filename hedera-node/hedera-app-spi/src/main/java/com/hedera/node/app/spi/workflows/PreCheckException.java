@@ -35,7 +35,7 @@ public class PreCheckException extends Exception {
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public PreCheckException(@NonNull final ResponseCodeEnum responseCode) {
-        super();
+        super(responseCode.protoName());
         this.responseCode = Objects.requireNonNull(responseCode);
     }
 
@@ -50,6 +50,8 @@ public class PreCheckException extends Exception {
      * @param cause the {@link Throwable} that caused this exception.  This is ignored.
      * @throws UnsupportedOperationException always.  This constructor must not be called.
      */
+    // Suppressing the warning that the constructor and arguments are not used
+    @SuppressWarnings({"java:S1144", "java:S1172"})
     private PreCheckException(@NonNull final ResponseCodeEnum responseCode, @Nullable final Throwable cause) {
         throw new UnsupportedOperationException("PreCheckException must not chain a cause");
     }

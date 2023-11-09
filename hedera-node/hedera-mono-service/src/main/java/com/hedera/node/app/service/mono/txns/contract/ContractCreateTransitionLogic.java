@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.FIRST_USER_ENTITY;
 import static com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -28,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -350,6 +352,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             return Bytes.wrap(ByteStringUtils.unwrapUnsafelyIfPossible(op.getInitcode()));
         } else {
             final var bytecodeSrc = op.getFileID();
+            validateFalse(bytecodeSrc.getFileNum() < FIRST_USER_ENTITY, INVALID_FILE_ID);
             final byte[] bytecode;
             try {
                 bytecode = hfs.cat(bytecodeSrc);

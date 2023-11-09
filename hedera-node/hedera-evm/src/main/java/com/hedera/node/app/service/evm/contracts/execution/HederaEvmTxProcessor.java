@@ -22,15 +22,13 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -103,7 +101,7 @@ public abstract class HederaEvmTxProcessor {
      * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a
      * field.
      *
-     * @param sender The origin {@link EvmAccount} that initiates the transaction
+     * @param sender The origin {@link MutableAccount} that initiates the transaction
      * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
      *     present); or the newly created address
      * @param gasPrice GasPrice to use for gas calculations
@@ -127,13 +125,11 @@ public abstract class HederaEvmTxProcessor {
 
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
-        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
         final var valueAsWei = Wei.of(value);
         final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
-                .messageFrameStack(messageFrameStack)
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(stackedUpdater)
                 .initialGas(gasAvailable)
@@ -143,7 +139,6 @@ public abstract class HederaEvmTxProcessor {
                 .value(valueAsWei)
                 .apparentValue(valueAsWei)
                 .blockValues(blockValues)
-                .depth(0)
                 .completer(unused -> {})
                 .isStatic(isStatic)
                 .miningBeneficiary(coinbase)
@@ -151,7 +146,7 @@ public abstract class HederaEvmTxProcessor {
                 .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
-        messageFrameStack.addFirst(initialFrame);
+        final var messageFrameStack = initialFrame.getMessageFrameStack();
 
         tracer.init(initialFrame);
 

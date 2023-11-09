@@ -48,12 +48,12 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoOpsUsage {
     private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
-    private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
+    public static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
 
-    static final long CREATE_SLOT_MULTIPLIER = 1228;
-    static final long UPDATE_SLOT_MULTIPLIER = 24000;
+    public static final long CREATE_SLOT_MULTIPLIER = 1228;
+    public static final long UPDATE_SLOT_MULTIPLIER = 24000;
 
-    static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+    public static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
     @Inject

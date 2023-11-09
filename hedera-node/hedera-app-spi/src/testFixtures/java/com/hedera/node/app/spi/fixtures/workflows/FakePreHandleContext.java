@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -79,7 +81,9 @@ public class FakePreHandleContext implements PreHandleContext {
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
+    private final boolean userTransaction;
     private final Map<Class<?>, Object> stores = new ConcurrentHashMap<>();
+    private Configuration configuration;
 
     /**
      * Create a new PreHandleContext instance. The payer and key will be extracted from the transaction body.
@@ -90,18 +94,33 @@ public class FakePreHandleContext implements PreHandleContext {
      */
     public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn)
             throws PreCheckException {
-        this(accountStore, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+        this(
+                accountStore,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                true);
+    }
+
+    public FakePreHandleContext(
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final TransactionBody txn,
+            @NonNull final Configuration configuration)
+            throws PreCheckException {
+        this(accountStore, txn);
+        this.configuration = configuration;
     }
 
     /** Create a new instance */
     private FakePreHandleContext(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer)
+            @NonNull final AccountID payer,
+            final boolean userTransaction)
             throws PreCheckException {
         this.accountStore = requireNonNull(accountStore, "The supplied argument 'accountStore' cannot be null!");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
+        this.userTransaction = userTransaction;
 
         stores.put(ReadableAccountStore.class, accountStore);
         // Find the account, which must exist or throw a PreCheckException with the given response code.
@@ -145,7 +164,12 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        throw new UnsupportedOperationException("Not implemented");
+        return configuration;
+    }
+
+    @Override
+    public boolean isUserTransaction() {
+        return userTransaction;
     }
 
     @NonNull
@@ -254,6 +278,9 @@ public class FakePreHandleContext implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
+
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
 
         return requireKey(key);
     }
@@ -366,6 +393,18 @@ public class FakePreHandleContext implements PreHandleContext {
 
     @NonNull
     @Override
+    public PreHandleContext requireSignatureForHollowAccountCreation(@NonNull final Bytes hollowAccountAlias) {
+        requireNonNull(hollowAccountAlias);
+        requiredHollowAccounts.add(Account.newBuilder()
+                .accountId(AccountID.DEFAULT)
+                .key(EMPTY_KEY_LIST)
+                .alias(hollowAccountAlias)
+                .build());
+        return this;
+    }
+
+    @NonNull
+    @Override
     public TransactionKeys allKeysForTransaction(
             @NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -376,7 +415,7 @@ public class FakePreHandleContext implements PreHandleContext {
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested);
+        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested, false);
         return innerContext;
     }
 
@@ -396,5 +435,23 @@ public class FakePreHandleContext implements PreHandleContext {
                 + requiredNonPayerKeys + ", innerContext="
                 + innerContext + ", stores="
                 + stores + '}';
+    }
+
+    /**
+     * THIS IS A COPY of {@code verifyIsNotImmutableAccount} in the token service package. It should
+     * NOT exist here, but needs to in order for this class to function correctly. However, it
+     * should be removed as soon as possible (along with this deprecated class).
+     * <p>
+     * Checks that a key does not represent an immutable account, e.g. the staking rewards account.
+     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * @param key the key to check
+     * @param responseCode the response code to throw
+     * @throws PreCheckException if the account is considered immutable
+     */
+    private static void verifyIsNotImmutableAccount(
+            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+        if (EMPTY_KEY_LIST.equals(key)) {
+            throw new PreCheckException(responseCode);
+        }
     }
 }

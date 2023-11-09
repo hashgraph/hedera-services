@@ -45,6 +45,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -94,7 +95,7 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void handleAndCommitScenarioTransactions() {
+    protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(
                 CONTRACT_SERVICE.handlers().contractCallHandler(),
@@ -122,7 +123,6 @@ public class Erc721XTest extends AbstractContractXTest {
             @NonNull final AccountID payer, @NonNull final Bytes spender, long serialNum) {
         final var encoded =
                 Erc721XTestConstants.APPROVE.encodeCallWithArgs(addressOf(spender), BigInteger.valueOf(serialNum));
-        System.out.println(Erc721XTestConstants.APPROVE.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -133,7 +133,6 @@ public class Erc721XTest extends AbstractContractXTest {
             @NonNull final AccountID payer, @NonNull final Bytes from, @NonNull final Bytes to, final long serialNo) {
         final var encoded = Erc721XTestConstants.SAFE_TRANSFER_FROM.encodeCallWithArgs(
                 addressOf(from), addressOf(to), BigInteger.valueOf(serialNo));
-        System.out.println(Erc721XTestConstants.SAFE_TRANSFER_FROM.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -143,7 +142,6 @@ public class Erc721XTest extends AbstractContractXTest {
     private TransactionBody synthSetApprovalForAll(
             @NonNull final AccountID payer, @NonNull final Bytes operator, final boolean approved) {
         final var encoded = Erc721XTestConstants.SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
-        System.out.println(Erc721XTestConstants.SET_APPROVAL_FOR_ALL.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -173,7 +171,7 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAliases(@NotNull final ReadableKVState<Bytes, AccountID> aliases) {
+    protected void assertExpectedAliases(@NotNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
         // No aliases change in this test
     }
 
@@ -226,11 +224,11 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected Map<Bytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<Bytes, AccountID>();
-        aliases.put(TOKEN_TREASURY_ADDRESS, TOKEN_TREASURY_ID);
-        aliases.put(COUNTERPARTY_ADDRESS, COUNTERPARTY_ID);
-        aliases.put(OPERATOR_ADDRESS, OPERATOR_ID);
+    protected Map<ProtoBytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<ProtoBytes, AccountID>();
+        aliases.put(ProtoBytes.newBuilder().value(TOKEN_TREASURY_ADDRESS).build(), TOKEN_TREASURY_ID);
+        aliases.put(ProtoBytes.newBuilder().value(COUNTERPARTY_ADDRESS).build(), COUNTERPARTY_ID);
+        aliases.put(ProtoBytes.newBuilder().value(OPERATOR_ADDRESS).build(), OPERATOR_ID);
         return aliases;
     }
 

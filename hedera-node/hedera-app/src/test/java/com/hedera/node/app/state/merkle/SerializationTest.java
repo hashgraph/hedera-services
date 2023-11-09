@@ -18,8 +18,11 @@ package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
@@ -29,6 +32,8 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -42,19 +47,22 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
+    private NetworkInfo networkInfo;
+    private HandleThrottleParser handleThrottling;
 
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
 
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
-        this.config = Mockito.mock(Configuration.class);
-        final var hederaConfig = Mockito.mock(HederaConfig.class);
+        this.config = mock(Configuration.class);
+        this.networkInfo = mock(NetworkInfo.class);
+        this.handleThrottling = mock(HandleThrottleParser.class);
+        final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
 
@@ -117,29 +125,45 @@ class SerializationTest extends MerkleTestBase {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(
                 (tree, state) -> {}, (evt, meta, provider) -> {}, (state, platform, dual, trigger, version) -> {});
-        final var originalRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        final var originalRegistry =
+                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
-        originalRegistry.migrate(originalTree, null, v1, config);
+        originalRegistry.migrate(
+                originalTree, null, v1, config, networkInfo, handleThrottling, mock(WritableEntityIdStore.class));
 
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
         CRYPTO.digestTreeSync(originalTree);
         final var serializedBytes = writeTree(originalTree, dir);
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
-                (tree, state) -> newRegistry.migrate((MerkleHederaState) state, v1, v1, config),
+                (tree, state) -> newRegistry.migrate(
+                        (MerkleHederaState) state,
+                        v1,
+                        v1,
+                        config,
+                        networkInfo,
+                        handleThrottling,
+                        mock(WritableEntityIdStore.class)),
                 (event, meta, provider) -> {},
                 (state, platform, dualState, trigger, version) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
-        newRegistry.migrate(loadedTree, schemaV1.getVersion(), schemaV1.getVersion(), config);
+        newRegistry.migrate(
+                loadedTree,
+                schemaV1.getVersion(),
+                schemaV1.getVersion(),
+                config,
+                networkInfo,
+                handleThrottling,
+                mock(WritableEntityIdStore.class));
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

@@ -13,11 +13,13 @@ The platform code is split into three categories:
 This code is maintained by the "Platform Base" team.
 
 - [Configuration](./base/configuration/configuration.md)
+- [Context](./base/context/context.md)
 - [Metrics](./base/metrics/metrics.md)
     - Prometheus
     - [Busy time metrics](base/metrics/metric-types/busy-time-metric.md)
 - Logging
 - Thread Management
+- [Test Support](./base/test-support/test-support.md)
 
 ## Core
 

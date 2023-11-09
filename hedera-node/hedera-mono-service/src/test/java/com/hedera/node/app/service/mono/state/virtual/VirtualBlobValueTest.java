@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,7 +130,6 @@ class VirtualBlobValueTest {
         VirtualBlobValue value = new VirtualBlobValue();
         value.setData(otherData);
         assertArrayEquals(otherData, value.getData());
-        assertEquals(DataFileCommon.VARIABLE_DATA_SIZE, value.sizeInBytes());
     }
 
     @Test

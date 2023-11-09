@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -69,6 +70,7 @@ public class TransferWithCustomFees extends HapiSuite {
         });
     }
 
+    @HapiTest
     public HapiSpec transferWithFixedCustomFeeSchedule() {
         return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
                 .given(
@@ -97,6 +99,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(hbarCollector).hasTinyBars(hbarFee));
     }
 
+    @HapiTest
     public HapiSpec transferWithFractinalCustomFeeSchedule() {
         return defaultHapiSpec("transferWithCustomFeeScheduleHappyPath")
                 .given(
@@ -127,6 +130,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(hbarCollector).hasTinyBars(hbarFee));
     }
 
+    @HapiTest
     public HapiSpec transferWithInsufficientCustomFees() {
         return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
                 .given(

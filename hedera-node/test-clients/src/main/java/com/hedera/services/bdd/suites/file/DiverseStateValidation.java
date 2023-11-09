@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.suites.file.DiverseStateCreation.SMALL_FIL
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.STATE_META_JSON_LOC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -65,7 +64,6 @@ import org.apache.logging.log4j.Logger;
  * Client that validates the blobs mentioned in a JSON metadata file created by {@link
  * DiverseStateCreation} are present in state as expected (e.g. after a migration).
  */
-@HapiTestSuite
 public final class DiverseStateValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateValidation.class);
 

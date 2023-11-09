@@ -34,10 +34,29 @@ public class FakeNetworkInfo implements NetworkInfo {
 
     private static final List<NodeInfo> FAKE_NODE_INFOS = List.of(
             fakeInfoWith(
-                    false, 2L, "Alpha", AccountID.newBuilder().accountNum(3).build()),
-            fakeInfoWith(true, 4L, "Bravo", AccountID.newBuilder().accountNum(4).build()),
+                    2L,
+                    AccountID.newBuilder().accountNum(3).build(),
+                    30,
+                    "333.333.333.333",
+                    50233,
+                    "3333333333333333333333333333333333333333333333333333333333333333",
+                    "Alpha"),
             fakeInfoWith(
-                    false, 8L, "Charlie", AccountID.newBuilder().accountNum(5).build()));
+                    4L,
+                    AccountID.newBuilder().accountNum(4).build(),
+                    40,
+                    "444.444.444.444",
+                    50244,
+                    "444444444444444444444444444444444444444444444444444444444444444",
+                    "Bravo"),
+            fakeInfoWith(
+                    8L,
+                    AccountID.newBuilder().accountNum(5).build(),
+                    50,
+                    "555.555.555.555",
+                    50255,
+                    "555555555555555555555555555555555555555555555555555555555555555",
+                    "Charlie"));
 
     @NonNull
     @Override
@@ -80,6 +99,26 @@ public class FakeNetworkInfo implements NetworkInfo {
             public String memo() {
                 return FAKE_NODE_INFOS.get(0).memo();
             }
+
+            @Override
+            public String externalHostName() {
+                return FAKE_NODE_INFOS.get(0).externalHostName();
+            }
+
+            @Override
+            public int externalPort() {
+                return FAKE_NODE_INFOS.get(0).externalPort();
+            }
+
+            @Override
+            public String hexEncodedPublicKey() {
+                return FAKE_NODE_INFOS.get(0).hexEncodedPublicKey();
+            }
+
+            @Override
+            public long stake() {
+                return FAKE_NODE_INFOS.get(0).stake();
+            }
         };
     }
 
@@ -96,10 +135,13 @@ public class FakeNetworkInfo implements NetworkInfo {
     }
 
     private static NodeInfo fakeInfoWith(
-            final boolean zeroStake,
             final long nodeId,
-            @NonNull final String memo,
-            @NonNull final AccountID nodeAccountId) {
+            @NonNull final AccountID nodeAccountId,
+            long stake,
+            @NonNull String externalHostName,
+            int externalPort,
+            @NonNull String hexEncodedPublicKey,
+            @NonNull String memo) {
         return new NodeInfo() {
             @Override
             public long nodeId() {
@@ -112,13 +154,28 @@ public class FakeNetworkInfo implements NetworkInfo {
             }
 
             @Override
-            public boolean zeroStake() {
-                return zeroStake;
+            public AccountID accountId() {
+                return nodeAccountId;
             }
 
             @Override
-            public AccountID accountId() {
-                return nodeAccountId;
+            public String externalHostName() {
+                return externalHostName;
+            }
+
+            @Override
+            public int externalPort() {
+                return externalPort;
+            }
+
+            @Override
+            public String hexEncodedPublicKey() {
+                return hexEncodedPublicKey;
+            }
+
+            @Override
+            public long stake() {
+                return stake;
             }
         };
     }

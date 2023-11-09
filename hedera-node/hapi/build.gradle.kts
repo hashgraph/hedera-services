@@ -16,21 +16,20 @@
 
 plugins {
     id("com.hedera.hashgraph.hapi")
+    id("com.hedera.hashgraph.evm-maven-publish")
     @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera API"
 
-dependencies {
-    javaModuleDependencies {
-        testImplementation(project(":hapi"))
-        // we depend on the protoc compiled hapi during test as we test our pbj generated code
-        // against it to make sure it is compatible
-        testImplementation(gav("com.google.protobuf.util"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-    }
+testModuleInfo {
+    requires("com.hedera.node.hapi")
+    // we depend on the protoc compiled hapi during test as we test our pbj generated code
+    // against it to make sure it is compatible
+    requires("com.google.protobuf.util")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
@@ -48,7 +47,7 @@ sourceSets {
 }
 
 // Give JUnit more ram and make it execute tests in parallel
-tasks.withType<Test>().configureEach {
+tasks.test {
     // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
     // class run in parallel.
     systemProperties["junit.jupiter.execution.parallel.enabled"] = true
@@ -63,12 +62,19 @@ tasks.withType<Test>().configureEach {
     maxHeapSize = "4096m"
 }
 
+// ----
+// TODO move the following things to 'hashgraph/pbj' plugin
 tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask> {
     doFirst {
-        // Clean output directories before generating new code
-        // TODO move this into
+        // Clean output directories before generating new code. Belongs into:
         // 'pbj-core/pbj-compiler/src/main/java/com/hedera/pbj/compiler/PbjCompilerTask.java'
         delete(javaMainOutputDirectory)
         delete(javaTestOutputDirectory)
     }
 }
+
+tasks.withType<com.autonomousapps.tasks.CodeSourceExploderTask>().configureEach {
+    // Wire the source generation so that the source sets know which tasks
+    // generate code for them. Then this additional 'dependsOn' is not necessary.
+    dependsOn(tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask>())
+} // ----

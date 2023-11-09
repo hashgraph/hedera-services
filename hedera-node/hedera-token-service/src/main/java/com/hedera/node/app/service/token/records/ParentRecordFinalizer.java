@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * This class is used to "finalize" hbar and token transfers for the parent transaction record.
@@ -41,5 +40,5 @@ import java.util.List;
  * for the parent record (excluding changes from child transaction records)
  */
 public interface ParentRecordFinalizer {
-    void finalizeParentRecord(@NonNull FinalizeContext context, List<TransactionRecord> childRecords);
+    void finalizeParentRecord(@NonNull AccountID payer, @NonNull FinalizeContext context);
 }

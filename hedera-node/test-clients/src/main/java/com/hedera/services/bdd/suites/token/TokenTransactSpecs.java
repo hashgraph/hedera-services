@@ -32,10 +32,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownFungibleToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownNonFungibleToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -46,8 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wellKnownTokenEntities;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -63,7 +58,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -87,13 +82,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.OptionalLong;
@@ -104,7 +98,6 @@ import org.apache.logging.log4j.Logger;
 
 @HapiTestSuite
 public class TokenTransactSpecs extends HapiSuite {
-
     private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
 
     public static final String PAYER = "payer";
@@ -113,7 +106,7 @@ public class TokenTransactSpecs extends HapiSuite {
     private static final String B_TOKEN = "TokenB";
     private static final String FIRST_USER = "Client1";
     private static final String SECOND_USER = "Client2";
-    private static final String CIVILIAN = "civilian";
+    public static final String CIVILIAN = "civilian";
     public static final String NEW_TREASURY = "newTreasury";
     public static final String SIGNING_KEY_FIRST_USER = "signingKeyFirstUser";
     public static final String FIRST_TREASURY = "firstTreasury";
@@ -206,101 +199,10 @@ public class TokenTransactSpecs extends HapiSuite {
                 newSlotsCanBeOpenedViaUpdate(),
                 newSlotsCanBeOpenedViaDissociate(),
                 autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
-                autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
-                autoAssociationWorksForContracts(),
-                // Interactions between HIP-18 and HIP-542
-                customFeesHaveExpectedAutoCreateInteractions());
+                autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory());
     }
 
-    private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
-        final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
-        final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
-        final var nftWithRoyaltyPlusHbarFallback = "nftWithRoyaltyPlusHbarFallback";
-        final var ftWithNetOfTransfersFractional = "ftWithNetOfTransfersFractional";
-        final var ftWithNonNetOfTransfersFractional = "ftWithNonNetOfTransfersFractional";
-        final var finalReceiverKey = "finalReceiverKey";
-        final var otherCollector = "otherCollector";
-        final var finalTxn = "finalTxn";
-
-        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions")
-                .given(
-                        wellKnownTokenEntities(),
-                        cryptoCreate(otherCollector),
-                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
-                        inParallel(
-                                createWellKnownFungibleToken(
-                                        ftWithNetOfTransfersFractional,
-                                        creation -> creation.withCustom(fractionalFeeNetOfTransfers(
-                                                1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
-                                createWellKnownFungibleToken(
-                                        ftWithNonNetOfTransfersFractional,
-                                        creation -> creation.withCustom(
-                                                fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
-                                createWellKnownNonFungibleToken(
-                                        nftWithRoyaltyNoFallback,
-                                        1,
-                                        creation ->
-                                                creation.withCustom(royaltyFeeNoFallback(1L, 100L, TOKEN_TREASURY))),
-                                createWellKnownNonFungibleToken(
-                                        nftWithRoyaltyPlusHbarFallback,
-                                        1,
-                                        creation -> creation.withCustom(royaltyFeeWithFallback(
-                                                1L,
-                                                100L,
-                                                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
-                                                TOKEN_TREASURY)))),
-                        tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
-                        createWellKnownNonFungibleToken(
-                                nftWithRoyaltyPlusHtsFallback,
-                                1,
-                                creation -> creation.withCustom(royaltyFeeWithFallback(
-                                        1L,
-                                        100L,
-                                        fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
-                                        otherCollector))))
-                .when(inParallel(
-                        autoCreateWithFungible(ftWithNetOfTransfersFractional),
-                        autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
-                        autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
-                        autoCreateWithNonFungible(
-                                nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))
-                .then(
-                        newKeyNamed(finalReceiverKey),
-                        cryptoTransfer(
-                                moving(100_000, ftWithNonNetOfTransfersFractional)
-                                        .between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
-                        cryptoTransfer(
-                                        moving(10_000, ftWithNonNetOfTransfersFractional)
-                                                .between(CIVILIAN, finalReceiverKey),
-                                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
-                                                .between(CIVILIAN, finalReceiverKey))
-                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                .via(finalTxn));
-    }
-
-    private HapiSpecOperation autoCreateWithFungible(final String token) {
-        final var keyName = VALID_ALIAS + "-" + token;
-        final var txn = "autoCreationVia" + token;
-        return blockingOrder(
-                newKeyNamed(keyName),
-                cryptoTransfer(moving(100_000, token).between(TOKEN_TREASURY, CIVILIAN)),
-                cryptoTransfer(moving(10_000, token).between(CIVILIAN, keyName)).via(txn),
-                getTxnRecord(txn).assertingKnownEffectivePayers());
-    }
-
-    private HapiSpecOperation autoCreateWithNonFungible(final String token, final ResponseCodeEnum expectedStatus) {
-        final var keyName = VALID_ALIAS + "-" + token;
-        final var txn = "autoCreationVia" + token;
-        return blockingOrder(
-                newKeyNamed(keyName),
-                cryptoTransfer(movingUnique(token, 1L).between(TOKEN_TREASURY, CIVILIAN)),
-                cryptoTransfer(movingUnique(token, 1L).between(CIVILIAN, keyName))
-                        .via(txn)
-                        .hasKnownStatus(expectedStatus),
-                getTxnRecord(txn).assertingKnownEffectivePayers());
-    }
-
+    @HapiTest
     public HapiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -349,6 +251,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec autoAssociationWithKycTokenHasNoSideEffectsOrHistory() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -396,6 +299,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem() {
         final var beneficiary = BENEFICIARY;
         final var unluckyBeneficiary = "unluckyBeneficiary";
@@ -444,6 +348,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 moving(500, fungibleToken).between(TOKEN_TREASURY, beneficiary)));
     }
 
+    @HapiTest
     public HapiSpec newSlotsCanBeOpenedViaUpdate() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -515,6 +420,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                                                 .balance(1)))));
     }
 
+    @HapiTest
     public HapiSpec newSlotsCanBeOpenedViaDissociate() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -565,6 +471,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                                         .balance(500)))));
     }
 
+    @HapiTest
     public HapiSpec happyPathAutoAssociationsWorkForBothTokenTypes() {
         final var beneficiary = BENEFICIARY;
         final var uniqueToken = UNIQUE;
@@ -610,6 +517,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                                                 .balance(1)))));
     }
 
+    @HapiTest
     public HapiSpec transferListsEnforceTokenTypeRestrictions() {
         final var theAccount = "anybody";
         final var nonFungibleToken = "non-fungible";
@@ -638,6 +546,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
     }
 
+    @HapiTest
     public HapiSpec recordsIncludeBothFungibleTokenChangesAndOwnershipChange() {
         final var theUniqueToken = "special";
         final var theCommonToken = "quotidian";
@@ -669,6 +578,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(getTxnRecord(theTxn).logged());
     }
 
+    @HapiTest
     public HapiSpec cannotGiveNftsToDissociatedContractsOrAccounts() {
         final var theContract = "tbd";
         final var theAccount = "alsoTbd";
@@ -707,6 +617,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1));
     }
 
+    @HapiTest
     public HapiSpec cannotSendFungibleToDissociatedContractsOrAccounts() {
         final var theContract = "tbd";
         final var theAccount = "alsoTbd";
@@ -741,70 +652,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L));
     }
 
-    public HapiSpec autoAssociationWorksForContracts() {
-        final var theContract = "CreateDonor";
-        final String tokenA = "tokenA";
-        final String tokenB = "tokenB";
-        final String uniqueToken = UNIQUE;
-        final String tokenAcreateTxn = "tokenACreate";
-        final String tokenBcreateTxn = "tokenBCreate";
-        final String transferToFU = "transferToFU";
-
-        return defaultHapiSpec("autoAssociationWorksForContracts")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        uploadInitCode(theContract),
-                        contractCreate(theContract).maxAutomaticTokenAssociations(2),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(tokenA)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(TOKEN_TREASURY)
-                                .via(tokenAcreateTxn),
-                        tokenCreate(tokenB)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(TOKEN_TREASURY)
-                                .via(tokenBcreateTxn),
-                        tokenCreate(uniqueToken)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
-                        getTxnRecord(tokenAcreateTxn)
-                                .hasNewTokenAssociation(tokenA, TOKEN_TREASURY)
-                                .logged(),
-                        getTxnRecord(tokenBcreateTxn)
-                                .hasNewTokenAssociation(tokenB, TOKEN_TREASURY)
-                                .logged(),
-                        cryptoTransfer(moving(1, tokenA).between(TOKEN_TREASURY, theContract))
-                                .via(transferToFU)
-                                .logged(),
-                        getTxnRecord(transferToFU)
-                                .hasNewTokenAssociation(tokenA, theContract)
-                                .logged(),
-                        getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(1)
-                                        .maxAutoAssociations(2)))
-                .when(
-                        cryptoTransfer(movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, theContract)),
-                        getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(2)
-                                        .maxAutoAssociations(2)))
-                .then(
-                        cryptoTransfer(moving(1, tokenB).between(TOKEN_TREASURY, theContract))
-                                .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
-                                .via("failedTransfer"),
-                        getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(2)
-                                        .maxAutoAssociations(2))
-                                .logged());
-    }
-
+    @HapiTest
     public HapiSpec missingEntitiesRejected() {
         return defaultHapiSpec("missingEntitiesRejected")
                 .given(tokenCreate("some").treasury(DEFAULT_PAYER))
@@ -819,6 +667,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     public HapiSpec balancesAreChecked() {
         return defaultHapiSpec("BalancesAreChecked")
                 .given(
@@ -844,6 +693,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
     }
 
+    @HapiTest
     public HapiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
         return defaultHapiSpec("AccountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue")
                 .given(
@@ -870,6 +720,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTxnRecord("successfulTransfer").logged());
     }
 
+    @HapiTest
     public HapiSpec allRequiredSigsAreChecked() {
         return defaultHapiSpec("AllRequiredSigsAreChecked")
                 .given(
@@ -915,6 +766,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .payingWith(PAYER));
     }
 
+    @HapiTest
     public HapiSpec senderSigsAreValid() {
         return defaultHapiSpec("SenderSigsAreValid")
                 .given(
@@ -945,6 +797,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTxnRecord("transactTxn"));
     }
 
+    @HapiTest
     public HapiSpec tokenPlusHbarTxnsAreAtomic() {
         return defaultHapiSpec("TokenPlusHbarTxnsAreAtomic")
                 .given(
@@ -971,6 +824,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(BENEFICIARY).logged().hasTinyBars(changeFromSnapshot("before", 0L)));
     }
 
+    @HapiTest
     public HapiSpec tokenOnlyTxnsAreAtomic() {
         return defaultHapiSpec("TokenOnlyTxnsAreAtomic")
                 .given(
@@ -992,6 +846,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(BENEFICIARY).logged());
     }
 
+    @HapiTest
     public HapiSpec duplicateAccountsInTokenTransferRejected() {
         return defaultHapiSpec("DuplicateAccountsInTokenTransferRejected")
                 .given(
@@ -1005,6 +860,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
+    @HapiTest
     public HapiSpec nonZeroTransfersRejected() {
         return defaultHapiSpec("NonZeroTransfersRejected")
                 .given(cryptoCreate(FIRST_TREASURY).balance(0L))
@@ -1015,6 +871,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(movingHbar(1).from(FIRST_TREASURY)).hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
     }
 
+    @HapiTest
     public HapiSpec balancesChangeOnTokenTransfer() {
         return defaultHapiSpec("BalancesChangeOnTokenTransfer")
                 .given(
@@ -1040,6 +897,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(A_TOKEN, 100));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnAccountBalance() {
         return defaultHapiSpec("UniqueTokenTxnAccountBalance")
                 .given(
@@ -1061,7 +919,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(A_TOKEN, 0),
                         getAccountBalance(FIRST_USER).hasTokenBalance(A_TOKEN, 1),
-                        getTokenInfo(A_TOKEN).hasExpectedLedgerId("0x03"),
+                        withTargetLedgerId(ledgerId -> getTokenInfo(A_TOKEN).hasEncodedLedgerId(ledgerId)),
                         getTokenNftInfo(A_TOKEN, 1)
                                 .hasSerialNum(1)
                                 .hasMetadata(copyFromUtf8("memo"))
@@ -1069,6 +927,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasAccountID(FIRST_USER));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnAccountBalancesForTreasury() {
         return defaultHapiSpec("UniqueTokenTxnAccountBalancesForTreasury")
                 .given(
@@ -1096,14 +955,15 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(OLD_TREASURY).hasTokenBalance(A_TOKEN, 0),
                         getAccountBalance(NEW_TREASURY).hasTokenBalance(A_TOKEN, 1),
                         getAccountBalance(NEW_TREASURY).hasTokenBalance(B_TOKEN, 1),
-                        getTokenNftInfo(A_TOKEN, 1)
-                                .hasExpectedLedgerId("0x03")
+                        withTargetLedgerId(ledgerId -> getTokenNftInfo(A_TOKEN, 1)
+                                .hasEncodedLedgerId(ledgerId)
                                 .hasSerialNum(1)
                                 .hasMetadata(copyFromUtf8("memo"))
                                 .hasTokenID(A_TOKEN)
-                                .hasAccountID(NEW_TREASURY));
+                                .hasAccountID(NEW_TREASURY)));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnWithNoAssociation() {
         return defaultHapiSpec("UniqueTokenTxnWithNoAssociation")
                 .given(
@@ -1120,6 +980,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnWithFrozenAccount() {
         return defaultHapiSpec("UniqueTokenTxnWithFrozenAccount")
                 .given(
@@ -1140,6 +1001,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnWithSenderNotSigned() {
         return defaultHapiSpec("uniqueTokenTxnWithSenderNotSigned")
                 .given(
@@ -1159,6 +1021,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnWithReceiverNotSigned() {
         return defaultHapiSpec("uniqueTokenTxnWithReceiverNotSigned")
                 .given(
@@ -1179,6 +1042,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenTxnsAreAtomic() {
         return defaultHapiSpec("UniqueTokenTxnsAreAtomic")
                 .given(
@@ -1209,6 +1073,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(SECOND_USER).hasTokenBalance(A_TOKEN, 0));
     }
 
+    @HapiTest
     public HapiSpec uniqueTokenDeletedTxn() {
         return defaultHapiSpec("UniqueTokenDeletedTxn")
                 .given(
@@ -1232,6 +1097,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
+    @HapiTest
     public HapiSpec fixedHbarCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";
@@ -1282,6 +1148,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR));
     }
 
+    @HapiTest
     public HapiSpec fractionalCaseStudy() {
         final var alice = "Alice";
         final var bob = "Bob";
@@ -1326,6 +1193,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L));
     }
 
+    @HapiTest
     public HapiSpec fractionalNetOfTransfersCaseStudy() {
         final var gerry = "gerry";
         final var horace = "horace";
@@ -1370,6 +1238,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(useCaseToken, Long.MAX_VALUE - 1_000_000L + 5L));
     }
 
+    @HapiTest
     public HapiSpec simpleHtsFeeCaseStudy() {
         final var claire = "Claire";
         final var debbie = DEBBIE;
@@ -1425,6 +1294,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(commissionPaymentToken, Long.MAX_VALUE - 1_000L + 2L));
     }
 
+    @HapiTest
     public HapiSpec nestedHbarCaseStudy() {
         final var debbie = DEBBIE;
         final var edgar = EDGAR;
@@ -1492,6 +1362,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithHbarFee, Long.MAX_VALUE - 1_000L));
     }
 
+    @HapiTest
     public HapiSpec nestedFractionalCaseStudy() {
         final var edgar = EDGAR;
         final var fern = "Fern";
@@ -1558,6 +1429,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
+    @HapiTest
     public HapiSpec multipleRoyaltyFallbackCaseStudy() {
         final var zephyr = "zephyr";
         final var amelie = AMELIE;
@@ -1621,6 +1493,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTxnRecord(txnFromZephyr).logged());
     }
 
+    @HapiTest
     public HapiSpec respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList() {
         final var supplyKey = "misc";
         final var nonfungible = "nonfungible";
@@ -1649,6 +1522,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON));
     }
 
+    @HapiTest
     public HapiSpec royaltyAndFractionalTogetherCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1702,6 +1576,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(getTxnRecord(txnFromAmelie).logged());
     }
 
+    @HapiTest
     public HapiSpec normalRoyaltyCaseStudy() {
         final var alice = "alice";
         final var amelie = AMELIE;
@@ -1749,6 +1624,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(getTxnRecord(txnFromAmelie).logged());
     }
 
+    @HapiTest
     public HapiSpec nestedHtsCaseStudy() {
         final var debbie = DEBBIE;
         final var edgar = EDGAR;
@@ -1823,6 +1699,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(DEFAULT_PAYER).hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L));
     }
 
+    @HapiTest
     public HapiSpec canTransactInTokenWithSelfDenominatedFixedFee() {
         final var protocolToken = "protocolToken";
         final var gabriella = "gabriella";
@@ -1875,6 +1752,7 @@ public class TokenTransactSpecs extends HapiSuite {
      *   8. And following getTokenNftInfo query shows that harry is still the owner of serial no 1
      *   9. And following getAccountNftInfos query knows that harry still has serial no 1
      * */
+    @HapiTest
     public HapiSpec nftOwnersChangeAtomically() {
         final var artToken = "artToken";
         final var protocolToken = "protocolToken";
@@ -1917,6 +1795,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getTokenNftInfo(artToken, 1L).hasAccountID(harry));
     }
 
+    @HapiTest
     public HapiSpec treasuriesAreExemptFromAllCustomFees() {
         final var edgar = EDGAR;
         final var feeToken = "FeeToken";
@@ -1997,6 +1876,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenBalance(feeToken, 1_000L - 50L));
     }
 
+    @HapiTest
     public HapiSpec collectorsAreExemptFromTheirOwnFeesButNotOthers() {
         final var edgar = EDGAR;
         final var topLevelToken = "TopLevelToken";
@@ -2053,6 +1933,7 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
     // HIP-573 tests below
+    @HapiTest
     public HapiSpec collectorIsChargedFixedFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFixedFeeUnlessExempt")
                 .given(
@@ -2079,6 +1960,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
                 .given(
@@ -2107,6 +1989,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedNetOfTransferFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedNetOfTransferFractionalFeeUnlessExempt")
                 .given(
@@ -2134,6 +2017,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedRoyaltyFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedRoyaltyFeeUnlessExempt")
                 .given(
@@ -2166,6 +2050,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedRoyaltyFallbackFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedRoyaltyFallbackFeeUnlessExempt")
                 .given(

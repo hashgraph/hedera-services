@@ -29,7 +29,7 @@ import java.nio.file.Paths;
 
 public final class CommonUpgradeResources {
     public static final String DEFAULT_UPGRADE_FILE_ID = "0.0.150";
-    public static final String DEFAULT_UPGRADE_FILE_PATH = "upgrade.zip";
+    public static final String DEFAULT_UPGRADE_FILE_PATH = "testfiles/poeticUpgrade.zip";
     public static final int DEFAULT_APPENDS_PER_BURST = 512;
     public static final int DEFAULT_UPGRADE_DELAY = 2;
 

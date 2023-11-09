@@ -25,7 +25,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.gui.model.GuiModel;
-import com.swirlds.logging.payloads.ApplicationFinishedPayload;
+import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
 import java.security.SignatureException;
@@ -59,7 +59,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    public static final long SOFTWARE_VERSION = 2L;
+    public static final long SOFTWARE_VERSION = 3L;
     public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
     private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 

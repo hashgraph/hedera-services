@@ -98,7 +98,7 @@ public class ReplaceAliasesWithIDsInOp {
                     if (isSenderAlias) {
                         final var resolvedId = resolutions.get(
                                 nftAdjust.senderAccountIDOrThrow().alias());
-                        nftAdjustCopy.receiverAccountID(resolvedId);
+                        nftAdjustCopy.senderAccountID(resolvedId);
                     }
                     replacedNftAdjusts.add(nftAdjustCopy.build());
                 } else {

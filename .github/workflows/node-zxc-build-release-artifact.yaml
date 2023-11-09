@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Node XC: Build Release Artifact"
+name: "ZXC: [Node] Deploy Release Artifacts"
 on:
   workflow_call:
     inputs:
@@ -26,6 +26,18 @@ on:
       # Valid options are none, integration, and preview
       trigger-env-deploy:
         description: "Deploy to Environment:"
+        type: string
+        required: true
+        default: "none"
+      # Valid SDK release profiles are as follows:
+      # - none
+      # - AdhocCommit
+      # - DevelopCommit
+      # - DevelopDailySnapshot
+      # - DevelopSnapshot
+      # - PrereleaseChannel
+      sdk-release-profile:
+        description: "SDK Release Profile:"
         type: string
         required: true
         default: "none"
@@ -47,42 +59,66 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "17.0.3"
+        default: "17.0.8"
       gradle-version:
         description: "Gradle Version:"
         type: string
         required: false
         default: "wrapper"
-      custom-job-label:
-        description: "Custom Job Label:"
-        type: string
-        required: false
-        default: "Artifact"
 
     secrets:
       access-token:
         required: true
       bucket-name:
         required: true
+      cdn-bucket-name:
+        required: true
+      svcs-ossrh-username:
+        required: true
+      svcs-ossrh-password:
+        required: true
+      svcs-gpg-key-contents:
+        required: true
+      svcs-gpg-key-passphrase:
+        required: true
+      sdk-ossrh-username:
+        required: true
+      sdk-ossrh-password:
+        required: true
+      sdk-gpg-key-contents:
+        required: true
+      sdk-gpg-key-passphrase:
+        required: true
+      slack-webhook-url:
+        required: true
       jenkins-integration-url:
-        required: true
-      jenkins-preview-url:
-        required: true
+        required: false
 
 defaults:
   run:
     shell: bash
+
+env:
+  LC_ALL: C.UTF-8
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  Artifact:
-    name: ${{ inputs.custom-job-label || 'Artifact' }}
-    runs-on: [self-hosted, Linux, large, ephemeral]
+  validate:
+    name: Validate
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
     outputs:
+      branch-name: ${{ steps.parameters.outputs.branch-name }}
+      branch-name-lower: ${{ steps.parameters.outputs.branch-name-lower }}
+      branch-name-safe: ${{ steps.parameters.outputs.branch-name-safe }}
+      commit-prefix: ${{ steps.parameters.outputs.commit-prefix }}
+      commit-id: ${{ steps.parameters.outputs.commit-id }}
+      commit-id-short: ${{ steps.parameters.outputs.commit-id-short }}
       version: ${{ steps.effective-version.outputs.number }}
+      version-prefix: ${{ steps.effective-version.outputs.prefix }}
+      prerelease: ${{ steps.effective-version.outputs.prerelease }}
     steps:
       - name: Install Semantic Version Tools
         run: |
@@ -96,6 +132,89 @@ jobs:
           semver --version
           echo "::endgroup::"
 
+      - name: Verify Workflow Parameters
+        id: parameters
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+          BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
+
+          COMMIT_PREFIX="adhoc"
+          [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && COMMIT_PREFIX="${BRANCH_NAME_SAFE}"
+
+          echo "branch-name=${BRANCH_NAME}" >>"${GITHUB_OUTPUT}"
+          echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
+          echo "branch-name-safe=${BRANCH_NAME_SAFE}" >>"${GITHUB_OUTPUT}"
+          echo "commit-prefix=${COMMIT_PREFIX}" >>"${GITHUB_OUTPUT}"
+          echo "commit-id=${{ github.sha }}" >>"${GITHUB_OUTPUT}"
+          echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
+
+      - name: Verify Version Update (As Specified)
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        run: |
+          VALID_VERSION="$(semver validate "${{ inputs.new-version }}")"
+
+          if [[ "${VALID_VERSION}" != "valid" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${{ inputs.new-version }}) is invalid and does not conform to the semantic versioning specifications."
+            exit 2
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Java
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Gradle Update Version (As Specified)
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+
+      - name: Gradle Update Version (Branch Commit)
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
+
+      - name: Compute Final Effective Version
+        id: effective-version
+        run: |
+          EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
+          PRERELEASE_SUFFIX="$(semver get prerel "${EFF_VERSION}")"
+          PRERELEASE="false"
+          [[ -n "${PRERELEASE_SUFFIX}" ]] && PRERELEASE="true"
+
+          MAJOR_VERSION="$(semver get major "${EFF_VERSION}")"
+          MINOR_VERSION="$(semver get minor "${EFF_VERSION}")"
+
+          echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prefix=${MAJOR_VERSION}.${MINOR_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE}" >>"${GITHUB_OUTPUT}"
+
+      - name: Cache Build Version
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        with:
+          path: version.txt
+          key: node-build-version-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
+
+  build-artifact:
+    name: Build Artifact
+    runs-on: [self-hosted, Linux, large, ephemeral]
+    needs:
+      - validate
+    steps:
       - name: Install Deterministic Zip Tooling
         run: |
           echo "::group::Download Binary"
@@ -136,98 +255,56 @@ jobs:
           jq --version
           echo "::endgroup::"
 
-      - name: Verify Workflow Parameters
-        id: parameters
-        run: |
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-          BRANCH_NAME="${BRANCH_NAME##origin/}"
-          BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
-          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
-
-          COMMIT_PREFIX="adhoc"
-          [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && COMMIT_PREFIX="${BRANCH_NAME_SAFE}"
-
-          echo "branch-name=${BRANCH_NAME}" >>"${GITHUB_OUTPUT}"
-          echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
-          echo "branch-name-safe=${BRANCH_NAME_SAFE}" >>"${GITHUB_OUTPUT}"
-          echo "commit-prefix=${COMMIT_PREFIX}" >>"${GITHUB_OUTPUT}"
-          echo "commit-id=${{ github.sha }}" >>"${GITHUB_OUTPUT}"
-          echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
-
-      - name: Verify Version Update (As Specified)
-        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
-        run: |
-          VALID_VERSION="$(semver validate "${{ inputs.new-version }}")"
-
-          if [[ "${VALID_VERSION}" != "valid" ]]; then
-            echo "::error title=Version Error::The supplied new-version parameter (${{ inputs.new-version }}) is invalid and does not conform to the semantic versioning specifications."
-            exit 2
-          fi
-
       - name: Checkout Code
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d # pin@v1
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce # pin@v1
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
-        uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # pin@v3
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          gradle-home-cache-includes: |
-            caches
-            notifications
-            jdks
 
-      - name: Gradle Update Version (As Specified)
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+      - name: Restore Build Version
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
-          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+          fail-on-cache-miss: true
+          path: version.txt
+          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
-      - name: Gradle Update Version (Branch Commit)
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+      - name: Cache Build Artifacts
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
-          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
-
-      - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        with:
-          arguments: githubVersionSummary --scan
+          path: ~/artifact-build
+          key: node-build-artifacts-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
+          gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
-      - name: Compute Final Effective Version
-        id: effective-version
-        run: |
-          EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
-          echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
-
-      - name: Cache Build Artifacts
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+      - name: Gradle Version Summary
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
-          path: ${{ env.HOME }}/artifact-build
-          key: node-build-artifacts-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: githubVersionSummary --scan
 
       - name: Stage Artifact Build Folder
         id: artifact-staging
@@ -246,8 +323,7 @@ jobs:
       - name: Write Artifact Version Descriptor
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
-          printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "${{ steps.effective-version.outputs.number }}" "${{ steps.parameters.outputs.commit-id-short }}" "$(date -u)" \
-            | tee VERSION
+          printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "${{ needs.validate.outputs.version }}" "${{ needs.validate.outputs.commit-id-short }}" "$(date -u)" | tee VERSION
 
       - name: Create Artifact Archive
         id: artifact-release
@@ -258,9 +334,9 @@ jobs:
           mkdir -p "${ARTIFACT_BASE_DIR}"
 
           if [[ "${POLICY}" == "branch-commit"  ]]; then
-            ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
+            ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
           else
-            ARTIFACT_NAME="build-v${{ steps.effective-version.outputs.number }}"
+            ARTIFACT_NAME="build-v${{ needs.validate.outputs.version }}"
           fi
 
           ARTIFACT_FILE="${ARTIFACT_BASE_DIR}/${ARTIFACT_NAME}.zip"
@@ -277,33 +353,33 @@ jobs:
           sha384sum "${ARTIFACT_NAME}.zip" | tee "${ARTIFACT_NAME}.sha384"
 
       - name: Upload Artifacts (DevOps GCP Bucket)
-        uses: google-github-actions/upload-cloud-storage@a5b77a3bf84da1791719585d327e5f90ae5cb53c # pin@v1
+        uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
           destination: ${{ secrets.bucket-name }}
           parent: false
 
+      - name: Upload Artifacts (CDN Bucket)
+        uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
+        if: ${{ inputs.dry-run-enabled != true && needs.validate.outputs.prerelease != 'true' && !cancelled() && !failure() }}
+        with:
+          path: ${{ steps.artifact-release.outputs.folder }}
+          destination: ${{ secrets.cdn-bucket-name }}/node/software/v${{ needs.validate.outputs.version-prefix }}/
+          parent: false
+
       - name: Notify Jenkins of Release (Integration)
         id: jenkins-integration
-        uses: fjogeleit/http-request-action@86014825e97036cd3e0903bbc72b3c5fff7474c4 # pin@v1
+        uses: fjogeleit/http-request-action@eab8015483ccea148feff7b1c65f320805ddc2bf # v1.14.1
         if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'integration' && !cancelled() && !failure() }}
         with:
           url: ${{ secrets.jenkins-integration-url }}
           data: ${{ toJSON(github.event) }}
 
-      - name: Notify Jenkins of Release (Preview)
-        id: jenkins-preview
-        uses: fjogeleit/http-request-action@86014825e97036cd3e0903bbc72b3c5fff7474c4 # pin@v1
-        if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'preview' && !cancelled() && !failure() }}
-        with:
-          url: ${{ secrets.jenkins-preview-url }}
-          data: ${{ toJSON(github.event) }}
-
       - name: Display Jenkins Payload
         env:
           JSON_RESPONSE: ${{ steps.jenkins-integration.outputs.response || steps.jenkins-preview.outputs.response }}
-        if: ${{ inputs.trigger-env-deploy == 'integration' || inputs.trigger-env-deploy == 'preview' }}
+        if: ${{ inputs.trigger-env-deploy == 'integration' }}
         run: |
           jq '.' <<<"${JSON_RESPONSE}"
           printf "### Jenkins Response Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${JSON_RESPONSE}")" >>"${GITHUB_STEP_SUMMARY}"
@@ -326,88 +402,513 @@ jobs:
             exit 1
           fi
 
-      - name: Check for Jenkins Failures (Preview)
-        if: ${{ inputs.trigger-env-deploy == 'preview' }}
-        env:
-          JSON_RESPONSE: ${{ steps.jenkins-preview.outputs.response }}
-        run: |
-          PREVIEW_TRIGGERED="$(jq '.jobs."build-preview-testnet".triggered' <<<"${JSON_RESPONSE}")"
-
-          if [[ "${PREVIEW_TRIGGERED}" != true ]]; then
-            echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-preview-testnet' job via the Jenkins 'preview' pipeline!"
-            exit 1
-          fi
-
   local-node-images:
-    name: Local Node Images
+    name: Publish Local Node Images
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
-      - Artifact
-    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+      - validate
+      - build-artifact
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d # pin@v1
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           token_format: 'access_token'
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
+      - name: Set Image Registry
+        id: set-registry
+        run: |
+         DOCKER_REGISTRY="gcr.io"
+         [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && DOCKER_REGISTRY="us-docker.pkg.dev"
+         echo "docker-registry=${DOCKER_REGISTRY}" >>"${GITHUB_OUTPUT}"
+
+         DOCKER_TAG_BASE="gcr.io/hedera-registry"
+         if [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.dry-run-enabled }}" != true ]]; then
+            DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/local-node"
+         elif [[ "${{ inputs.dry-run-enabled }}" == true ]]; then
+            DOCKER_TAG_BASE="localhost:5000"
+         fi
+
+         echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
+
       - name: Setup QEmu Support
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # pin@v2
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@16c0bc4a6e6ada2cfd8afd41d22d95379cf7c32a # pin@v2
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        with:
+          driver-opts: network=host
+
+      - name: Setup Local Docker Registry
+        if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}
+        run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
 
       - name: Docker Login
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # pin@v2
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          registry: gcr.io
+          registry: ${{ steps.set-registry.outputs.docker-registry }}
           username: oauth2accesstoken
           password: ${{ steps.google-auth.outputs.access_token }}
 
-      - name: Cache Build Artifacts
-        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
+      - name: Restore Build Artifacts
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           fail-on-cache-miss: true
-          path: ${{ env.HOME }}/artifact-build
-          key: node-build-artifacts-${{ needs.Artifact.outputs.version }}-${{ github.sha }}
+          path: ~/artifact-build
+          key: node-build-artifacts-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Stage SDK Artifacts
         run: |
           mkdir -p hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk
-          cp -rvf ${{ env.HOME }}/artifact-build/* hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk/
+          cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk/
 
       - name: Build Haveged Image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           push: true
           platforms: linux/amd64,linux/arm64
           context: hedera-node/infrastructure/docker/containers/local-node/network-node-haveged
-          tags: gcr.io/hedera-registry/network-node-haveged:${{ needs.Artifact.outputs.version }}
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }}
 
       - name: Build Base Image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           push: true
           platforms: linux/amd64,linux/arm64
           context: hedera-node/infrastructure/docker/containers/local-node/network-node-base
-          tags: gcr.io/hedera-registry/network-node-base:${{ needs.Artifact.outputs.version }}
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }}
 
       - name: Build Network Node Image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: IMAGE_TAG=${{ needs.Artifact.outputs.version }}
+          build-args: |
+           IMAGE_TAG=${{ needs.validate.outputs.version }}
+           IMAGE_PREFIX=${{ steps.set-registry.outputs.docker-tag-base }}/
           context: hedera-node/infrastructure/docker/containers/local-node/main-network-node
-          tags: gcr.io/hedera-registry/main-network-node:${{ needs.Artifact.outputs.version }}
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node:${{ needs.validate.outputs.version }}
+
+      - name: Render Job Summary
+        run: |
+          NETWORK_NODE_BASE_LINK="Not Applicable"
+          NETWORK_NODE_HAVEGED_LINK="Not Applicable"
+          NETWORK_NODE_MAIN_LINK="Not Applicable"
+
+          if [[ "${{ inputs.dry-run-enabled }}" != true ]]; then
+            NETWORK_NODE_BASE_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }})"
+            NETWORK_NODE_HAVEGED_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }})"
+            NETWORK_NODE_MAIN_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node:${{ needs.validate.outputs.version }})"
+          fi
+
+          printf "### Published Docker Images\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| Image Name | Version | URL | Supported Architectures |\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| ---------- | ------- | --- | ----------------------- |\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base" \
+            "${{ needs.validate.outputs.version }}" \
+            "${NETWORK_NODE_BASE_LINK}" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged" \
+            "${{ needs.validate.outputs.version }}" \
+            "${NETWORK_NODE_HAVEGED_LINK}" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node" \
+            "${{ needs.validate.outputs.version }}" \
+            "${NETWORK_NODE_MAIN_LINK}" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+
+          printf "\n\n" >> "${GITHUB_STEP_SUMMARY}"
+
+  evm-mc-publish:
+    name: Publish EVM to Maven Central
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - validate
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install GnuPG Tools
+        if: ${{ inputs.dry-run-enabled != true }}
+        run: |
+          if ! command -v gpg2 >/dev/null 2>&1; then
+            echo "::group::Updating APT Repository Indices"
+              sudo apt update
+            echo "::endgroup::"
+            echo "::group::Installing GnuPG Tools"
+              sudo apt install -y gnupg2
+            echo "::endgroup::"
+          fi
+
+      - name: Import GPG key
+        id: gpg_key
+        uses: crazy-max/ghaction-import-gpg@82a020f1f7f605c65dd2449b392a52c3fcfef7ef # v6.0.0
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        with:
+          gpg_private_key: ${{ secrets.svcs-gpg-key-contents }}
+          passphrase: ${{ secrets.svcs-gpg-key-passphrase }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Setup Java
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Restore Build Version
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        with:
+          fail-on-cache-miss: true
+          path: version.txt
+          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
+
+      - name: Gradle Update Version (Snapshot)
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSnapshot --scan
+
+      - name: Gradle Assemble
+        id: gradle-build
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
+
+      - name: Gradle Version Summary
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: githubVersionSummary --scan
+
+      - name: Gradle Maven Central Release
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
+          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: "releaseEvmMavenCentral --scan -PpublishSigningEnabled=true"
+
+      - name: Gradle Maven Central Snapshot
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy != 'specified' && !cancelled() && !failure() }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
+          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: "releaseEvmMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
+
+  sdk-publish:
+    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - validate
+    if: ${{ inputs.sdk-release-profile != 'none' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install GnuPG Tools
+        if: ${{ inputs.dry-run-enabled != true }}
+        run: |
+          if ! command -v gpg2 >/dev/null 2>&1; then
+            echo "::group::Updating APT Repository Indices"
+              sudo apt update
+            echo "::endgroup::"
+            echo "::group::Installing GnuPG Tools"
+              sudo apt install -y gnupg2
+            echo "::endgroup::"
+          fi
+
+      - name: Import GPG key
+        id: gpg_key
+        uses: crazy-max/ghaction-import-gpg@82a020f1f7f605c65dd2449b392a52c3fcfef7ef # v6.0.0
+        with:
+          gpg_private_key: ${{ secrets.sdk-gpg-key-contents }}
+          passphrase: ${{ secrets.sdk-gpg-key-passphrase }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        with:
+          workload_identity_provider: "projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider"
+          service_account: "artifact-deployer@swirlds-registry.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+
+      - name: Setup Java
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Restore Build Version
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        with:
+          fail-on-cache-miss: true
+          path: version.txt
+          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
+
+      - name: Gradle Assemble
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
+
+      - name: Gradle Version Summary
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: githubVersionSummary --scan
+
+      - name: Stage SDK Release Archives
+        working-directory: platform-sdk
+        run: |
+          SDK_RELEASE_DIR="${HOME}/sdk-release"
+          SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
+          COMMIT_SHA="${{ needs.validate.outputs.commit-id-short }}"
+
+          #if [[ "${{ steps.archive-cache.outputs.cache-hit }}" == true ]]; then
+          #  echo "::group::Removing Existing Archive Cache Items"
+          #  rm -rvf "${SDK_ARCHIVE_DIR}"/*
+          #  echo "::endgroup::"
+          #fi
+
+          echo "::group::Creating Release Directories"
+            [[ -f "${SDK_RELEASE_DIR}" ]] || mkdir -p "${SDK_RELEASE_DIR}"
+            [[ -f "${SDK_ARCHIVE_DIR}" ]] || mkdir -p "${SDK_ARCHIVE_DIR}"
+          echo "::endgroup::"
+
+          echo "::group::Staging Release Files"
+            cp -Rvf sdk/* "${SDK_RELEASE_DIR}"
+            rm -vf "${SDK_RELEASE_DIR}/log4j2.xml"
+            rm -vf "${SDK_RELEASE_DIR}/settings.txt"
+            rm -vf "${SDK_RELEASE_DIR}/test_cases.sh"
+            rm -rvf "${SDK_RELEASE_DIR}/target"
+            rm -rvf "${SDK_RELEASE_DIR}/testing"
+            rm -rvf "${SDK_RELEASE_DIR}/kernels"
+            rm -rvf "${SDK_RELEASE_DIR}/data/configs"
+
+
+            cat "sdk/config.txt" | \
+              perl -0777 -pe 's/# \*\* BEGIN REMOVE FROM SDK RELEASES \*\*.*# \*\* END REMOVE FROM SDK RELEASES \*\*//igs' \
+                > "${SDK_RELEASE_DIR}/config.txt"
+          echo "::endgroup::"
+
+          echo "::group::Rendering Settings File"
+            SETTINGS_CONTENTS="loadKeysFromPfxFiles, false\n"
+            SETTINGS_CONTENTS+="requireStateLoad, false\n"
+            SETTINGS_CONTENTS+="csvOutputFolder, data/stats\n"
+            SETTINGS_CONTENTS+="csvFileName, DemoStats\n"
+
+            echo -e "${SETTINGS_CONTENTS}" >"${SDK_RELEASE_DIR}/settings.txt"
+          echo "::endgroup::"
+
+          LIB_ARCHIVE_FILE="${SDK_ARCHIVE_DIR}/platform-sdk-libs-v${{ needs.validate.outputs.version }}-${COMMIT_SHA}.zip"
+          APPS_ARCHIVE_FILE="${SDK_ARCHIVE_DIR}/platform-sdk-apps-v${{ needs.validate.outputs.version }}-${COMMIT_SHA}.zip"
+          PUBLIC_ARCHIVE_FILE="${SDK_ARCHIVE_DIR}/platform-sdk-public-v${{ needs.validate.outputs.version }}-${COMMIT_SHA}.zip"
+
+          echo "::group::Building Release Archives"
+            cd "${SDK_RELEASE_DIR}" || exit "${?}"
+            zip -r "${LIB_ARCHIVE_FILE}" data/lib
+            zip -r "${APPS_ARCHIVE_FILE}" data/apps
+
+            # remove testing tools (if present) before building the public release artifact
+            rm -vf data/apps/*TestingTool.jar || true
+            zip -r "${PUBLIC_ARCHIVE_FILE}" *
+          echo "::endgroup::"
+
+          echo "::group::Sign Release Archives"
+            cd "${SDK_ARCHIVE_DIR}" || exit "${?}"
+            sha256sum "${LIB_ARCHIVE_FILE}" >"${LIB_ARCHIVE_FILE}.sha256"
+            sha256sum "${APPS_ARCHIVE_FILE}" >"${APPS_ARCHIVE_FILE}.sha256"
+            sha256sum "${PUBLIC_ARCHIVE_FILE}" >"${PUBLIC_ARCHIVE_FILE}.sha256"
+
+            gpg --output "${LIB_ARCHIVE_FILE}.asc" --detach-sig "${LIB_ARCHIVE_FILE}"
+            gpg --output "${APPS_ARCHIVE_FILE}.asc" --detach-sig "${APPS_ARCHIVE_FILE}"
+            gpg --output "${PUBLIC_ARCHIVE_FILE}.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}"
+
+            gpg --output "${LIB_ARCHIVE_FILE}.sha256.asc" --detach-sig "${LIB_ARCHIVE_FILE}.sha256"
+            gpg --output "${APPS_ARCHIVE_FILE}.sha256.asc" --detach-sig "${APPS_ARCHIVE_FILE}.sha256"
+            gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
+          echo "::endgroup::"
+
+      - name: Gradle Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.sdk-release-profile }})
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.sdk-release-profile != 'none' && !cancelled() && !failure() }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.sdk-ossrh-username }}
+          OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: "release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
+
+      - name: Upload SDK Release Archives
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        env:
+          RELEASE_TAG: v${{ needs.validate.outputs.version }}
+        run: |
+          SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
+          gsutil -m cp -r "${SDK_ARCHIVE_DIR}"/* gs://platform-sdk-ci-release-artifacts/${RELEASE_TAG}/
+
+  send-notifications:
+    name: Send Release Notifications
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - validate
+      - local-node-images
+      - evm-mc-publish
+      - sdk-publish
+    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+    steps:
+      - name: Determine Notification Parameters
+        id: parameters
+        run: |
+          ARTIFACT_URL="https://repo1.maven.org/maven2/com/swirlds/swirlds-platform-core/${{ needs.validate.outputs.version }}/"
+          ARTIFACT_LINK_NAME="MC Availability Check"
+          ARTIFACT_REGISTRY="Maven Central"
+
+          if [[ "${{ inputs.sdk-release-profile }}" == "PrereleaseChannel" ]]; then
+            ARTIFACT_URL="https://console.cloud.google.com/artifacts/maven/swirlds-registry/us/maven-prerelease-channel/com.swirlds:swirlds-platform-core/${{ needs.validate.outputs.version }}?project=swirlds-registry"
+            ARTIFACT_LINK_NAME="GCP Registry"
+            ARTIFACT_REGISTRY="GCP Artifact Registry"
+          fi
+
+          echo "artifact-url=${ARTIFACT_URL}" >>"${GITHUB_OUTPUT}"
+          echo "artifact-name=${ARTIFACT_LINK_NAME}" >>"${GITHUB_OUTPUT}"
+          echo "artifact-registry=${ARTIFACT_REGISTRY}" >>"${GITHUB_OUTPUT}"
+
+      - name: Send Slack Notification (Maven Central)
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.slack-webhook-url }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                  {
+                    "color": "#b7f350",
+                    "blocks": [
+                      {
+                        "type": "header",
+                        "text": {
+                          "type": "plain_text",
+                          "text": ":dvd: Node Software Release v${{ needs.validate.outputs.version }}",
+                          "emoji": true
+                        }
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Deployment Channel:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Deployment Status Check:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "${{ steps.parameters.outputs.artifact-registry }}"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<${{ steps.parameters.outputs.artifact-url }}|${{ steps.parameters.outputs.artifact-name }}>"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Source Branch:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Short Commit ID:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "`${{ needs.validate.outputs.commit-id-short }}`"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Gradle Version Number:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Release Notes:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "`${{ needs.validate.outputs.version }}`"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}|v${{ needs.validate.outputs.version }}>"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "divider"
+                      },
+                      {
+                        "type": "context",
+                        "elements": [
+                          {
+                            "type": "mrkdwn",
+                            "text": ":warning: Artifacts may not be immediately available in Maven Central. Please verify existence of the artifacts using the link provided above."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }

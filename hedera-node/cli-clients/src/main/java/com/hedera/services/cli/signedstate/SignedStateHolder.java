@@ -17,13 +17,19 @@
 package com.hedera.services.cli.signedstate;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -235,6 +241,30 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         return accounts;
     }
 
+    /** Get all fungible token types */
+    @NonNull
+    public MerkleMapLike<EntityNum, MerkleToken> getFungibleTokenTypes() {
+        final var fungibleTokenTypes = servicesState.tokens();
+        assertSignedStateComponentExists(fungibleTokenTypes, "(fungible) tokens");
+        return fungibleTokenTypes;
+    }
+
+    /** Get all unique (serial number) issued NFT tokens */
+    @NonNull
+    public UniqueTokenMapAdapter getUniqueNFTTokens() {
+        final var nftTypes = servicesState.uniqueTokens();
+        assertSignedStateComponentExists(nftTypes, "(non-fungible) unique tokens");
+        return nftTypes;
+    }
+
+    /** Get all token associations (tokenrels) */
+    @NonNull
+    public TokenRelStorageAdapter getTokenAssociations() {
+        final var tokenRels = servicesState.tokenAssociations();
+        assertSignedStateComponentExists(tokenRels, "token associations (tokenrels)");
+        return tokenRels;
+    }
+
     /**
      * Returns the file store from the state
      *
@@ -245,6 +275,17 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var fileStore = servicesState.storage();
         assertSignedStateComponentExists(fileStore, "fileStore");
         return fileStore;
+    }
+
+    /** Returns the special files store from the state
+     *
+     * The special files store contains, among other things, the system upgrade files.
+     */
+    @NonNull
+    public MerkleSpecialFiles getSpecialFileStore() {
+        final var specialFiles = servicesState.specialFiles();
+        assertSignedStateComponentExists(specialFiles, "specialFiles");
+        return specialFiles;
     }
 
     @NonNull

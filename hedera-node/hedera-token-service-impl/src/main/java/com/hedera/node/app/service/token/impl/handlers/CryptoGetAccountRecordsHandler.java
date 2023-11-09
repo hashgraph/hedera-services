@@ -32,7 +32,10 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -106,5 +109,20 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
         }
 
         return Response.newBuilder().cryptoGetAccountRecords(response).build();
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var accountStore = queryContext.createStore(ReadableAccountStore.class);
+        final var op = query.cryptoGetAccountRecordsOrThrow();
+        final var accountId = op.accountIDOrThrow();
+        final var account = accountStore.getAccountById(accountId);
+
+        final var records = recordCache.getRecords(accountId);
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountRecordsResourceUsage(
+                        null, new CryptoFeeBuilder())
+                .usageGivenFor(account, records));
     }
 }

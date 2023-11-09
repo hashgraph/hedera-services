@@ -45,13 +45,41 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
     }
 
     /**
+     * Returns this {@link Fees} with the service fee zeroed out. Used when the payer was willing and able
+     * to cover at least the network fee; but not the node
+     *
+     * @return this {@link Fees} with the service fee zeroed out
+     */
+    public Fees withoutServiceComponent() {
+        return new Fees(nodeFee, networkFee, 0);
+    }
+
+    /**
      * Computes and returns the total fee, which is the sum of the node, network, and service fees.
      * @return the total fee. Will be non-negative.
      */
     public long totalFee() {
         // Safely add the three components together, such that an overflow is detected. In practice this should never
         // happen, since the maximum number of tinybars is less than Long.MAX_VALUE.
-        return Math.addExact(Math.addExact(nodeFee, networkFee), serviceFee);
+        return Math.addExact(totalWithoutServiceFee(), serviceFee);
+    }
+
+    /**
+     * Computes and returns the total without service fees.
+     *
+     * @return the total without service fees. Will be non-negative.
+     */
+    public long totalWithoutServiceFee() {
+        return Math.addExact(nodeFee, networkFee);
+    }
+
+    /**
+     * Computes and returns the total without node fees
+     *
+     * @return the total without node fees. Will be non-negative.
+     */
+    public long totalWithoutNodeFee() {
+        return Math.addExact(networkFee, serviceFee);
     }
 
     /**

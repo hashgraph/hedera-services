@@ -21,9 +21,13 @@ import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -48,10 +52,17 @@ public class IssHandler {
     private final HaltRequestedConsumer haltRequestedConsumer;
     private final IssConsumer issConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
+    private final Scratchpad<IssScratchpad> issScratchpad;
 
     private boolean halted;
 
     private final NodeId selfId;
+
+    /**
+     * Allows for submitting
+     * {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusActions}
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
 
     /**
      * Create an object responsible for handling ISS events.
@@ -59,18 +70,22 @@ public class IssHandler {
      * @param dispatchBuilder       builds dispatchers
      * @param stateConfig           settings for the state
      * @param selfId                the self ID of this node
+     * @param statusActionSubmitter the object to use to submit status actions
      * @param haltRequestedConsumer consumer to invoke when a system halt is desired
      * @param fatalErrorConsumer    consumer to invoke if a fatal error occurs
      * @param issConsumer           consumer to invoke if an ISS is detected
+     * @param issScratchpad         scratchpad for ISS data, is persistent across restarts
      */
     public IssHandler(
             @NonNull final Time time,
             @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final StateConfig stateConfig,
             @NonNull final NodeId selfId,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final IssConsumer issConsumer) {
+            @NonNull final IssConsumer issConsumer,
+            @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
 
         this.issConsumer = Objects.requireNonNull(issConsumer, "issConsumer must not be null");
         this.haltRequestedConsumer =
@@ -83,6 +98,10 @@ public class IssHandler {
         this.issDumpRateLimiter = new RateLimiter(time, Duration.ofSeconds(stateConfig.secondsBetweenISSDumps()));
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+
+        this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
     /**
@@ -129,6 +148,27 @@ public class IssHandler {
     }
 
     /**
+     * Record the latest ISS round in the scratchpad. Does nothing if this is not the latest ISS that has been
+     * observed.
+     *
+     * @param issRound the round of the observed ISS
+     */
+    private void updateIssRoundInScratchpad(final long issRound) {
+        issScratchpad.atomicOperation(data -> {
+            final SerializableLong lastIssRound = (SerializableLong) data.get(IssScratchpad.LAST_ISS_ROUND);
+
+            if (lastIssRound == null || lastIssRound.getValue() < issRound) {
+                data.put(IssScratchpad.LAST_ISS_ROUND, new SerializableLong(issRound));
+                return true;
+            }
+
+            // Data was not modified, no need to flush data to disk. It is possible to observe ISS rounds out of order,
+            // and we only want to increment this number.
+            return false;
+        });
+    }
+
+    /**
      * This method is called when there is a self ISS.
      *
      * @param round         the round of the ISS
@@ -143,6 +183,9 @@ public class IssHandler {
             // don't take any action once halted
             return;
         }
+
+        updateIssRoundInScratchpad(round);
+        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
 
         issConsumer.iss(round, IssNotification.IssType.SELF_ISS, selfId);
 
@@ -226,6 +269,9 @@ public class IssHandler {
             // don't take any action once halted
             return;
         }
+
+        updateIssRoundInScratchpad(round);
+        statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
 
         issConsumer.iss(round, IssNotification.IssType.CATASTROPHIC_ISS, null);
 

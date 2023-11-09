@@ -106,9 +106,6 @@ public class TokenSupplyChangeOpsValidator {
         // The fungible amount must not be negative, regardless of use case
         validateFalsePreCheck(fungibleAmount < 0, invalidAmountResponseCode);
 
-        // If no fungible fungibleAmount is present, at least one NFT serial number must be present
-        validateFalsePreCheck(fungibleAmount == 0 && serialNums.isEmpty(), invalidAmountResponseCode);
-
         // Validate the NFT serial numbers
         if (fungibleAmount < 1 && !serialNums.isEmpty()) {
             for (final var serialNumber : serialNums) {
@@ -159,9 +156,10 @@ public class TokenSupplyChangeOpsValidator {
      */
     private void validateCounts(
             final int nftCount, final long fungibleCount, final boolean nftsAreEnabled, final long maxBatchSize) {
-        if (fungibleCount > 0) {
-            validateTrue(fungibleCount <= maxBatchSize, BATCH_SIZE_LIMIT_EXCEEDED);
-        }
+        // commented out below, checked with Michael T, nfts.maxBatchSizeMint is not for fungibleCount.
+        //        if (fungibleCount > 0) {
+        //            validateTrue(fungibleCount <= maxBatchSize, BATCH_SIZE_LIMIT_EXCEEDED);
+        //        }
         if (nftCount > 0) {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
         }

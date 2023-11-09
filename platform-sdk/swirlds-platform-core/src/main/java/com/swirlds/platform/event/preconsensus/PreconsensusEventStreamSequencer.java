@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.EventImpl;
+import com.swirlds.platform.internal.EventImpl;
 
 /**
  * Responsible for assigning stream sequence numbers to events. All events that are written

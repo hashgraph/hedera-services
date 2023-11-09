@@ -50,11 +50,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -125,6 +125,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount());
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithTokenTransfer() {
         final var fungibleToken = "fungibleToken";
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
@@ -219,6 +220,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithTokenAssociation() {
         return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
                 .given(
@@ -248,6 +250,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountFinalizationWhenAccountNotPresentInPreHandle() {
         final var ECDSA_2 = "ECDSA_2";
         return defaultHapiSpec("hollowAccountFinalizationWhenAccountNotPresentInPreHandle")
@@ -290,6 +293,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountFinalizationOccursOnlyOnceWhenMultipleFinalizationTensComeInAtTheSameTime() {
         final var ECDSA_2 = "ECDSA_2";
         return defaultHapiSpec("hollowAccountFinalizationOccursOnlyOnceWhenMultipleFinalizationTensComeInAtTheSameTime")
@@ -342,6 +346,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithCryptoTransfer() {
         return defaultHapiSpec("HollowAccountCompletionWithCryptoTransfer")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
@@ -384,6 +389,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionWhenHollowAccountSigRequiredInOtherReqSigs() {
         return defaultHapiSpec("hollowAccountCompletionWhenHollowAccountSigRequiredInOtherReqSigs")
                 .given(
@@ -434,6 +440,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithContractCreate() {
         final var CONTRACT = "CreateTrivial";
         return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
@@ -463,6 +470,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithContractCall() {
         final var DEPOSIT_AMOUNT = 1000;
         return defaultHapiSpec("HollowAccountCompletionWithContractCall")
@@ -492,6 +500,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionViaNonReqSigIsNotAllowed() {
         final var DEPOSIT_AMOUNT = 1000;
         return defaultHapiSpec("hollowAccountCompletionViaNonReqSigIsNotAllowed")
@@ -531,6 +540,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec tooManyHollowAccountFinalizationsShouldFail() {
         final var ECDSA_KEY_1 = "ECDSA_KEY_1";
         final var ECDSA_KEY_2 = "ECDSA_KEY_2";
@@ -589,6 +599,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec completedHollowAccountsTransfer() {
         return defaultHapiSpec("CompletedHollowAccountsTransfer")
                 .given(
@@ -677,6 +688,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec txnWith2CompletionsAndAnother2PrecedingChildRecords() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -720,9 +732,8 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             TRANSFER_TXN_2,
                             MAX_CHILD_RECORDS_EXCEEDED,
                             recordWith().status(SUCCESS),
-                            recordWith().status(SUCCESS),
-                            recordWith().status(REVERTED_SUCCESS));
-                    //                    // assert that the payer has been finalized
+                            recordWith().status(SUCCESS));
+                    // assert that the payer has been finalized
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
                             ecdsaKey.getECDSASecp256K1().toByteArray()));
@@ -741,6 +752,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -799,6 +811,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionIsPersistedEvenIfTxnFails() {
         return defaultHapiSpec("hollowAccountCompletionIsPersistedEvenIfTxnFails")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
@@ -828,6 +841,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount() {
         final var receiver = "receiver";
         final var ft = "ft";

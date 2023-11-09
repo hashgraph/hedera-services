@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.EventImpl;
+import com.swirlds.platform.internal.EventImpl;
 import java.time.Duration;
 
 /**
@@ -72,7 +72,7 @@ public class NoOpPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void registerDiscontinuity() throws InterruptedException {
+    public void registerDiscontinuity(final long newOriginRound) throws InterruptedException {
         // no-op
     }
 

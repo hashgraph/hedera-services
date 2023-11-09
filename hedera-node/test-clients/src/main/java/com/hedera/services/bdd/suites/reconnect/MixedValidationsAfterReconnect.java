@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -31,20 +30,20 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class MixedValidationsAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedValidationsAfterReconnect.class);
 
     private static final String SENDER = "0.0.1301";
     private static final String RECEIVER = "0.0.1302";
-    private static final String LAST_CREATED_ACCOUNT = "0.0.21063";
-    private static final String FIRST_CREATED_TOPIC = "0.0.21064";
-    private static final String LAST_CREATED_TOPIC = "0.0.41063";
+    private static final String LAST_CREATED_ACCOUNT = "0.0.3500";
+    private static final String FIRST_CREATED_TOPIC = "0.0.3600";
+    private static final String LAST_CREATED_TOPIC = "0.0.5900";
     private static final String INVALID_TOPIC_ID = "0.0.41064";
-    private static final String TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO = "0.0.30050";
-    private static final String FIRST_CREATED_FILE = "0.0.41064";
-    private static final String LAST_CREATED_FILE = "0.0.42063";
-    private static final String INVALID_FILE_ID = "0.0.42064";
+    private static final String TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO = "0.0.5900";
+
+    private static final String FIRST_CREATED_FILE = "0.0.6100";
+    private static final String LAST_CREATED_FILE = "0.0.6900";
+    private static final String INVALID_FILE_ID = "0.0.7064";
 
     public static void main(String... args) {
         new MixedValidationsAfterReconnect().runSuiteSync();

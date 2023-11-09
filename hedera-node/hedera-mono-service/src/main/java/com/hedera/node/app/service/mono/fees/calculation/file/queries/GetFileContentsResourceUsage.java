@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
+import com.hedera.hapi.node.file.FileContents;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
@@ -58,5 +59,17 @@ public final class GetFileContentsResourceUsage implements QueryResourceUsageEst
             return FeeData.getDefaultInstance();
         }
         return usageEstimator.getFileContentQueryFeeMatrices((int) info.get().getSize(), type);
+    }
+
+    public FeeData usageGivenType(final FileContents fileContents, final ResponseType type) {
+        /* Given the test in {@code GetFileContentsAnswer.checkValidity}, this can only be empty
+         * under the extraordinary circumstance that the desired file expired during the query
+         * answer flow (which will now fail downstream with an appropriate status code); so
+         * just return the default {@code FeeData} here. */
+        if (fileContents == null) {
+            return FeeData.getDefaultInstance();
+        }
+        return usageEstimator.getFileContentQueryFeeMatrices(
+                fileContents.contents().toByteArray().length, type);
     }
 }

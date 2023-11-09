@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +33,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 /**
  * Customization of {@link ExtCodeHashOperation} that treats every long-zero address for an account
  * below {@code 0.0.1001} as having a zero code hash; and otherwise requires the account to be
- * present or halts the frame with {@link CustomExceptionalHaltReason#MISSING_ADDRESS}.
+ * present or halts the frame with {@link CustomExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS}.
  */
 public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
@@ -60,7 +58,7 @@ public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
             }
             // Otherwise the address must be present
             if (!addressChecks.isPresent(address, frame)) {
-                return new OperationResult(cost(true), MISSING_ADDRESS);
+                return new OperationResult(cost(true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (FixedStack.UnderflowException ignore) {

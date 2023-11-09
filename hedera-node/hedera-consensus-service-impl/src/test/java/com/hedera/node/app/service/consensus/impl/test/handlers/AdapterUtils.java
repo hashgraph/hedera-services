@@ -70,6 +70,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -127,12 +128,14 @@ public class AdapterUtils {
         return new MapReadableKVState<>(ACCOUNTS_KEY, wellKnownAccountStoreAt());
     }
 
-    private static MapReadableKVState<Bytes, AccountID> wellKnownAliasState() {
-        final Map<Bytes, AccountID> wellKnownAliases = Map.ofEntries(
-                Map.entry(Bytes.wrap(CURRENTLY_UNUSED_ALIAS), asAccount(MISSING_NUM.longValue())),
-                Map.entry(Bytes.wrap(NO_RECEIVER_SIG_ALIAS), toPbj(NO_RECEIVER_SIG)),
-                Map.entry(Bytes.wrap(RECEIVER_SIG_ALIAS), toPbj(RECEIVER_SIG)),
-                Map.entry(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray()), toPbj(FIRST_TOKEN_SENDER)));
+    private static MapReadableKVState<ProtoBytes, AccountID> wellKnownAliasState() {
+        final Map<ProtoBytes, AccountID> wellKnownAliases = Map.ofEntries(
+                Map.entry(new ProtoBytes(Bytes.wrap(CURRENTLY_UNUSED_ALIAS)), asAccount(MISSING_NUM.longValue())),
+                Map.entry(new ProtoBytes(Bytes.wrap(NO_RECEIVER_SIG_ALIAS)), toPbj(NO_RECEIVER_SIG)),
+                Map.entry(new ProtoBytes(Bytes.wrap(RECEIVER_SIG_ALIAS)), toPbj(RECEIVER_SIG)),
+                Map.entry(
+                        new ProtoBytes(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray())),
+                        toPbj(FIRST_TOKEN_SENDER)));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 

@@ -16,11 +16,11 @@
 
 package com.swirlds.common.system;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.utility.StackTrace;
-import com.swirlds.logging.payloads.SystemExitPayload;
+import com.swirlds.logging.legacy.payload.SystemExitPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -37,12 +37,14 @@ public final class SystemExitUtils {
     /**
      * Exits the system
      *
-     * @param exitCode    the reason for the exit
-     * @param message     a message to log, if not null
-     * @param haltRuntime whether to halt the java runtime or not
+     * @param suppliedExitCode the reason for the exit
+     * @param message          a message to log, if not null
+     * @param haltRuntime      whether to halt the java runtime or not
      */
     public static void exitSystem(
-            @NonNull final SystemExitCode exitCode, @Nullable final String message, final boolean haltRuntime) {
+            @NonNull final SystemExitCode suppliedExitCode, @Nullable final String message, final boolean haltRuntime) {
+        // this will warn that the exit code will never be null, but we should probably keep it as a fail safe
+        final SystemExitCode exitCode = suppliedExitCode == null ? SystemExitCode.NO_EXIT_CODE : suppliedExitCode;
 
         final StackTrace stackTrace = StackTrace.getStackTrace();
         final String exitMessage =

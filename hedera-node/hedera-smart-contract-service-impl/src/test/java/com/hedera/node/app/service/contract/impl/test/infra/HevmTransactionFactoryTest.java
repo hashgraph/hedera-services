@@ -45,6 +45,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEV_CHAIN_ID_CONTRACTS_CONFIG;
@@ -74,6 +75,8 @@ import static org.mockito.Mockito.doThrow;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -100,7 +103,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -142,6 +144,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 DEFAULT_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
@@ -210,6 +213,15 @@ class HevmTransactionFactoryTest {
         assertFalse(transaction.hasOfferedGasPrice());
         assertFalse(transaction.hasMaxGasAllowance());
         assertNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiCreationFailsOnSystemInitcode() {
+        assertCreateFailsWith(
+                INVALID_FILE_ID,
+                b -> b.fileID(FileID.newBuilder()
+                        .fileNum(DEFAULT_HEDERA_CONFIG.firstUserEntity() - 1)
+                        .build()));
     }
 
     @Test
@@ -308,7 +320,7 @@ class HevmTransactionFactoryTest {
         final var createMeta = new ExpiryMeta(NA, SOME_DURATION.seconds(), NON_SYSTEM_ACCOUNT_ID);
         doThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT))
                 .when(expiryValidator)
-                .resolveCreationAttempt(true, createMeta);
+                .resolveCreationAttempt(true, createMeta, HederaFunctionality.CONTRACT_CREATE);
         assertCreateFailsWith(INVALID_AUTORENEW_ACCOUNT, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
@@ -331,7 +343,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationValidatesInitcodeDeletionStatus() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().deleted(true).build()));
+                .willReturn(File.newBuilder().deleted(true).build());
         assertCreateFailsWith(FILE_DELETED, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .fileID(INITCODE_FILE_ID)
@@ -344,7 +356,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationValidatesInitcodeNotEmpty() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().build()));
+                .willReturn(File.newBuilder().build());
         assertCreateFailsWith(CONTRACT_FILE_EMPTY, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .fileID(INITCODE_FILE_ID)
@@ -357,7 +369,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationTranslatesHexParsingException() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().contents(CALL_DATA).build()));
+                .willReturn(File.newBuilder().contents(CALL_DATA).build());
         assertCreateFailsWith(ERROR_DECODING_BYTESTRING, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .constructorParameters(Bytes.wrap(new byte[] {(byte) 0xab}))
@@ -395,7 +407,7 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationAppendsConstructorArgsIfPresent() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
-                .willReturn(Optional.of(File.newBuilder().contents(INITCODE).build()));
+                .willReturn(File.newBuilder().contents(INITCODE).build());
         String hexedPayload = new String(INITCODE.toByteArray()) + CommonUtils.hex(CONSTRUCTOR_PARAMS.toByteArray());
         final var expectedPayload = Bytes.wrap(CommonUtils.unhex(hexedPayload));
         final var transaction = getManufacturedCreation(b -> b.memo(SOME_MEMO)
@@ -590,6 +602,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
@@ -606,6 +619,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
@@ -622,6 +636,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
@@ -638,6 +653,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEV_CHAIN_ID_CONTRACTS_CONFIG,

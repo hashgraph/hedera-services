@@ -68,8 +68,9 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         final var expectedUpdates = Set.of(
                 new ContractNonceInfo(ContractID.newBuilder().contractNum(666).build(), afterNonce),
                 new ContractNonceInfo(ContractID.newBuilder().contractNum(888).build(), brandNewNonce));
+        final var actualUpdates = writableStore.summarizeContractChanges().updatedContractNonces();
 
-        assertEquals(expectedUpdates, new HashSet<>(writableStore.updatedContractNonces()));
+        assertEquals(expectedUpdates, new HashSet<>(actualUpdates));
     }
 
     @Test
@@ -123,7 +124,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(readaccount).isNotNull();
         assertThat(account).isEqualTo(readaccount);
         assertEquals(1, writableStore.sizeOfAliasesState());
-        assertEquals(Set.of(alias.alias()), writableStore.modifiedAliasesInState());
+        assertEquals(Set.of(edKeyAlias), writableStore.modifiedAliasesInState());
     }
 
     @Test

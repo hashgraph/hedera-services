@@ -1,11 +1,9 @@
 module com.swirlds.demo.addressbook {
-    requires com.swirlds.platform;
+    requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.config.api;
     requires com.swirlds.logging;
-    requires lazysodium.java;
-    requires org.bouncycastle.provider;
-    requires org.bouncycastle.pkix;
+    requires com.swirlds.platform.core;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-    requires com.swirlds.config;
 }

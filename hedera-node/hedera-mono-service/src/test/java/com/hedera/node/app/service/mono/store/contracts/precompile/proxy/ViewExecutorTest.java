@@ -340,7 +340,7 @@ class ViewExecutorTest {
                     .willReturn(Optional.of(evmTokenInfo));
             given(ledgers.evmNftInfo(
                             NftID.newBuilder()
-                                    .setTokenId(nonfungibletoken)
+                                    .setTokenID(nonfungibletoken)
                                     .setSerialNumber(1L)
                                     .build(),
                             networkInfo.ledgerId()))

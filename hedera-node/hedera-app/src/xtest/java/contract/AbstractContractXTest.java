@@ -16,175 +16,324 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.config.api.Configuration;
+import common.AbstractXTest;
+import common.BaseScaffoldingComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Deque;
+import java.util.Optional;
+import java.util.function.Consumer;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Base class for {@code xtest} scenarios that focus on contract operations.
  */
-@ExtendWith(MockitoExtension.class)
-public abstract class AbstractContractXTest {
+public abstract class AbstractContractXTest extends AbstractXTest {
+    private static final SyntheticIds LIVE_SYNTHETIC_IDS = new SyntheticIds();
+    private static final VerificationStrategies LIVE_VERIFICATION_STRATEGIES = new VerificationStrategies();
     static final long GAS_TO_OFFER = 2_000_000L;
     static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
 
     @Mock
-    private Metrics metrics;
+    private MessageFrame frame;
 
-    private ScaffoldingComponent scaffoldingComponent;
+    @Mock
+    private MessageFrame initialFrame;
+
+    @Mock
+    private ProxyWorldUpdater proxyUpdater;
+
+    @Mock
+    private HtsCallAddressChecks addressChecks;
+
+    private HtsCallFactory callAttemptFactory;
+
+    private ContractScaffoldingComponent component;
 
     @BeforeEach
     void setUp() {
-        scaffoldingComponent = DaggerScaffoldingComponent.factory().create(metrics);
+        component = DaggerContractScaffoldingComponent.factory().create(metrics, configuration());
+        callAttemptFactory = new HtsCallFactory(
+                LIVE_SYNTHETIC_IDS, addressChecks, LIVE_VERIFICATION_STRATEGIES, component.callTranslators());
     }
 
-    @Test
-    void scenarioPasses() {
-        setupInitialStates();
-
-        handleAndCommitScenarioTransactions();
-
-        assertExpectedAliases(finalAliases());
-        assertExpectedAccounts(finalAccounts());
-        assertExpectedBytecodes(finalBytecodes());
-        assertExpectedStorage(finalStorage(), finalAccounts());
+    protected Configuration configuration() {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .getOrCreateConfig();
     }
 
-    protected abstract long initialEntityNum();
-
-    protected abstract Map<FileID, File> initialFiles();
-
-    protected abstract Map<Bytes, AccountID> initialAliases();
-
-    protected abstract Map<AccountID, Account> initialAccounts();
-
-    protected abstract void handleAndCommitScenarioTransactions();
-
-    protected abstract void assertExpectedStorage(
-            @NonNull ReadableKVState<SlotKey, SlotValue> storage,
-            @NonNull ReadableKVState<AccountID, Account> accounts);
-
-    protected abstract void assertExpectedAliases(@NonNull ReadableKVState<Bytes, AccountID> aliases);
-
-    protected abstract void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts);
-
-    protected abstract void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes);
+    @Override
+    protected BaseScaffoldingComponent component() {
+        return component;
+    }
 
     protected void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
-            final var context = scaffoldingComponent.contextFactory().apply(txn);
+            final var context = component.txnContextFactory().apply(txn);
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
     }
 
-    protected Bytes resourceAsBytes(@NonNull final String loc) {
-        try {
-            try (final var in = AbstractContractXTest.class.getClassLoader().getResourceAsStream(loc)) {
-                final var bytes = Objects.requireNonNull(in).readAllBytes();
-                return Bytes.wrap(bytes);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    protected TransactionID transactionIdWith(@NonNull final AccountID payerId) {
+        final var startTime = Instant.now();
+        return TransactionID.newBuilder()
+                .accountID(payerId)
+                .transactionValidStart(Timestamp.newBuilder()
+                        .seconds(startTime.getEpochSecond())
+                        .nanos(startTime.getNano())
+                        .build())
+                .build();
+    }
+
+    protected void runHtsCallAndExpectOnSuccess(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
+        runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions, null);
+    }
+
+    protected void runHtsCallAndExpectOnSuccess(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions,
+            @NonNull final String context) {
+        runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions, context);
+    }
+
+    protected void runDelegatedHtsCallAndExpectOnSuccess(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
+        runHtsCallAndExpectOnSuccess(true, sender, input, outputAssertions, null);
+    }
+
+    private void runHtsCallAndExpectOnSuccess(
+            final boolean requiresDelegatePermission,
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions,
+            @Nullable final String context) {
+        runHtsCallAndExpect(requiresDelegatePermission, sender, input, resultOnlyAssertion(result -> {
+            assertEquals(
+                    MessageFrame.State.COMPLETED_SUCCESS,
+                    result.getState(),
+                    Optional.ofNullable(context).orElse("An unspecified operation") + " should have succeeded");
+            outputAssertions.accept(result.getOutput());
+        }));
+    }
+
+    protected void runHtsCallAndExpectRevert(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status) {
+        internalRunHtsCallAndExpectRevert(sender, input, status, null);
+    }
+
+    protected void runHtsCallAndExpectRevert(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final String context) {
+        internalRunHtsCallAndExpectRevert(sender, input, status, context);
+    }
+
+    private void internalRunHtsCallAndExpectRevert(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status,
+            @Nullable final String context) {
+        runHtsCallAndExpect(false, sender, input, resultOnlyAssertion(result -> {
+            assertEquals(
+                    MessageFrame.State.REVERT,
+                    result.getState(),
+                    Optional.ofNullable(context).orElse("An unspecified operation") + " should have reverted");
+            final var actualReason =
+                    ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
+            assertEquals(status, actualReason);
+        }));
+    }
+
+    private void runHtsCallAndExpectRevert(
+            final boolean requiresDelegatePermission,
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status) {
+        runHtsCallAndExpect(requiresDelegatePermission, sender, input, resultOnlyAssertion(result -> {
+            assertEquals(MessageFrame.State.REVERT, result.getState());
+            final var impliedReason =
+                    org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
+            assertEquals(impliedReason, result.getOutput());
+        }));
+    }
+
+    private void runHtsCallAndExpect(
+            final boolean requiresDelegatePermission,
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
+        final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
+        final var tinybarValues = TinybarValues.forTransactionWith(
+                context.exchangeRateInfo().activeRate(Instant.now()),
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT),
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
+        final var enhancement = new HederaWorldUpdater.Enhancement(
+                new HandleHederaOperations(
+                        component.config().getConfigData(LedgerConfig.class),
+                        component.config().getConfigData(ContractsConfig.class),
+                        context,
+                        tinybarValues),
+                new HandleHederaNativeOperations(context),
+                new HandleSystemContractOperations(context));
+        given(proxyUpdater.enhancement()).willReturn(enhancement);
+        given(frame.getWorldUpdater()).willReturn(proxyUpdater);
+        given(frame.getSenderAddress()).willReturn(sender);
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
+        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(component.config());
+        final var systemContractGasCalculator = new SystemContractGasCalculator(
+                tinybarValues,
+                new CanonicalDispatchPrices(new AssetsLoader()),
+                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
+        given(initialFrame.getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE))
+                .willReturn(systemContractGasCalculator);
+        stack.push(initialFrame);
+        stack.addFirst(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
+
+        final var call = callAttemptFactory.createCallFrom(input, frame);
+
+        final var pricedResult = call.execute();
+        resultAssertions.accept(pricedResult);
+        // Note that committing a reverted calls should have no effect on state
+        ((SavepointStackImpl) context.savepointStack()).commitFullStack();
+    }
+
+    protected TransactionBody createCallTransactionBody(
+            final AccountID payer,
+            final long value,
+            @NonNull final ContractID contractId,
+            @NonNull final ByteBuffer encoded) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payer))
+                .contractCall(createContractCallTransactionBody(value, contractId, encoded))
+                .build();
+    }
+
+    protected ContractCallTransactionBody createContractCallTransactionBody(
+            final long value, @NonNull final ContractID contractId, @NonNull final ByteBuffer encoded) {
+        return ContractCallTransactionBody.newBuilder()
+                .functionParameters(Bytes.wrap(encoded.array()))
+                .contractID(contractId)
+                .amount(value)
+                .gas(GAS_TO_OFFER)
+                .build();
     }
 
     protected Address addressOf(@NonNull final Bytes address) {
         return Address.wrap(Address.toChecksumAddress(new BigInteger(1, address.toByteArray())));
     }
 
-    private void setupInitialStates() {
-        final var fakeHederaState = (FakeHederaState) scaffoldingComponent.hederaState();
-
-        fakeHederaState.addService(
-                EntityIdService.NAME, Map.of("ENTITY_ID", new AtomicReference<>(new EntityNumber(initialEntityNum()))));
-
-        fakeHederaState.addService("RecordCache", Map.of("TransactionRecordQueue", new ArrayDeque<>()));
-
-        fakeHederaState.addService(
-                BlockRecordService.NAME,
-                Map.of(
-                        BlockRecordService.BLOCK_INFO_STATE_KEY, new AtomicReference<>(BlockInfo.DEFAULT),
-                        BlockRecordService.RUNNING_HASHES_STATE_KEY, new AtomicReference<>(RunningHashes.DEFAULT)));
-
-        fakeHederaState.addService(
-                TokenService.NAME,
-                Map.of(
-                        TokenServiceImpl.ACCOUNTS_KEY, initialAccounts(),
-                        TokenServiceImpl.ALIASES_KEY, initialAliases(),
-                        TokenServiceImpl.TOKENS_KEY, new HashMap<>()));
-        fakeHederaState.addService(FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFiles()));
-        fakeHederaState.addService(
-                ContractServiceImpl.NAME,
-                Map.of(
-                        ContractSchema.BYTECODE_KEY, new HashMap<EntityNumber, Bytecode>(),
-                        ContractSchema.STORAGE_KEY, new HashMap<SlotKey, SlotValue>()));
-
-        scaffoldingComponent.workingStateAccessor().setHederaState(fakeHederaState);
+    protected Consumer<Response> assertingCallLocalResultIsBuffer(
+            @NonNull final Bytes expectedResult, @NonNull final String orElseMessage) {
+        return response -> assertEquals(
+                expectedResult,
+                response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult(),
+                orElseMessage);
     }
 
-    private ReadableKVState<Bytes, AccountID> finalAliases() {
-        return scaffoldingComponent
-                .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.ALIASES_KEY);
+    protected Consumer<Response> assertingCallLocalResultIsBuffer(
+            @NonNull final ByteBuffer expectedResult, @NonNull final String orElseMessage) {
+        return response -> assertThat(expectedResult.array())
+                .withFailMessage(orElseMessage)
+                .isEqualTo(response.contractCallLocalOrThrow()
+                        .functionResultOrThrow()
+                        .contractCallResult()
+                        .toByteArray());
     }
 
-    private ReadableKVState<SlotKey, SlotValue> finalStorage() {
-        return scaffoldingComponent
-                .hederaState()
-                .createReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.STORAGE_KEY);
+    private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
+            @NonNull final Consumer<PrecompiledContract.PrecompileContractResult> resultAssertion) {
+        return pricedResult -> {
+            final var fullResult = pricedResult.fullResult();
+            final var result = fullResult.result();
+            resultAssertion.accept(result);
+        };
     }
 
-    private ReadableKVState<EntityNumber, Bytecode> finalBytecodes() {
-        return scaffoldingComponent
-                .hederaState()
-                .createReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.BYTECODE_KEY);
+    public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
+        final var addressBytes = org.apache.tuweni.bytes.Bytes.wrap(address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressAsInteger));
     }
 
-    private ReadableKVState<AccountID, Account> finalAccounts() {
-        return scaffoldingComponent
-                .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.ACCOUNTS_KEY);
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
+            final ByteBuffer encodedErcCall, final TokenID tokenId) {
+        return bytesForRedirect(encodedErcCall.array(), asLongZeroAddress(tokenId.tokenNum()));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
+            final byte[] subSelector, final org.hyperledger.besu.datatypes.Address tokenAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
+                tokenAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
+        return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
     }
 }

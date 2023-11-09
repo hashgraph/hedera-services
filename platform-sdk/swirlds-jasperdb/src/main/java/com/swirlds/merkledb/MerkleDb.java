@@ -17,7 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -25,6 +25,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -139,7 +140,6 @@ public final class MerkleDb {
      *
      * Secondary tables are not included to snapshots and aren't written to DB metadata.
      */
-    @SuppressWarnings("rawtypes")
     private final Set<Integer> primaryTables = ConcurrentHashMap.newKeySet();
 
     /**
@@ -179,11 +179,24 @@ public final class MerkleDb {
      *
      * @param value The new default database path
      */
-    public static void setDefaultPath(Path value) {
+    public static void setDefaultPath(@NonNull Path value) {
+        Objects.requireNonNull(value);
         // It probably makes sense to let change default instance path only before the first call
         // to getDefaultInstance(). Update: in the tests, this method may be called multiple times,
         // if a test needs to create multiple maps with the same name
         defaultInstancePath.set(value);
+    }
+
+    /**
+     * This method resets the path to a default instance to force the next {@link #getDefaultInstance()} to
+     * create another instance. This method is used in tests to load multiple MerkleDb instances within one process.
+     * When a node is restored from a saved state, all virtual maps are restored to the default MerkleDb instance.
+     * There is no way yet to provide node config to MerkleDb, it's a singleton. It leads to nodes to attempt overwriting each other's data,
+     * which ultimately results in exceptions on load. To work it around, call this method.
+     * It has to be done before the state is loaded from disk.
+     */
+    public static void resetDefaultInstancePath() {
+        defaultInstancePath.set(null);
     }
 
     /**
@@ -372,13 +385,13 @@ public final class MerkleDb {
         }
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         try {
-            dataSource.pauseMerging();
+            dataSource.pauseCompaction();
             dataSource.snapshot(getTableDir(label, tableId));
         } finally {
-            dataSource.resumeMerging();
+            dataSource.resumeCompaction();
         }
         if (!leaveSourcePrimary) {
-            dataSource.stopBackgroundCompaction();
+            dataSource.stopAndDisableBackgroundCompaction();
             primaryTables.remove(dataSource.getTableId());
         }
         if (makeCopyPrimary) {
@@ -516,7 +529,11 @@ public final class MerkleDb {
         final String tableName = dataSource.getTableName();
         final boolean isPrimary = primaryTables.contains(dataSource.getTableId());
         if (!isPrimary) {
-            throw new IllegalArgumentException("Cannot snapshot a secondary table, " + tableName);
+            logger.info(
+                    MERKLE_DB.getMarker(),
+                    "A snapshot is taken for a secondary table, it may happen"
+                            + " during reconnect or ISS reporting. Table name={}",
+                    tableName);
         }
         final MerkleDb targetDb = getInstance(destination);
         if (targetDb.tableExists(tableName)) {

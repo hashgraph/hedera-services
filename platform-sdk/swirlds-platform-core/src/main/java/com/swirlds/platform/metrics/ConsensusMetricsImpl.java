@@ -30,7 +30,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.EventImpl;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.stats.AverageAndMax;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -113,9 +113,9 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     private final NodeId selfId;
 
     /**
-     * Time when this platform received the first event created by someone else in the most recent round.
-     * This is used to calculate Statistics.avgFirstEventInRoundReceivedTime which is "time for event, from
-     * receiving the first event in a round to the first event in the next round".
+     * Time when this platform received the first event created by someone else in the most recent round. This is used
+     * to calculate Statistics.avgFirstEventInRoundReceivedTime which is "time for event, from receiving the first event
+     * in a round to the first event in the next round".
      */
     private static volatile Instant firstEventInLastRoundTime = null;
     /**
@@ -126,12 +126,9 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     /**
      * Constructor of {@code ConsensusMetricsImpl}
      *
-     * @param selfId
-     * 		the {@link NodeId} of this node
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @throws IllegalArgumentException
-     * 		if one of the parameters is {@code null}
+     * @param selfId  the {@link NodeId} of this node
+     * @param metrics a reference to the metrics-system
+     * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
     public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
         this.selfId = CommonUtils.throwArgNull(selfId, "selfId");
@@ -179,8 +176,8 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void coinRounds(final long numCoinRounds) {
-        this.numCoinRounds.update(numCoinRounds);
+    public void coinRound() {
+        this.numCoinRounds.update(1);
     }
 
     /**
@@ -188,9 +185,9 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      */
     @Override
     public void lastFamousInRound(final EventImpl event) {
-        if (!Objects.equals(selfId, event.getCreatorId())) { // record this for events received
-            avgReceivedFamousTime.update(
-                    event.getTimeReceived().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
+        if (selfId.id() != event.getCreatorId().id()) { // record this for events received
+            avgReceivedFamousTime.update(event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
+                    * NANOSECONDS_TO_SECONDS);
         }
     }
 
@@ -213,32 +210,24 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
         // Keep a running average of how many seconds from when I first know of an event
         // until it achieves consensus. Actually, keep two such averages: one for events I
         // create, and one for events I receive.
-        // Because of transThrottle, these statistics can end up being misleading, so we are only tracking events that
-        // have user transactions in them.
-        if (event.hasUserTransactions()) {
-            if (Objects.equals(selfId, event.getCreatorId())) { // set either created or received time to now
-                avgCreatedConsensusTime.update(
-                        event.getTimeReceived().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
-            } else {
-                avgReceivedConsensusTime.update(
-                        event.getTimeReceived().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
-                avgCreatedReceivedConsensusTime.update(
-                        event.getTimeCreated().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
-            }
+        if (Objects.equals(selfId, event.getCreatorId())) {
+            avgCreatedConsensusTime.update(
+                    event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
+                            * NANOSECONDS_TO_SECONDS);
+        } else {
+            avgReceivedConsensusTime.update(
+                    event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
+                            * NANOSECONDS_TO_SECONDS);
+            avgCreatedReceivedConsensusTime.update(
+                    event.getTimeCreated().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
         }
-
-        // Because of transThrottle, these statistics can end up being misleading, so we are only tracking events that
-        // have user transactions in them.
-        if (event.hasUserTransactions()) {
-            if (Objects.equals(selfId, event.getCreatorId())) {
-                avgSelfCreatedTimestamp.update(
-                        event.getTimeCreated().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
-                                * NANOSECONDS_TO_SECONDS);
-            } else {
-                avgOtherReceivedTimestamp.update(
-                        event.getTimeReceived().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
-                                * NANOSECONDS_TO_SECONDS);
-            }
+        if (Objects.equals(selfId, event.getCreatorId())) {
+            avgSelfCreatedTimestamp.update(event.getTimeCreated().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
+                    * NANOSECONDS_TO_SECONDS);
+        } else {
+            avgOtherReceivedTimestamp.update(
+                    event.getBaseEvent().getTimeReceived().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
+                            * NANOSECONDS_TO_SECONDS);
         }
     }
 

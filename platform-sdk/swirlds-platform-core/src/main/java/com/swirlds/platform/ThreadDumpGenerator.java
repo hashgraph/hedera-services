@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This class generates augmented thread dumps which include lock information.
  */
-class ThreadDumpGenerator {
+public class ThreadDumpGenerator {
 
     private static final Logger logger = LogManager.getLogger(ThreadDumpGenerator.class);
 

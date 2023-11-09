@@ -17,8 +17,11 @@
 package com.hedera.node.app.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.hapi.node.base.ServicesConfigurationList;
+import com.hedera.hapi.node.base.Setting;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.nio.charset.StandardCharsets;
@@ -146,10 +149,9 @@ class ConfigProviderImplTest {
     void testUpdateDoesUseApplicationProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(false);
-        final Bytes bytes = Bytes.wrap(new byte[] {});
 
         // when
-        configProvider.update(bytes);
+        configProvider.update(Bytes.EMPTY, Bytes.EMPTY);
         final VersionedConfiguration configuration = configProvider.getConfiguration();
         final String value1 = configuration.getValue("foo.test");
         final String value2 = configuration.getValue("bar.test");
@@ -164,10 +166,9 @@ class ConfigProviderImplTest {
     void testUpdateDoesNotUseGenesisProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
-        final Bytes bytes = Bytes.wrap(new byte[] {});
 
         // when
-        configProvider.update(bytes);
+        configProvider.update(Bytes.EMPTY, Bytes.EMPTY);
         final VersionedConfiguration configuration = configProvider.getConfiguration();
 
         // then
@@ -179,10 +180,32 @@ class ConfigProviderImplTest {
     void testUpdateProvidesConfigProperty() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
-        final Bytes bytes = Bytes.wrap("update.test=789".getBytes(StandardCharsets.UTF_8));
+        final ServicesConfigurationList servicesConfigurationList = ServicesConfigurationList.newBuilder()
+                .nameValue(Setting.newBuilder().name("update.test").value("789").build())
+                .build();
+        final Bytes bytes = ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigurationList);
 
         // when
-        configProvider.update(bytes);
+        configProvider.update(bytes, Bytes.EMPTY);
+        final VersionedConfiguration configuration = configProvider.getConfiguration();
+        final String value = configuration.getValue("update.test");
+
+        // then
+        assertThat(configuration.getVersion()).isEqualTo(1);
+        assertThat(value).isEqualTo("789");
+    }
+
+    @Test
+    void testUpdateProvidesConfigProperty2() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+        final ServicesConfigurationList servicesConfigurationList = ServicesConfigurationList.newBuilder()
+                .nameValue(Setting.newBuilder().name("update.test").value("789").build())
+                .build();
+        final Bytes bytes = ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigurationList);
+
+        // when
+        configProvider.update(Bytes.EMPTY, bytes);
         final VersionedConfiguration configuration = configProvider.getConfiguration();
         final String value = configuration.getValue("update.test");
 
@@ -195,15 +218,15 @@ class ConfigProviderImplTest {
     void testUpdateProvidesConfigProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
-        final StringBuilder sb = new StringBuilder("update.test1=789")
-                .append(System.lineSeparator())
-                .append("update.test2=abc")
-                .append(System.lineSeparator())
-                .append("# update.test3=COMMENT");
-        final Bytes bytes = Bytes.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
+        final ServicesConfigurationList servicesConfigurationList = ServicesConfigurationList.newBuilder()
+                .nameValue(
+                        Setting.newBuilder().name("update.test1").value("789").build(),
+                        Setting.newBuilder().name("update.test2").value("abc").build())
+                .build();
+        final Bytes bytes = ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigurationList);
 
         // when
-        configProvider.update(bytes);
+        configProvider.update(bytes, Bytes.EMPTY);
         VersionedConfiguration configuration = configProvider.getConfiguration();
         final String value1 = configuration.getValue("update.test1");
         final String value2 = configuration.getValue("update.test2");
@@ -215,12 +238,37 @@ class ConfigProviderImplTest {
     }
 
     @Test
+    void testUpdateProvidesConfigProperties2() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+        final ServicesConfigurationList servicesConfigurationList = ServicesConfigurationList.newBuilder()
+                .nameValue(
+                        Setting.newBuilder().name("update.test1").value("789").build(),
+                        Setting.newBuilder().name("update.test2").value("abc").build())
+                .build();
+        final Bytes bytes = ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigurationList);
+
+        // when
+        configProvider.update(Bytes.EMPTY, bytes);
+        VersionedConfiguration configuration = configProvider.getConfiguration();
+        final String value1 = configuration.getValue("update.test1");
+        final String value2 = configuration.getValue("update.test2");
+
+        // then
+        assertThat(configuration.getVersion()).isEqualTo(1);
+        assertThat(value1).isEqualTo("789");
+        assertThat(value2).isEqualTo("abc");
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
     void testUpdateWithNullBytes() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
 
         // then
-        assertThatThrownBy(() -> configProvider.update(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> configProvider.update(null, Bytes.EMPTY)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> configProvider.update(Bytes.EMPTY, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -230,6 +278,7 @@ class ConfigProviderImplTest {
         final Bytes bytes = Bytes.wrap("\\uxxxx".getBytes(StandardCharsets.UTF_8));
 
         // then
-        assertThatThrownBy(() -> configProvider.update(bytes)).isInstanceOf(IllegalArgumentException.class);
+        assertThatCode(() -> configProvider.update(bytes, Bytes.EMPTY)).doesNotThrowAnyException();
+        assertThatCode(() -> configProvider.update(Bytes.EMPTY, bytes)).doesNotThrowAnyException();
     }
 }

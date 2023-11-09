@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
@@ -23,7 +24,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
@@ -84,7 +84,7 @@ class CustomBalanceOperationTest {
     void rejectsMissingUserAddress() {
         setupWarmGasCost();
         given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var expected = new Operation.OperationResult(3L, CustomExceptionalHaltReason.MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(3L, INVALID_SOLIDITY_ADDRESS);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
     }

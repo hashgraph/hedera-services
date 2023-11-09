@@ -38,7 +38,23 @@ public class FakeFeeCalculator implements FeeCalculator {
 
     @NonNull
     @Override
+    public FeeCalculator addStorageBytesSeconds(long seconds) {
+        return this;
+    }
+
+    @NonNull
+    @Override
     public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addRamByteSeconds(long amount) {
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addVerificationsPerTransaction(long amount) {
         return this;
     }
 
@@ -53,5 +69,10 @@ public class FakeFeeCalculator implements FeeCalculator {
     public Fees legacyCalculate(@NonNull Function<SigValueObj, FeeData> callback) {
         callback.apply(new SigValueObj(0, 0, 0));
         return new Fees(0, 0, 0);
+    }
+
+    @NonNull
+    public FakeFeeCalculator resetUsage() {
+        return this;
     }
 }

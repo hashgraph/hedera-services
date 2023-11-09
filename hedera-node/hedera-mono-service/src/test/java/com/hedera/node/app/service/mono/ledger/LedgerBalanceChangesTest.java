@@ -23,6 +23,7 @@ import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +34,8 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -85,6 +88,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -142,6 +146,9 @@ class LedgerBalanceChangesTest {
     @Mock
     private AliasManager aliasManager;
 
+    @Mock
+    private IntConsumer cryptoCreateThrottleReclaimer;
+
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
     private HederaAccountNumbers accountNums = new MockAccountNumbers();
     private FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
@@ -192,7 +199,8 @@ class LedgerBalanceChangesTest {
                 historian,
                 txnCtx,
                 aliasManager,
-                feeDistribution);
+                feeDistribution,
+                cryptoCreateThrottleReclaimer);
 
         subject = new HederaLedger(
                 tokenStore,
@@ -299,7 +307,8 @@ class LedgerBalanceChangesTest {
                 historian,
                 txnCtx,
                 aliasManager,
-                feeDistribution);
+                feeDistribution,
+                cryptoCreateThrottleReclaimer);
         subject = new HederaLedger(
                 tokenStore,
                 ids,
@@ -437,6 +446,96 @@ class LedgerBalanceChangesTest {
                 backingAccounts
                         .getImmutableRef(validAliasEntityNum.toGrpcAccountId())
                         .getBalance());
+    }
+
+    @Test
+    void invalidTransfersWithAutoCreationDrainsCapacityIfSelfSubmitted() {
+        final var payerBalance = 500;
+        final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
+        final AccountID a = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(10L)
+                .build();
+        final AccountID validAliasAccountWithAlias =
+                AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
+        final AccountID validAliasAccountWithId = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(11L)
+                .build();
+        final AccountID funding = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(98L)
+                .build();
+        List<BalanceChange> changes = new ArrayList<>();
+        changes.add(hbarChange(validAliasAccountWithAlias, +100));
+        changes.add(hbarChange(a, -100));
+        final var validAliasAccount = MerkleAccountFactory.newAccount().get();
+        final var fundingAccount = MerkleAccountFactory.newAccount().get();
+        final var aAccount =
+                MerkleAccountFactory.newAccount().balance(aStartBalance).get();
+        final var payerAccount =
+                MerkleAccountFactory.newAccount().balance(payerBalance).get();
+        backingAccounts.put(a, aAccount);
+        backingAccounts.put(validAliasAccountWithId, validAliasAccount);
+        backingAccounts.put(funding, fundingAccount);
+        backingAccounts.put(payer, payerAccount);
+
+        given(txnCtx.activePayer()).willReturn(payer);
+        given(txnCtx.numImplicitCreations()).willReturn(2);
+        given(txnCtx.isSelfSubmitted()).willReturn(true);
+        given(autoCreationLogic.create(any(), eq(accountsLedger), any())).willReturn(Pair.of(INVALID_ACCOUNT_ID, 100L));
+        given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
+
+        subject.begin();
+        assertFailsWith(() -> subject.doZeroSum(changes), INVALID_ACCOUNT_ID);
+        verify(cryptoCreateThrottleReclaimer).accept(2);
+    }
+
+    @Test
+    void invalidTransfersWithAutoCreationDrainsNoCapacityIfNotSelfSubmitted() {
+        final var payerBalance = 500;
+        final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
+        final AccountID a = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(10L)
+                .build();
+        final AccountID validAliasAccountWithAlias =
+                AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
+        final AccountID validAliasAccountWithId = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(11L)
+                .build();
+        final AccountID funding = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(98L)
+                .build();
+        List<BalanceChange> changes = new ArrayList<>();
+        changes.add(hbarChange(validAliasAccountWithAlias, +100));
+        changes.add(hbarChange(a, -100));
+        final var validAliasAccount = MerkleAccountFactory.newAccount().get();
+        final var fundingAccount = MerkleAccountFactory.newAccount().get();
+        final var aAccount =
+                MerkleAccountFactory.newAccount().balance(aStartBalance).get();
+        final var payerAccount =
+                MerkleAccountFactory.newAccount().balance(payerBalance).get();
+        backingAccounts.put(a, aAccount);
+        backingAccounts.put(validAliasAccountWithId, validAliasAccount);
+        backingAccounts.put(funding, fundingAccount);
+        backingAccounts.put(payer, payerAccount);
+
+        given(txnCtx.activePayer()).willReturn(payer);
+        given(autoCreationLogic.create(any(), eq(accountsLedger), any())).willReturn(Pair.of(INVALID_ACCOUNT_ID, 100L));
+        given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
+
+        subject.begin();
+        assertFailsWith(() -> subject.doZeroSum(changes), INVALID_ACCOUNT_ID);
+        verifyNoInteractions(cryptoCreateThrottleReclaimer);
     }
 
     private void assertInitialBalanceUnchanged() {

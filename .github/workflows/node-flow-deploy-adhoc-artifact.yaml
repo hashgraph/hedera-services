@@ -1,0 +1,72 @@
+##
+# Copyright (C) 2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Node: Deploy Adhoc Release"
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.8"
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release-adhoc:
+    name: Release [Adhoc]
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    with:
+      version-policy: branch-commit
+      trigger-env-deploy: none
+      sdk-release-profile: AdhocCommit
+      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
+      java-version: ${{ github.event.inputs.java-version || '17.0.8' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}

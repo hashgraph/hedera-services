@@ -17,14 +17,17 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -41,6 +44,9 @@ class QueryHederaOperationsTest {
 
     @Mock
     private ContractStateStore store;
+
+    @Mock
+    private BlockRecordInfo blockRecordInfo;
 
     private QueryHederaOperations subject;
 
@@ -78,18 +84,27 @@ class QueryHederaOperationsTest {
     }
 
     @Test
-    void entropyNotYetImplemented() {
-        assertThrows(AssertionError.class, subject::entropy);
+    void delegatesEntropyToBlockRecordInfo() {
+        final var pretendEntropy = Bytes.fromHex("0123456789");
+        given(context.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(pretendEntropy);
+        assertSame(pretendEntropy, subject.entropy());
     }
 
     @Test
-    void gasPriceNotYetImplemented() {
-        assertThrows(AssertionError.class, subject::gasPriceInTinybars);
+    void returnsZeroEntropyIfNMinus3HashMissing() {
+        given(context.blockRecordInfo()).willReturn(blockRecordInfo);
+        assertSame(HandleHederaOperations.ZERO_ENTROPY, subject.entropy());
     }
 
     @Test
-    void tinybarConversionNotYetImplemented() {
-        assertThrows(AssertionError.class, () -> subject.valueInTinybars(1234L));
+    void gasPriceInTinybarsHardcoded() {
+        assertEquals(1L, subject.gasPriceInTinybars());
+    }
+
+    @Test
+    void valueInTinybarsUsesOneToOneExchange() {
+        assertEquals(1L, subject.valueInTinybars(1L));
     }
 
     @Test
@@ -105,6 +120,7 @@ class QueryHederaOperationsTest {
 
     @Test
     void creatingAndDeletingContractsNotSupported() {
+        assertThrows(UnsupportedOperationException.class, subject::contractCreationLimit);
         assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, null));
         assertThrows(
                 UnsupportedOperationException.class,
@@ -119,17 +135,12 @@ class QueryHederaOperationsTest {
     }
 
     @Test
-    void neverAnyCreatedContractIds() {
-        assertSame(Collections.emptyList(), subject.createdContractIds());
-    }
-
-    @Test
-    void neverAnyUpdatedNonces() {
-        assertSame(Collections.emptyList(), subject.updatedContractNonces());
-    }
-
-    @Test
     void getOriginalSlotsUsedNotSupported() {
         assertThrows(UnsupportedOperationException.class, () -> subject.getOriginalSlotsUsed(1234L));
+    }
+
+    @Test
+    void summarizingContractChangesNotSupported() {
+        assertThrows(UnsupportedOperationException.class, subject::summarizeContractChanges);
     }
 }

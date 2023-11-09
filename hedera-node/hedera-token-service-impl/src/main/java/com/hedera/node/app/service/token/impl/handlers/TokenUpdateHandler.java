@@ -29,8 +29,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -39,17 +42,21 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -122,7 +129,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var config = context.configuration();
+        final var tokensConfig = config.getConfigData(TokensConfig.class);
 
         // If the operation has treasury change, then we need to check if the new treasury is valid
         // and if the treasury is not already associated with the token, see if it has auto associations
@@ -138,7 +146,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If there is no treasury relationship, then we need to create one if auto associations are available.
             // If not fail
             if (newTreasuryRel == null) {
-                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, config);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
             }
@@ -155,6 +163,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = getIfUsable(
                         existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
                 updateTreasuryTitles(existingTreasuryAccount, newTreasuryAccount, token, accountStore, tokenRelStore);
                 // If the token is fungible, transfer fungible balance to new treasury
                 // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
@@ -194,6 +203,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // and puts to modifications on state.
                 transferFungibleTokensToTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
             } else {
+                // Check whether new treasury has balance, if it does throw TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES
+                validateTrue(newTreasuryRel.balance() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
                 // Transfers NFT ownerships and updates account's numOwnedNfts and
                 // tokenRelation's balance and puts to modifications on state.
                 changeOwnerToNewTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
@@ -305,7 +316,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.name() != null && op.name().length() > 0) {
             builder.name(op.name());
         }
-        if (op.hasMemo() && op.memo().length() > 0) {
+        if (op.hasMemo()) {
             builder.memo(op.memo());
         }
         if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
@@ -415,5 +426,19 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         accountStore.put(copyOldTreasury.build());
         accountStore.put(copyNewTreasury.build());
         tokenRelStore.put(newRelCopy.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        final var op = body.tokenUpdateOrThrow();
+        final var readableStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var token = readableStore.get(op.tokenOrThrow());
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenUpdateResourceUsage(
+                        txnEstimateFactory)
+                .usageGiven(fromPbj(body), sigValueObj, token));
     }
 }

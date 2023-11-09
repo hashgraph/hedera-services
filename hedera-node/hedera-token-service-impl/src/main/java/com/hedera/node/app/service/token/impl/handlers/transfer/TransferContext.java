@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
@@ -42,10 +44,11 @@ public interface TransferContext {
     /**
      * Creates an account from the given alias. This is called when the account associated with alias
      * is not found in the account store
-     * @param alias the alias of the account
-     * @param isFromTokenTransfer true if the account is created from token transfer, false otherwise
+     *
+     * @param alias                  the alias of the account
+     * @param reqMaxAutoAssociations
      */
-    void createFromAlias(Bytes alias, boolean isFromTokenTransfer);
+    void createFromAlias(Bytes alias, int reqMaxAutoAssociations);
 
     /**
      * Returns the number of auto-creation of accounts in current transfer
@@ -69,4 +72,20 @@ public interface TransferContext {
     void chargeExtraFeeToHapiPayer(long amount);
 
     HandleContext getHandleContext();
+
+    /* ------------------- Needed for building records ------------------- */
+
+    /**
+     * Adds the token association that is created by auto association to the list of automatic associations.
+     * This information is needed while building the records at the end of the transaction handling.
+     * @param newAssociation the token association that is created by auto association
+     */
+    void addToAutomaticAssociations(TokenAssociation newAssociation);
+
+    /**
+     * Adds the assessed custom fee to the list of assessed custom fees. This information is needed while building the
+     * records at the end of the transaction handling.
+     * @param assessedCustomFee the assessed custom fee
+     */
+    void addToAssessedCustomFee(AssessedCustomFee assessedCustomFee);
 }

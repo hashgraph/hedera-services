@@ -18,7 +18,7 @@ package com.hedera.node.app.service.util.impl.test.handlers;
 
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class FakePrngRecordBuilder implements PrngRecordBuilder {
     int entropyNumber;

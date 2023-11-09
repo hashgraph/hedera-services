@@ -31,7 +31,6 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * Defines a RunningHashable &amp; SerializableHashable class for testing LinkedObjectStream
@@ -125,18 +124,15 @@ public class ObjectForTestStream extends AbstractHashable
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        ObjectForTestStream that = (ObjectForTestStream) o;
-        return new EqualsBuilder()
-                .append(payload, that.payload)
-                .append(consensusTimestamp, that.consensusTimestamp)
-                .build();
+        final ObjectForTestStream that = (ObjectForTestStream) other;
+        return Arrays.equals(payload, that.payload) && Objects.equals(consensusTimestamp, that.consensusTimestamp);
     }
 
     @Override

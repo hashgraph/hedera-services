@@ -20,16 +20,20 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
+import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.TestBase;
+import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
+import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -171,10 +175,13 @@ abstract class GrpcTestBase extends TestBase {
             }
         };
 
+        final var cr = ConstructableRegistry.getInstance();
+        final var registry = new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder());
+        final var registration = new ServicesRegistry.Registration(testService, registry);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(
                 () -> new VersionedConfigImpl(config, 1),
-                () -> Set.of(testService),
+                () -> Set.of(registration),
                 ingestWorkflow,
                 queryWorkflow,
                 metrics);

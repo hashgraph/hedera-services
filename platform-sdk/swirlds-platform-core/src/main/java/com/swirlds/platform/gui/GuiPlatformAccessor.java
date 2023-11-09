@@ -20,9 +20,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -98,7 +98,8 @@ public final class GuiPlatformAccessor {
          * Create a new EventOrderInfo from an event.
          */
         public static EventOrderInfo of(@NonNull final EventImpl event) {
-            return new EventOrderInfo(event.getConsensusOrder(), event.getTimeReceived());
+            return new EventOrderInfo(
+                    event.getConsensusOrder(), event.getBaseEvent().getTimeReceived());
         }
 
         /**

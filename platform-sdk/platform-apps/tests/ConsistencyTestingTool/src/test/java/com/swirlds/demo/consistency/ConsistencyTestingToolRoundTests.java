@@ -23,12 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.platform.EventImpl;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -76,8 +78,11 @@ class ConsistencyTestingToolRoundTests {
 
             mockEvents.add(mockEvent);
         });
+        final ConsensusSnapshot mockSnapshot = mock(ConsensusSnapshot.class);
+        Mockito.when(mockSnapshot.round()).thenReturn(roundReceived);
 
-        return new ConsensusRound(mockEvents, mock(EventImpl.class), mock(GraphGenerations.class));
+        return new ConsensusRound(
+                mock(AddressBook.class), mockEvents, mock(EventImpl.class), mock(GraphGenerations.class), mockSnapshot);
     }
 
     @Test

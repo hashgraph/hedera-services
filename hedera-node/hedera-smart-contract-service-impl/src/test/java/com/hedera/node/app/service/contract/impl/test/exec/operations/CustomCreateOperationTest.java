@@ -26,19 +26,42 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import java.lang.reflect.Field;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.collections.undo.UndoSet;
+import org.hyperledger.besu.collections.undo.UndoTable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.TxValues;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 class CustomCreateOperationTest extends CreateOperationTestBase {
     private static final Address EXPECTED_CREATE1_ADDRESS = Address.contractAddress(RECIEVER_ADDRESS, NONCE - 1);
+
+    @Mock
+    private HederaEvmWorldUpdater updater;
+
+    @Mock
+    private TxValues txValues;
+
+    @Mock
+    private UndoTable<Address, Bytes32, Bytes32> undoTable;
+
+    @Mock
+    private Deque<MessageFrame> messageFrameStack;
+
+    @Mock
+    private UndoSet<Address> warmedUpAddresses;
 
     private CustomCreateOperation subject;
 
@@ -87,8 +110,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         given(frame.getRecipientAddress()).willReturn(RECIEVER_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getAccount(RECIEVER_ADDRESS)).willReturn(receiver);
-        given(receiver.getMutable()).willReturn(mutableReceiver);
-        given(mutableReceiver.getBalance()).willReturn(Wei.ONE);
+        given(receiver.getBalance()).willReturn(Wei.ONE);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);
@@ -100,7 +122,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
     @Test
     void failsWithExcessStackDepth() {
         givenSpawnPrereqs();
-        given(frame.getMessageStackDepth()).willReturn(1024);
+        given(frame.getDepth()).willReturn(1024);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);
@@ -109,17 +131,30 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
     }
 
     @Test
-    void hasExpectedChildCompletionOnSuccess() {
+    void hasExpectedChildCompletionOnSuccess() throws IllegalAccessException, NoSuchFieldException {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
-        givenBuilderPrereqs();
         given(receiver.getNonce()).willReturn(NONCE);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
+
+        given(txValues.transientStorage()).willReturn(undoTable);
+        given(txValues.messageFrameStack()).willReturn(messageFrameStack);
+        given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(undoTable.mark()).willReturn(1L);
+
+        final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
+        worldUdaterField.setAccessible(true);
+        worldUdaterField.set(frame, updater);
+
+        final Field txValuesField = MessageFrame.class.getDeclaredField("txValues");
+        txValuesField.setAccessible(true);
+        txValuesField.set(frame, txValues);
+
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
-        verify(stack).addFirst(frameCaptor.capture());
+        verify(messageFrameStack).addFirst(frameCaptor.capture());
         final var childFrame = frameCaptor.getValue();
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
@@ -128,17 +163,29 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
     }
 
     @Test
-    void hasExpectedChildCompletionOnFailure() {
+    void hasExpectedChildCompletionOnFailure() throws NoSuchFieldException, IllegalAccessException {
         final var captor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
-        givenBuilderPrereqs();
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
+
+        given(txValues.transientStorage()).willReturn(undoTable);
+        given(txValues.messageFrameStack()).willReturn(messageFrameStack);
+        given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(undoTable.mark()).willReturn(1L);
+
+        final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
+        worldUdaterField.setAccessible(true);
+        worldUdaterField.set(frame, updater);
+
+        final Field txValuesField = MessageFrame.class.getDeclaredField("txValues");
+        txValuesField.setAccessible(true);
+        txValuesField.set(frame, txValues);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
-        verify(stack).addFirst(captor.capture());
+        verify(messageFrameStack).addFirst(captor.capture());
         final var childFrame = captor.getValue();
         // when:
         childFrame.setState(MessageFrame.State.COMPLETED_FAILED);

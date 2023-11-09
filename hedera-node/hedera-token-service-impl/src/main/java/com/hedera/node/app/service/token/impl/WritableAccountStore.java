@@ -16,14 +16,15 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -57,7 +58,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     @Override
-    protected WritableKVState<Bytes, AccountID> aliases() {
+    protected WritableKVState<ProtoBytes, AccountID> aliases() {
         return super.aliases();
     }
 
@@ -79,13 +80,34 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @param accountId - the account number to be added to modifications in state.
      */
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
-        Objects.requireNonNull(alias);
-        aliases().put(alias, accountId);
+        requireNonNull(alias);
+
+        // The specified account ID must always have an account number, and not an alias. If it doesn't have
+        // an account number, or if it has both an account number and alias, then we are going to throw an
+        // exception. That should never happen.
+        if (isAlias(accountId)) {
+            throw new IllegalArgumentException("The account ID used with putAlias must have a number and not an alias");
+        }
+
+        // We should *never* see an empty alias. If we do, it is problem with the code.
+        if (alias.length() == 0) {
+            throw new IllegalArgumentException("Alias cannot be empty");
+        }
+
+        aliases().put(new ProtoBytes(alias), accountId);
     }
 
+    /**
+     * Removes an alias from the cache. This should only ever happen as the result of a delete operation.
+     * @param alias The alias of the account to remove.
+     */
     public void removeAlias(@NonNull final Bytes alias) {
-        Objects.requireNonNull(alias);
-        aliases().remove(alias);
+        requireNonNull(alias);
+        // We really shouldn't ever see an empty alias. But, if we do, we don't want to do any additional work.
+        // FUTURE: It might be worth adding a log statement here if we see an empty alias, but maybe not.
+        if (alias.length() > 0) {
+            aliases().remove(new ProtoBytes(alias));
+        }
     }
 
     /**
@@ -109,27 +131,23 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public Account getForModify(@NonNull final AccountID id) {
         requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
-        final var accountOneOf = id.account();
-        final Long accountNum =
-                switch (accountOneOf.kind()) {
-                    case ACCOUNT_NUM -> accountOneOf.as();
-                    case ALIAS -> {
-                        final Bytes alias = accountOneOf.as();
-                        if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
-                            yield fromMirror(alias);
-                        } else {
-                            final var accountID = aliases().get(alias);
-                            yield accountID == null ? 0L : accountID.accountNum();
-                        }
-                    }
-                    case UNSET -> 0L;
-                };
+        final var accountId = unaliasedAccountId(id);
+        return accountId == null ? null : accountState().getForModify(accountId);
+    }
 
-        return accountNum == null
-                ? null
-                : accountState()
-                        .getForModify(
-                                AccountID.newBuilder().accountNum(accountNum).build());
+    /**
+     * Gets the original value associated with the given accountId before any modifications were made to
+     * it. The returned value will be {@code null} if the accountId does not exist.
+     *
+     * @param id The accountId. Cannot be null, otherwise an exception is thrown.
+     * @return The original value, or null if there is no such accountId in the state
+     * @throws NullPointerException if the accountId is null.
+     */
+    @Nullable
+    public Account getOriginalValue(@NonNull final AccountID id) {
+        requireNonNull(id);
+        final var accountId = unaliasedAccountId(id);
+        return accountId == null ? null : accountState().getOriginalValue(accountId);
     }
 
     /**
@@ -172,11 +190,12 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the list of contract nonces modified in existing state.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the list of contract nonces modified in existing state
+     * @return a summary of the changes made to contract state
      */
-    public @NonNull List<ContractNonceInfo> updatedContractNonces() {
+    public @NonNull ContractChangeSummary summarizeContractChanges() {
+        final List<ContractID> newContractIds = new ArrayList<>();
         final List<ContractNonceInfo> updates = new ArrayList<>();
         accountState().modifiedKeys().forEach(accountId -> {
             final var newAccount = accountState().get(accountId);
@@ -187,10 +206,13 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
                     updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                    if (oldAccount == null) {
+                        newContractIds.add(contractId);
+                    }
                 }
             }
         });
-        return updates;
+        return new ContractChangeSummary(newContractIds, updates);
     }
 
     /**
@@ -199,42 +221,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the set of aliases modified in existing state
      */
     @NonNull
-    public Set<Bytes> modifiedAliasesInState() {
+    public Set<ProtoBytes> modifiedAliasesInState() {
         return aliases().modifiedKeys();
-    }
-
-    /**
-     * Gets the original value associated with the given accountId before any modifications were made to
-     * it. The returned value will be {@code null} if the accountId does not exist.
-     *
-     * @param id The accountId. Cannot be null, otherwise an exception is thrown.
-     * @return The original value, or null if there is no such accountId in the state
-     * @throws NullPointerException if the accountId is null.
-     */
-    @Nullable
-    public Account getOriginalValue(@NonNull final AccountID id) {
-        requireNonNull(id);
-        // Get the account number based on the account identifier. It may be null.
-        final var accountOneOf = id.account();
-        final Long accountNum =
-                switch (accountOneOf.kind()) {
-                    case ACCOUNT_NUM -> accountOneOf.as();
-                    case ALIAS -> {
-                        final Bytes alias = accountOneOf.as();
-                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
-                            yield fromMirror(alias);
-                        } else {
-                            final var entityNum = aliases().getOriginalValue(alias);
-                            yield entityNum == null ? 0L : entityNum.accountNum();
-                        }
-                    }
-                    case UNSET -> 0L;
-                };
-
-        return accountNum == null
-                ? null
-                : accountState()
-                        .getOriginalValue(
-                                AccountID.newBuilder().accountNum(accountNum).build());
     }
 }

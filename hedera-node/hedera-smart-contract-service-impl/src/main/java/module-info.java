@@ -1,13 +1,17 @@
 module com.hedera.node.app.service.contract.impl {
+    requires transitive com.hedera.node.app.hapi.fees;
+    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.contract;
     requires transitive com.hedera.node.app.service.file;
+    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
-    requires transitive com.swirlds.config;
+    requires transitive com.swirlds.config.api;
     requires transitive dagger;
+    requires transitive headlong;
     requires transitive javax.inject;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
@@ -15,10 +19,12 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.hedera.node.app.service.evm;
+    requires com.github.benmanes.caffeine;
     requires com.google.common;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app.service.contract.impl;
     exports com.hedera.node.app.service.contract.impl.exec.scope;

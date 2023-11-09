@@ -18,15 +18,15 @@ package com.swirlds.platform.test.event.linking;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
@@ -37,6 +37,7 @@ import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.platform.test.graph.SimpleGraphs;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,51 +59,6 @@ class OrphanBufferingLinkerTest {
     public static final int GENERATIONS_STORED = 100_000;
 
     /**
-     * Builds graph below:
-     *
-     * <pre>
-     * 3  4
-     * | /|
-     * 2  |
-     * | \|
-     * 0  1
-     * </pre>
-     */
-    private static List<GossipEvent> buildGraph(final Random r) {
-        final GossipEvent e0 = GossipEventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(1))
-                .buildEvent();
-        final GossipEvent e1 = GossipEventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(2))
-                .buildEvent();
-        final GossipEvent e2 = GossipEventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(1))
-                .setSelfParent(e0)
-                .setOtherParent(e1)
-                .buildEvent();
-        final GossipEvent e3 = GossipEventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(1))
-                .setSelfParent(e2)
-                .buildEvent();
-        final GossipEvent e4 = GossipEventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(2))
-                .setSelfParent(e1)
-                .setOtherParent(e2)
-                .buildEvent();
-        System.out.println("e0 " + EventStrings.toShortString(e0));
-        System.out.println("e1 " + EventStrings.toShortString(e1));
-        System.out.println("e2 " + EventStrings.toShortString(e2));
-        System.out.println("e3 " + EventStrings.toShortString(e3));
-        System.out.println("e4 " + EventStrings.toShortString(e4));
-        return List.of(e0, e1, e2, e3, e4);
-    }
-
-    /**
      * Tests graph below:
      *
      * <pre>
@@ -119,8 +75,8 @@ class OrphanBufferingLinkerTest {
         final ConsensusConfig consensusConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
         final Random r = RandomUtils.getRandomPrintSeed();
-        final OrphanBufferTester orphanBuffer =
-                new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
+        final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
+                new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
 
         final GossipEvent e1 = GossipEventBuilder.builder().setRandom(r).buildEvent();
         final GossipEvent e2 =
@@ -134,7 +90,7 @@ class OrphanBufferingLinkerTest {
     }
 
     /**
-     * Tests graph: {@link #buildGraph(Random)}
+     * Tests graph: {@link SimpleGraphs#graph5e2n(Random)}
      *
      * Added in the following order: 0 2 3 4 1
      * Expected output: 0 1 2 (3 4)
@@ -145,10 +101,10 @@ class OrphanBufferingLinkerTest {
         final ConsensusConfig consensusConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
         final Random r = RandomUtils.getRandomPrintSeed();
-        final OrphanBufferTester orphanBuffer =
-                new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
+        final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
+                new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
 
-        final List<GossipEvent> graph = buildGraph(r);
+        final List<GossipEvent> graph = SimpleGraphs.graph5e2n(r);
 
         orphanBuffer.linkEvent(graph, 0);
         orphanBuffer.assertGeneration(graph, 0);
@@ -166,7 +122,7 @@ class OrphanBufferingLinkerTest {
     }
 
     /**
-     * Tests graph: {@link #buildGraph(Random)}
+     * Tests graph: {@link SimpleGraphs#graph5e2n(Random)}
      *
      * Added in the following order: 2 0 4 3
      * Event 1 is never added, but its generation becomes ancient
@@ -178,10 +134,10 @@ class OrphanBufferingLinkerTest {
         final ConsensusConfig consensusConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
         final Random r = RandomUtils.getRandomPrintSeed();
-        final OrphanBufferTester orphanBuffer =
-                new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
+        final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
+                new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
 
-        final List<GossipEvent> graph = buildGraph(r);
+        final List<GossipEvent> graph = SimpleGraphs.graph5e2n(r);
 
         orphanBuffer.linkEvent(graph, 2);
         orphanBuffer.linkEvent(graph, 0);
@@ -218,8 +174,8 @@ class OrphanBufferingLinkerTest {
         Collections.shuffle(generatedList, r);
 
         final List<GossipEvent> returnedList = new ArrayList<>();
-        final OrphanBufferTester orphanBuffer =
-                new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
+        final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
+                new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
         for (final GossipEvent event : generatedList) {
             orphanBuffer.linkEvent(event);
             while (orphanBuffer.hasLinkedEvents()) {
@@ -254,8 +210,8 @@ class OrphanBufferingLinkerTest {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
         final long roundGenEnd = roundGenStart + consensusConfig.roundsNonAncient();
         // create an orphan buffer
-        final OrphanBufferingLinker orphanBuffer =
-                new OrphanBufferingLinker(consensusConfig, new ParentFinder(h -> null), GENERATIONS_STORED);
+        final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
+                consensusConfig, new ParentFinder(h -> null), GENERATIONS_STORED, mock(IntakeEventCounter.class));
 
         // before we load the signed state, we will add an orphan into the buffer
         // we expect it to disappear after we load state because it will be ancient
@@ -269,10 +225,10 @@ class OrphanBufferingLinkerTest {
         final List<MinGenInfo> minGenInfos = LongStream.range(roundGenStart, roundGenEnd)
                 .mapToObj((l) -> new MinGenInfo(l, l))
                 .toList();
-        final SignedState signedState = Mockito.mock(SignedState.class);
-        final State state = Mockito.mock(State.class);
-        final PlatformState platformState = Mockito.mock(PlatformState.class);
-        final PlatformData platformData = Mockito.mock(PlatformData.class);
+        final SignedState signedState = mock(SignedState.class);
+        final State state = mock(State.class);
+        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformData platformData = mock(PlatformData.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getPlatformData()).thenReturn(platformData);
@@ -323,8 +279,8 @@ class OrphanBufferingLinkerTest {
     void linkEventOutsideGenWindow() {
         final ConsensusConfig consensusConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
-        final OrphanBufferTester orphanBuffer =
-                new OrphanBufferTester(pf -> new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED));
+        final OrphanBufferTester orphanBuffer = new OrphanBufferTester(pf ->
+                new OrphanBufferingLinker(consensusConfig, pf, GENERATIONS_STORED, mock(IntakeEventCounter.class)));
         final GossipEvent outsideWindow = GossipEventBuilder.builder()
                 .setGeneration(GENERATIONS_STORED + 1)
                 .buildEvent();

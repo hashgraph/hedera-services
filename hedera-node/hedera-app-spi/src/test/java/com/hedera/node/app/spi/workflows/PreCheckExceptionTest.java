@@ -35,7 +35,7 @@ class PreCheckExceptionTest {
 
         // then
         assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
-        assertThat(exception.getMessage()).isNull();
+        assertThat(exception.getMessage()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED.protoName());
     }
 
     @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})

@@ -16,13 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -38,6 +47,33 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * A {@link WorldUpdater} extension with additional methods for Hedera-specific operations.
  */
 public interface HederaWorldUpdater extends WorldUpdater {
+    /**
+     * Packages the (<b>very</b> provisionally named and organized) Hedera "enhancements" available
+     * in an updater's context.
+     *
+     * @param operations the enhanced operations
+     * @param nativeOperations the enhanced native operations
+     * @param systemOperations the enhanced system operations
+     */
+    record Enhancement(
+            @NonNull HederaOperations operations,
+            @NonNull HederaNativeOperations nativeOperations,
+            @NonNull SystemContractOperations systemOperations) {
+        public Enhancement {
+            requireNonNull(operations);
+            requireNonNull(nativeOperations);
+            requireNonNull(systemOperations);
+        }
+    }
+
+    /**
+     * Returns the {@link Enhancement} available in this updater's context.
+     *
+     * @return the enhanced operations
+     */
+    @NonNull
+    Enhancement enhancement();
+
     /**
      * Returns the {@link HederaEvmAccount} for the given account id, or null if no
      * such account (or contract).
@@ -229,4 +265,27 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @NonNull
     List<StorageAccesses> pendingStorageUpdates();
+
+    /**
+     * Externalizes the results of a system contract call into a record
+     * @param result    The result of the system contract call
+     * @param status    Whether the result is an error
+     */
+    void externalizeSystemContractResults(
+            @NonNull final ContractFunctionResult result,
+            ResultStatus status,
+            @NonNull ResponseCodeEnum responseStatus);
+
+    /**
+     * Returns the {@link ExchangeRate} for the current consensus timestamp
+     * Delegates to {@link SystemContractOperations#currentExchangeRate()} ()}
+     * @return the current exchange rate
+     */
+    @NonNull
+    ExchangeRate currentExchangeRate();
+
+    /**
+     * Revert child records.
+     */
+    void revertChildRecords();
 }

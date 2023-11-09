@@ -18,11 +18,15 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -30,14 +34,20 @@ import java.util.Objects;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
+public class GossipEvent implements BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-    private static final long ROUND_CREATED_UNDEFINED = -1;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
     private EventDescriptor descriptor;
     private Instant timeReceived;
-    private long roundCreated = ROUND_CREATED_UNDEFINED;
+
+    /**
+     * The id of the node which sent us this event
+     * <p>
+     * The sender ID of an event should not be serialized when an event is serialized, and it should not affect the
+     * hash of the event in any way.
+     */
+    private NodeId senderId;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -50,6 +60,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
+        this.senderId = null;
     }
 
     /**
@@ -59,7 +70,6 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hashedData, false);
         out.writeSerializable(unhashedData, false);
-        out.writeLong(roundCreated);
     }
 
     /**
@@ -69,7 +79,9 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
         unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        roundCreated = in.readLong();
+        if (version == ClassVersion.ORIGINAL) {
+            in.readLong(); // roundCreated
+        }
         timeReceived = Instant.now();
     }
 
@@ -109,35 +121,36 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
                 new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Instant getTimeReceived() {
-        return timeReceived;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getGeneration() {
         return hashedData.getGeneration();
     }
 
     /**
-     * @return true if roundCreated has been set
+     * {@inheritDoc}
      */
-    public boolean isRoundCreatedSet() {
-        return roundCreated != ROUND_CREATED_UNDEFINED;
+    @Override
+    public @NonNull Instant getTimeReceived() {
+        return timeReceived;
     }
 
-    public long getRoundCreated() {
-        return roundCreated;
+    /**
+     * Get the id of the node which sent us this event
+     *
+     * @return the id of the node which sent us this event
+     */
+    @Nullable
+    public NodeId getSenderId() {
+        return senderId;
     }
 
-    public void setRoundCreated(final long roundCreated) {
-        this.roundCreated = roundCreated;
+    /**
+     * Set the id of the node which sent us this event
+     *
+     * @param senderId the id of the node which sent us this event
+     */
+    public void setSenderId(@NonNull final NodeId senderId) {
+        this.senderId = senderId;
     }
 
     /**
@@ -153,7 +166,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.REMOVED_ROUND;
     }
 
     /**
@@ -191,5 +204,6 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int REMOVED_ROUND = 2;
     }
 }

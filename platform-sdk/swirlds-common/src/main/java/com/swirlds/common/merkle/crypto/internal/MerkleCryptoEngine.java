@@ -29,7 +29,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.hash.MerkleHashBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;

@@ -17,12 +17,11 @@
 package com.swirlds.platform.components.state;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
@@ -33,27 +32,20 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
-import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
-import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
-import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -93,11 +85,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignatureTransmitter signatureTransmitter;
 
     /**
-     * Various metrics about signed states
-     */
-    private final SignedStateMetrics signedStateMetrics;
-
-    /**
      * Signed states are deleted on this background thread.
      */
     private final SignedStateGarbageCollector signedStateGarbageCollector;
@@ -118,19 +105,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateFileManager signedStateFileManager;
 
     /**
-     * Tracks the state hashes reported by peers and detects ISSes.
-     */
-    private final ConsensusHashManager consensusHashManager;
-
-    /**
      * A logger for hash stream data
      */
     private final HashLogger hashLogger;
-
-    /**
-     * Builds dispatches for communication internal to this component
-     */
-    private final DispatchBuilder dispatchBuilder;
 
     /**
      * Used to track signed state leaks, if enabled
@@ -147,6 +124,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     /**
      * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
+     * @param dispatchBuilder                    builds dispatchers. This is deprecated, do not wire new things together
+     *                                           with this.
      * @param addressBook                        the initial address book
      * @param signer                             an object capable of signing with the platform's private key
      * @param mainClassName                      the name of the app class inheriting from SwirldMain
@@ -155,10 +134,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param prioritySystemTransactionSubmitter submits priority system transactions
      * @param stateToDiskEventConsumer           consumer to invoke when a state is attempted to be written to disk
      * @param newLatestCompleteStateConsumer     consumer to invoke when there is a new latest complete signed state
-     * @param stateLacksSignaturesConsumer       consumer to invoke when a state is about to be ejected from memory with
-     *                                           enough signatures to be complete
-     * @param stateHasEnoughSignaturesConsumer   consumer to invoke when a state accumulates enough signatures to be
-     *                                           complete
      * @param issConsumer                        consumer to invoke when an ISS is detected
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      * @param platformStatusGetter               gets the current platform status
@@ -167,6 +142,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
             @NonNull final String mainClassName,
@@ -175,8 +151,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final StateToDiskAttemptConsumer stateToDiskEventConsumer,
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
-            @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
-            @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
@@ -194,8 +168,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(prioritySystemTransactionSubmitter);
         Objects.requireNonNull(stateToDiskEventConsumer);
         Objects.requireNonNull(newLatestCompleteStateConsumer);
-        Objects.requireNonNull(stateLacksSignaturesConsumer);
-        Objects.requireNonNull(stateHasEnoughSignaturesConsumer);
         Objects.requireNonNull(issConsumer);
         Objects.requireNonNull(haltRequestedConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
@@ -205,15 +177,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
-        this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        // Various metrics about signed states
+        final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
 
-        dispatchBuilder =
-                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
-
-        hashLogger = new HashLogger(threadManager, selfId, stateConfig);
+        hashLogger = new HashLogger(threadManager, stateConfig);
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
@@ -240,46 +210,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 setMinimumGenerationToStore,
                 statusActionSubmitter);
 
-        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
-            stateHasEnoughSignatures(ss);
-            stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
-        };
-
-        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ss -> {
-            stateLacksSignatures(ss);
-            stateLacksSignaturesConsumer.stateLacksSignatures(ss);
-        };
-
         signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
-                combinedStateHasEnoughSignaturesConsumer,
-                combinedStateLacksSignaturesConsumer);
-
-        consensusHashManager = new ConsensusHashManager(
-                Time.getCurrent(),
-                dispatchBuilder,
-                addressBook,
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                stateConfig);
-
-        final IssHandler issHandler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
-                stateConfig,
-                selfId,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                issConsumer);
-
-        final IssMetrics issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
-
-        dispatchBuilder
-                .registerObservers(issHandler)
-                .registerObservers(consensusHashManager)
-                .registerObservers(issMetrics)
-                .registerObservers(this);
+                this::stateHasEnoughSignatures,
+                this::stateLacksSignatures);
 
         final RunningAverageMetric avgRoundSupermajority =
                 platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
@@ -291,9 +227,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param signedState the newly complete signed state
      */
-    private void stateHasEnoughSignatures(final SignedState signedState) {
+    private void stateHasEnoughSignatures(@NonNull final SignedState signedState) {
         if (signedState.isStateToSave()) {
-            signedStateFileManager.saveSignedStateToDisk(signedState);
+            signedStateFileManager.saveSignedStateToDisk(signedState, false);
         }
     }
 
@@ -302,30 +238,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param signedState the signed state that lacks signatures
      */
-    private void stateLacksSignatures(final SignedState signedState) {
+    private void stateLacksSignatures(@NonNull final SignedState signedState) {
         if (signedState.isStateToSave()) {
-            final long previousCount =
-                    signedStateMetrics.getTotalUnsignedDiskStatesMetric().get();
-            signedStateMetrics.getTotalUnsignedDiskStatesMetric().increment();
-            final long newCount =
-                    signedStateMetrics.getTotalUnsignedDiskStatesMetric().get();
-
-            if (newCount <= previousCount) {
-                logger.error(EXCEPTION.getMarker(), "Metric for total unsigned disk states not updated");
-            }
-
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    new InsufficientSignaturesPayload(
-                            ("state written to disk for round %d did not have enough signatures. "
-                                            + "Collected signatures representing %d/%d weight. "
-                                            + "Total unsigned disk states so far: %d.")
-                                    .formatted(
-                                            signedState.getRound(),
-                                            signedState.getSigningWeight(),
-                                            signedState.getAddressBook().getTotalWeight(),
-                                            newCount)));
-            signedStateFileManager.saveSignedStateToDisk(signedState);
+            signedStateFileManager.saveSignedStateToDisk(signedState, true);
         }
     }
 
@@ -438,18 +353,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    public void roundAppliedToState(final long round) {
-        consensusHashManager.roundCompleted(round);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void start() {
         signedStateGarbageCollector.start();
         signedStateFileManager.start();
-        dispatchBuilder.start();
         signedStateSentinel.start();
     }
 
@@ -527,13 +433,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         dumpLatestImmutableState(reason, blocking);
     }
 
-    /**
-     * Dump the latest immutable state if it is available.
-     *
-     * @param reason   the reason why the state is being dumped
-     * @param blocking if true then block until the state dump is complete
-     */
-    private void dumpLatestImmutableState(@NonNull final StateToDiskReason reason, final boolean blocking) {
+    @Override
+    public void dumpLatestImmutableState(@NonNull final StateToDiskReason reason, final boolean blocking) {
         Objects.requireNonNull(reason);
 
         try (final ReservedSignedState reservedState = signedStateManager.getLatestImmutableState(
@@ -579,14 +480,5 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public SignedStateManager getSignedStateManager() {
         return signedStateManager;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ConsensusHashManager getConsensusHashManager() {
-        return consensusHashManager;
     }
 }

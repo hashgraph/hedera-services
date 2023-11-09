@@ -31,7 +31,8 @@ public record CallOutcome(@Nullable ContractFunctionResult result, @NonNull Resp
     }
 
     public @Nullable ContractID recipientIdIfCalled() {
-        return result == null ? null : result.contractIDOrThrow();
+        // Even a non-null result could return a null id if the transaction didn't succeed
+        return result == null ? null : result.contractID();
     }
 
     public @Nullable ContractID recipientIdIfCreated() {

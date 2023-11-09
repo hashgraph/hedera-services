@@ -26,9 +26,9 @@ package com.swirlds.demo.addressbook;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.logging.LogMarker.DEMO_INFO;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
@@ -345,6 +345,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     return softwareUpgradeWeightingBehavior2(testScenario);
                 case UPGRADE_FORCE_CONFIG_AB:
                     return softwareUpgradeForceUseOfConfigAddressBook(testScenario);
+                case UPGRADE_ADD_NODE:
+                    return softwareUpgradeAddNodeWeightingBehavior1(testScenario);
+                case UPGRADE_REMOVE_NODE:
+                    return softwareUpgradeRemoveNodeWeightingBehavior1(testScenario);
                 case SKIP_VALIDATION:
                     // fall into default case. No validation performed.
                 default:
@@ -354,6 +358,57 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Exception occurred in Test Scenario {}.", testScenario, e);
             return false;
+        }
+    }
+
+    private boolean softwareUpgradeRemoveNodeWeightingBehavior1(@NonNull final AddressBookTestScenario testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(false, testScenario, 2, 1)) {
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, true)
+                && removedNodeFromAddressBook(platformAddressBook, stateAddressBook);
+    }
+
+    private boolean softwareUpgradeAddNodeWeightingBehavior1(@NonNull final AddressBookTestScenario testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(false, testScenario, 2, 1)) {
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
+
+        if (stateAddressBook.toConfigText().equals(configAddressBook.toConfigText())) {
+            // This is a new node.
+            return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+                    // genesis state uses the config address book.
+                    && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
+                    && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                    && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
+        } else {
+            // This is an existing node.
+
+            // The equality to config text is due to a limitation of testing capability.
+            // Currently all nodes have to start with the same config.txt file that matches the updated weight.
+            return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+                    && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                    && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                    && equalsAsConfigText(platformAddressBook, updatedAddressBook, true)
+                    && addedNodeToAddressBook(platformAddressBook, stateAddressBook);
         }
     }
 
@@ -582,6 +637,96 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
+     * Checks if the new address book contains a proper subset of the node ids in the old address book and that the
+     * nextNodeId value of the new address book is the same.
+     *
+     * @param newAddressBook The new address book
+     * @param oldAddressBook The old address book
+     * @return true if the new address book has all the nodes in the old address book (ignoring weight differences) plus
+     * at least one more and its nextNodeId value is larger.
+     */
+    private boolean removedNodeFromAddressBook(
+            @NonNull final AddressBook newAddressBook, @NonNull final AddressBook oldAddressBook) {
+        int missingCount = 0;
+        for (final Address address : oldAddressBook) {
+            final NodeId nodeId = address.getNodeId();
+            if (newAddressBook.contains(nodeId)) {
+                continue;
+            }
+            missingCount++;
+        }
+        final int newSize = newAddressBook.getSize();
+        final int oldSize = oldAddressBook.getSize();
+        final boolean atLeastOneNodeRemoved = missingCount > 0;
+        if (!atLeastOneNodeRemoved) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The new address book does not have at least one node removed. {}",
+                    StackTrace.getStackTrace());
+        }
+        final boolean sizesCorrespond = missingCount == oldSize - newSize;
+        if (!sizesCorrespond) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The new address book contains new nodes instead of only having nodes removed. {}",
+                    StackTrace.getStackTrace());
+        }
+        final boolean nextNodeIdEqual = newAddressBook.getNextNodeId().compareTo(oldAddressBook.getNextNodeId()) == 0;
+        if (!nextNodeIdEqual) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The new address book has a different nextNodeId value than the old address book. {}",
+                    StackTrace.getStackTrace());
+        }
+        return sizesCorrespond && atLeastOneNodeRemoved && nextNodeIdEqual;
+    }
+
+    /**
+     * Checks if the old address book contains a proper subset of node ids in the new address book and that the
+     * nextNodeId value of the new address book is larger.
+     *
+     * @param newAddressBook The new address book
+     * @param oldAddressBook The old address book
+     * @return true if the new address book has all the nodes in the old address book (ignoring weight differences) plus
+     * at least one more and its nextNodeId value is larger.
+     */
+    private boolean addedNodeToAddressBook(
+            @NonNull final AddressBook newAddressBook, @NonNull final AddressBook oldAddressBook) {
+        int missingCount = 0;
+        for (final Address address : newAddressBook) {
+            final NodeId nodeId = address.getNodeId();
+            if (oldAddressBook.contains(nodeId)) {
+                continue;
+            }
+            missingCount++;
+        }
+        final int newSize = newAddressBook.getSize();
+        final int oldSize = oldAddressBook.getSize();
+        final boolean atLeastOneNodeAdded = missingCount > 0;
+        if (!atLeastOneNodeAdded) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The new address book does not have at least one node added. {}",
+                    StackTrace.getStackTrace());
+        }
+        final boolean sizesCorrespond = missingCount == newSize - oldSize;
+        if (!sizesCorrespond) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The new address book has nodes removed instead of only having nodes added. {}",
+                    StackTrace.getStackTrace());
+        }
+        final boolean nextNodeIdGreater = newAddressBook.getNextNodeId().compareTo(oldAddressBook.getNextNodeId()) > 0;
+        if (!nextNodeIdGreater) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The new address book has a nextNodeId value that is not greater than the old address book. {}",
+                    StackTrace.getStackTrace());
+        }
+        return sizesCorrespond && atLeastOneNodeAdded && nextNodeIdGreater;
+    }
+
+    /**
      * Get the address book in the last usedAddressBook file.
      *
      * @return the address book in the last usedAddressBook file.
@@ -679,12 +824,13 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @NonNull
     private String getLastAddressBookFileEndsWith(@NonNull final String suffix) throws IOException {
+        final String nodeId = "node_%s".formatted(this.selfId);
         final Path addressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         File[] files = addressBookDirectory.toFile().listFiles(File::isFile);
         final AtomicReference<Path> lastAddressBookDebugFile = new AtomicReference<>(null);
         for (int i = 0; i < files.length; i++) {
-            if (files[i].getName().endsWith(suffix)) {
-                final String fileName = files[i].getName();
+            final String fileName = files[i].getName();
+            if (fileName.contains(nodeId) && fileName.endsWith(suffix)) {
                 final Path lastAddressBookDebugFilePath = lastAddressBookDebugFile.get();
                 if (lastAddressBookDebugFilePath == null
                         || fileName.compareTo(lastAddressBookDebugFilePath

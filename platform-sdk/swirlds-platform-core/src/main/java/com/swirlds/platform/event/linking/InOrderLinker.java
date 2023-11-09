@@ -16,99 +16,154 @@
 
 package com.swirlds.platform.event.linking;
 
-import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.EventImpl;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.sequence.map.SequenceMap;
+import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.system.events.BaseEventHashedData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * An {@link EventLinker} which expects events to be provided in topological order. If an
- * out-of-order event is provided, it is logged and discarded.
+ * Links events.
+ * <p>
+ * Expects events to be provided in topological order. If an out-of-order event is provided, it is logged and discarded.
+ * <p>
+ * Note: This class doesn't have a direct dependency on the {@link com.swirlds.platform.gossip.shadowgraph.ShadowGraph ShadowGraph},
+ * but it is dependent in the sense that the Shadowgraph is currently responsible for eventually unlinking events.
  */
-public class InOrderLinker extends AbstractEventLinker {
+public class InOrderLinker {
     private static final Logger logger = LogManager.getLogger(InOrderLinker.class);
-    private final ParentFinder parentFinder;
-    /** Provides the most recent event by the supplied creator ID */
-    private final Function<NodeId, EventImpl> mostRecentEvent;
 
-    private EventImpl linkedEvent = null;
+    /**
+     * The initial capacity of the {@link #parentDescriptorMap} and {@link #parentHashMap}
+     */
+    private static final int INITIAL_CAPACITY = 1024;
 
-    private final RateLimitedLogger unprocessedEventLogger;
-    private final RateLimitedLogger missingParentsLogger;
+    /**
+     * A sequence map from event descriptor to event.
+     * <p>
+     * The window of this map is shifted when the minimum generation non-ancient is changed, so that only non-ancient
+     * events are retained.
+     */
+    private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap =
+            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
-    public InOrderLinker(
-            @NonNull final Time time,
-            @NonNull final ConsensusConfig config,
-            @NonNull final ParentFinder parentFinder,
-            @NonNull final Function<NodeId, EventImpl> mostRecentEvent) {
+    /**
+     * A map from event hash to event.
+     * <p>
+     * This map is needed in addition to the sequence map, since we need to be able to look up parent events based on
+     * hash. Elements are removed from this map when the window of the sequence map is shifted.
+     */
+    private final Map<Hash, EventImpl> parentHashMap = new HashMap<>(INITIAL_CAPACITY);
 
-        super(config);
-        this.parentFinder = Objects.requireNonNull(parentFinder, "parentFinder must not be null");
-        this.mostRecentEvent = Objects.requireNonNull(mostRecentEvent, "mostRecentEvent must not be null");
-        Objects.requireNonNull(time);
+    /**
+     * The current minimum generation required for an event to be non-ancient.
+     */
+    private long minimumGenerationNonAncient = 0;
 
-        unprocessedEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
-        missingParentsLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+    /**
+     * Keeps track of the number of events in the intake pipeline from each peer
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
+     * Constructor
+     *
+     * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
+     */
+    public InOrderLinker(@NonNull final IntakeEventCounter intakeEventCounter) {
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public void linkEvent(final GossipEvent event) {
-        final ChildEvent childEvent = parentFinder.findParents(event, getMinGenerationNonAncient());
-        if (childEvent.isOrphan()) {
-            logMissingParents(childEvent);
-            childEvent.orphanForever();
-            return;
+    /**
+     * Find and link the parents of the given event.
+     *
+     * @param event the event to link
+     * @return the linked event, or null if linking fails
+     */
+    @Nullable
+    public EventImpl linkEvent(@NonNull final GossipEvent event) {
+        if (event.getGeneration() < minimumGenerationNonAncient) {
+            // This event is ancient, so we don't need to link it.
+            this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+            return null;
         }
-        if (linkedEvent != null) {
-            unprocessedEventLogger.error(
-                    LogMarker.EXCEPTION.getMarker(),
-                    "Unprocessed linked event: {}",
-                    EventStrings.toMediumString(linkedEvent));
-            linkedEvent.clear();
+
+        final BaseEventHashedData hashedData = event.getHashedData();
+
+        final Hash selfParentHash = hashedData.getSelfParentHash();
+        final long selfParentGen = hashedData.getSelfParentGen();
+        final EventImpl selfParent;
+        if (selfParentGen >= minimumGenerationNonAncient) {
+            // self parent is non-ancient. we are guaranteed to have it, since events are received in topological order
+            selfParent = parentHashMap.get(selfParentHash);
+            if (selfParent == null) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Event has a missing self-parent. Child: {}, missing parent hash: {}, missing parent generation: {}. This should not be possible",
+                        EventStrings.toMediumString(event),
+                        selfParentHash,
+                        selfParentGen);
+                this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+                return null;
+            }
+        } else {
+            // ancient parents don't need to be linked
+            selfParent = null;
         }
-        linkedEvent = childEvent.getChild();
+
+        final Hash otherParentHash = hashedData.getOtherParentHash();
+        final long otherParentGen = hashedData.getOtherParentGen();
+        final EventImpl otherParent;
+        if (otherParentGen >= minimumGenerationNonAncient) {
+            // other parent is non-ancient. we are guaranteed to have it, since events are received in topological order
+            otherParent = parentHashMap.get(otherParentHash);
+            if (otherParent == null) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Event has a missing other-parent. Child: {}, missing parent hash: {}, missing parent generation: {}. This should not be possible",
+                        EventStrings.toMediumString(event),
+                        otherParentHash,
+                        otherParentGen);
+                this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+                return null;
+            }
+        } else {
+            // ancient parents don't need to be linked
+            otherParent = null;
+        }
+
+        final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
+
+        final EventDescriptor eventDescriptor = event.getDescriptor();
+
+        parentDescriptorMap.put(eventDescriptor, linkedEvent);
+        parentHashMap.put(eventDescriptor.getHash(), linkedEvent);
+
+        return linkedEvent;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public boolean hasLinkedEvents() {
-        return linkedEvent != null;
-    }
+    /**
+     * Set the minimum generation required for an event to be non-ancient.
+     *
+     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     */
+    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
-    /** {@inheritDoc} */
-    @Override
-    public EventImpl pollLinkedEvent() {
-        final EventImpl tmp = linkedEvent;
-        linkedEvent = null;
-        return tmp;
-    }
-
-    private void logMissingParents(final ChildEvent event) {
-        final GossipEvent e = event.getChild().getBaseEvent();
-        missingParentsLogger.error(
-                INVALID_EVENT_ERROR.getMarker(),
-                "Invalid event! {} missing for {} min gen:{}\n"
-                        + "most recent event by missing self parent creator:{}\n"
-                        + "most recent event by missing self parent creator:{}",
-                event.missingParentsString(),
-                EventStrings.toMediumString(e),
-                getMinGenerationNonAncient(),
-                EventStrings.toShortString(
-                        mostRecentEvent.apply(e.getHashedData().getCreatorId())),
-                EventStrings.toShortString(
-                        mostRecentEvent.apply(e.getUnhashedData().getOtherId())));
+        parentDescriptorMap.shiftWindow(
+                minimumGenerationNonAncient, (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
     }
 }

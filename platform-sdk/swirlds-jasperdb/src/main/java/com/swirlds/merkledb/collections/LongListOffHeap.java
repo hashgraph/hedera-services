@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNullElse;
 
@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  * <p>Per the {@link LongList} contract, this class is thread-safe for both concurrent reads and
  * writes.
  */
-public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
+public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implements OffHeapUser {
     /** Offset of the {@code java.nio.Buffer#address} field. */
     private static final long BYTE_BUFFER_ADDRESS_FIELD_OFFSET;
 
@@ -271,6 +271,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
      *
      * @return the amount of off-heap memory (in bytes) consumed by the list
      */
+    @Override
     public long getOffHeapConsumption() {
         int nonEmptyChunkCount = 0;
         final int chunkListSize = chunkList.length();

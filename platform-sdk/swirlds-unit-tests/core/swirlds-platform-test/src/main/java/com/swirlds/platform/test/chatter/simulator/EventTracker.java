@@ -26,7 +26,7 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.common.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

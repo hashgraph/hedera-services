@@ -22,20 +22,15 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
-import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.serdes.EntityNumCodec;
 import com.hedera.node.app.service.networkadmin.impl.serdes.MonoContextAdapterCodec;
-import com.hedera.node.app.service.networkadmin.impl.serdes.MonoRunningHashesAdapterCodec;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.HederaConfig;
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -45,9 +40,7 @@ import java.util.Set;
 public final class NetworkServiceImpl implements NetworkService {
     public static final String CONTEXT_KEY = "CONTEXT";
     public static final String STAKING_KEY = "STAKING";
-    public static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final ImmutableHash GENESIS_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
     @Override
     public void registerSchemas(final @NonNull SchemaRegistry registry) {
@@ -59,18 +52,11 @@ public final class NetworkServiceImpl implements NetworkService {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(
-                        stakingDef(),
-                        StateDefinition.singleton(CONTEXT_KEY, new MonoContextAdapterCodec()),
-                        StateDefinition.singleton(RUNNING_HASHES_KEY, new MonoRunningHashesAdapterCodec()));
+                return Set.of(stakingDef(), StateDefinition.singleton(CONTEXT_KEY, new MonoContextAdapterCodec()));
             }
 
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
-                final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_KEY);
-                RecordsRunningHashLeaf leaf = new RecordsRunningHashLeaf(new RunningHash(GENESIS_HASH));
-                runningHashState.put(leaf);
-
                 final var contextState = ctx.newStates().getSingleton(CONTEXT_KEY);
                 final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
                 final var seqStart = hederaConfig.firstUserEntity();

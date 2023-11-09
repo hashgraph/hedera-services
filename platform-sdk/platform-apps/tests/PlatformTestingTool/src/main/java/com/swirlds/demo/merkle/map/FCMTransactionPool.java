@@ -23,7 +23,7 @@ import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_TRANSFER_FCQ;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_UPDATE;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_UPDATE_FCQ;
 import static com.swirlds.demo.platform.TransactionSubmitter.USE_DEFAULT_TPS;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
@@ -33,13 +33,14 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.system.Platform;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
-import com.swirlds.demo.platform.TransactionPool;
+import com.swirlds.demo.platform.PttTransactionPool;
 import com.swirlds.demo.platform.TransactionSubmitter;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
 import com.swirlds.demo.platform.fs.stresstest.proto.AssortedAccount;
@@ -74,7 +75,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -116,7 +116,7 @@ public class FCMTransactionPool implements FastCopyable {
     private int sequentialTypeIndex = 0;
     private long[] sequentialTestCount = null;
     private boolean doneWithGeneration = false;
-    private TransactionPool parentPool;
+    private PttTransactionPool parentPool;
 
     // Family of expectedMaps
     private final ExpectedFCMFamily expectedFCMFamily;
@@ -190,7 +190,7 @@ public class FCMTransactionPool implements FastCopyable {
             long myID,
             FCMConfig config,
             TransactionSubmitter submitter,
-            TransactionPool parentPool,
+            PttTransactionPool parentPool,
             ExpectedFCMFamily expectedFCMFamily,
             PayloadConfig payloadConfig) {
 

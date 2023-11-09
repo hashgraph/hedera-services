@@ -21,13 +21,13 @@ import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistr
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.event.report.EventStreamMultiNodeReport;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
-import com.swirlds.platform.recovery.events.EventStreamLowerBound;
-import com.swirlds.platform.recovery.events.EventStreamRoundLowerBound;
-import com.swirlds.platform.recovery.events.EventStreamTimestampLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

@@ -16,9 +16,21 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
@@ -26,12 +38,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.token.CryptoAllowance;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,19 +54,27 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
-import com.hedera.node.app.spi.workflows.*;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
+ * This class contains all workflow-related functionality regarding
+ * {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
  */
 @Singleton
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
@@ -72,64 +94,92 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.cryptoApproveAllowanceOrThrow();
 
-        final var cryptoAllowancesSize =
-                op.hasCryptoAllowances() ? op.cryptoAllowances().size() : 0;
-        final var tokenAllowancesSize =
-                op.hasTokenAllowances() ? op.tokenAllowances().size() : 0;
-        final var nftAllowancesSize = op.hasNftAllowances() ? op.nftAllowances().size() : 0;
-        final var totalAllowancesSize = cryptoAllowancesSize + tokenAllowancesSize + nftAllowancesSize;
+        // The transaction must have at least one type of allowance. There is also an upper limit to the allowed number
+        // of allowances in a single transaction, but that check requires the config, and is thus not a pure check.
+        // So we will check that later in handle.
+        final var cryptoAllowances = op.cryptoAllowancesOrElse(emptyList());
+        final var tokenAllowances = op.tokenAllowancesOrElse(emptyList());
+        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
+        final var totalAllowancesSize = cryptoAllowances.size() + tokenAllowances.size() + nftAllowances.size();
         validateTruePreCheck(totalAllowancesSize != 0, EMPTY_ALLOWANCES);
+
+        // It is OK for the owner to be null, because that just means that we should use the payer as the owner.
+        // But the spender always needs to be specified.
+        for (final var allowance : cryptoAllowances) {
+            validateNullableAccountID(allowance.owner());
+            validateAccountID(allowance.spender());
+            validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+        }
+
+        for (final var allowance : tokenAllowances) {
+            validateNullableAccountID(allowance.owner());
+            validateAccountID(allowance.spender());
+            validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+        }
+
+        for (final var allowance : nftAllowances) {
+            validateNullableAccountID(allowance.owner());
+            validateAccountID(allowance.spender());
+        }
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var txn = context.body();
-        pureChecks(txn);
+        final var payerId = context.payer();
         final var op = txn.cryptoApproveAllowanceOrThrow();
-        var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
+        // If the allowance owner is not the payer, then the transaction must have been signed by the owner. Note, if
+        // the owner is missing, then the owner is assumed to be the payer. This is true for crypto allowances and
+        // for token allowances.
         for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
-            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
+            final var owner = allowance.owner();
+            if (owner != null && !owner.equals(payerId)) {
+                context.requireKeyOrThrow(owner, INVALID_ALLOWANCE_OWNER_ID);
+            }
         }
+
+        // Fungible token allowances are the same as basic crypto approvals and allowances
         for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
-            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
+            final var owner = allowance.owner();
+            if (owner != null && !owner.equals(payerId)) {
+                context.requireKeyOrThrow(owner, INVALID_ALLOWANCE_OWNER_ID);
+            }
         }
+
+        // NFT allowances are a little more complicated because they have delegating spenders and approvedForAll.
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
-            final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
-            // If a spender who is granted approveForAll from owner and is granting
-            // allowance for a serial to another spender, need signature from the approveForAll
-            // spender
-            var operatorId = allowance.delegatingSpenderOrElse(ownerId);
-            // If approveForAll is set to true, need signature from owner
-            // since only the owner can grant approveForAll
-            if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
-                operatorId = ownerId;
+            // Only the owner can grant approvedForAll, so if approvedForAll is true, then the owner must sign.
+            // If approvedForAll is false, and if there is a delegating spender, then they must sign. Otherwise,
+            // the owner must sign.
+            final var ownerId = allowance.owner();
+            final boolean approvedForAll = allowance.approvedForAllOrElse(false);
+            final var operatorId = approvedForAll ? ownerId : allowance.delegatingSpenderOrElse(ownerId);
+            // Now that we know who should sign, if that account is not the payer, then we need to require that
+            // key. If there is an error, then we need to use the appropriate error code depending on whether
+            // the operator is the owner or the delegating spender.
+            if (operatorId != null && !operatorId.equals(payerId)) {
+                final var error = ownerId == operatorId ? INVALID_ALLOWANCE_OWNER_ID : INVALID_DELEGATING_SPENDER;
+                context.requireKeyOrThrow(operatorId, error);
             }
-            if (operatorId != ownerId) {
-                failureStatus = INVALID_DELEGATING_SPENDER;
-            }
-            context.requireKeyOrThrow(operatorId, failureStatus);
         }
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        final var txn = context.body();
-        final var payer = txn.transactionIDOrThrow().accountIDOrThrow();
-
+        final var payer = context.payer();
         final var accountStore = context.writableStore(WritableAccountStore.class);
 
-        // validate payer account exists
+        // Validate payer account exists
         final var payerAccount = accountStore.getAccountById(payer);
         validateTrue(payerAccount != null, INVALID_PAYER_ACCOUNT_ID);
-        // validate the transaction body fields that include state or configuration
-        // We can use payerAccount for validations since it's not mutated in validateSemantics
+
+        // Validate the transaction body fields that include state or configuration.
         validateSemantics(context, payerAccount, accountStore);
 
-        // Apply all changes to the state modifications
-        // We need to look up payer for each modification, since payer would have been modified
-        // by a previous allowance change
+        // Apply all changes to the state modifications. We need to look up payer for each modification, since payer
+        // would have been modified by a previous allowance change
         approveAllowance(context, payer, accountStore);
     }
     /**
@@ -395,7 +445,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
 
-            AccountID accountOwner = owner.accountId();
+            final AccountID accountOwner = owner.accountId();
             validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             final var copy = nft.copyBuilder().spenderId(spenderId).build();
             uniqueTokenStore.put(copy);
@@ -433,7 +483,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final TokenID tokenId) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.spenderId() == spenderId && allowance.tokenId() == tokenId) {
+            if (allowance.spenderId().equals(spenderId) && allowance.tokenId().equals(tokenId)) {
                 return i;
             }
         }
@@ -464,5 +514,143 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
             return ownerAccount;
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.cryptoApproveAllowanceOrThrow();
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+
+        final var currentSecond = feeContext.currentTime().getEpochSecond();
+        final var account = accountStore.getAccountById(feeContext.payer());
+
+        final var currentExpiry = account == null ? currentSecond : account.expirationSecond();
+        final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(currentSecond, currentExpiry);
+        // If the value is being adjusted instead of inserting a new entry , the fee charged will be
+        // slightly less than the base price
+        final var adjustedBytes = getNewBytes(body.cryptoApproveAllowanceOrThrow(), account);
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(bytesUsedInTxn(op))
+                .addRamByteSeconds(adjustedBytes > 0 ? (adjustedBytes * lifeTime) : 0)
+                .calculate();
+    }
+
+    /**
+     * Gets total bytes used in transaction
+     * @param op the crypto approve allowance transaction body
+     * @return the total bytes used in transaction
+     */
+    private int bytesUsedInTxn(final CryptoApproveAllowanceTransactionBody op) {
+        return op.cryptoAllowancesOrElse(emptyList()).size() * CRYPTO_ALLOWANCE_SIZE
+                + op.tokenAllowancesOrElse(emptyList()).size() * TOKEN_ALLOWANCE_SIZE
+                + op.nftAllowancesOrElse(emptyList()).size() * NFT_ALLOWANCE_SIZE
+                + countSerials(op.nftAllowancesOrElse(emptyList())) * LONG_SIZE;
+    }
+
+    /**
+     * Gets the new bytes that will be added to state from the transaction, if it is successful compared to
+     * what is already present in state
+     * @param op the crypto approve allowance transaction body
+     * @param account the account existing in state
+     * @return the new bytes that will be added to state
+     */
+    private long getNewBytes(final CryptoApproveAllowanceTransactionBody op, final Account account) {
+        final long newCryptoKeys = getChangedCryptoKeys(
+                op.cryptoAllowancesOrElse(emptyList()),
+                account == null ? emptyList() : account.cryptoAllowancesOrElse(emptyList()));
+        final long newTokenKeys = getChangedTokenKeys(
+                op.tokenAllowancesOrElse(emptyList()),
+                account == null ? emptyList() : account.tokenAllowancesOrElse(emptyList()));
+        final long newApproveForAllNfts = getChangedNftKeys(
+                op.nftAllowancesOrElse(emptyList()),
+                account == null ? emptyList() : account.approveForAllNftAllowancesOrElse(emptyList()));
+
+        return newCryptoKeys * CRYPTO_ALLOWANCE_SIZE
+                + newTokenKeys * TOKEN_ALLOWANCE_SIZE
+                + newApproveForAllNfts * NFT_ALLOWANCE_SIZE;
+    }
+
+    /**
+     * Gets the number of new crypto allowances that will be added to state from the transaction.
+     * @param newAllowances the list of new crypto allowances
+     * @param existingAllowances the list of existing crypto allowances
+     * @return the number of new crypto allowances that will be added to state from the transaction
+     */
+    private int getChangedCryptoKeys(
+            final List<CryptoAllowance> newAllowances, final List<AccountCryptoAllowance> existingAllowances) {
+        int counter = 0;
+        final var existingSpenders = existingAllowances.stream()
+                .map(AccountCryptoAllowance::spenderId)
+                .collect(Collectors.toSet());
+        final var newSpenders = new HashSet<AccountID>();
+        for (var key : newAllowances) {
+            if (!existingSpenders.contains(key.spender()) && !newSpenders.contains(key.spender())) {
+                newSpenders.add(key.spender());
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    /**
+     * Gets the number of new token allowances that will be added to state from the transaction.
+     * @param newAllowances the list of new token allowances
+     * @param existingAllowances the list of existing token allowances
+     * @return the number of new token allowances that will be added to state from the transaction
+     */
+    private int getChangedTokenKeys(
+            final List<TokenAllowance> newAllowances, final List<AccountFungibleTokenAllowance> existingAllowances) {
+        int counter = 0;
+        final var existingKeys = existingAllowances.stream()
+                .map(key -> Pair.of(key.tokenId(), key.spenderId()))
+                .collect(Collectors.toSet());
+        final var newKeys = new HashSet<Pair<TokenID, AccountID>>();
+        for (final var key : newAllowances) {
+            final var newKey = Pair.of(key.tokenId(), key.spender());
+            if (!existingKeys.contains(newKey) && !newKeys.contains(newKey)) {
+                newKeys.add(newKey);
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    /**
+     * Gets the number of new approveForAllNftAllowances that will be added to state from the transaction.
+     * @param newAllowances the list of new nft allowances
+     * @param existingAllowances the list of existing nft allowances
+     * @return the number of new approveForAllNftAllowances that will be added to state from the transaction
+     */
+    private int getChangedNftKeys(
+            final List<NftAllowance> newAllowances, final List<AccountApprovalForAllAllowance> existingAllowances) {
+        int counter = 0;
+        final var existingKeys = existingAllowances.stream()
+                .map(key -> Pair.of(key.tokenId(), key.spenderId()))
+                .collect(Collectors.toSet());
+        final var newKeys = new HashSet<Pair<TokenID, AccountID>>();
+        for (final var key : newAllowances) {
+            final var newKey = Pair.of(key.tokenId(), key.spender());
+            if (!existingKeys.contains(newKey) && !newKeys.contains(newKey)) {
+                newKeys.add(newKey);
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    /**
+     * Counts the number of serials in the list of nft allowances. It doesn't consider duplicates.
+     * @param nftAllowancesList the list of nft allowances
+     * @return the number of serials
+     */
+    private int countSerials(final List<NftAllowance> nftAllowancesList) {
+        int totalSerials = 0;
+        for (var allowance : nftAllowancesList) {
+            totalSerials += allowance.serialNumbers().size();
+        }
+        return totalSerials;
     }
 }

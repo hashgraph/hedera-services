@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
@@ -29,7 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 
+import com.swirlds.common.test.logging.MockAppender;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -39,10 +43,11 @@ import com.swirlds.merkledb.collections.LongListHeap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,6 +58,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -62,6 +69,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mockito;
 
 @SuppressWarnings("SameParameterValue")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -375,11 +383,13 @@ class DataFileCollectionTest {
         assertEquals(new KeyRange(0, 1000), reopened.getValidKeyRange(), "Should still have the valid range");
     }
 
+    @SuppressWarnings("unchecked")
     @Order(100)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCompactor fileCompactor = createFileCompactor("merge", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         final int NUM_OF_KEYS = 1000;
@@ -394,7 +404,7 @@ class DataFileCollectionTest {
                             assertNotNull(dataItem, "DataItem should never be null");
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        fail("Exception should not be thrown", e);
                     }
                 }
             } else if (thread < (NUM_OF_THREADS - 1)) { // check reading item at index 100 as fast as
@@ -405,18 +415,16 @@ class DataFileCollectionTest {
                     try {
                         final long[] dataItem = fileCollection.readDataItemUsingIndex(storedOffsets, 100);
                         assertNotNull(dataItem, "DataItem should never be null");
-                    } catch (ClosedChannelException e) {
-                        e.printStackTrace();
-                        fail("Exception should not be thrown");
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        fail("Exception should not be thrown", e);
                     }
                 }
             } else if (thread == (NUM_OF_THREADS - 1)) { // move thread
                 System.out.println("DataFileCollectionTest.merge");
                 List<Path> mergedFiles = null;
                 try {
-                    List<DataFileReader<long[]>> filesToMerge = fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
+                    List<DataFileReader<?>> filesToMerge =
+                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     AtomicInteger numMoves = new AtomicInteger(0);
                     Set<Integer> allKeysExpectedToBeThere =
@@ -447,7 +455,7 @@ class DataFileCollectionTest {
                         }
                     };
 
-                    mergedFiles = fileCollection.compactFiles(indexUpdater, filesToMerge);
+                    mergedFiles = fileCompactor.compactFiles(indexUpdater, filesToMerge, 1);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                     System.out.println(
                             "============= MERGE [" + numMoves.get() + "] MOVES DONE ===========================");
@@ -461,16 +469,15 @@ class DataFileCollectionTest {
                                     DataFileCommon.fileIndexFromDataLocation(location),
                                     "Expect all data to be" + " correct"));
                     System.out.println("============= CHECK DONE ===========================");
+                    final KeyRange validKeyRange = fileCollection.getValidKeyRange();
+                    assertEquals(new KeyRange(0, NUM_OF_KEYS), validKeyRange, "Should still have values");
+                    mergeComplete.set(true);
+                    // all files should have been merged into 1.
+                    assertNotNull(mergedFiles, "null merged files list");
+                    assertEquals(1, mergedFiles.size(), "unexpected # of post-merge files");
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Exception should not be thrown");
+                    fail("Exception should not be thrown", e);
                 }
-                final KeyRange validKeyRange = fileCollection.getValidKeyRange();
-                assertEquals(new KeyRange(0, NUM_OF_KEYS), validKeyRange, "Should still have values");
-                mergeComplete.set(true);
-                // all files should have been merged into 1.
-                assertNotNull(mergedFiles, "null merged files list");
-                assertEquals(1, mergedFiles.size(), "unexpected # of post-merge files");
             }
         });
         // check we only have 1 file left
@@ -482,13 +489,15 @@ class DataFileCollectionTest {
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
         // empty.
-        List<DataFileReader<long[]>> filesLeft = fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
+        List<DataFileReader<?>> filesLeft =
+                (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
         assertEquals(1, filesLeft.size(), "unexpected # of files #2");
-        filesLeft = fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
+        filesLeft = (List<DataFileReader<?>>)
+                (Object) fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
         assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
-        List<Path> secondMergeResults = fileCollection.compactFiles(null, filesLeft);
+        List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft, 1);
         assertNotNull(secondMergeResults, "null merged files list");
         assertEquals(0, secondMergeResults.size(), "unexpected results from second merge");
     }
@@ -540,15 +549,17 @@ class DataFileCollectionTest {
         checkData(testType, 50, 1000, 10_000);
     }
 
+    @SuppressWarnings("unchecked")
     @Order(202)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge2(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCompactor fileCompactor = createFileCompactor("merge2", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         // start compaction paused so that we can test pausing
-        fileCollection.pauseCompaction();
+        fileCompactor.pauseCompaction();
 
         IntStream.range(0, 3).parallel().forEach(thread -> {
             if (thread == 0) { // checking thread, keep reading and checking data all
@@ -564,7 +575,8 @@ class DataFileCollectionTest {
             } else if (thread == 1) { // move thread
                 // merge 2 files
                 try {
-                    List<DataFileReader<long[]>> allFiles = fileCollection.getAllCompletedFiles();
+                    List<DataFileReader<?>> allFiles =
+                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles();
                     Set<Integer> allKeysExpectedToBeThere =
                             IntStream.range(0, 1000).boxed().collect(Collectors.toSet());
                     final CASableLongIndex indexUpdater = new CASableLongIndex() {
@@ -591,7 +603,7 @@ class DataFileCollectionTest {
                             storedOffsets.forEach(action);
                         }
                     };
-                    fileCollection.compactFiles(indexUpdater, allFiles);
+                    fileCompactor.compactFiles(indexUpdater, allFiles, 1);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -608,7 +620,7 @@ class DataFileCollectionTest {
                 System.out.println("Un-pausing merging");
                 try {
                     // now let merging continue
-                    fileCollection.resumeCompaction();
+                    fileCompactor.resumeCompaction();
                 } catch (IOException e) {
                     e.printStackTrace();
                     throw new UncheckedIOException(e);
@@ -622,6 +634,16 @@ class DataFileCollectionTest {
                         .filter(f -> f.toString().endsWith(".jdb"))
                         .count(),
                 "unexpected # of files");
+    }
+
+    private static DataFileCompactor createFileCompactor(
+            String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
+        return new DataFileCompactor(storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null) {
+            @Override
+            int getMinNumberOfFilesToCompact() {
+                return 2;
+            }
+        };
     }
 
     @Order(203)
@@ -653,6 +675,52 @@ class DataFileCollectionTest {
         final LongListHeap storedOffsets = new LongListHeap(5000);
         storedOffsetsMap.put(testType, storedOffsets);
         // create 10x 100 item files
+        populateDataFileCollection(testType, fileCollection, storedOffsets);
+        // check 10 files were created and data is correct
+        assertEquals(
+                10,
+                Files.list(dbDir)
+                        .filter(file -> file.getFileName().toString().startsWith(storeName))
+                        .count(),
+                "expected 10 db files");
+        assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files");
+        checkData(testType, 0, 1000, 10_000);
+        // check all files are available for merge
+        assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files available for merging");
+        // close
+        fileCollection.close();
+        // reopen
+        final DataFileCollection<long[]> fileCollection2 =
+                new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
+        final DataFileCompactor fileCompactor =
+                new DataFileCompactor(storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null);
+        fileCollectionMap.put(testType, fileCollection2);
+        // check 10 files were opened and data is correct
+        assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
+        checkData(testType, 0, 1000, 10_000);
+        // check all files are available for merge
+        assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
+        // merge
+        fileCompactor.compactFiles(
+                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles(), 1);
+        // check 1 files were opened and data is correct
+        assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
+        assertEquals(
+                1,
+                Files.list(dbDir)
+                        .filter(file -> file.getFileName().toString().matches(storeName + ".*jdb"))
+                        .count(),
+                "expected 1 db files but had ["
+                        + Arrays.toString(Files.list(dbDir).toArray())
+                        + "]");
+        checkData(testType, 0, 1000, 10_000);
+        // close db
+        fileCollection2.close();
+    }
+
+    private static void populateDataFileCollection(
+            FilesTestType testType, DataFileCollection<long[]> fileCollection, LongListHeap storedOffsets)
+            throws IOException {
         int count = 0;
         for (int f = 0; f < 10; f++) {
             fileCollection.startWriting();
@@ -674,43 +742,79 @@ class DataFileCollectionTest {
             fileCollection.endWriting(0, count + 100).setFileCompleted();
             count += 100;
         }
-        // check 10 files were created and data is correct
-        assertEquals(
-                10,
-                Files.list(dbDir)
-                        .filter(file -> file.getFileName().toString().startsWith(storeName))
-                        .count(),
-                "expected 10 db files");
-        assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files");
-        checkData(testType, 0, 1000, 10_000);
-        // check all files are available for merge
-        assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files available for merging");
-        // close
-        fileCollection.close();
-        // reopen
-        final DataFileCollection<long[]> fileCollection2 =
-                new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
-        fileCollectionMap.put(testType, fileCollection2);
-        // check 10 files were opened and data is correct
-        assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
-        checkData(testType, 0, 1000, 10_000);
-        // check all files are available for merge
-        assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
-        // merge
-        fileCollection2.compactFiles(storedOffsets, fileCollection2.getAllCompletedFiles());
-        // check 1 files were opened and data is correct
-        assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
-        assertEquals(
-                1,
-                Files.list(dbDir)
-                        .filter(file -> file.getFileName().toString().matches(storeName + ".*jdb"))
-                        .count(),
-                "expected 1 db files but had ["
-                        + Arrays.toString(Files.list(dbDir).toArray())
-                        + "]");
-        checkData(testType, 0, 1000, 10_000);
-        // close db
-        fileCollection2.close();
+    }
+
+    /**
+     * This test emulates scenario in which compaction is interrupted by thread interruption. This event shouldn't be
+     * reported as an error in the logs.
+     */
+    @Test
+    public void testClosedByInterruptException() throws IOException {
+        // mock appender to capture the log statements
+        final MockAppender mockAppender = new MockAppender("testClosedByInterruptException");
+        Logger logger = (Logger) LogManager.getLogger(DataFileCompactor.class);
+        mockAppender.start();
+        logger.addAppender(mockAppender);
+        final Path dbDir = tempFileDir.resolve("testClosedByInterruptException");
+        final String storeName = "testClosedByInterruptException";
+
+        // init file collection with some content to compact
+        final DataFileCollection<long[]> fileCollection =
+                new DataFileCollection<>(dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
+        final LongListHeap storedOffsets = new LongListHeap(5000);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(storeName, fileCollection, storedOffsets, null, null, null);
+        populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
+
+        // a flag to make sure that `compactFiles` th
+        AtomicBoolean closedByInterruptFromCompaction = new AtomicBoolean(false);
+
+        final Thread thread = new Thread(() -> {
+            List<DataFileReader<long[]>> allCompletedFiles = fileCollection.getAllCompletedFiles();
+            DataFileReader<long[]> spy = Mockito.spy(allCompletedFiles.get(0));
+            try {
+                AtomicInteger count = new AtomicInteger(0);
+                when(spy.getMetadata()).thenAnswer(invocation -> {
+                    // on the second call to getMetadata, we interrupt the thread
+                    if (count.getAndIncrement() == 1) {
+                        Thread.currentThread().interrupt();
+                    }
+
+                    return invocation.callRealMethod();
+                });
+
+                List<DataFileReader<?>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
+                allCompletedFilesUpdated.set(0, spy);
+                compactor.compactFiles(storedOffsets, allCompletedFilesUpdated, 1);
+            } catch (InterruptedException e) {
+                // we expect interrupted exception here
+                closedByInterruptFromCompaction.set(true);
+            } catch (IOException e) {
+                fail("Exception should not be thrown");
+            }
+            reset(spy);
+        });
+        thread.start();
+        try {
+            assertEventuallyTrue(
+                    () -> {
+                        if (!closedByInterruptFromCompaction.get()) {
+                            return false;
+                        }
+
+                        if (mockAppender.size() == 0) {
+                            return false;
+                        }
+                        assertEquals(
+                                "MERKLE_DB - INFO - Failed to copy data item 0 / 0 due to thread interruption",
+                                mockAppender.get(0));
+                        return true;
+                    },
+                    Duration.ofMillis(5000),
+                    "Compaction should not throw exception when interrupted");
+        } finally {
+            mockAppender.stop();
+        }
     }
 
     /**

@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -68,8 +67,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Checks transactions for internal consistency and validity.
@@ -83,7 +82,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class TransactionChecker {
-    private static final Logger logger = LoggerFactory.getLogger(TransactionChecker.class);
+    private static final Logger logger = LogManager.getLogger(TransactionChecker.class);
 
     private static final int USER_TRANSACTION_NONCE = 0;
 
@@ -309,11 +308,6 @@ public class TransactionChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
-        // The transaction MUST have been sent to *this* node
-        if (!nodeAccount.equals(txBody.nodeAccountID())) {
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
-
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionID());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());

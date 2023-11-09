@@ -24,8 +24,8 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +58,6 @@ public final class EqualsVerifier {
         final long DELTA = 1L << 32;
         final long roundCreated = r.nextLong(Long.MAX_VALUE - DELTA);
         final long roundReceived = roundCreated + r.nextLong(DELTA);
-        data.setRoundCreated(roundCreated);
-        data.setStale(r.nextBoolean());
         data.setRoundReceived(roundReceived);
         data.setConsensusOrder(r.nextLong(Long.MAX_VALUE));
         data.setConsensusTimestamp(randomInstant(r));

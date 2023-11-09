@@ -38,8 +38,8 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.platform.EventImpl;
-import com.swirlds.platform.recovery.events.ObjectStreamIterator;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -101,14 +101,15 @@ public final class RecoveryTestUtils {
                 randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
-        consensusData.setRoundCreated(random.nextLong());
-        consensusData.setStale(random.nextBoolean());
         consensusData.setConsensusTimestamp(now);
         consensusData.setRoundReceived(round);
         consensusData.setConsensusOrder(random.nextLong());
         consensusData.setLastInRoundReceived(lastInRound);
 
-        return new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        final EventImpl event = new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        event.setRoundCreated(random.nextLong());
+        event.setStale(random.nextBoolean());
+        return event;
     }
 
     /**

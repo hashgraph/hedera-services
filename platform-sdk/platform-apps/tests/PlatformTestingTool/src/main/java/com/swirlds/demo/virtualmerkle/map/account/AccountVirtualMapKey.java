@@ -22,7 +22,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * This class represents the key to find an account that is being
@@ -124,22 +123,15 @@ public class AccountVirtualMapKey implements VirtualKey {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final AccountVirtualMapKey that = (AccountVirtualMapKey) o;
-
-        return new EqualsBuilder()
-                .append(realmID, that.realmID)
-                .append(shardId, that.shardId)
-                .append(accountID, that.accountID)
-                .isEquals();
+        final AccountVirtualMapKey that = (AccountVirtualMapKey) other;
+        return realmID == that.realmID && shardId == that.shardId && accountID == that.accountID;
     }
 
     /**

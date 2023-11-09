@@ -25,6 +25,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import javax.inject.Inject;
@@ -51,6 +52,24 @@ public final class GetScheduleInfoResourceUsage implements QueryResourceUsageEst
         if (optionalInfo.isPresent()) {
             final var info = optionalInfo.get();
             putIfNotNull(queryCtx, SCHEDULE_INFO_CTX_KEY, info);
+            final var scheduleCtxBuilder = ExtantScheduleContext.newBuilder()
+                    .setScheduledTxn(info.getScheduledTransactionBody())
+                    .setMemo(info.getMemo())
+                    .setNumSigners(info.getSigners().getKeysCount())
+                    .setResolved(info.hasExecutionTime() || info.hasDeletionTime());
+            if (info.hasAdminKey()) {
+                scheduleCtxBuilder.setAdminKey(info.getAdminKey());
+            } else {
+                scheduleCtxBuilder.setNoAdminKey();
+            }
+            return scheduleOpsUsage.scheduleInfoUsage(query, scheduleCtxBuilder.build());
+        } else {
+            return FeeData.getDefaultInstance();
+        }
+    }
+
+    public FeeData usageGiven(final Query query, final ScheduleInfo info) {
+        if (info != null) {
             final var scheduleCtxBuilder = ExtantScheduleContext.newBuilder()
                     .setScheduledTxn(info.getScheduledTransactionBody())
                     .setMemo(info.getMemo())

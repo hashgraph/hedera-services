@@ -32,9 +32,8 @@ public abstract class AbstractReservable implements Reservable {
     /**
      * This lambda method is used to increment the reservation count when {@link #reserve()} is called.
      */
-    private final IntUnaryOperator RESERVE = current -> {
+    private static final IntUnaryOperator RESERVE = current -> {
         if (current == DESTROYED_REFERENCE_COUNT) {
-            onReferenceCountException();
             throw new ReferenceCountException("can not reserve node that has already been destroyed");
         } else {
             return current + 1;
@@ -55,9 +54,8 @@ public abstract class AbstractReservable implements Reservable {
     /**
      * This lambda method is used to decrement the reservation count when {@link #release()} is called.
      */
-    private final IntUnaryOperator RELEASE = (final int current) -> {
+    private static final IntUnaryOperator RELEASE = (final int current) -> {
         if (current == DESTROYED_REFERENCE_COUNT) {
-            onReferenceCountException();
             throw new ReferenceCountException("can not release node that has already been destroyed");
         } else if (current == IMPLICIT_REFERENCE_COUNT || current == 1) {
             return DESTROYED_REFERENCE_COUNT;
@@ -71,7 +69,12 @@ public abstract class AbstractReservable implements Reservable {
      */
     @Override
     public void reserve() {
-        reservationCount.updateAndGet(RESERVE);
+        try {
+            reservationCount.updateAndGet(RESERVE);
+        } catch (final ReferenceCountException e) {
+            onReferenceCountException();
+            throw e;
+        }
     }
 
     /**
@@ -87,7 +90,13 @@ public abstract class AbstractReservable implements Reservable {
      */
     @Override
     public boolean release() {
-        final int newReservationCount = reservationCount.updateAndGet(RELEASE);
+        final int newReservationCount;
+        try {
+            newReservationCount = reservationCount.updateAndGet(RELEASE);
+        } catch (final ReferenceCountException e) {
+            onReferenceCountException();
+            throw e;
+        }
         if (newReservationCount == DESTROYED_REFERENCE_COUNT) {
             onDestroy();
             return true;

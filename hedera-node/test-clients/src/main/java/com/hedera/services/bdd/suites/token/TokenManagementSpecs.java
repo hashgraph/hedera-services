@@ -36,10 +36,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -63,9 +65,10 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -116,6 +119,7 @@ public class TokenManagementSpecs extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
@@ -173,6 +177,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
                 .given(
@@ -193,6 +198,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
     }
 
+    @HapiTest
     private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
                 .given(
@@ -213,6 +219,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(SUPPLE).balance(1).kyc(Revoked)));
     }
 
+    @HapiTest
     private HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
         final String BURN_TOKEN = "burn";
         final int TOTAL_SUPPLY = 100;
@@ -245,6 +252,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         getTxnRecord(WIPE_TXN).logged());
     }
 
+    @HapiTest
     public HapiSpec wipeAccountSuccessCasesWork() {
         var wipeableToken = "with";
 
@@ -275,6 +283,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         getTxnRecord(WIPE_TXN).logged());
     }
 
+    @HapiTest
     public HapiSpec wipeAccountFailureCasesWork() {
         var unwipeableToken = "without";
         var wipeableToken = "with";
@@ -286,6 +295,7 @@ public class TokenManagementSpecs extends HapiSuite {
         return defaultHapiSpec("WipeAccountFailureCasesWork")
                 .given(
                         newKeyNamed(multiKey),
+                        newKeyNamed("alias").type(KeyFactory.KeyType.SIMPLE),
                         cryptoCreate("misc").balance(0L),
                         cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
@@ -317,9 +327,19 @@ public class TokenManagementSpecs extends HapiSuite {
                         wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
                                 .hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
                         wipeTokenAccount(anotherWipeableToken, "misc", 501).hasKnownStatus(INVALID_WIPING_AMOUNT),
-                        wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT));
+                        wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT),
+                        withOpContext((spec, opLog) -> {
+                            final var key = spec.registry().getKey("alias");
+                            final var alias = key.hasECDSASecp256K1() ? key.getECDSASecp256K1() : key.getEd25519();
+                            allRunFor(
+                                    spec,
+                                    wipeTokenAccountWithAlias(unwipeableToken, alias, 1)
+                                            .signedBy(GENESIS)
+                                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+                        }));
     }
 
+    @HapiTest
     public HapiSpec kycMgmtFailureCasesWork() {
         var withoutKycKey = "withoutKycKey";
         var withKycKey = "withKycKey";
@@ -348,6 +368,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(getTokenInfo(withoutKycKey).hasRegisteredId(withoutKycKey).logged());
     }
 
+    @HapiTest
     public HapiSpec freezeMgmtSuccessCasesWork() {
         var withPlusDefaultFalse = "withPlusDefaultFalse";
 
@@ -373,6 +394,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(getAccountInfo("misc").logged());
     }
 
+    @HapiTest
     public HapiSpec kycMgmtSuccessCasesWork() {
         var withKycKey = "withKycKey";
         var withoutKycKey = "withoutKycKey";
@@ -399,6 +421,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(getAccountInfo("misc").logged());
     }
 
+    @HapiTest
     public HapiSpec supplyMgmtSuccessCasesWork() {
         return defaultHapiSpec("SupplyMgmtSuccessCasesWork")
                 .given(
@@ -421,6 +444,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         getTxnRecord("burnTxn").logged());
     }
 
+    @HapiTest
     private HapiSpec fungibleCommonMaxSupplyReachWork() {
         return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
                 .given(
@@ -439,7 +463,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(
                         getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                        UtilVerbs.withOpContext((spec, opLog) -> {
+                        withOpContext((spec, opLog) -> {
                             var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
                             allRunFor(spec, mintNFT);
                             var receipt = mintNFT.getResponseRecord().getReceipt();
@@ -447,6 +471,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec mintingMaxLongValueWorks() {
         return defaultHapiSpec("MintingMaxLongValueWorks")
                 .given(
@@ -462,6 +487,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, Long.MAX_VALUE));
     }
 
+    @HapiTest
     private HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
         final var multiKey = "multi";
         final var token = "non-fungible";
@@ -488,6 +514,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec supplyMgmtFailureCasesWork() {
         return defaultHapiSpec("SupplyMgmtFailureCasesWork")
                 .given(newKeyNamed(SUPPLY_KEY))

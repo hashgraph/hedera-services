@@ -1,4 +1,4 @@
-open module com.swirlds.common.test {
+open module com.swirlds.common.testing {
     exports com.swirlds.common.test.merkle.util;
     exports com.swirlds.common.test.merkle.dummy;
     exports com.swirlds.common.test.dummy;
@@ -6,16 +6,11 @@ open module com.swirlds.common.test {
     exports com.swirlds.common.test.set;
     exports com.swirlds.common.test.map;
 
+    requires transitive com.swirlds.common;
+    requires transitive org.apache.logging.log4j.core;
     requires com.swirlds.base;
-    requires com.swirlds.test.framework;
-    requires com.swirlds.common;
-    requires org.bouncycastle.provider;
-    requires org.junit.jupiter.api;
-    requires org.apache.commons.lang3;
     requires java.scripting;
     requires org.apache.logging.log4j;
-    requires com.fasterxml.jackson.databind;
-    requires lazysodium.java;
+    requires org.junit.jupiter.api;
     requires static com.github.spotbugs.annotations;
-    requires com.swirlds.common.test.fixtures;
 }

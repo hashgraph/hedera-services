@@ -17,11 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A {@code Counter} can be used to count events and similar things.
@@ -150,9 +149,7 @@ public interface Counter extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                    .appendSuper(super.toString())
-                    .toString();
+            return new ToStringBuilder(this).appendSuper(super.toString()).toString();
         }
     }
 }

@@ -87,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -181,6 +182,7 @@ public class FileUpdateSuite extends HapiSuite {
                 messageSubmissionSizeChange());
     }
 
+    @HapiTest
     private HapiSpec associateHasExpectedSemantics() {
         return defaultHapiSpec("AssociateHasExpectedSemantics")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
@@ -219,13 +221,12 @@ public class FileUpdateSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     public HapiSpec notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
-                .given(fileUpdate(APP_PROPERTIES)
-                        .payingWith(GENESIS)
-                        .overridingProps(Map.of(MAX_CUSTOM_FEES_PROP, "1")))
+                .given(overriding(MAX_CUSTOM_FEES_PROP, "1"))
                 .when(
                         tokenCreate(denom),
                         tokenCreate(token)
@@ -233,11 +234,10 @@ public class FileUpdateSuite extends HapiSuite {
                                 .withCustom(fixedHbarFee(1, DEFAULT_PAYER))
                                 .withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
                                 .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG))
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(GENESIS)
-                        .overridingProps(Map.of(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES)));
+                .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
     }
 
+    @HapiTest
     private HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
@@ -248,10 +248,12 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray()));
     }
 
+    // It is not implemented yet in SystemFileUpdateFacility line number 127
     private HapiSpec apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)),
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         getFileContents(API_PERMISSIONS).logged(),
                         tokenCreate("poc").payingWith(civilian))
@@ -268,6 +270,7 @@ public class FileUpdateSuite extends HapiSuite {
                         tokenCreate("secondPoc").payingWith(civilian));
     }
 
+    @HapiTest
     private HapiSpec updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
@@ -313,6 +316,7 @@ public class FileUpdateSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec vanillaUpdateSucceeds() {
         final byte[] old4K = randomUtf8Bytes(BYTES_4K);
         final byte[] new4k = randomUtf8Bytes(BYTES_4K);
@@ -332,6 +336,7 @@ public class FileUpdateSuite extends HapiSuite {
                         getFileInfo("test").hasMemo(secondMemo));
     }
 
+    @HapiTest
     private HapiSpec cannotUpdateExpirationPastMaxLifetime() {
         return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
                 .given(fileCreate("test"))
@@ -341,16 +346,18 @@ public class FileUpdateSuite extends HapiSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec maxRefundIsEnforced() {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(overriding(MAX_REFUND_GAS_PROP, "5"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
+                .when(contractCall(CONTRACT, CREATE_TXN).gas(1000000L))
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
-                        .gas(300_000L)
-                        .has(resultWith().gasUsed(285_000L)));
+                        .gas(300000L)
+                        .has(resultWith().gasUsed(285000L)));
     }
 
+    // C.f. https://github.com/hashgraph/hedera-services/pull/8908
     private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
@@ -364,6 +371,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .has(resultWith().gasUsed(26_451)));
     }
 
+    @HapiTest
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
@@ -378,6 +386,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY));
     }
 
+    @HapiTest
     private HapiSpec kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
@@ -391,7 +400,7 @@ public class FileUpdateSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(
-                                        Map.of(INDIVIDUAL_KV_LIMIT_PROP, "10", CONS_MAX_GAS_PROP, "100_000_000")))
+                                        Map.of(INDIVIDUAL_KV_LIMIT_PROP, "10", CONS_MAX_GAS_PROP, "100000000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
@@ -412,7 +421,7 @@ public class FileUpdateSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(
-                                        INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
+                                        INDIVIDUAL_KV_LIMIT_PROP, "1000000000",
                                         AGGREGATE_KV_LIMIT_PROP, "1")),
                         contractCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
@@ -492,6 +501,7 @@ public class FileUpdateSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     public HapiSpec chainIdChangesDynamically() {
         final var chainIdUser = "ChainIdUser";
         final var otherChainId = 0xABCDL;
@@ -527,6 +537,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
         return propertyPreservingHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
@@ -559,6 +570,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
+    // It is not implemented yet in contracts
     private HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";
@@ -648,6 +660,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionSizeChange() {
         final var defaultMaxBytesAllowed = 1024;
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
@@ -661,21 +674,14 @@ public class FileUpdateSuite extends HapiSuite {
                                 .payingWith(CIVILIAN)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(SUCCESS),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "consensus.message.maxBytesAllowed",
-                                        String.valueOf(defaultMaxBytesAllowed - 1))))
+                        overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed - 1)))
                 .then(
                         submitMessageTo(TEST_TOPIC)
                                 .message(longMessage)
                                 .payingWith(CIVILIAN)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed))));
+                        overriding("consensus.message.maxBytesAllowed", String.valueOf(defaultMaxBytesAllowed)));
     }
 
     @Override

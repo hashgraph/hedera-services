@@ -25,6 +25,14 @@ public enum SavedStateMetadataField {
      */
     ROUND,
     /**
+     * The root hash of the state.
+     */
+    HASH,
+    /**
+     * The root hash of the state in mnemonic form.
+     */
+    HASH_MNEMONIC,
+    /**
      * The number of consensus events, starting from genesis, that have been handled to create this state.
      */
     NUMBER_OF_CONSENSUS_EVENTS,
@@ -36,6 +44,11 @@ public enum SavedStateMetadataField {
      * The running hash of all events, starting from genesis, that have been handled to create this state.
      */
     RUNNING_EVENT_HASH,
+    /**
+     * The running hash of all events, starting from genesis, that have been handled to create this state, in mnemonic
+     * form.
+     */
+    RUNNING_EVENT_HASH_MNEMONIC,
     /**
      * The minimum generation of non-ancient events after this state reached consensus.
      */
@@ -63,5 +76,13 @@ public enum SavedStateMetadataField {
     /**
      * The total weight of all nodes in the network.
      */
-    TOTAL_WEIGHT
+    TOTAL_WEIGHT,
+    /**
+     * The epoch hash of the state. Used by emergency recovery protocols.
+     */
+    EPOCH_HASH,
+    /**
+     * The epoch hash of the state in mnemonic form.
+     */
+    EPOCH_HASH_MNEMONIC
 }

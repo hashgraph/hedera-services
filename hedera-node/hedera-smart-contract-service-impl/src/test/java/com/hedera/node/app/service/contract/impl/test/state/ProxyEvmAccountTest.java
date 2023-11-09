@@ -162,17 +162,13 @@ class ProxyEvmAccountTest {
 
     @Test
     void doesNotSupportDirectBalanceMutation() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.setBalance(Wei.of(123)));
+        final var balance = Wei.of(123);
+        assertThrows(UnsupportedOperationException.class, () -> subject.setBalance(balance));
     }
 
     @Test
     void delegatesCheckingContract() {
         given(hederaState.isContract(ACCOUNT_NUM)).willReturn(true);
         assertTrue(subject.isContract());
-    }
-
-    @Test
-    void isItselfMutable() {
-        assertSame(subject, subject.getMutable());
     }
 }

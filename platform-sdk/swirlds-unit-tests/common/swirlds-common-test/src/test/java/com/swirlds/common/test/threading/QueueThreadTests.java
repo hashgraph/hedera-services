@@ -705,7 +705,7 @@ class QueueThreadTests {
 
     @Test
     @DisplayName("Queue Max/Min Size Metrics Test - With Thread Start")
-    void testQueueMaxMinSizeMetricsWithThreadStart() throws InterruptedException {
+    void testQueueMaxMinSizeMetricsWithThreadStart() {
         // given
         final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(List.of(0, 1, 2, 3, 4));
         final Queue<Integer> handler = new LinkedList<>();
@@ -735,7 +735,7 @@ class QueueThreadTests {
         // when
         queueThread.start();
         IntStream.range(0, 100).boxed().forEach(queueThread::add);
-        MILLISECONDS.sleep(50);
+        assertEventuallyTrue(queue::isEmpty, Duration.ofSeconds(1), "queue should have been emptied");
 
         // then
         assertThat(maxSizeMetric.get()).isPositive().isLessThanOrEqualTo(105);
@@ -743,8 +743,10 @@ class QueueThreadTests {
         assertThat(handler).hasSize(105);
 
         // when
+        maxSizeMetric.reset();
+        minSizeMetric.reset();
         IntStream.range(0, 100).boxed().forEach(queueThread::add);
-        MILLISECONDS.sleep(50);
+        assertEventuallyTrue(queue::isEmpty, Duration.ofSeconds(1), "queue should have been emptied");
         queueThread.stop();
 
         // then
@@ -973,7 +975,9 @@ class QueueThreadTests {
                 Thread.currentThread().interrupt();
             }
         });
-        for (int i = 0; i < 100; i++) {
+        // The default max queue size is 100, and we just added one item. Do not add
+        // more than 99 or the queue may throw because it is full.
+        for (int i = 0; i < 99; i++) {
             queue.add(() -> {});
         }
 

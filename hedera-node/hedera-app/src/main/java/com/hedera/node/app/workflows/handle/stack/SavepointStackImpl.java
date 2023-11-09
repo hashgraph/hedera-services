@@ -57,7 +57,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @Override
     public void createSavepoint() {
-        setupSavepoint(peek());
+        setupSavepoint(stack.isEmpty() ? root : peek());
     }
 
     @Override
@@ -74,6 +74,23 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             throw new IllegalStateException("The savepoint stack is empty");
         }
         stack.pop();
+    }
+
+    /**
+     * Commits all state changes captured in this stack.
+     */
+    public void commitFullStack() {
+        while (!stack.isEmpty()) {
+            stack.pop().commit();
+        }
+    }
+
+    /**
+     * Rolls back all state changes captured in this stack.
+     */
+    public void rollbackFullStack() {
+        stack.clear();
+        setupSavepoint(root);
     }
 
     @Override
@@ -104,15 +121,6 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     @NonNull
     public ReadableStates rootStates(@NonNull final String serviceName) {
         return root.createReadableStates(serviceName);
-    }
-
-    /**
-     * Commits all state changes to the state that was provided when this {@link SavepointStackImpl} was created.
-     */
-    public void commitFullStack() {
-        while (!stack.isEmpty()) {
-            stack.pop().commit();
-        }
     }
 
     @Override

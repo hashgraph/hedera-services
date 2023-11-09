@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -70,6 +71,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec chainIdWorks() {
         final var defaultChainId = BigInteger.valueOf(295L);
         final var devChainId = BigInteger.valueOf(298L);
@@ -93,6 +95,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
                                                 isOneOfLiteral(acceptableChainIds))));
     }
 
+    @HapiTest
     private HapiSpec baseFeeWorks() {
         final var expectedBaseFee = BigInteger.valueOf(0);
         return defaultHapiSpec("baseFeeWorks")
@@ -116,6 +119,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec coinbaseWorks() {
         return defaultHapiSpec("coinbaseWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -138,6 +142,7 @@ public class GlobalPropertiesSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec gasLimitWorks() {
         final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
         return defaultHapiSpec("gasLimitWorks")

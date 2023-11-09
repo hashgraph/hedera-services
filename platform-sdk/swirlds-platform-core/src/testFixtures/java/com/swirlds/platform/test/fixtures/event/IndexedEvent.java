@@ -20,14 +20,13 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.platform.EventImpl;
-import com.swirlds.platform.event.InternalEventData;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import com.swirlds.platform.internal.EventImpl;
 
 /**
- * An event with the same behavior as a standard event but with the addition of some debugging metadata.
+ * An event with the same behavior as a standard event but with the addition of some debugging
+ * metadata.
  *
- * All testing and debugging utilities should use IndexedEvent instead of EventImpl directly.
+ * <p>All testing and debugging utilities should use IndexedEvent instead of EventImpl directly.
  */
 public class IndexedEvent extends EventImpl {
 
@@ -89,16 +88,12 @@ public class IndexedEvent extends EventImpl {
         return CLASS_ID;
     }
 
-    /**
-     * Get the index of this event with respect to the generator that created it.
-     */
+    /** Get the index of this event with respect to the generator that created it. */
     public long getGeneratorIndex() {
         return generatorIndex;
     }
 
-    /**
-     * Set the generator index of this event.
-     */
+    /** Set the generator index of this event. */
     public void setGeneratorIndex(final long generatorIndex) {
         this.generatorIndex = generatorIndex;
     }
@@ -117,25 +112,14 @@ public class IndexedEvent extends EventImpl {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (!(o instanceof IndexedEvent)) {
-            return false;
-        }
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        final InternalEventData data = getInternalEventData();
-        final InternalEventData otherData = ((IndexedEvent) o).getInternalEventData();
-
-        return super.equals(o)
-                && new EqualsBuilder()
-                        .append(data.isCleared(), otherData.isCleared())
-                        .append(data.isFameDecided(), otherData.isFameDecided())
-                        .append(data.isConsensus(), otherData.isConsensus())
-                        .append(data.hasUserTransactions(), otherData.hasUserTransactions())
-                        .append(data.getRecTimes(), otherData.getRecTimes())
-                        .isEquals();
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        return super.equals(other);
     }
 
     @Override

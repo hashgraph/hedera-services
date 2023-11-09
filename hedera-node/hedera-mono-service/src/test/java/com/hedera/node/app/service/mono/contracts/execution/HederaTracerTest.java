@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Sets;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
@@ -71,7 +70,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -156,7 +155,6 @@ class HederaTracerTest {
                     .hasSize(1);
         }
     }
-    ;
 
     @Test
     void oneofCheckerInternalTest() {
@@ -236,7 +234,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
 
         // trace top level frame
         subject.init(topLevelMessageFrame);
@@ -268,7 +266,7 @@ class HederaTracerTest {
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
-        given(firstChildFrame.getMessageStackDepth()).willReturn(1);
+        given(firstChildFrame.getDepth()).willReturn(1);
         given(firstChildFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
         dequeMock.addFirst(firstChildFrame);
@@ -276,7 +274,7 @@ class HederaTracerTest {
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(topLevelMessageFrame.getCurrentOperation()).willReturn(mockOperation);
         given(topLevelMessageFrame.getCurrentOperation().getOpcode()).willReturn(0xF0);
-        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(MutableAccount.class));
         // trace child frame
         subject.tracePostExecution(topLevelMessageFrame, operationResult);
         // assert child frame action is initialized as expected
@@ -311,7 +309,7 @@ class HederaTracerTest {
         given(childFrame2.getRemainingGas()).willReturn(500L);
         given(childFrame2.getInputData()).willReturn(Bytes.EMPTY);
         given(childFrame2.getValue()).willReturn(Wei.of(543L));
-        given(childFrame2.getMessageStackDepth()).willReturn(1);
+        given(childFrame2.getDepth()).willReturn(1);
         given(childFrame2.getWorldUpdater()).willReturn(worldUpdater);
         dequeMock.addFirst(childFrame2);
         // trace second child
@@ -459,7 +457,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
-        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(MutableAccount.class));
 
         subject.init(messageFrame);
         // when
@@ -486,7 +484,7 @@ class HederaTracerTest {
         assertEquals(OP_CALL, syntheticInvalidAddressAction.getCallOperationType());
         assertEquals(0, syntheticInvalidAddressAction.getValue());
         assertArrayEquals(new byte[0], syntheticInvalidAddressAction.getInput());
-        assertEquals(messageFrame.getMessageStackDepth() + 1, syntheticInvalidAddressAction.getCallDepth());
+        assertEquals(messageFrame.getDepth() + 1, syntheticInvalidAddressAction.getCallDepth());
         assertEquals(EntityId.fromAddress(accountReceiver), syntheticInvalidAddressAction.getCallingContract());
         assertArrayEquals(contract.toArrayUnsafe(), syntheticInvalidAddressAction.getInvalidSolidityAddress());
         assertArrayEquals(
@@ -638,49 +636,6 @@ class HederaTracerTest {
     }
 
     @Test
-    void traceAccountCreationResultWhenTraceabilityNotEnabled() {
-        subject = new HederaTracer(EmitActionSidecars.DISABLED, ValidateActionSidecars.DISABLED);
-        final var haltReason = Optional.of(INVALID_SOLIDITY_ADDRESS);
-
-        subject.traceAccountCreationResult(messageFrame, haltReason);
-
-        verify(messageFrame).setExceptionalHaltReason(haltReason);
-        assertEquals(0, subject.getActions().size());
-    }
-
-    @Test
-    void traceAccountCreationResultWhenTraceabilityEnabled() {
-        // given
-        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getOriginatorAddress()).willReturn(originator);
-        given(messageFrame.getContractAddress()).willReturn(contract);
-        given(messageFrame.getRemainingGas()).willReturn(initialGas);
-        given(messageFrame.getInputData()).willReturn(input);
-        given(messageFrame.getValue()).willReturn(value);
-        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.aliases()).willReturn(contractAliases);
-        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
-        given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        subject.init(messageFrame);
-        given(messageFrame.getState()).willReturn(State.COMPLETED_SUCCESS);
-        final long remainingGasAfterExecution = 343L;
-        given(messageFrame.getRemainingGas()).willReturn(remainingGasAfterExecution);
-        given(messageFrame.getOutputData()).willReturn(output);
-
-        // when
-        subject.traceAccountCreationResult(messageFrame, null);
-
-        // then
-        assertEquals(1, subject.getActions().size());
-        final var action = subject.getActions().get(0);
-        validateAllActionFieldsAreSet(action);
-        assertEquals(contract, action.getRecipientAccount().toEvmAddress());
-        assertNull(action.getInvalidSolidityAddress());
-        assertNull(action.getRecipientContract());
-    }
-
-    @Test
     void successfulLazyCreationActionsIsFinalizedAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
@@ -790,7 +745,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
 
         subject.init(messageFrame);
 
@@ -916,7 +871,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
         subject.init(messageFrame);
         // after some operations, the top level message frame spawns a child
         final Deque<MessageFrame> dequeMock = new ArrayDeque<>();
@@ -949,7 +904,7 @@ class HederaTracerTest {
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
         if (frameType == Type.MESSAGE_CALL) {
-            given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+            given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
         }
 
         subject.tracePostExecution(messageFrame, operationResult);

@@ -18,11 +18,6 @@ name: "Node: Build Application"
 on:
   workflow_dispatch:
     inputs:
-      enable-javadoc:
-        description: "Javadoc Enabled"
-        type: boolean
-        required: false
-        default: true
       enable-unit-tests:
         description: "Unit Testing Enabled"
         type: boolean
@@ -35,6 +30,11 @@ on:
         default: true
       enable-integration-tests:
         description: "Integration Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-hapi-tests:
+        description: "HAPI Testing Enabled"
         type: boolean
         required: false
         default: false
@@ -63,11 +63,6 @@ on:
         type: string
         required: false
         default: "temurin"
-      gradle-version:
-        description: "Gradle Version:"
-        type: string
-        required: false
-        default: "wrapper"
   push:
     branches:
       - develop
@@ -85,11 +80,10 @@ jobs:
     with:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
-      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-      enable-javadoc: ${{ github.event_name == 'push' || github.event.inputs.enable-javadoc == 'true' }}
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
       enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}
+      enable-hapi-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
       enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
       enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
       enable-snyk-scan: ${{ github.event_name == 'push' || github.event.inputs.enable-snyk-scan == 'true' }}
@@ -98,3 +92,5 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
       snyk-token: ${{ secrets.SNYK_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

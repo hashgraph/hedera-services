@@ -48,7 +48,7 @@ import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.platform.PayloadCfgSimple;
 import com.swirlds.demo.platform.PayloadConfig;
-import com.swirlds.demo.platform.TransactionPool;
+import com.swirlds.demo.platform.PttTransactionPool;
 import com.swirlds.demo.platform.TransactionPoolConfig;
 import com.swirlds.demo.platform.TransactionSubmitter;
 import com.swirlds.demo.platform.freeze.FreezeConfig;
@@ -128,7 +128,7 @@ class ExpectedFCMFamilyTest {
     private static MapKey handleRejectedCrypto;
     private static MapKey errorCrypto;
     private static MapKey createdNotHandledFCQ;
-    private static TransactionPool transactionPool;
+    private static PttTransactionPool pttTransactionPool;
     private static final Platform platform;
 
     // borrowed from FCMTransactionPool for use in getMapKeyForFCMTx()
@@ -708,7 +708,7 @@ class ExpectedFCMFamilyTest {
     public void insertMissingEntitiesTest() {
         FCMTransaction trans = createTransaction(Create);
         byte[] payloadWithSig = signTransaction(
-                TestTransaction.newBuilder().setFcmTransaction(trans).build().toByteArray(), transactionPool);
+                TestTransaction.newBuilder().setFcmTransaction(trans).build().toByteArray(), pttTransactionPool);
         // If the mapkey extracted from FCMTransaction (0.0.10) and mapKey provided (0.0.30) doesn't
         // match entity is not inserted to ExpectedMap
         boolean isInsertedWongMapKey = expectedFCMFamily0.insertMissingEntity(
@@ -732,7 +732,7 @@ class ExpectedFCMFamilyTest {
                 .build();
 
         byte[] payloadWithSig = signTransaction(
-                TestTransaction.newBuilder().setFcmTransaction(trans).build().toByteArray(), transactionPool);
+                TestTransaction.newBuilder().setFcmTransaction(trans).build().toByteArray(), pttTransactionPool);
 
         boolean isInsertedNonExistingKey = expectedFCMFamily0.insertMissingEntity(
                 payloadWithSig, expectedFCMFamily0, new MapKey(0, 0, 10), config);
@@ -741,7 +741,7 @@ class ExpectedFCMFamilyTest {
     }
 
     private FCMTransaction createTransaction(TransactionType type) {
-        transactionPool = new TransactionPool(
+        pttTransactionPool = new PttTransactionPool(
                 platform,
                 0,
                 config,

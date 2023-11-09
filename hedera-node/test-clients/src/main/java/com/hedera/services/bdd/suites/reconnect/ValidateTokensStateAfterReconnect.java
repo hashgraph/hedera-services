@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -56,7 +55,6 @@ import org.apache.logging.log4j.Logger;
  * network. Once the node is reconnected the state of tokens is verified on reconnected node and
  * other node
  */
-@HapiTestSuite
 public class ValidateTokensStateAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateTokensStateAfterReconnect.class);
     public static final String reconnectingNode = "0.0.8";
@@ -93,7 +91,7 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS).logging(),
                         cryptoCreate(anotherAccount).balance(ONE_HUNDRED_HBARS).logging())
                 .when(
-                        sleepFor(Duration.ofSeconds(25).toMillis()),
+                        sleepFor(Duration.ofSeconds(26).toMillis()),
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode(),
                         tokenCreate(tokenToBeQueried)
                                 .freezeKey(freezeKey)

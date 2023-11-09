@@ -17,7 +17,6 @@
 package com.swirlds.platform.network;
 
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * External Ip Address found by {@link Network#getExternalIpAddress()}
@@ -69,20 +68,15 @@ public class ExternalIpAddress {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof ExternalIpAddress)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final ExternalIpAddress that = (ExternalIpAddress) o;
-        return new EqualsBuilder()
-                .append(status, that.status)
-                .append(ipAddress, that.ipAddress)
-                .isEquals();
+        final ExternalIpAddress that = (ExternalIpAddress) other;
+        return status == that.status && Objects.equals(ipAddress, that.ipAddress);
     }
 
     @Override

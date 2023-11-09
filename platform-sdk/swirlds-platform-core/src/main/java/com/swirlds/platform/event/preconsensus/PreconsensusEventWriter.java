@@ -18,7 +18,7 @@ package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.platform.EventImpl;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
@@ -52,8 +52,10 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
 
     /**
      * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.
+     *
+     * @param newOriginRound the round of the state that the new stream will be starting from
      */
-    void registerDiscontinuity() throws InterruptedException;
+    void registerDiscontinuity(long newOriginRound) throws InterruptedException;
 
     /**
      * Set the minimum generation needed to be kept on disk.

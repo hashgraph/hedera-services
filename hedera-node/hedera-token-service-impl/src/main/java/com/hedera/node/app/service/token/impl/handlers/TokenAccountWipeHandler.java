@@ -17,10 +17,15 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -30,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -45,6 +51,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -134,6 +142,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final long newAccountBalance;
         final Account.Builder updatedAcctBuilder = acct.copyBuilder();
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+            // Validate that there is at least one fungible token to wipe
+            validateTrue(fungibleWipeCount >= 0 && nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
+
             // Check that the new total supply will not be negative
             newTotalSupply = token.totalSupply() - fungibleWipeCount;
             validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT);
@@ -142,12 +153,13 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             newAccountBalance = validated.accountTokenRel().balance() - fungibleWipeCount;
             validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT);
         } else {
+            // Check if nft serial numbers are zero, but fungible count is more than zero
+            validateFalse(nftSerialNums.isEmpty() && fungibleWipeCount > 0, FAIL_INVALID);
+            // Check if nft serial numbers are zero
+            validateFalse(nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
             // Check that the new total supply will not be negative
             newTotalSupply = token.totalSupply() - nftSerialNums.size();
             validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT);
-
-            // Validate that there is at least one NFT to wipe
-            validateFalse(nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
 
             // Load and validate the nfts
             for (final Long nftSerial : nftSerialNums) {
@@ -171,7 +183,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         // Finally, record all the changes
         if (newAccountBalance == 0) {
-            updatedAcctBuilder.numberPositiveBalances(acct.numberPositiveBalances() - 1);
+            updatedAcctBuilder.numberPositiveBalances(Math.max(acct.numberPositiveBalances() - 1, 0));
         }
         accountStore.put(updatedAcctBuilder.build());
         tokenStore.put(token.copyBuilder().totalSupply(newTotalSupply).build());
@@ -182,6 +194,25 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 .build());
         // Note: record(s) for this operation will be built in a token finalization method so that we keep track of all
         // changes for records
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var op = feeContext.body();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var tokenType = readableTokenStore
+                .get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT))
+                .tokenType();
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
+        return feeContext
+                .feeCalculator(
+                        tokenType.equals(TokenType.FUNGIBLE_COMMON)
+                                ? SubType.TOKEN_FUNGIBLE_COMMON
+                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
+                .addBytesPerTransaction(meta.getBpt())
+                .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .calculate();
     }
 
     private ValidationResult validateSemantics(
@@ -205,6 +236,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
+        if (token.hasKycKey()) {
+            validateTrue(accountRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
         validateFalse(
                 token.treasuryAccountId().equals(accountRel.accountId()),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);

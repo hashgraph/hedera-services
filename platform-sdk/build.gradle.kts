@@ -14,34 +14,47 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.swirlds.platform.aggregate-reports")
-    id("com.hedera.hashgraph.spotless-conventions")
-    id("com.hedera.hashgraph.spotless-kotlin-conventions")
-}
+plugins { id("com.hedera.hashgraph.java") }
 
-repositories { mavenCentral() }
+val sdkDir = layout.projectDirectory.dir("sdk")
 
 tasks.register<JavaExec>("run") {
     group = "application"
-    val sdkDir = File(rootProject.projectDir, "sdk")
-    workingDir = sdkDir
-    jvmArgs =
-        listOf(
-            "-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n",
-            "-cp",
-            "swirlds.jar:data/lib/*",
-            "com.swirlds.platform.Browser"
-        )
-    classpath = rootProject.files(File(sdkDir, "data/lib"))
+    workingDir = sdkDir.asFile
+    mainClass.set("com.swirlds.platform.Browser")
+    classpath = sdkDir.asFileTree.matching { include("*.jar") }
+    jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n")
     maxHeapSize = "8g"
-    project(":swirlds-platform-apps:demos").subprojects.forEach {
-        dependsOn(it.tasks.named("copyApp"))
-        dependsOn(it.tasks.named("copyLib"))
-    }
-    project(":swirlds-platform-apps:tests").subprojects.forEach {
-        dependsOn(it.tasks.named("copyApp"))
-        dependsOn(it.tasks.named("copyLib"))
-    }
-    dependsOn(project(":swirlds").tasks.named("copyApp"))
+
+    // Running ':assemble' of all 'platform-sdk' subprojects before, will trigger
+    // copyLib/copyApp, of all projects that provide an application.
+    dependsOn(
+        rootProject.subprojects
+            .filter { it.projectDir.absolutePath.contains("/platform-sdk/") }
+            .map { "${it.path}:assemble" }
+    )
 }
+
+val cleanRun =
+    tasks.register<Delete>("cleanRun") {
+        delete(
+            sdkDir.asFileTree.matching {
+                include("settingsUsed.txt")
+                include("swirlds.jar")
+                include("metricsDoc.tsv")
+                include("*.csv")
+                include("*.log")
+            }
+        )
+
+        val dataDir = sdkDir.dir("data")
+        delete(dataDir.dir("accountBalances"))
+        delete(dataDir.dir("apps"))
+        delete(dataDir.dir("lib"))
+        delete(dataDir.dir("recordstreams"))
+        delete(dataDir.dir("saved"))
+    }
+
+tasks.clean { dependsOn(cleanRun) }
+
+tasks.checkModuleDirectivesScope { this.enabled = false }

@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -57,7 +56,6 @@ import org.apache.logging.log4j.Logger;
  * <p>It then writes a JSON metadata file that {@link DiverseStateValidation} can use to validate
  * this state is as expected (e.g. after a migration).
  */
-@HapiTestSuite
 public final class DiverseStateCreation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateCreation.class);
 

@@ -60,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -71,7 +70,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class GracePeriodRestrictionsSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(GracePeriodRestrictionsSuite.class);
@@ -360,7 +358,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         cryptoCreate(civilian),
                         cryptoCreate(detachedAccount).balance(0L).autoRenewSecs(2))
                 .when(
-                        sleepFor(1_500L),
+                        sleepFor(2_500L),
                         // Add a triggering transfer to let the ENTITY_EXPIRATION task
                         // mark the detached account as expired-and-pending-removal
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))

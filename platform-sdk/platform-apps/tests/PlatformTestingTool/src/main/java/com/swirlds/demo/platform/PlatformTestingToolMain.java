@@ -30,7 +30,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.DEMO_INFO;
+import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
@@ -41,6 +41,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.base.utility.Triple;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -81,14 +82,15 @@ import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransacti
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.gui.model.GuiModel;
-import com.swirlds.logging.payloads.ApplicationFinishedPayload;
-import com.swirlds.logging.payloads.CreateTransactionFailedPayload;
+import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
+import com.swirlds.logging.legacy.payload.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -109,7 +111,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -185,7 +186,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final int CLIENT_AMOUNT = 2;
     AppClient[] appClient = new AppClient[CLIENT_AMOUNT];
     /** generate different payload bytes according to config */
-    private TransactionPool transactionPool;
+    private PttTransactionPool pttTransactionPool;
 
     private SubmitConfig submitConfig;
     private PayloadConfig payloadConfig;
@@ -316,7 +317,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         // decide the freeze time
         Instant startTime = Instant.now().plus(1, ChronoUnit.MINUTES);
 
-        byte[] freezeBytes = transactionPool.createFreezeTranByte(startTime);
+        byte[] freezeBytes = pttTransactionPool.createFreezeTranByte(startTime);
 
         if (!submitter.sendFreezeTran(platform, freezeBytes)) {
             logger.warn(DEMO_INFO.getMarker(), new CreateTransactionFailedPayload(FREEZE_TRANSACTION_TYPE));
@@ -329,22 +330,22 @@ public class PlatformTestingToolMain implements SwirldMain {
     private synchronized boolean subRoutine() {
 
         if (submittedPayloadTriple == null) { // if no pending payload
-            submittedPayloadTriple = transactionPool.transaction();
+            submittedPayloadTriple = pttTransactionPool.transaction();
         }
 
         if (submittedPayloadTriple != null) {
             logger.info(
                     LOGM_SUBMIT_DETAIL,
                     "is about to submit a {} transaction for {}",
-                    submittedPayloadTriple.getMiddle(),
-                    submittedPayloadTriple.getRight());
+                    submittedPayloadTriple.middle(),
+                    submittedPayloadTriple.right());
             // if the platform is not active, we don't submit transaction
             if (!isActive) {
                 logger.info(LOGM_SUBMIT_DETAIL, "will not submit the transaction because isActive is false");
                 return false;
             }
             boolean success = submitter.trySubmit(
-                    platform, Pair.of(submittedPayloadTriple.getLeft(), submittedPayloadTriple.getMiddle()));
+                    platform, Pair.of(submittedPayloadTriple.left(), submittedPayloadTriple.middle()));
             if (!success) { // if failed keep bytes payload try next time
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                         UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
@@ -372,7 +373,8 @@ public class PlatformTestingToolMain implements SwirldMain {
         } else {
             // empty means no more transaction
             logger.info(LOGM_DEMO_INFO, "Stop generating transactions ");
-            submitter.sendTransaction(platform, transactionPool.createControlTranBytes(ControlType.ENTER_VALIDATION));
+            submitter.sendTransaction(
+                    platform, pttTransactionPool.createControlTranBytes(ControlType.ENTER_VALIDATION));
             logger.info(LOGM_DEMO_INFO, "node {} sent ENTER_VALIDATION Message", platform.getSelfId());
             noMoreTransaction = true;
             return false;
@@ -558,11 +560,6 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             // Parameters[1]: JSON file for app client (parsed below), optional
 
-            // Parameters[2]: indicates whether to use MerkleDb (true) or JasperDB (false) for virtual maps, optional
-            final boolean useMerkleDb =
-                    parameters != null && parameters.length > 2 && Boolean.parseBoolean(parameters[2]);
-            logger.info(LOGM_DEMO_INFO, "Using {} data sources", (useMerkleDb ? "MerkleDb" : "JasperDB"));
-
             final ProgressCfg progressCfg = new ProgressCfg();
 
             if (jsonFileName != null && jsonFileName.length() > 0) {
@@ -619,8 +616,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
                             virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.key());
                             virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.value());
-                            VirtualMerkleStateInitializer.initStateChildren(
-                                    platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
+                            VirtualMerkleStateInitializer.initStateChildren(platform, selfId.id(), virtualMerkleConfig);
                         }
                         final Metrics metrics = platform.getContext().getMetrics();
                         if (state.getVirtualMap() != null) {
@@ -638,7 +634,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     // The instantiation of the transaction pool needs to be done after the
                     // virtualMerkleConfig receives the first ids to be used by the entities
                     // through calls to the setFirstAccountId and setFirstSmartContractId methods.
-                    transactionPool = new TransactionPool(
+                    pttTransactionPool = new PttTransactionPool(
                             platform,
                             platform.getSelfId().id(),
                             payloadConfig,
@@ -844,6 +840,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public SwirldState newState() {
         return new PlatformTestingToolState();
     }
@@ -1124,7 +1121,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                         consensusTime);
 
                 submitter.sendTransaction(
-                        platform, transactionPool.createControlTranBytes(ControlType.EXIT_VALIDATION));
+                        platform, pttTransactionPool.createControlTranBytes(ControlType.EXIT_VALIDATION));
 
                 logger.info(
                         LOGM_DEMO_QUORUM, "Sent EXIT_VALIDATION transaction  [ consensusTime = {} ]", consensusTime);
@@ -1175,7 +1172,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         logger.info(
                 LOGM_DEMO_QUORUM, "Achieved Quorum on ENTER_SYNC transaction [ consensusTime = {} ]", consensusTime);
 
-        submitter.sendTransaction(platform, transactionPool.createControlTranBytes(ControlType.EXIT_SYNC));
+        submitter.sendTransaction(platform, pttTransactionPool.createControlTranBytes(ControlType.EXIT_SYNC));
 
         logger.info(LOGM_DEMO_QUORUM, "Sent EXIT_SYNC transaction  [ consensusTime = {} ]", consensusTime);
     }

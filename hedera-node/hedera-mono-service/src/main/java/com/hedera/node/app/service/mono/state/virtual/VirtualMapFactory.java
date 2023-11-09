@@ -16,36 +16,23 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSupplier;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRelSupplier;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKeySupplier;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValueSerializer;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSupplier;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSerializer;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSupplier;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSerializer;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualHashRecordSerializer;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 public class VirtualMapFactory {
@@ -70,13 +57,6 @@ public class VirtualMapFactory {
     private static final String ON_DISK_TOKEN_RELS_STORAGE_VM_NAME = "tokenRelStore";
     private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
-    private static final boolean USE_MERKLE_DB;
-
-    static {
-        final BootstrapProperties props = new BootstrapProperties();
-        USE_MERKLE_DB = props.getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
-    }
-
     private final Path storageDir;
 
     public VirtualMapFactory() {
@@ -84,301 +64,130 @@ public class VirtualMapFactory {
     }
 
     public VirtualMapFactory(final Path storageDir) {
-        if (storageDir != null) {
-            this.storageDir = storageDir;
-        } else {
-            try {
-                // Let MerkleDb manage its paths
-                this.storageDir = USE_MERKLE_DB ? null : TemporaryFileBuilder.buildTemporaryDirectory("jasperdb");
-            } catch (final IOException z) {
-                throw new UncheckedIOException(z);
-            }
-        }
+        this.storageDir = storageDir;
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
-        return newVirtualizedBlobs(USE_MERKLE_DB);
-    }
-
-    /**
-     * This method should not be invoked directly, it's for test purposes only.
-     */
-    VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder;
-        if (useMerkleDb) {
-            final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig = new MerkleDbTableConfig<>(
-                    CURRENT_SERIALIZATION_VERSION,
-                    DigestType.SHA_384,
-                    CURRENT_SERIALIZATION_VERSION,
-                    new VirtualBlobMerkleDbKeySerializer(),
-                    CURRENT_SERIALIZATION_VERSION,
-                    new VirtualBlobMerkleDbValueSerializer());
-            tableConfig.maxNumberOfKeys(MAX_BLOBS);
-            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        } else {
-            final var blobKeySerializer = new VirtualBlobKeySerializer();
-            final VirtualLeafRecordSerializer<VirtualBlobKey, VirtualBlobValue> blobLeafRecordSerializer =
-                    new VirtualLeafRecordSerializer<>(
-                            CURRENT_SERIALIZATION_VERSION,
-                            VirtualBlobKey.sizeInBytes(),
-                            new VirtualBlobKeySupplier(),
-                            CURRENT_SERIALIZATION_VERSION,
-                            VirtualBlobValue.sizeInBytes(),
-                            new VirtualBlobValueSupplier(),
-                            false);
-            dsBuilder = new JasperDbBuilder<VirtualBlobKey, VirtualBlobValue>()
-                    .storageDir(storageDir)
-                    .virtualLeafRecordSerializer(blobLeafRecordSerializer)
-                    .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                    .keySerializer(blobKeySerializer)
-                    .maxNumOfKeys(MAX_BLOBS)
-                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
-        }
+        final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig = new MerkleDbTableConfig<>(
+                CURRENT_SERIALIZATION_VERSION,
+                DigestType.SHA_384,
+                CURRENT_SERIALIZATION_VERSION,
+                new VirtualBlobMerkleDbKeySerializer(),
+                CURRENT_SERIALIZATION_VERSION,
+                new VirtualBlobMerkleDbValueSerializer());
+        tableConfig.maxNumberOfKeys(MAX_BLOBS);
+        tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
-        return newVirtualizedIterableStorage(USE_MERKLE_DB);
-    }
-
-    /**
-     * This method should not be invoked directly, it's for test purposes only.
-     */
-    VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<ContractKey, IterableContractValue> dsBuilder;
-        if (useMerkleDb) {
-            final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig = new MerkleDbTableConfig<>(
-                    CURRENT_SERIALIZATION_VERSION,
-                    DigestType.SHA_384,
-                    CURRENT_SERIALIZATION_VERSION,
-                    new ContractMerkleDbKeySerializer(),
-                    CURRENT_SERIALIZATION_VERSION,
-                    new IterableContractMerkleDbValueSerializer());
-            tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
-            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        } else {
-            final var storageKeySerializer = new ContractKeySerializer();
-            final VirtualLeafRecordSerializer<ContractKey, IterableContractValue> storageLeafRecordSerializer =
-                    new VirtualLeafRecordSerializer<>(
-                            CURRENT_SERIALIZATION_VERSION,
-                            storageKeySerializer.getSerializedSize(),
-                            new ContractKeySupplier(),
-                            CURRENT_SERIALIZATION_VERSION,
-                            IterableContractValue.ITERABLE_SERIALIZED_SIZE,
-                            new IterableContractValueSupplier(),
-                            false);
-            dsBuilder = new JasperDbBuilder<ContractKey, IterableContractValue>()
-                    .storageDir(storageDir)
-                    .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                    .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                    .keySerializer(storageKeySerializer)
-                    .maxNumOfKeys(MAX_STORAGE_ENTRIES)
-                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
-        }
+        final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig = new MerkleDbTableConfig<>(
+                CURRENT_SERIALIZATION_VERSION,
+                DigestType.SHA_384,
+                CURRENT_SERIALIZATION_VERSION,
+                new ContractMerkleDbKeySerializer(),
+                CURRENT_SERIALIZATION_VERSION,
+                new IterableContractMerkleDbValueSerializer());
+        tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
+        tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+
         return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> newScheduleListStorage() {
-        final var keySerializer = new EntityNumVirtualKeySerializer();
-        final VirtualLeafRecordSerializer<EntityNumVirtualKey, ScheduleVirtualValue> storageLeafRecordSerializer =
-                new VirtualLeafRecordSerializer<>(
-                        CURRENT_SERIALIZATION_VERSION,
-                        keySerializer.getSerializedSize(),
-                        new EntityNumVirtualKeySupplier(),
-                        CURRENT_SERIALIZATION_VERSION,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new ScheduleVirtualValueSupplier(),
-                        false);
 
-        final JasperDbBuilder<EntityNumVirtualKey, ScheduleVirtualValue> dsBuilder = new JasperDbBuilder<>();
-        dsBuilder
-                .storageDir(storageDir)
-                .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                .keySerializer(keySerializer)
-                .maxNumOfKeys(MAX_SCHEDULES)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
+        final var tableConfig = new MerkleDbTableConfig<>(
+                CURRENT_SERIALIZATION_VERSION,
+                DigestType.SHA_384,
+                CURRENT_SERIALIZATION_VERSION,
+                new EntityNumVirtualKeySerializer(),
+                CURRENT_SERIALIZATION_VERSION,
+                new ScheduleVirtualValueSerializer());
+        tableConfig.maxNumberOfKeys(MAX_SCHEDULES);
+        tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        final MerkleDbDataSourceBuilder<EntityNumVirtualKey, ScheduleVirtualValue> dsBuilder =
+                new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+
         return new VirtualMap<>(SCHEDULE_LIST_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> newScheduleTemporalStorage() {
-        final var keySerializer = new SecondSinceEpocVirtualKeySerializer();
-        final VirtualLeafRecordSerializer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>
-                storageLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
+        final var tableConfig = new MerkleDbTableConfig<>(
                         CURRENT_SERIALIZATION_VERSION,
-                        keySerializer.getSerializedSize(),
-                        new SecondSinceEpocVirtualKeySupplier(),
+                        DigestType.SHA_384,
                         CURRENT_SERIALIZATION_VERSION,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new ScheduleSecondVirtualValueSupplier(),
-                        false);
+                        new SecondSinceEpocVirtualKeySerializer(),
+                        CURRENT_SERIALIZATION_VERSION,
+                        new ScheduleSecondVirtualValueSerializer())
+                .maxNumberOfKeys(MAX_SCHEDULE_SECONDS)
+                .preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        final var dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
 
-        final JasperDbBuilder<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> dsBuilder =
-                new JasperDbBuilder<>();
-        dsBuilder
-                .storageDir(storageDir)
-                .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                .keySerializer(keySerializer)
-                .maxNumOfKeys(MAX_SCHEDULE_SECONDS)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
         return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> newScheduleEqualityStorage() {
-        final var keySerializer = new ScheduleEqualityVirtualKeySerializer();
-        final VirtualLeafRecordSerializer<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>
-                storageLeafRecordSerializer = new VirtualLeafRecordSerializer<>(
+        final var tableConfig = new MerkleDbTableConfig<>(
                         CURRENT_SERIALIZATION_VERSION,
-                        keySerializer.getSerializedSize(),
-                        new ScheduleEqualityVirtualKeySupplier(),
+                        DigestType.SHA_384,
                         CURRENT_SERIALIZATION_VERSION,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new ScheduleEqualityVirtualValueSupplier(),
-                        false);
+                        new ScheduleEqualityVirtualKeySerializer(),
+                        CURRENT_SERIALIZATION_VERSION,
+                        new ScheduleEqualityVirtualValueSerializer())
+                .maxNumberOfKeys(MAX_SCHEDULES)
+                .preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        final MerkleDbDataSourceBuilder<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> dsBuilder =
+                new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
 
-        final JasperDbBuilder<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> dsBuilder =
-                new JasperDbBuilder<>();
-        dsBuilder
-                .storageDir(storageDir)
-                .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                .keySerializer(keySerializer)
-                .maxNumOfKeys(MAX_SCHEDULES)
-                .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
         return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
-        return newOnDiskAccountStorage(USE_MERKLE_DB);
-    }
-
-    /**
-     * This method should not be invoked directly, it's for test purposes only.
-     */
-    public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder;
-        if (useMerkleDb) {
-            final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig = new MerkleDbTableConfig<>(
-                    CURRENT_SERIALIZATION_VERSION,
-                    DigestType.SHA_384,
-                    CURRENT_SERIALIZATION_VERSION,
-                    new EntityNumMerkleDbKeySerializer(),
-                    CURRENT_SERIALIZATION_VERSION,
-                    new OnDiskAccountMerkleDbValueSerializer());
-            tableConfig.maxNumberOfKeys(MAX_ACCOUNTS);
-            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        } else {
-            final var keySerializer = new EntityNumVirtualKeySerializer();
-            final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskAccount> accountLeafRecordSerializer =
-                    new VirtualLeafRecordSerializer<>(
-                            CURRENT_SERIALIZATION_VERSION,
-                            keySerializer.getSerializedSize(),
-                            new EntityNumVirtualKeySupplier(),
-                            CURRENT_SERIALIZATION_VERSION,
-                            DataFileCommon.VARIABLE_DATA_SIZE,
-                            new OnDiskAccountSupplier(),
-                            false);
-
-            dsBuilder = new JasperDbBuilder<EntityNumVirtualKey, OnDiskAccount>()
-                    .storageDir(storageDir)
-                    .virtualLeafRecordSerializer(accountLeafRecordSerializer)
-                    .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                    .keySerializer(keySerializer)
-                    .maxNumOfKeys(MAX_ACCOUNTS)
-                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
-        }
+        final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig = new MerkleDbTableConfig<>(
+                CURRENT_SERIALIZATION_VERSION,
+                DigestType.SHA_384,
+                CURRENT_SERIALIZATION_VERSION,
+                new EntityNumMerkleDbKeySerializer(),
+                CURRENT_SERIALIZATION_VERSION,
+                new OnDiskAccountMerkleDbValueSerializer());
+        tableConfig.maxNumberOfKeys(MAX_ACCOUNTS);
+        tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         return new VirtualMap<>(ON_DISK_ACCOUNT_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
-        return newOnDiskTokenRels(USE_MERKLE_DB);
-    }
-
-    /**
-     * This method should not be invoked directly, it's for test purposes only.
-     */
-    public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder;
-        if (useMerkleDb) {
-            final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig = new MerkleDbTableConfig<>(
-                    CURRENT_SERIALIZATION_VERSION,
-                    DigestType.SHA_384,
-                    CURRENT_SERIALIZATION_VERSION,
-                    new EntityNumMerkleDbKeySerializer(),
-                    CURRENT_SERIALIZATION_VERSION,
-                    new OnDiskTokenRelMerkleDbValueSerializer());
-            tableConfig.maxNumberOfKeys(MAX_TOKEN_RELS);
-            tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        } else {
-            final var keySerializer = new EntityNumVirtualKeySerializer();
-            final VirtualLeafRecordSerializer<EntityNumVirtualKey, OnDiskTokenRel> tokenRelLeafRecordSerializer =
-                    new VirtualLeafRecordSerializer<>(
-                            CURRENT_SERIALIZATION_VERSION,
-                            keySerializer.getSerializedSize(),
-                            new EntityNumVirtualKeySupplier(),
-                            CURRENT_SERIALIZATION_VERSION,
-                            // Why does (1 + 4 * Long.SIZE) result in "leaked keys"?
-                            DataFileCommon.VARIABLE_DATA_SIZE,
-                            new OnDiskTokenRelSupplier(),
-                            false);
-
-            dsBuilder = new JasperDbBuilder<EntityNumVirtualKey, OnDiskTokenRel>()
-                    .storageDir(storageDir)
-                    .virtualLeafRecordSerializer(tokenRelLeafRecordSerializer)
-                    .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                    .keySerializer(keySerializer)
-                    .maxNumOfKeys(MAX_TOKEN_RELS)
-                    .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES);
-        }
+        final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig = new MerkleDbTableConfig<>(
+                CURRENT_SERIALIZATION_VERSION,
+                DigestType.SHA_384,
+                CURRENT_SERIALIZATION_VERSION,
+                new EntityNumMerkleDbKeySerializer(),
+                CURRENT_SERIALIZATION_VERSION,
+                new OnDiskTokenRelMerkleDbValueSerializer());
+        tableConfig.maxNumberOfKeys(MAX_TOKEN_RELS);
+        tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         return new VirtualMap<>(ON_DISK_TOKEN_RELS_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
-        return newVirtualizedUniqueTokenStorage(USE_MERKLE_DB);
-    }
-
-    /**
-     * This method should not be invoked directly, it's for test purposes only.
-     */
-    VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder;
-        if (useMerkleDb) {
-            final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig = new MerkleDbTableConfig<>(
-                    CURRENT_SERIALIZATION_VERSION,
-                    DigestType.SHA_384,
-                    CURRENT_SERIALIZATION_VERSION,
-                    new UniqueTokenMerkleDbKeySerializer(),
-                    CURRENT_SERIALIZATION_VERSION,
-                    new UniqueTokenMerkleDbValueSerializer());
-            tableConfig.maxNumberOfKeys(MAX_MINTABLE_NFTS);
-            tableConfig.preferDiskIndices(false);
-            dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        } else {
-            final var storageKeySerializer = new UniqueTokenKeySerializer();
-            final VirtualLeafRecordSerializer<UniqueTokenKey, UniqueTokenValue> storageLeafRecordSerializer =
-                    new VirtualLeafRecordSerializer<>(
-                            CURRENT_SERIALIZATION_VERSION,
-                            storageKeySerializer.getSerializedSize(),
-                            new UniqueTokenKeySupplier(),
-                            CURRENT_SERIALIZATION_VERSION,
-                            UniqueTokenValue.sizeInBytes(),
-                            new UniqueTokenValueSupplier(),
-                            false); // Note: Don't use the maxKeyValueSizeLessThan198
-            // optimization with
-            // variable-sized keys.
-            dsBuilder = new JasperDbBuilder<UniqueTokenKey, UniqueTokenValue>()
-                    .storageDir(storageDir)
-                    .virtualLeafRecordSerializer(storageLeafRecordSerializer)
-                    .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                    .keySerializer(storageKeySerializer)
-                    .maxNumOfKeys(MAX_MINTABLE_NFTS)
-                    .preferDiskBasedIndexes(false);
-        }
+        final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig = new MerkleDbTableConfig<>(
+                CURRENT_SERIALIZATION_VERSION,
+                DigestType.SHA_384,
+                CURRENT_SERIALIZATION_VERSION,
+                new UniqueTokenMerkleDbKeySerializer(),
+                CURRENT_SERIALIZATION_VERSION,
+                new UniqueTokenMerkleDbValueSerializer());
+        tableConfig.maxNumberOfKeys(MAX_MINTABLE_NFTS);
+        tableConfig.preferDiskIndices(false);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         return new VirtualMap<>(UNIQUE_TOKENS_VM_NAME, dsBuilder);
     }
 }

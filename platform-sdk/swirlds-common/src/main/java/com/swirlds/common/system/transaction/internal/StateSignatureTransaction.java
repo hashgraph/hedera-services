@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.transaction.SystemTransactionType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -44,6 +45,7 @@ public final class StateSignatureTransaction extends SystemTransaction {
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int ADDED_SELF_HASH = 2;
+        public static final int ADDED_EPOCH_HASH = 3;
     }
 
     /**
@@ -55,6 +57,9 @@ public final class StateSignatureTransaction extends SystemTransaction {
      * the hash that was signed
      */
     private Hash stateHash;
+
+    /** the hash of the epoch to which this signature corresponds to */
+    private Hash epochHash;
 
     /**
      * round number of signed state
@@ -73,12 +78,28 @@ public final class StateSignatureTransaction extends SystemTransaction {
      * 		The round number of the signed state that this transaction belongs to
      * @param stateSignature
      * 		The byte array of signature of the signed state
+     * @param stateHash
+     *      The hash that was signed
+     * @param epochHash
+     *      The hash of the epoch to which this signature corresponds to
+     */
+    public StateSignatureTransaction(
+            final long round,
+            @NonNull final Signature stateSignature,
+            @NonNull final Hash stateHash,
+            @Nullable final Hash epochHash) {
+        this.round = round;
+        this.stateSignature = Objects.requireNonNull(stateSignature, "stateSignature must not be null");
+        this.stateHash = Objects.requireNonNull(stateHash, "stateHash must not be null");
+        this.epochHash = epochHash;
+    }
+
+    /**
+     * Same as {@link #StateSignatureTransaction(long, Signature, Hash, Hash)} but with epochHash set to null
      */
     public StateSignatureTransaction(
             final long round, @NonNull final Signature stateSignature, @NonNull final Hash stateHash) {
-        this.stateSignature = Objects.requireNonNull(stateSignature, "stateSignature must not be null");
-        this.stateHash = Objects.requireNonNull(stateHash, "stateHash must not be null");
-        this.round = round;
+        this(round, stateSignature, stateHash, null);
     }
 
     /**
@@ -100,6 +121,13 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     public Hash getStateHash() {
         return stateHash;
+    }
+
+    /**
+     * @return the hash of the epoch to which this signature corresponds to
+     */
+    public @Nullable Hash getEpochHash() {
+        return epochHash;
     }
 
     /**
@@ -131,15 +159,15 @@ public final class StateSignatureTransaction extends SystemTransaction {
         } else {
             out.writeByteArray(stateHash.getValue());
         }
-
         out.writeLong(round);
+        out.writeSerializable(epochHash, false);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
 
         if (version == ClassVersion.ORIGINAL) {
             in.readBoolean();
@@ -156,6 +184,9 @@ public final class StateSignatureTransaction extends SystemTransaction {
         }
 
         round = in.readLong();
+        if (version >= ClassVersion.ADDED_EPOCH_HASH) {
+            epochHash = in.readSerializable(false, Hash::new);
+        }
     }
 
     /**
@@ -179,7 +210,7 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ADDED_SELF_HASH;
+        return ClassVersion.ADDED_EPOCH_HASH;
     }
 
     /**
@@ -189,6 +220,7 @@ public final class StateSignatureTransaction extends SystemTransaction {
     public int getSerializedLength() {
         return getArraySerializedLength(stateSignature.getSignatureBytes())
                 + getArraySerializedLength(stateHash == null ? new byte[0] : stateHash.getValue())
+                + SerializableDataOutputStream.getInstanceSerializedLength(epochHash, true, false)
                 + Long.BYTES;
     }
 
@@ -206,7 +238,8 @@ public final class StateSignatureTransaction extends SystemTransaction {
         final StateSignatureTransaction that = (StateSignatureTransaction) o;
         return round == that.round
                 && Objects.equals(stateSignature, that.stateSignature)
-                && Objects.equals(stateHash, that.stateHash);
+                && Objects.equals(stateHash, that.stateHash)
+                && Objects.equals(epochHash, that.epochHash);
     }
 
     /**
@@ -214,6 +247,6 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(stateSignature, stateHash, round);
+        return Objects.hash(stateSignature, stateHash, round, epochHash);
     }
 }

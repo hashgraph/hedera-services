@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.internal.EventImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

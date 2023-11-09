@@ -19,32 +19,54 @@ package com.hedera.services.cli.utils;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.mono.state.submerkle.FractionalFeeSpec;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ThingsToStrings {
 
-    private static final Pattern quotesNeeded = Pattern.compile("[\"\n;]");
-
+    /** Quotes a string to be a valid field in a CSV (comma-separated file), as defined in RFC-4180
+     * (https://datatracker.ietf.org/doc/html/rfc4180) _except_ that we allow the field separator to
+     * be something other than "," (e.g., ";", if we have a lot of fields that contain embedded ",").
+     */
     @NonNull
-    public static String quoteForCsv(@Nullable String s) {
+    public static String quoteForCsv(@NonNull final String fieldSeparator, @Nullable String s) {
         if (s == null) s = "";
         s = s.replace("\"", "\"\""); // quote double-quotes
-        if (quotesNeeded.matcher(s).find()) s = '"' + s + '"';
+        if (Pattern.compile("[\"\r\n" + fieldSeparator + "]").matcher(s).find()) s = '"' + s + '"';
         return s;
+    }
+
+    @NonNull
+    public static String squashLinesToEscapes(@Nullable String s) {
+        if (s == null) return "";
+        return s.replace("\r", "\\r").replace("\n", "\\n");
     }
 
     // All of these converters from something to a String will check to see if that something is a "null" or is
@@ -63,6 +85,12 @@ public class ThingsToStrings {
         final var a = bs.toByteArray();
         hexer.formatHex(sb, a);
         return true;
+    }
+
+    @NonNull
+    public static String toStringOfByteArray(@NonNull final byte[] bs) {
+        if (bs.length == 0) return "";
+        return hexer.formatHex(bs);
     }
 
     public static boolean toStringOfByteArray(@NonNull final StringBuilder sb, @Nullable final byte[] bs) {
@@ -91,6 +119,11 @@ public class ThingsToStrings {
         return true;
     }
 
+    public static String toStringOfEntityId(@NonNull EntityId entityId) {
+        if (entityId.equals(EntityId.MISSING_ENTITY_ID)) return "";
+        return entityId.toAbbrevString();
+    }
+
     public static boolean toStringOfEntityId(@NonNull final StringBuilder sb, @Nullable final EntityId entityId) {
         if (entityId == null || entityId.equals(EntityId.MISSING_ENTITY_ID)) return false;
 
@@ -105,6 +138,75 @@ public class ThingsToStrings {
         return true;
     }
 
+    public static boolean toStructureSummaryOfJKey(@NonNull final StringBuilder sb, @Nullable final JKey jkey) {
+        if (jkey == null || jkey.isEmpty()) return false;
+        try {
+            final var key = JKey.mapJKey(jkey);
+            if (null == key) return false; // This is some kind of _invalid_ key; should it say so somehow?
+            sb.append("Key[");
+            toStructureSummaryOfKey(sb, key);
+            sb.append("]");
+        } catch (InvalidKeyException unknown) {
+            sb.append("<invalid-key>");
+        }
+        return true;
+    }
+
+    public static void toStructureSummaryOfKey(@NonNull final StringBuilder sb, @NonNull final Key key) {
+        switch (key.getKeyCase()) {
+            case CONTRACTID -> sb.append("CID");
+            case ED25519 -> sb.append("ED");
+            case RSA_3072 -> sb.append("RSA-3072");
+            case ECDSA_384 -> sb.append("ECDSA-384");
+            case THRESHOLDKEY -> {
+                final var tk = key.getThresholdKey();
+                final var th = tk.getThreshold();
+                final var kl = tk.getKeys();
+                final var n = kl.getKeysCount();
+                sb.append("TH[");
+                sb.append(th);
+                sb.append("-of-");
+                sb.append(n);
+                for (int i = 0; i < n; i++) {
+                    sb.append(",");
+                    toStructureSummaryOfKey(sb, kl.getKeys(i));
+                }
+                sb.append("]");
+            }
+            case KEYLIST -> {
+                final var kl = key.getKeyList();
+                final var n = kl.getKeysCount();
+                sb.append("KL[#");
+                sb.append(key.getKeyList().getKeysCount());
+                for (int i = 0; i < n; i++) {
+                    sb.append(",");
+                    toStructureSummaryOfKey(sb, kl.getKeys(i));
+                }
+                sb.append("]");
+            }
+            case ECDSA_SECP256K1 -> sb.append("EC");
+            case DELEGATABLE_CONTRACT_ID -> sb.append("dCID");
+            case KEY_NOT_SET -> sb.append("MISSING-KEY");
+        }
+    }
+
+    /** Writes a cryptographic hash of the actual key */
+    @SuppressWarnings(
+            "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
+    // these days w/o running into deprecated methods
+    @NonNull
+    public static String toStringOfJKey(@NonNull final JKey jkey) {
+        if (jkey.isEmpty()) return "";
+        try {
+            final var ser = jkey.serialize();
+            final var hash = CryptographyHolder.get().digestSync(ser).getValue();
+            return toStringOfByteArray(hash);
+
+        } catch (final IOException ex) {
+            return "**EXCEPTION SERIALIZING JKEY**";
+        }
+    }
+
     /** Writes a cryptographic hash of the actual key */
     @SuppressWarnings(
             "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
@@ -117,7 +219,7 @@ public class ThingsToStrings {
             final var hash = CryptographyHolder.get().digestSync(ser).getValue();
             toStringOfByteArray(sb, hash);
         } catch (final IOException ex) {
-            sb.append("**EXCEPTION**");
+            sb.append("**EXCEPTION SERIALIZING JKEY**");
         }
         return true;
     }
@@ -193,6 +295,133 @@ public class ThingsToStrings {
         sb.setLength(sb.length() - 1);
         sb.append(")");
         return true;
+    }
+
+    public enum FeeProfile {
+        FULL,
+        SKETCH
+    }
+
+    @NonNull
+    public static String toStringOfFcCustomFee(@NonNull final FcCustomFee fee) {
+        return toStringOfFcCustomFee(fee, FeeProfile.FULL);
+    }
+
+    @NonNull
+    public static String toSketchyStringOfFcCustomFee(@NonNull final FcCustomFee fee) {
+        return toStringOfFcCustomFee(fee, FeeProfile.SKETCH);
+    }
+
+    @NonNull
+    public static String toStringOfFcCustomFee(@NonNull final FcCustomFee fee, @NonNull final FeeProfile profile) {
+        final EntityId feeCollector = fee.getFeeCollector();
+        final boolean allCollectorsAreExempt = fee.getAllCollectorsAreExempt();
+        final String actualFee =
+                switch (fee.getFeeType()) {
+                    case FIXED_FEE -> toStringOfFixedFee(fee.getFixedFeeSpec(), profile);
+                    case FRACTIONAL_FEE -> toStringOfFractionalFee(fee.getFractionalFeeSpec(), profile);
+                    case ROYALTY_FEE -> toStringOfRoyaltyFee(fee.getRoyaltyFeeSpec(), profile);
+                };
+        return switch (profile) {
+            case FULL -> "Fee[%s,%s%s]"
+                    .formatted(
+                            actualFee, toStringOfEntityId(feeCollector), allCollectorsAreExempt ? ",ALL-EXEMPT" : "");
+            case SKETCH -> "Fee[%s%s]".formatted(actualFee, allCollectorsAreExempt ? ",ALL-EXEMPT" : "");
+        };
+    }
+
+    @NonNull
+    public static String toStringOfFixedFee(@NonNull final FixedFeeSpec fee, @NonNull final FeeProfile profile) {
+        final long unitsToCollect = fee.getUnitsToCollect();
+        final EntityId tokenDenomination = fee.getTokenDenomination();
+        final boolean usedDenomWildcard = fee.usedDenomWildcard();
+
+        return switch (profile) {
+            case FULL -> "Fixed[%d,%s%s]"
+                    .formatted(
+                            unitsToCollect,
+                            tokenDenomination != null ? toStringOfEntityId(tokenDenomination) : "NO-TOKEN-DENOMINATION",
+                            usedDenomWildcard ? ",*" : "");
+            case SKETCH -> "FIX[%s%s]"
+                    .formatted(null == tokenDenomination ? "NO-TOKEN-DENOMINATION" : "", usedDenomWildcard ? "*" : "");
+        };
+    }
+
+    @NonNull
+    public static String toStringOfFractionalFee(
+            @NonNull final FractionalFeeSpec fee, @NonNull final FeeProfile profile) {
+        final long numerator = fee.getNumerator();
+        final long denominator = fee.getDenominator();
+        final long minimumUnitsToCollect = fee.getMinimumAmount();
+        final long maximumUnitsToCollect = fee.getMaximumUnitsToCollect();
+        final boolean isNetOfTransfers = fee.isNetOfTransfers();
+
+        return switch (profile) {
+            case FULL -> "Fractional[%d/%d (min %d max %d)%s]"
+                    .formatted(
+                            numerator,
+                            denominator,
+                            minimumUnitsToCollect,
+                            maximumUnitsToCollect,
+                            isNetOfTransfers ? ", NET" : "");
+            case SKETCH -> "FRAC[%s]".formatted(isNetOfTransfers ? "NET" : "");
+        };
+    }
+
+    @NonNull
+    public static String toStringOfRoyaltyFee(@NonNull final RoyaltyFeeSpec fee, @NonNull final FeeProfile profile) {
+        final long numerator = fee.numerator();
+        final long denominator = fee.denominator();
+        final FixedFeeSpec fallbackFee = fee.fallbackFee();
+
+        return switch (profile) {
+            case FULL -> "Royalty[%d/%d%s]"
+                    .formatted(
+                            numerator,
+                            denominator,
+                            fee.hasFallbackFee() ? "," + toStringOfFixedFee(fallbackFee, profile) : "");
+            case SKETCH -> fee.hasFallbackFee()
+                    ? "ROYAL+FALLBACK[%s]".formatted(toStringOfFixedFee(fallbackFee, FeeProfile.SKETCH))
+                    : "ROYAL[]";
+        };
+    }
+
+    @NonNull
+    public static String toStringOfRichInstant(@NonNull final RichInstant instant) {
+        return "%d.%d".formatted(instant.getSeconds(), instant.getNanos());
+    }
+
+    public static boolean is7BitAscii(@NonNull final byte[] bs) {
+        for (byte b : bs) if (b < 0) return false;
+        return true;
+    }
+
+    @NonNull
+    public static String to7BitAscii(@NonNull final byte[] bs) {
+        return new String(bs, StandardCharsets.US_ASCII);
+    }
+
+    static CharsetDecoder toUTF8 = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT);
+
+    @NonNull
+    public static Optional<String> maybeToUTF8(@NonNull final byte[] bs) {
+        try {
+            return Optional.of(toUTF8.decode(ByteBuffer.wrap(bs)).toString());
+        } catch (final CharacterCodingException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    @NonNull
+    public static String toStringPossibleHumanReadableByteArray(
+            @NonNull final String fieldSeparator, @NonNull final byte[] bs) {
+        final var maybeUTF8 = maybeToUTF8(bs);
+        return maybeUTF8.map(s -> quoteForCsv(fieldSeparator, s)).orElseGet(() -> toStringOfByteArray(bs));
+    }
+
+    @NonNull
+    public static Function<byte[], String> getMaybeStringifyByteString(@NonNull final String fieldSeparator) {
+        return bs -> toStringPossibleHumanReadableByteArray(fieldSeparator, bs);
     }
 
     private ThingsToStrings() {}

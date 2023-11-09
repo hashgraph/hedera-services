@@ -16,65 +16,23 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
  * This class is the serializer for {@link SmartContractMapKey}.
  */
-public final class SmartContractMapKeySerializer implements KeySerializer<SmartContractMapKey> {
+public final class SmartContractMapKeySerializer extends AbstractFixedSizeKeySerializer<SmartContractMapKey> {
 
-    private static final long CLASS_ID = 0x2d68463768cf4c59L;
+    private static final long CLASS_ID = 0x2d68463768cf4c5AL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getSerializedSize(long dataVersion) {
-        return SmartContractMapKey.getSizeInBytes();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getCurrentDataVersion() {
-        return 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SmartContractMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        final SmartContractMapKey key = new SmartContractMapKey();
-        key.deserialize(buffer, (int) dataVersion);
-        return key;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int serialize(final SmartContractMapKey data, final SerializableDataOutputStream outputStream)
-            throws IOException {
-        data.serialize(outputStream);
-        return SmartContractMapKey.getSizeInBytes();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return SmartContractMapKey.getSizeInBytes();
+    public SmartContractMapKeySerializer() {
+        super(CLASS_ID, ClassVersion.ORIGINAL, SmartContractMapKey.getSizeInBytes(), 1, SmartContractMapKey::new);
     }
 
     /**
@@ -84,37 +42,5 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final SmartContractMapKey keyToCompare)
             throws IOException {
         return keyToCompare.equals(buffer, dataVersion);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // nothing to serialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // nothing to deserialize
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
     }
 }

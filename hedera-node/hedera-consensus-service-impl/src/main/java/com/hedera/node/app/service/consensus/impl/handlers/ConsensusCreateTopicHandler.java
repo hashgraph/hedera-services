@@ -30,10 +30,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
-import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.CreateTopicResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -64,6 +65,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         // The transaction cannot set the admin key unless the transaction was signed by that key
         if (op.hasAdminKey()) {
             context.requireKeyOrThrow(op.adminKey(), BAD_ENCODING);
+            //  context.requireKeyOrThrow(op.adminKey(), INVALID_ADMIN_KEY); ref #7770
         }
 
         // If an account is to be used for auto-renewal, then the account must exist and the transaction
@@ -85,17 +87,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
-
-        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                final var protoBody = fromPbj(handleContext.body());
-                return ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(protoBody, sigValueObj);
-            } catch (InvalidTxBodyException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
@@ -131,8 +122,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                 impliedExpiry, op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(), op.autoRenewAccount());
 
         try {
-            final var effectiveExpiryMeta =
-                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+            final var effectiveExpiryMeta = handleContext
+                    .expiryValidator()
+                    .resolveCreationAttempt(false, entityExpiryMeta, HederaFunctionality.CONSENSUS_CREATE_TOPIC);
             builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
             builder.expirationSecond(effectiveExpiryMeta.expiry());
             builder.autoRenewAccountId(effectiveExpiryMeta.autoRenewAccountId());
@@ -160,5 +152,15 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             }
             throw e;
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new CreateTopicResourceUsage()
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

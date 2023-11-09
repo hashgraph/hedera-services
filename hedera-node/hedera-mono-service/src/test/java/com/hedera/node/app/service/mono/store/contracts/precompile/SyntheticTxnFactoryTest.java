@@ -87,6 +87,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWra
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.Units;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -585,11 +586,25 @@ class SyntheticTxnFactoryTest {
                         .setStake(987_654_321L)
                         .setStakeRewarded(54_321L)
                         .build());
+        final var synthStakeRewardedStart =
+                nodeStakes.stream().mapToLong(NodeStake::getStakeRewarded).sum();
         propertySource.ensureProps();
         dynamicProperties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
         subject = new SyntheticTxnFactory(dynamicProperties);
 
-        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes, propertySource);
+        final var reservedStakingRewards = 666_666_666_666L;
+        final var unreservedStakingRewardBalance = 777_777_777_777L;
+        final var maxScaledRewardRate = 6_849L * 2 / 3;
+        final var txnBody = subject.nodeStakeUpdate(
+                timestamp,
+                nodeStakes,
+                propertySource,
+                synthStakeRewardedStart,
+                maxScaledRewardRate,
+                reservedStakingRewards,
+                unreservedStakingRewardBalance,
+                dynamicProperties.stakingRewardBalanceThreshold(),
+                dynamicProperties.maxStakeRewarded());
 
         assertTrue(txnBody.hasNodeStakeUpdate());
         assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
@@ -597,7 +612,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(1_234_567L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStakeRewarded());
         assertEquals(987_654_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStake());
         assertEquals(54_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStakeRewarded());
-        assertEquals(6_849L, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
+        assertEquals(maxScaledRewardRate, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
         assertEquals(0L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getNumerator());
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getDenominator());
@@ -608,7 +623,13 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
         assertEquals(25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
-        assertEquals(48_630_136_986_000L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
+        final var expectedMaxTotalReward = (synthStakeRewardedStart / Units.HBARS_TO_TINYBARS) * maxScaledRewardRate;
+        final var synthUpdate = txnBody.getNodeStakeUpdate();
+        assertEquals(expectedMaxTotalReward, synthUpdate.getStakingRewardRate());
+        assertEquals(expectedMaxTotalReward, synthUpdate.getMaxTotalReward());
+        assertEquals(reservedStakingRewards, synthUpdate.getReservedStakingRewards());
+        assertEquals(dynamicProperties.stakingRewardBalanceThreshold(), synthUpdate.getRewardBalanceThreshold());
+        assertEquals(dynamicProperties.maxStakeRewarded(), synthUpdate.getMaxStakeRewarded());
     }
 
     @Test

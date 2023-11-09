@@ -26,7 +26,8 @@ import java.security.KeyStoreException;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import org.apache.commons.lang3.ObjectUtils;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Public certificates for all the members of the network
@@ -71,7 +72,7 @@ public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore, KeySt
             Certificate agrCert = allPublic.getCertificate(AGREEMENT.storeName(name));
             Certificate encCert = allPublic.getCertificate(ENCRYPTION.storeName(name));
 
-            if (ObjectUtils.anyNull(sigCert, agrCert, encCert)) {
+            if (Stream.of(sigCert, agrCert, encCert).anyMatch(Objects::isNull)) {
                 throw new KeyLoadingException("Cannot find certificates for: " + name);
             }
 

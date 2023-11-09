@@ -31,8 +31,10 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,14 +45,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -59,7 +65,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sidecarIdValidator;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -67,6 +75,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
+import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -81,6 +90,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -90,6 +100,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -103,12 +114,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -219,6 +231,7 @@ public class ContractCallSuite extends HapiSuite {
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
+                specialQueriesXTest(),
                 sendHbarsToAddressesMultipleTimes(),
                 sendHbarsToDifferentAddresses(),
                 sendHbarsFromDifferentAddressessToAddress(),
@@ -234,9 +247,26 @@ public class ContractCallSuite extends HapiSuite {
                 nestedContractCannotOverSendValue(),
                 depositMoreThanBalanceFailsGracefully(),
                 lowLevelEcrecCallBehavior(),
-                callsToSystemEntityNumsAreTreatedAsPrecompileCalls());
+                callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
+                hollowCreationFailsCleanly());
     }
 
+    private HapiSpec hollowCreationFailsCleanly() {
+        final var contract = "HollowAccountCreator";
+        return defaultHapiSpec("HollowCreationFailsCleanly")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(contractCall(contract, "testCallFoo", randomHeadlongAddress(), BigInteger.valueOf(500_000L))
+                        .sending(ONE_HBAR)
+                        .gas(2_000_000L)
+                        .via("callTransaction")
+                        .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS))
+                .then(getTxnRecord("callTransaction").andAllChildRecords().logged());
+    }
+
+    @HapiTest
     private HapiSpec lowLevelEcrecCallBehavior() {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
@@ -272,6 +302,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(account).hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
+    @HapiTest
     private HapiSpec callsToSystemEntityNumsAreTreatedAsPrecompileCalls() {
         final var TEST_CONTRACT = "TestContract";
         final var ZERO_ADDRESS = 0L;
@@ -485,6 +516,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
         return defaultHapiSpec("depositMoreThanBalanceFailsGracefully")
                 .given(
@@ -498,6 +530,7 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
+    @HapiTest
     private HapiSpec nestedContractCannotOverSendValue() {
         return defaultHapiSpec("NestedContractCannotOverSendValue")
                 .given(
@@ -649,6 +682,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec bitcarbonTestStillPasses() {
         final var addressBook = "AddressBook";
         final var jurisdictions = "Jurisdictions";
@@ -728,6 +762,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .gas(1_000_000)));
     }
 
+    @HapiTest
     private HapiSpec exchangeRatePrecompileWorks() {
         final var valueToTinycentCall = "recoverUsd";
         final var rateAware = "ExchangeRatePrecompile";
@@ -794,7 +829,7 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
                         tokenCreate("nft")
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .exposingAddressTo(nftAddr::set)
                                 .initialSupply(0)
                                 .supplyKey(DEFAULT_PAYER)
@@ -840,6 +875,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec imapUserExercise() {
         final var contract = "User";
         final var insert1To4 = "insert1To10";
@@ -864,6 +900,171 @@ public class ContractCallSuite extends HapiSuite {
                         contractCall(contract, "remove", BigInteger.TWO)
                                 .gas(gasToOffer)
                                 .via(remove2));
+    }
+
+    @HapiTest
+    HapiSpec specialQueriesXTest() {
+        final var secret = BigInteger.valueOf(123456789L);
+        final var tinybars = BigInteger.valueOf(666_666_666L);
+        final var erc20Symbol = "SYM20";
+        final var erc20Name = "20 Coin";
+        final var erc20Memo = "20 Coin Memo";
+        final var erc20Decimals = 2;
+        final var erc20TotalSupply = 888L;
+        final var erc20UserBalance = 111L;
+        final var erc721Symbol = "SYM721";
+        final var erc721Name = "721 Unique Things";
+        final var erc721Memo = "721 Unique Things Memo";
+        final var erc721UserBalance = 3;
+        final var ercUser = "ercUser";
+        final var ercOperator = "ercOperator";
+        final AtomicReference<Address> erc20Address = new AtomicReference<>();
+        final AtomicReference<Address> erc721Address = new AtomicReference<>();
+        final AtomicReference<Address> ercUserAddress = new AtomicReference<>();
+        final AtomicReference<Address> ercOperatorAddress = new AtomicReference<>();
+        final var contract = "SpecialQueriesXTest";
+        final var secretAbi =
+                "{\"inputs\":[],\"name\":\"secret\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
+        final AtomicReference<byte[]> prngOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> secretOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> tinycentEquivOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20BalanceOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20SupplyOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20NameOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20SymbolOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20DecimalsOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721NameOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721SymbolOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721TokenUriOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721BalanceOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721OwnerOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721IsOperatorOutput = new AtomicReference<>();
+        final var supplyKey = "supplyKey";
+        final var ercUserKey = "ercUserKey";
+        return defaultHapiSpec("SpecialQueriesXTest")
+                .given(
+                        newKeyNamed(supplyKey),
+                        newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ercUserKey, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> {
+                            final AtomicReference<AccountID> ercUserId = new AtomicReference<>();
+                            final var lookup = getAliasedAccountInfo(ercUserKey)
+                                    .logged()
+                                    .exposingContractAccountIdTo(evmAddress ->
+                                            ercUserAddress.set(asHeadlongAddress(CommonUtils.unhex(evmAddress))))
+                                    .exposingIdTo(ercUserId::set);
+                            allRunFor(spec, lookup);
+                            System.out.println("ERC user is " + ercUserAddress.get() + " (" + ercUserId.get() + ")");
+                            spec.registry().saveAccountId(ercUser, ercUserId.get());
+                            spec.registry().saveKey(ercUser, spec.registry().getKey(ercUserKey));
+                        }),
+                        cryptoCreate(ercOperator)
+                                .exposingCreatedIdTo(id -> ercOperatorAddress.set(idAsHeadlongAddress(id)))
+                                .advertisingCreation(),
+                        cryptoCreate(TOKEN_TREASURY).advertisingCreation(),
+                        tokenCreate(erc20Name)
+                                .entityMemo(erc20Memo)
+                                .name(erc20Name)
+                                .symbol(erc20Symbol)
+                                .decimals(erc20Decimals)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(erc20TotalSupply)
+                                .exposingAddressTo(erc20Address::set)
+                                .advertisingCreation(),
+                        tokenAssociate(ercUser, erc20Name),
+                        cryptoTransfer(moving(erc20UserBalance, erc20Name).between(TOKEN_TREASURY, ercUser)),
+                        tokenCreate(erc721Name)
+                                .entityMemo(erc721Memo)
+                                .name(erc721Name)
+                                .symbol(erc721Symbol)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .exposingAddressTo(erc721Address::set)
+                                .supplyKey(supplyKey)
+                                .treasury(TOKEN_TREASURY)
+                                .advertisingCreation(),
+                        mintToken(
+                                erc721Name,
+                                IntStream.range(0, erc721UserBalance + 1)
+                                        .mapToObj(i -> ByteString.copyFromUtf8("https://example.com/721/" + (i + 1)))
+                                        .toList()),
+                        tokenAssociate(ercUser, erc721Name),
+                        cryptoApproveAllowance()
+                                .addNftAllowance(ercUser, erc721Name, ercOperator, true, List.of())
+                                .signedBy(DEFAULT_PAYER, ercUser),
+                        cryptoTransfer(LongStream.rangeClosed(1, erc721UserBalance)
+                                .mapToObj(i -> movingUnique(erc721Name, i).between(TOKEN_TREASURY, ercUser))
+                                .toArray(TokenMovement[]::new)),
+                        uploadInitCode(contract),
+                        contractCreate(contract, secret).gas(250_000L))
+                .when(
+                        contractCallLocalWithFunctionAbi(contract, secretAbi)
+                                .exposingTypedResultsTo(results -> LOG.info("Secret is {}", results[0]))
+                                .exposingRawResultsTo(secretOutput::set),
+                        contractCallLocal(contract, "getTinycentsEquiv", tinybars)
+                                .exposingTypedResultsTo(results -> LOG.info("Equiv tinycents is {}", results[0]))
+                                .exposingRawResultsTo(tinycentEquivOutput::set),
+                        contractCallLocal(contract, "getPrngSeed")
+                                .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
+                                .exposingRawResultsTo(prngOutput::set),
+                        sourcing(() -> contractCallLocal(
+                                        contract, "getErc20Balance", erc20Address.get(), ercUserAddress.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 user balance is {}", results[0]))
+                                .exposingRawResultsTo(erc20BalanceOutput::set)),
+                        sourcing(() -> contractCallLocal(contract, "getErc20Supply", erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 supply is {}", results[0]))
+                                .exposingRawResultsTo(erc20SupplyOutput::set)),
+                        sourcing(() -> contractCallLocal(contract, "getErc20Name", erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 name is {}", results[0]))
+                                .exposingRawResultsTo(erc20NameOutput::set)),
+                        sourcing(() -> contractCallLocal(contract, "getErc20Symbol", erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 symbol is {}", results[0]))
+                                .exposingRawResultsTo(erc20SymbolOutput::set)),
+                        sourcing(() -> contractCallLocal(contract, "getErc20Decimals", erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 decimals is {}", results[0]))
+                                .exposingRawResultsTo(erc20DecimalsOutput::set)),
+                        sourcing(() -> contractCallLocal(contract, "getErc721Name", erc721Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 name is {}", results[0]))
+                                .exposingRawResultsTo(erc721NameOutput::set)),
+                        sourcing(() -> contractCallLocal(contract, "getErc721Symbol", erc721Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 symbol is {}", results[0]))
+                                .exposingRawResultsTo(erc721SymbolOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                        contract, "getErc721TokenUri", erc721Address.get(), BigInteger.TWO)
+                                .exposingTypedResultsTo(results -> LOG.info("SN#2 token URI is {}", results[0]))
+                                .exposingRawResultsTo(erc721TokenUriOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                        contract, "getErc721Balance", erc721Address.get(), ercUserAddress.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 user balance is {}", results[0]))
+                                .exposingRawResultsTo(erc721BalanceOutput::set)),
+                        sourcing(
+                                () -> contractCallLocal(contract, "getErc721Owner", erc721Address.get(), BigInteger.ONE)
+                                        .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
+                                        .exposingRawResultsTo(erc721OwnerOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                        contract,
+                                        "getErc721IsOperator",
+                                        erc721Address.get(),
+                                        ercUserAddress.get(),
+                                        ercOperatorAddress.get())
+                                .exposingTypedResultsTo(results -> LOG.info("Is operator? {}", results[0]))
+                                .exposingRawResultsTo(erc721IsOperatorOutput::set)))
+                .then(withOpContext((spec, opLog) -> {
+                    LOG.info("Explicit secret is {}", CommonUtils.hex(secretOutput.get()));
+                    LOG.info("Explicit PRNG seed is {}", CommonUtils.hex(prngOutput.get()));
+                    LOG.info("Explicit equiv tinycents is {}", CommonUtils.hex(tinycentEquivOutput.get()));
+                    LOG.info("Explicit ERC-20 balance {}", CommonUtils.hex(erc20BalanceOutput.get()));
+                    LOG.info("Explicit ERC-20 supply {}", CommonUtils.hex(erc20SupplyOutput.get()));
+                    LOG.info("Explicit ERC-20 name {}", CommonUtils.hex(erc20NameOutput.get()));
+                    LOG.info("Explicit ERC-20 symbol {}", CommonUtils.hex(erc20SymbolOutput.get()));
+                    LOG.info("Explicit ERC-20 decimals {}", CommonUtils.hex(erc20DecimalsOutput.get()));
+                    LOG.info("Explicit ERC-721 name {}", CommonUtils.hex(erc721NameOutput.get()));
+                    LOG.info("Explicit ERC-721 symbol {}", CommonUtils.hex(erc721SymbolOutput.get()));
+                    LOG.info("Explicit ERC-721 SN#2 metadata {}", CommonUtils.hex(erc721TokenUriOutput.get()));
+                    LOG.info("Explicit ERC-721 user balance is {}", CommonUtils.hex(erc721BalanceOutput.get()));
+                    LOG.info("Explicit ERC-721 SN#1 owner is {}", CommonUtils.hex(erc721OwnerOutput.get()));
+                    LOG.info("Explicit ERC-721 operator is {}", CommonUtils.hex(erc721IsOperatorOutput.get()));
+                }));
     }
 
     // For this test we use refusingEthConversion() for the Eth Call isomer,
@@ -929,11 +1130,7 @@ public class ContractCallSuite extends HapiSuite {
 
                     ctxLog.info("symbol: [{}]", symbol);
 
-                    Assertions.assertEquals("", symbol, "TokenIssuer's symbol should be fixed value"); // should
-                    // be
-                    // "OCT"
-                    // as
-                    // expected
+                    Assertions.assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
                     final var funcDecimals = Function.fromJson(getABIFor(FUNCTION, DECIMALS, contract));
 
                     final Integer decimals = getValueFromRegistry(spec, DECIMALS, funcDecimals);
@@ -1094,6 +1291,7 @@ public class ContractCallSuite extends HapiSuite {
         return decodedReturnedValue;
     }
 
+    @HapiTest
     HapiSpec smartContractInlineAssemblyCheck() {
         final var inlineTestContract = "InlineTest";
 
@@ -1164,6 +1362,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
         return defaultHapiSpec("MultipleSelfDestructsAreSafe")
@@ -1172,6 +1371,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("lightTxn").logged());
     }
 
+    @HapiTest
     HapiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
@@ -1185,6 +1385,7 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
 
+    @HapiTest
     HapiSpec multipleDepositSuccess() {
         return defaultHapiSpec("MultipleDepositSuccess")
                 .given(
@@ -1205,6 +1406,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
         return defaultHapiSpec("DepositDeleteSuccess")
@@ -1220,6 +1422,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(BENEFICIARY).hasTinyBars(initBalance + DEPOSIT_AMOUNT));
     }
 
+    @HapiTest
     HapiSpec associationAcknowledgedInApprovePrecompile() {
         final var token = "TOKEN";
         final var spender = "SPENDER";
@@ -1240,6 +1443,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     HapiSpec payableSuccess() {
         return defaultHapiSpec("PayableSuccess")
                 .given(
@@ -1254,6 +1458,7 @@ public class ContractCallSuite extends HapiSuite {
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
     }
 
+    @HapiTest
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
@@ -1299,6 +1504,7 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
     }
 
+    @HapiTest
     HapiSpec nonPayable() {
         final var contract = CREATE_TRIVIAL;
 
@@ -1430,6 +1636,7 @@ public class ContractCallSuite extends HapiSuite {
                         getTxnRecord(FAIL_INVALID_INITIAL_BALANCE));
     }
 
+    @HapiTest
     HapiSpec payTestSelfDestructCall() {
         final var contract = "PayTestSelfDestruct";
 
@@ -1507,6 +1714,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec minChargeIsTXGasUsedByContractCall() {
         return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
                 .given(uploadInitCode(SIMPLE_UPDATE_CONTRACT))
@@ -1527,6 +1735,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hscsEvm006ContractHBarTransferToAccount() {
         return defaultHapiSpec("hscsEvm006ContractHBarTransferToAccount")
                 .given(
@@ -1552,6 +1761,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L + 10));
     }
 
+    @HapiTest
     private HapiSpec hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
         final var topLevelContract = "TopLevelTransferring";
         final var subLevelContract = "SubLevelTransferring";
@@ -1609,6 +1819,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(subLevelContract).hasTinyBars(20L + INITIAL_CONTRACT_BALANCE));
     }
 
+    @HapiTest
     private HapiSpec hscsEvm005TransferOfHBarsWorksBetweenContracts() {
         final var to = "To";
 
@@ -1730,6 +1941,7 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec sendHbarsToAddressesMultipleTimes() {
         return defaultHapiSpec("sendHbarsToAddressesMultipleTimes")
                 .given(
@@ -1757,6 +1969,7 @@ public class ContractCallSuite extends HapiSuite {
                         .has(contractWith().balance(10_000L - 127L))));
     }
 
+    @HapiTest
     private HapiSpec sendHbarsToDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToDifferentAddresses")
                 .given(
@@ -1796,6 +2009,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L - 35L))));
     }
 
+    @HapiTest
     private HapiSpec sendHbarsFromDifferentAddressessToAddress() {
         return defaultHapiSpec("sendHbarsFromDifferentAddressessToAddress")
                 .given(
@@ -1839,6 +2053,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L - 20L))));
     }
 
+    @HapiTest
     private HapiSpec sendHbarsToOuterContractFromDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToOuterContractFromDifferentAddresses")
                 .given(
@@ -1961,6 +2176,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L))));
     }
 
+    @HapiTest
     private HapiSpec sendHbarsFromAndToDifferentAddressess() {
         return defaultHapiSpec("sendHbarsFromAndToDifferentAddressess")
                 .given(
@@ -2017,6 +2233,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000 - 60L))));
     }
 
+    @HapiTest
     private HapiSpec transferNegativeAmountOfHbarsFails() {
         return defaultHapiSpec("transferNegativeAmountOfHbarsFails")
                 .given(
@@ -2050,6 +2267,7 @@ public class ContractCallSuite extends HapiSuite {
                         .has(contractWith().balance(10_000L))));
     }
 
+    @HapiTest
     private HapiSpec transferZeroHbars() {
         return defaultHapiSpec("transferZeroHbars")
                 .given(

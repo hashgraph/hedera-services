@@ -16,7 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
@@ -31,6 +37,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -40,6 +47,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
@@ -50,7 +58,7 @@ public record HederaEvmTransactionResult(
         @Nullable ContractID recipientId,
         @Nullable ContractID recipientEvmAddress,
         @NonNull Bytes output,
-        @Nullable String haltReason,
+        @Nullable ExceptionalHaltReason haltReason,
         @Nullable Bytes revertReason,
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
@@ -59,6 +67,12 @@ public record HederaEvmTransactionResult(
         requireNonNull(output);
         requireNonNull(logs);
     }
+
+    private static final Bytes MAX_STORAGE_EXCEEDED_REASON = Bytes.wrap(MAX_CONTRACT_STORAGE_EXCEEDED.name());
+    private static final Bytes MAX_TOTAL_STORAGE_EXCEEDED_REASON =
+            Bytes.wrap(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED.name());
+    private static final Bytes INSUFFICIENT_GAS_REASON = Bytes.wrap(INSUFFICIENT_GAS.name());
+    private static final Bytes INVALID_CONTRACT_REASON = Bytes.wrap(INVALID_CONTRACT_ID.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -82,14 +96,30 @@ public record HederaEvmTransactionResult(
     public ContractFunctionResult asProtoResultOf(
             @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            return withMaybeEthFields(asUncommittedFailureResult(errorMessageFor(haltReason)), ethTxData);
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            // This curious presentation of the revert reason is needed for backward compatibility
+            return withMaybeEthFields(asUncommittedFailureResult(errorMessageForRevert(revertReason)), ethTxData);
         } else {
             return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
         }
     }
 
+    /**
+     * Converts this result to a {@link ContractFunctionResult} for a query response.
+     *
+     * @return the result
+     */
+    public ContractFunctionResult asQueryResult() {
+        if (haltReason != null) {
+            return asUncommittedFailureResult(errorMessageFor(haltReason)).build();
+        } else if (revertReason != null) {
+            return asUncommittedFailureResult(errorMessageForRevert(revertReason))
+                    .build();
+        } else {
+            return asSuccessResultForQuery();
+        }
+    }
     /**
      * Returns the final status of this transaction result.
      *
@@ -97,9 +127,19 @@ public record HederaEvmTransactionResult(
      */
     public ResponseCodeEnum finalStatus() {
         if (haltReason != null) {
-            throw new AssertionError("Not implemented");
+            return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            if (revertReason.equals(MAX_STORAGE_EXCEEDED_REASON)) {
+                return MAX_CONTRACT_STORAGE_EXCEEDED;
+            } else if (revertReason.equals(MAX_TOTAL_STORAGE_EXCEEDED_REASON)) {
+                return MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+            } else if (revertReason.equals(INSUFFICIENT_GAS_REASON)) {
+                return INSUFFICIENT_GAS;
+            } else if (revertReason.equals(INVALID_CONTRACT_REASON)) {
+                return INVALID_CONTRACT_ID;
+            } else {
+                return CONTRACT_REVERT_EXECUTED;
+            }
         } else {
             return SUCCESS;
         }
@@ -167,7 +207,7 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 Bytes.EMPTY,
-                frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
+                frame.getExceptionalHaltReason().orElse(null),
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
                 stateReadsFrom(frame));
@@ -200,6 +240,34 @@ public record HederaEvmTransactionResult(
                 null);
     }
 
+    /**
+     * Create a result for a transaction that failed due to validation exceptions.
+     *
+     * @param senderId the sender of the EVM transaction
+     * @param transaction the transaction object
+     * @param reason   the reason for the failure
+     * @return the result
+     */
+    public static HederaEvmTransactionResult fromAborted(
+            @NonNull final AccountID senderId,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final ResponseCodeEnum reason) {
+        requireNonNull(senderId);
+        requireNonNull(transaction);
+        requireNonNull(reason);
+        return new HederaEvmTransactionResult(
+                0,
+                0,
+                senderId,
+                transaction.contractId(),
+                null,
+                Bytes.EMPTY,
+                null,
+                Bytes.wrap(reason.name().getBytes()),
+                List.of(),
+                null);
+    }
+
     private ContractFunctionResult withMaybeEthFields(
             @NonNull final ContractFunctionResult.Builder builder, @Nullable final EthTxData ethTxData) {
         if (ethTxData != null) {
@@ -209,6 +277,11 @@ public record HederaEvmTransactionResult(
                     .functionParameters(Bytes.wrap(ethTxData.callData()));
         }
         return builder.build();
+    }
+
+    private ContractFunctionResult.Builder asUncommittedFailureResult(@NonNull final String errorMessage) {
+        requireNonNull(errorMessage);
+        return ContractFunctionResult.newBuilder().gasUsed(gasUsed).errorMessage(errorMessage);
     }
 
     private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
@@ -223,6 +296,17 @@ public record HederaEvmTransactionResult(
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
                 .errorMessage(null);
+    }
+
+    private ContractFunctionResult asSuccessResultForQuery() {
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .bloom(bloomForAll(logs))
+                .contractCallResult(output)
+                .contractID(recipientId)
+                .logInfo(pbjLogsFrom(logs))
+                .errorMessage(null)
+                .build();
     }
 
     private @Nullable Bytes recipientEvmAddressIfCreatedIn(@NonNull final List<ContractID> contractIds) {
@@ -241,6 +325,11 @@ public record HederaEvmTransactionResult(
 
     private static @Nullable ContractStateChanges stateReadsFrom(@NonNull final MessageFrame frame) {
         return stateChangesFrom(frame, false);
+    }
+
+    private static String errorMessageForRevert(@NonNull final Bytes reason) {
+        requireNonNull(reason);
+        return "0x" + reason.toHex();
     }
 
     private static @Nullable ContractStateChanges stateChangesFrom(

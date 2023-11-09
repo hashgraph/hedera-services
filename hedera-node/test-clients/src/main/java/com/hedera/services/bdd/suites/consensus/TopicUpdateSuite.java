@@ -250,6 +250,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .then(getTopicInfo("testTopic").hasExpiry(reasonableNewExpiry));
     }
 
+    @HapiTest
     private HapiSpec clearingAdminKeyWhenAutoRenewAccountPresent() {
         return defaultHapiSpec("clearingAdminKeyWhenAutoRenewAccountPresent")
                 .given(

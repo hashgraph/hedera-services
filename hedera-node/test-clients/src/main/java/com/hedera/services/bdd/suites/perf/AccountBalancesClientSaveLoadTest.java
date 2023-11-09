@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -75,8 +74,8 @@ import org.apache.logging.log4j.Logger;
 
 public class AccountBalancesClientSaveLoadTest extends LoadTest {
     private static final Logger LOG = LogManager.getLogger(AccountBalancesClientSaveLoadTest.class);
-    static final int MAX_PENDING_OPS_FOR_SETUP = 10_000;
-    static final int TOTAL_ACCOUNT = 200_000;
+    static final int MAX_PENDING_OPS_FOR_SETUP = 1000;
+    static final int TOTAL_ACCOUNT = 20000;
     static final int ESTIMATED_TOKEN_CREATION_RATE = 50;
     static final int ESTIMATED_CRYPTO_CREATION_RATE = 500;
     static final long MIN_ACCOUNT_BALANCE = 1_000_000_000L;
@@ -132,9 +131,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(throttlesForJRS.toByteArray()))
                 .when(
                         sourcing(() -> runWithProvider(accountsCreate(settings))
-                                .lasting(
-                                        () -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
-                                        () -> TimeUnit.SECONDS)
+                                .lasting(() -> totalAccounts / settings.getTps() + 30, () -> TimeUnit.SECONDS)
                                 .totalOpsToSumbit(() -> totalAccounts)
                                 .maxOpsPerSec(settings::getTps)
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
@@ -157,7 +154,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                 .maxOpsPerSec(settings::getTps)
                                 .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)))
                 .then(
-                        sleepFor(10L * SECOND),
+                        sleepFor(30L * SECOND),
                         withOpContext((spec, log) -> {
                             if (settings.getBooleanProperty("clientToExportBalances", false)) {
                                 log.info("Now get all {} accounts created and save them", totalAccounts);
@@ -207,7 +204,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
         LOG.info("Total accounts: {}", totalAccounts);
         LOG.info("Total tokens: {}", totalTestTokens);
 
-        AtomicInteger moreToCreate = new AtomicInteger(totalAccounts);
+        AtomicInteger moreToCreate = new AtomicInteger(1);
 
         return spec -> new OpProvider() {
             @Override
@@ -219,8 +216,8 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
             @Override
             public Optional<HapiSpecOperation> get() {
                 int next;
-                next = moreToCreate.getAndDecrement();
-                if (next <= 0) {
+                next = moreToCreate.getAndIncrement();
+                if (next > totalAccounts) {
                     return Optional.empty();
                 }
 
@@ -228,10 +225,9 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         .balance((RANDOM.nextInt((int) ONE_HBAR) + MIN_ACCOUNT_BALANCE))
                         .key(GENESIS)
                         .fee(ONE_HUNDRED_HBARS)
-                        .withRecharging()
                         .rechargeWindow(30)
                         .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK, INSUFFICIENT_TX_FEE)
+                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
                         .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
                         .noLogging()
                         .deferStatusResolution();
