@@ -264,14 +264,17 @@ public class AntlrUtils {
                 .forEach(c -> {
                     final BlockTagTextContext paramContext =
                             c.blockTagContent().get(0).blockTagText();
-                    Optional.ofNullable(paramContext).map(co -> co.getText()).ifPresent(paramName -> {
-                        final String description = IntStream.range(
+
+                    Optional.ofNullable(paramContext).map(co -> co.getText()).ifPresent(firstLine -> {
+                        final String paramName = firstLine.split(" ")[0].trim();
+                        final String description =
+                                firstLine.substring(paramName.length()).trim() + " " + IntStream.range(
                                         1, c.blockTagContent().size())
                                 .mapToObj(i -> c.blockTagContent().get(i).blockTagText())
                                 .filter(Objects::nonNull)
                                 .map(co -> co.getText().trim())
                                 .filter(t -> !t.isBlank())
-                                .reduce((a, b) -> a + b)
+                                        .reduce((a, b) -> a.trim() + " " + b.trim())
                                 .orElse("");
                         params.put(paramName, description);
                     });
