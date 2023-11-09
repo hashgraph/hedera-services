@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -43,7 +42,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -61,8 +59,6 @@ import java.util.function.UnaryOperator;
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
-    UnaryOperator<Transaction> DEFAULT_TRANSACTION_FINISHER = UnaryOperator.identity();
-
     /**
      * Category of the current transaction.
      */
