@@ -10,6 +10,5 @@ open module com.swirlds.merkle {
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
-    requires java.sql;
     requires static com.github.spotbugs.annotations;
 }
