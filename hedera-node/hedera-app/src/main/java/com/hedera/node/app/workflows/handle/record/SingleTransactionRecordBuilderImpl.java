@@ -223,12 +223,9 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @return the transaction record
      */
-    public @Nullable SingleTransactionRecord build() {
+    public SingleTransactionRecord build() {
         if (transactionFinisher != null) {
             transaction = transactionFinisher.apply(transaction);
-            if (transaction == null) {
-                return null;
-            }
         }
         final var transactionReceipt = transactionReceiptBuilder
                 .exchangeRate(exchangeRate)

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -101,7 +103,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -790,6 +791,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addRemovableChildWithExternaliztionCustomizer(any(), any()))
+                    .thenReturn(childRecordBuilder);
 
             stack = new SavepointStackImpl(baseState);
         }
@@ -858,17 +861,17 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT,
-                            UnaryOperator.identity()))
+                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, UnaryOperator.identity()))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
                             txBody,
                             SingleTransactionRecordBuilder.class,
                             (Predicate<Key>) null,
                             AccountID.DEFAULT,
-                            UnaryOperator.identity()))
+                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -894,7 +897,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT,
-                            UnaryOperator.identity())));
+                            (ignore) -> Transaction.DEFAULT)));
         }
 
         @ParameterizedTest
@@ -1099,7 +1102,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT,
-                            UnaryOperator.identity()))
+                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());

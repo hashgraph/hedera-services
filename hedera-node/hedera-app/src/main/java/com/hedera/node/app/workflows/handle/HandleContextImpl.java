@@ -68,6 +68,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -90,7 +91,6 @@ import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -561,9 +561,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId,
-            @NonNull final UnaryOperator<Transaction> transactionFinisher) {
+            @NonNull final ExternalizedRecordCustomizer customizer) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addRemovableChildWithTransactionFinisher(configuration(), transactionFinisher);
+                () -> recordListBuilder.addRemovableChildWithExternaliztionCustomizer(configuration(), customizer);
         return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 

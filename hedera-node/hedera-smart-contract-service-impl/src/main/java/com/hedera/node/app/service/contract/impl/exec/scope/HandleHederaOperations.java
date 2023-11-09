@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,7 +47,6 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 
 /**
@@ -54,7 +54,18 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
-    public static final UnaryOperator<Transaction> HAPI_CREATION_FINISHER = (ignore) -> null;
+    public static final ExternalizedRecordCustomizer HAPI_CREATION_FINISHER = new ExternalizedRecordCustomizer() {
+        @Override
+        public Transaction apply(Transaction transaction) {
+            throw new UnsupportedOperationException("The top-level creation record should be suppressed");
+        }
+
+        @Override
+        public boolean shouldSuppressRecord() {
+            return true;
+        }
+    };
+
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
@@ -343,7 +354,7 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    private UnaryOperator<Transaction> contractBodyFinisherFor(@NonNull final ContractCreateTransactionBody op) {
+    private ExternalizedRecordCustomizer contractBodyFinisherFor(@NonNull final ContractCreateTransactionBody op) {
         return transaction -> {
             try {
                 final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(

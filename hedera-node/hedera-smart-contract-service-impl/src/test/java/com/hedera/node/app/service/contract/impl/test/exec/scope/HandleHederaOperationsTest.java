@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.HAPI_CREATION_FINISHER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -47,6 +49,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -93,6 +96,12 @@ class HandleHederaOperationsTest {
     @BeforeEach
     void setUp() {
         subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context, tinybarValues);
+    }
+
+    @Test
+    void topLevelCreationCustomizerAsExpected() {
+        assertThrows(UnsupportedOperationException.class, () -> HAPI_CREATION_FINISHER.apply(Transaction.DEFAULT));
+        assertTrue(HAPI_CREATION_FINISHER.shouldSuppressRecord());
     }
 
     @Test
@@ -241,7 +250,7 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();
-        final var captor = ArgumentCaptor.forClass(UnaryOperator.class);
+        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
@@ -327,7 +336,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(UnaryOperator.class)))
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(OK);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -340,7 +349,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(UnaryOperator.class));
+                        any(ExternalizedRecordCustomizer.class));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
@@ -365,7 +374,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(UnaryOperator.class)))
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
