@@ -297,6 +297,7 @@ public interface IntegerAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public IntegerAccumulator create(final MetricsFactory factory) {
             return factory.createIntegerAccumulator(this);
         }
