@@ -128,11 +128,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 .contractCallResult(Bytes.wrap(output.array()))
                 .build());
 
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return reversionWith(recordBuilder.status(), gasRequirement);
-        } else {
-            return completionWith(recordBuilder.status(), gasRequirement);
-        }
+        return completionWith(recordBuilder.status(), gasRequirement);
     }
 
     /**
