@@ -156,6 +156,7 @@ public interface DurationGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public DurationGauge create(final PlatformMetricsFactory factory) {
             return factory.createDurationGauge(this);
         }
