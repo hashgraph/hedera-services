@@ -791,7 +791,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
-            when(recordListBuilder.addRemovableChildWithExternaliztionCustomizer(any(), any()))
+            when(recordListBuilder.addRemovableChildWithExternalizationCustomizer(any(), any()))
                     .thenReturn(childRecordBuilder);
 
             stack = new SavepointStackImpl(baseState);

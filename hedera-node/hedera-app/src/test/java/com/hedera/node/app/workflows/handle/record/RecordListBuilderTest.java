@@ -647,7 +647,7 @@ class RecordListBuilderTest extends AppTestBase {
     }
 
     @Test
-    void testAddRemovableChildWithNullFinisher() {
+    void testAddRemovableChildWithSuppressedRecord() {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
@@ -667,7 +667,7 @@ class RecordListBuilderTest extends AppTestBase {
 
         // when
         recordListBuilder
-                .addRemovableChildWithExternaliztionCustomizer(CONFIGURATION, suppressionCustomizer)
+                .addRemovableChildWithExternalizationCustomizer(CONFIGURATION, suppressionCustomizer)
                 .transaction(simpleCryptoTransfer());
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();

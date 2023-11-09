@@ -563,7 +563,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayerId,
             @NonNull final ExternalizedRecordCustomizer customizer) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addRemovableChildWithExternaliztionCustomizer(configuration(), customizer);
+                () -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(configuration(), customizer);
         return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 

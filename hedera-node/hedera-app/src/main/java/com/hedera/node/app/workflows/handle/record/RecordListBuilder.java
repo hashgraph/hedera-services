@@ -232,7 +232,7 @@ public final class RecordListBuilder {
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws HandleException if no more child slots are available
      */
-    public SingleTransactionRecordBuilderImpl addRemovableChildWithExternaliztionCustomizer(
+    public SingleTransactionRecordBuilderImpl addRemovableChildWithExternalizationCustomizer(
             @NonNull final Configuration configuration, @NonNull final ExternalizedRecordCustomizer customizer) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         requireNonNull(customizer, "customizer must not be null");
@@ -284,7 +284,7 @@ public final class RecordListBuilder {
      *
      * <p>If the given builder is the 5th of these 10, then each builder from the 6th to the 10th will be removed from
      * the list if they were added by {@link #addRemovableChild(Configuration)} or
-     * {@link #addRemovableChildWithExternaliztionCustomizer(Configuration, ExternalizedRecordCustomizer)}, otherwise they will have their
+     * {@link #addRemovableChildWithExternalizationCustomizer(Configuration, ExternalizedRecordCustomizer)}, otherwise they will have their
      * status set to {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already).
      *
      * @param recordBuilder the record builder which children need to be reverted
