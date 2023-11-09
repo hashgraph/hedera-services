@@ -288,7 +288,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                                 .streamlinedIngestChecks()
                                 .contains(parsedItem.itemRecord().getReceipt().getStatus())
                         && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
-                    // We cannot ever expect to match streamlined ingest check export sequencing
+                    // There are no records written in mono-service when a transaction fails in ingest.
+                    // But in modular service we write them. While validating fuzzy records, we always skip the records
+                    // with status in spec.streamlinedIngestChecks. But for some error codes like INVALID_ACCOUNT_ID,
+                    // which are thrown in both ingest and handle, we need to validate the records.
                     continue;
                 }
                 if (!placeholderFound) {

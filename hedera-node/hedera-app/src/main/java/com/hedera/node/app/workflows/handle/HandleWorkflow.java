@@ -400,6 +400,7 @@ public class HandleWorkflow {
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
+                    // If the payer is authorized to waive fees, then we don't charge them
                     if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                         if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                             feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
@@ -430,6 +431,7 @@ public class HandleWorkflow {
                     finalizeHollowAccounts(context, configuration, preHandleResult.hollowAccounts(), verifier);
 
                     networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
+                    // If the payer is authorized to waive fees, then we don't charge them
                     if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                         // privileged transactions are not charged fees
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -451,6 +453,7 @@ public class HandleWorkflow {
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
                                 .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
                                 .sum();
+                        // If the payer is authorized to waive fees, then we don't charge them
                         if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)
                                 && !feeAccumulator.chargeNetworkFee(payer, childFees)) {
                             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);

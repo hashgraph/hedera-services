@@ -480,8 +480,11 @@ public class CryptoTransferHandler implements TransactionHandler {
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
         } catch (HandleException ignore) {
-            triedAndFailedToUseCustomFees = ignore.getStatus() == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
-                    || ignore.getStatus() == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+            final var status = ignore.getStatus();
+            // If the transaction tried and failed to use custom fees, enable this flag.
+            // This is used to charge a different canonical fees.
+            triedAndFailedToUseCustomFees = (status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
+                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             assessedCustomFees = new ArrayList<>();
         }
         totalXfers += assessedCustomFees.size();
@@ -513,6 +516,18 @@ public class CryptoTransferHandler implements TransactionHandler {
                 .calculate();
     }
 
+    /**
+     * Get the subType based on the number of NFT ownership changes, number of fungible token transfers,
+     * number of custom fee hbar transfers, number of custom fee token transfers and whether the transaction
+     * @param numNftOwnershipChanges number of NFT ownership changes
+     * @param numFungibleTokenTransfers number of fungible token transfers
+     * @param customFeeHbarTransfers number of custom fee hbar transfers
+     * @param customFeeTokenTransfers number of custom fee token transfers
+     * @param triedAndFailedToUseCustomFees whether the transaction tried and failed while validating custom fees.
+     *                                      If the failure includes custom fee error codes, the fee charged should not
+     *                                      use SubType.DEFAULT.
+     * @return the subType
+     */
     private SubType getSubType(
             final int numNftOwnershipChanges,
             final int numFungibleTokenTransfers,

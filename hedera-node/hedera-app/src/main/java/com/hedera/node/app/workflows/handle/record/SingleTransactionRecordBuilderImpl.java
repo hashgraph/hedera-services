@@ -80,7 +80,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -252,8 +251,8 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
-        Collections.sort(
-                automaticTokenAssociations,
+        // sort the automatic associations to match the order of mono-service records
+        automaticTokenAssociations.sort(
                 Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                         .thenComparingLong(a -> a.accountIdOrThrow().accountNum()));
         final var transactionRecord = transactionRecordBuilder
@@ -355,7 +354,7 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * When we update nonce on the record, we need to update the body as well with teh same transactionID.
+     * When we update nonce on the record, we need to update the body as well with the same transactionID.
      * @return the builder
      */
     @NonNull

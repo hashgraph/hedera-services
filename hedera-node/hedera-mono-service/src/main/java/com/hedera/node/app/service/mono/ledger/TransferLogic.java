@@ -162,6 +162,8 @@ public class TransferLogic {
             if (autoCreationFee > 0) {
                 payAutoCreationFee(autoCreationFee);
             }
+            // If the auto creation is successful submit the records to historian,
+            // even if auto creation fee is 0 (which can be the case if the payer is a superuser)
             if (hasSuccessfulAutoCreation) {
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
             }

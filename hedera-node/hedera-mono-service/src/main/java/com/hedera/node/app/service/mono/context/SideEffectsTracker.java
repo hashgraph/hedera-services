@@ -305,6 +305,8 @@ public class SideEffectsTracker {
      */
     public List<FcTokenAssociation> getTrackedAutoAssociations() {
         final var newAssociations = new ArrayList<>(autoAssociations);
+        // Sort the associations by token id and then by account id to ensure a consistent order
+        // to be matched with modular service
         if (!autoAssociations.isEmpty()) {
             newAssociations.sort(
                     Comparator.comparingLong(FcTokenAssociation::token).thenComparingLong(FcTokenAssociation::account));

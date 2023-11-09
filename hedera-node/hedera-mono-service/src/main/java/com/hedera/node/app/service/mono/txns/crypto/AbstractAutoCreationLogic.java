@@ -195,8 +195,10 @@ public abstract class AbstractAutoCreationLogic {
                 .isSmartContract(false)
                 .alias(alias);
         var fee = 0L;
+        final var isSuperUser = txnCtx.activePayer().getAccountNum() == 2L
+                || txnCtx.activePayer().getAccountNum() == 50L;
         // If superuser is the payer don't charge fee
-        if (txnCtx.activePayer().getAccountNum() != 2 && txnCtx.activePayer().getAccountNum() != 50) {
+        if (!isSuperUser) {
             fee = autoCreationFeeFor(syntheticCreation);
             if (isAliasEVMAddress) {
                 fee += getLazyCreationFinalizationFee();

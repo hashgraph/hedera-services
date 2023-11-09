@@ -180,6 +180,8 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
+        // FUTURE : For some reason, we do not set the exchange rate for preceding transactions in mono-service.
+        // Should be corrected after differential testing.
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
         //                .exchangeRate(userTxnRecordBuilder.exchangeRate());
         precedingTxnRecordBuilders.add(recordBuilder);
@@ -391,12 +393,7 @@ public final class RecordListBuilder {
                     .transactionID(idBuilder.nonce(nextNonce++).build())
                     .syncBodyIdFromRecordId()
                     .build();
-            if (maybeRecord == null) {
-                // Reclaim this nonce, as the child wasn't actually meant to be externalized
-                nextNonce--;
-            } else {
-                records.add(maybeRecord);
-            }
+            records.add(maybeRecord);
         }
 
         return new Result(userTxnRecord, unmodifiableList(records));
