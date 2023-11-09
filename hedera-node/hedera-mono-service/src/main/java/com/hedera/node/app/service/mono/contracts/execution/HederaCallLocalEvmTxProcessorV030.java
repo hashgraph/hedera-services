@@ -16,32 +16,28 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-/**
- * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
- * com.hederahashgraph.api.proto.java.ContractCallLocal} queries
- */
-public class CallLocalEvmTxProcessorV045 extends EvmTxProcessor {
+public class HederaCallLocalEvmTxProcessorV030 extends CallLocalEvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
-    public CallLocalEvmTxProcessorV045(
+    public HederaCallLocalEvmTxProcessorV030(
             final CodeCache codeCache,
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
@@ -49,7 +45,7 @@ public class CallLocalEvmTxProcessorV045 extends EvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        super(livePricesSource, dynamicProperties, gasCalculator, mcps, ccps);
+        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -90,17 +86,14 @@ public class CallLocalEvmTxProcessorV045 extends EvmTxProcessor {
          * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
          * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
          * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
-        //                validateTrue(code != null, INVALID_CONTRACT_ID);
-        if (!dynamicProperties.allowCallsToNonContractAccounts() && code == null) {
-            throw new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID);
-        }
+        validateTrue(code != null, INVALID_CONTRACT_ID);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
                 .contract(to)
                 .inputData(payload)
-                .code(code == null ? CodeV0.EMPTY_CODE : code)
+                .code(code)
                 .build();
     }
 }
