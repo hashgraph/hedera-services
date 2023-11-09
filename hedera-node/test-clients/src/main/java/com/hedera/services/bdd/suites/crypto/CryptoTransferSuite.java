@@ -609,7 +609,10 @@ public class CryptoTransferSuite extends HapiSuite {
         final var contract = "PayableConstructor";
         final var multiKey = "swiss";
 
-        return defaultHapiSpec("CannotTransferFromImmutableAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+        return defaultHapiSpec(
+                        "CannotTransferFromImmutableAccounts",
+                        EXPECT_STREAMLINED_INGEST_RECORDS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multiKey),
                         uploadInitCode(contract),
@@ -1064,7 +1067,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec checksExpectedDecimalsForFungibleTokenTransferList() {
-        return defaultHapiSpec("checksExpectedDecimalsForFungibleTokenTransferList")
+        return defaultHapiSpec("checksExpectedDecimalsForFungibleTokenTransferList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
