@@ -84,7 +84,7 @@ public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySe
         bloomFilter = new BloomFilter<>(bloomFilterHashCount, new SelfSerializableBloomHasher<>(), bloomFilterSize);
 
         try {
-            tempDir = TemporaryFileBuilder.buildTemporaryDirectory(STORE_PREFIX + "-keyset");
+            tempDir = TemporaryFileBuilder.buildTemporaryDirectory(STORE_PREFIX).resolve("data");
             flushedData = new HalfDiskHashMap<>(
                     halfDiskHashMapSize,
                     keySerializer,
