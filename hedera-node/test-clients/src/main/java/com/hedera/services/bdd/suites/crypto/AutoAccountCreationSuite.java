@@ -95,6 +95,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -191,6 +192,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 noStakePeriodStartIfNotStakingToNode(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
+                canAutoCreateWithNftTransferToEvmAddress(),
                 multipleTokenTransfersSucceed(),
                 canAutoCreateWithNftTransfersToAlias(),
                 autoCreateWithNftFallBackFeeFails(),
@@ -454,6 +456,50 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
+    private HapiSpec canAutoCreateWithNftTransferToEvmAddress() {
+        final var civilianBal = 10 * ONE_HBAR;
+        final var nftTransfer = "multiNftTransfer";
+        final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
+
+        return defaultHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .via(NFT_CREATE),
+                        mintToken(NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"))),
+                        cryptoCreate(CIVILIAN).balance(civilianBal))
+                .when(
+                        tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
+                        cryptoTransfer(
+                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                        getAccountInfo(CIVILIAN)
+                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
+                                .has(accountWith().balance(civilianBal)),
+                        cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1)
+                                        .between(CIVILIAN, VALID_ALIAS))
+                                .via(nftTransfer)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN, VALID_ALIAS))
+                .then(
+                        getTxnRecord(nftTransfer)
+                                .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp()))
+                                .andAllChildRecords()
+                                .hasNonStakingChildRecordCount(1)
+                                .logged(),
+                        sourcing(() -> childRecordsCheck(
+                                nftTransfer,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).consensusTimeImpliedByNonce(parentConsTime.get(), -1))));
+    }
+
     private HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";

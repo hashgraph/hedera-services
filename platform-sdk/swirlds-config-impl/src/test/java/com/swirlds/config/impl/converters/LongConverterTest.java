@@ -121,4 +121,30 @@ class LongConverterTest {
                 () -> converter.convert(rawValue),
                 "Only valid long values must be supported");
     }
+
+    @Test
+    public void convertNumericalLiteral() {
+        // given
+        final LongConverter converter = new LongConverter();
+        final String rawValue = "21_000";
+
+        // when
+        final long value = converter.convert(rawValue);
+
+        // then
+        Assertions.assertEquals(21000L, value, "Numerical literals must be supported");
+    }
+
+    @Test
+    public void convertNumericalLiteralNegative() {
+        // given
+        final LongConverter converter = new LongConverter();
+        final String rawValue = "-781_000";
+
+        // when
+        final long value = converter.convert(rawValue);
+
+        // then
+        Assertions.assertEquals(-781000L, value, "Negative numerical literals must be supported");
+    }
 }
