@@ -1233,7 +1233,10 @@ public class CryptoTransferSuite extends HapiSuite {
         final var selfDenominatedCollector = "selfDenominatedCollector";
         final var plentyOfSlots = 10;
 
-        return defaultHapiSpec("dissociatedRoyaltyCollectorsCanUseAutoAssociation", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "dissociatedRoyaltyCollectorsCanUseAutoAssociation",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(TOKEN_TREASURY),
