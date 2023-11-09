@@ -27,7 +27,6 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -108,8 +107,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
-                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID),
-                    SUCCESS);
+                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), SUCCESS);
         }
     }
 
@@ -121,8 +119,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
-                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID),
-                    FAIL_INVALID);
+                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), FAIL_INVALID);
         }
     }
 

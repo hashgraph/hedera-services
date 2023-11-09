@@ -31,7 +31,6 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -271,8 +270,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param result    The result of the system contract call
      */
     void externalizeSystemContractResults(
-            @NonNull final ContractFunctionResult result,
-            @NonNull ResponseCodeEnum responseStatus);
+            @NonNull final ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus);
 
     /**
      * Returns the {@link ExchangeRate} for the current consensus timestamp

@@ -38,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -138,7 +137,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
@@ -159,7 +158,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_ERROR, ResponseCodeEnum.FAIL_INVALID);
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);

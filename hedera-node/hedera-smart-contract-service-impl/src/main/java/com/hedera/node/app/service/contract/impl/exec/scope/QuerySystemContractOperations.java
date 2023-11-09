@@ -27,7 +27,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -106,8 +105,7 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      */
     @Override
     public void externalizeResult(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResponseCodeEnum responseStatus) {
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
         // no-op
     }
 

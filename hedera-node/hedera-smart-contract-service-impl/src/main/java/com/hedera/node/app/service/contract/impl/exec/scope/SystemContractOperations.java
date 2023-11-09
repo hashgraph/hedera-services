@@ -26,7 +26,6 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -111,8 +110,7 @@ public interface SystemContractOperations {
      * @param result    contract function result
      */
     void externalizeResult(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResponseCodeEnum responseStatus);
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus);
 
     /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
