@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -642,6 +643,43 @@ class RecordListBuilderTest extends AppTestBase {
         assertCreatedRecord(records.get(2))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(2)
+                .hasParent(result.userTransactionRecord());
+    }
+
+    @Test
+    void testAddRemovableChildWithSuppressedRecord() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        final var suppressionCustomizer = new ExternalizedRecordCustomizer() {
+            @Override
+            public Transaction apply(Transaction transaction) {
+                throw new UnsupportedOperationException("The top-level creation record should be suppressed");
+            }
+
+            @Override
+            public boolean shouldSuppressRecord() {
+                return true;
+            }
+        };
+
+        // when
+        recordListBuilder
+                .addRemovableChildWithExternalizationCustomizer(CONFIGURATION, suppressionCustomizer)
+                .transaction(simpleCryptoTransfer());
+        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // then
+        assertThat(records).hasSize(2);
+        assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(1)
                 .hasParent(result.userTransactionRecord());
     }
 

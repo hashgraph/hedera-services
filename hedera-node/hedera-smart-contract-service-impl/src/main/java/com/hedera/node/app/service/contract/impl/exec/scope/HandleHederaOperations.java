@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
@@ -36,6 +37,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,7 +48,6 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 
 /**
@@ -54,7 +55,6 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
-    public static final UnaryOperator<Transaction> HAPI_CREATION_FINISHER = (ignore) -> null;
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
@@ -322,7 +322,9 @@ public class HandleHederaOperations implements HederaOperations {
                 ContractCreateRecordBuilder.class,
                 key -> true,
                 context.payer(),
-                (bodyToExternalize == null) ? HAPI_CREATION_FINISHER : contractBodyFinisherFor(bodyToExternalize));
+                (bodyToExternalize == null)
+                        ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
+                        : contractBodyCustomizerFor(bodyToExternalize));
 
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         // add additional create record fields
@@ -343,7 +345,7 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    private UnaryOperator<Transaction> contractBodyFinisherFor(@NonNull final ContractCreateTransactionBody op) {
+    private ExternalizedRecordCustomizer contractBodyCustomizerFor(@NonNull final ContractCreateTransactionBody op) {
         return transaction -> {
             try {
                 final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(

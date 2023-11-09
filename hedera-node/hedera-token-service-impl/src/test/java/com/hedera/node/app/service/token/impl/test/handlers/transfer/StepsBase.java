@@ -56,6 +56,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
@@ -64,7 +65,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -202,7 +202,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(CryptoCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(UnaryOperator.class)))
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);

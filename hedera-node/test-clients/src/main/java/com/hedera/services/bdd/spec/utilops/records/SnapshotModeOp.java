@@ -170,17 +170,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         }
         final var snapshot = maybeSnapshot.get();
         final var items = snapshot.parsedItems();
-        System.out.println("Snapshot has " + items.size() + " items");
-        final var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"));
-        System.out.println("Dumping snapshot to " + Paths.get(snapshotFileMeta + ".txt"));
-        for (int i = 0, n = items.size(); i < n; i++) {
-            final var item = items.get(i);
-            dumpLoc.write("--- Item #" + i + " ---\n");
-            dumpLoc.write(item.itemBody() + "\n\n");
-            dumpLoc.write("➡️\n\n");
-            dumpLoc.write(item.itemRecord() + "\n\n");
+        try (var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"))) {
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                dumpLoc.write("--- Item #" + i + " ---\n");
+                dumpLoc.write(item.itemBody() + "\n\n");
+                dumpLoc.write("➡️\n\n");
+                dumpLoc.write(item.itemRecord() + "\n\n");
+            }
+            dumpLoc.flush();
         }
-        dumpLoc.flush();
     }
 
     /**

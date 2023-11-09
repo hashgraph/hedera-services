@@ -47,6 +47,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -241,7 +242,7 @@ class HandleHederaOperationsTest {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();
-        final var captor = ArgumentCaptor.forClass(UnaryOperator.class);
+        final var captor = ArgumentCaptor.forClass(ExternalizedRecordCustomizer.class);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
@@ -327,7 +328,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(UnaryOperator.class)))
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(OK);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -340,7 +341,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(UnaryOperator.class));
+                        any(ExternalizedRecordCustomizer.class));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
@@ -365,7 +366,7 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateRecordBuilder.class),
                         any(Predicate.class),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(UnaryOperator.class)))
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

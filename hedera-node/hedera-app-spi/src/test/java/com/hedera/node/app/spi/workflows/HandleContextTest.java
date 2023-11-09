@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.DEFAULT_TRANSACTION_FINISHER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -125,6 +125,6 @@ class HandleContextTest {
                         SingleTransactionRecordBuilder.class,
                         signatureTest,
                         PAYER_ID,
-                        DEFAULT_TRANSACTION_FINISHER);
+                        NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 }
