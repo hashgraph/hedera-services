@@ -30,6 +30,7 @@ import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
@@ -110,6 +111,7 @@ class IngestComponentTest {
         final var congestionMultipliers = new CongestionMultipliers(genericFeeMultiplier, gasFeeMultiplier);
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
+        final var feeManager = new FeeManager(exchangeRateManager);
 
         final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
@@ -122,11 +124,13 @@ class IngestComponentTest {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
                         congestionMultipliers,
                         backendThrottle,
                         frontendThrottle))
                 .networkUtilizationManager(new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
                 .throttleManager(throttleManager)
+                .feeManager(feeManager)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
