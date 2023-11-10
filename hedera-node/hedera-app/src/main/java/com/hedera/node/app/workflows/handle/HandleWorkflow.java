@@ -454,7 +454,7 @@ public class HandleWorkflow {
                             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
                         }
                     }
-                    
+
                     // Do not override to SUCCESS if there is an error status
                     if (recordBuilder.status() == OK) {
                         recordBuilder.status(SUCCESS);
