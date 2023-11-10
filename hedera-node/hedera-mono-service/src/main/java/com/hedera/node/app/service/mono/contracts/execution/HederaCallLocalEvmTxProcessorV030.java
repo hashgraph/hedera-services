@@ -45,7 +45,7 @@ public class HederaCallLocalEvmTxProcessorV030 extends CallLocalEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps.get(dynamicProperties.evmVersion()), ccps.get(dynamicProperties.evmVersion()), aliasManager);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

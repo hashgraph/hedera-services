@@ -30,6 +30,17 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
+import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_34;
+import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_38;
+import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_45;
+import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.HederaCallEvmTxProcessorV030;
+import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV030;
+import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV045;
+import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
@@ -38,19 +49,30 @@ import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperatio
 import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperation;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
+import com.hederahashgraph.api.proto.java.ContractCreate;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import dagger.multibindings.StringKey;
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
+import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
@@ -59,6 +81,8 @@ import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Module
 public interface ContractsV_0_30Module {
@@ -263,4 +287,90 @@ public interface ContractsV_0_30Module {
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
         return precompileContractRegistry;
     }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static CallLocalEvmTxProcessor provideV_0_30CallLocalEvmTxProcessor(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final @V_0_30 Provider<MessageCallProcessor> mcp,
+            final @V_0_30 Provider<ContractCreationProcessor> ccp,
+            final AliasManager aliasManager) {
+        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
+        mcps.put(ContractsV_0_30Module.EVM_VERSION_0_30, mcp);
+        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
+        ccps.put(ContractsV_0_30Module.EVM_VERSION_0_30, ccp);
+        return new HederaCallLocalEvmTxProcessorV030(
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @V_0_30
+    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
+            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static Supplier<CallEvmTxProcessor> provideV_0_30CallEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final @V_0_30 Provider<MessageCallProcessor> mcp,
+            final @V_0_30 Provider<ContractCreationProcessor> ccp,
+            final AliasManager aliasManager,
+            final InHandleBlockMetaSource blockMetaSource) {
+        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
+        mcps.put(ContractsV_0_30Module.EVM_VERSION_0_30, mcp);
+        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
+        ccps.put(ContractsV_0_30Module.EVM_VERSION_0_30, ccp);
+        return () -> new HederaCallEvmTxProcessorV030(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                aliasManager,
+                blockMetaSource);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static Supplier<CreateEvmTxProcessor> provideV_0_30CCreateEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final @V_0_30 Provider<MessageCallProcessor> mcp,
+            final @V_0_30 Provider<ContractCreationProcessor> ccp,
+            final AliasManager aliasManager,
+            final InHandleBlockMetaSource blockMetaSource) {
+        return () -> new CreateEvmTxProcessor(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcp,
+                ccp,
+                aliasManager,
+                blockMetaSource);
+    }
+
+
 }

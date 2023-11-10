@@ -44,6 +44,7 @@ import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
@@ -77,6 +78,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Supplier;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -132,6 +135,9 @@ class ContractCallLocalAnswerTest {
 
     @BeforeEach
     void setup() {
+        final var callLocalEvmProcessors = new HashMap<String, Supplier<CallLocalEvmTxProcessor>>();
+        callLocalEvmProcessors.put(ContractsV_0_30Module.EVM_VERSION_0_30, () -> evmTxProcessor);
+
         subject = new ContractCallLocalAnswer(
                 ids,
                 aliasManager,
@@ -140,7 +146,7 @@ class ContractCallLocalAnswerTest {
                 entityAccess,
                 dynamicProperties,
                 nodeLocalProperties,
-                () -> evmTxProcessor,
+                callLocalEvmProcessors,
                 blockMetaProvider);
     }
 

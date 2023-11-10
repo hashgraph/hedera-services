@@ -58,6 +58,7 @@ import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module;
 import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.files.HederaFs;
@@ -98,10 +99,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Supplier;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -204,6 +208,9 @@ class ContractCreateTransitionLogicTest {
 
     @BeforeEach
     void setup() {
+        final var createEvmProcessors = new HashMap<String, Supplier<CreateEvmTxProcessor>>();
+        createEvmProcessors.put(ContractsV_0_30Module.EVM_VERSION_0_30, () -> evmTxProcessor);
+
         sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
         subject = new ContractCreateTransitionLogic(
                 hfs,
@@ -214,7 +221,7 @@ class ContractCreateTransitionLogicTest {
                 entityCreator,
                 recordsHistorian,
                 recordServices,
-                evmTxProcessor,
+                createEvmProcessors,
                 properties,
                 sigImpactHistorian,
                 syntheticTxnFactory,

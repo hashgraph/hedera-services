@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
@@ -66,6 +67,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.function.Supplier;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -124,12 +127,15 @@ class ContractCallLocalResourceUsageTest {
 
     @BeforeEach
     void setup() {
+        final var callLocalEvmProcessors = new HashMap<String, Supplier<CallLocalEvmTxProcessor>>();
+        callLocalEvmProcessors.put(ContractsV_0_30Module.EVM_VERSION_0_30, () -> evmTxProcessor);
+
         subject = new ContractCallLocalResourceUsage(
                 usageEstimator,
                 properties,
                 nodeLocalProperties,
                 accountStore,
-                () -> evmTxProcessor,
+                callLocalEvmProcessors,
                 ids,
                 validator,
                 aliasManager,

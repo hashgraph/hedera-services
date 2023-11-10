@@ -190,8 +190,8 @@ class CallEvmTxProcessorTest {
                 codeCache,
                 globalDynamicProperties,
                 gasCalculator,
-                mcps,
-                ccps,
+                mcps.get(globalDynamicProperties.evmVersion()),
+                ccps.get(globalDynamicProperties.evmVersion()),
                 aliasManager,
                 blockMetaSource);
     }
@@ -634,8 +634,8 @@ class CallEvmTxProcessorTest {
                 codeCache,
                 globalDynamicProperties,
                 gasCalculator,
-                mcps,
-                ccps,
+                mcps.get(globalDynamicProperties.evmVersion()),
+                ccps.get(globalDynamicProperties.evmVersion()),
                 aliasManager,
                 blockMetaSource);
         given(worldState.updater()).willReturn(updater);

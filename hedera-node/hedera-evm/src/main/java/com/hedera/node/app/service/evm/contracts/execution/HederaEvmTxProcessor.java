@@ -52,8 +52,8 @@ public abstract class HederaEvmTxProcessor {
     protected GasCalculator gasCalculator;
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
-    protected final Map<String, Provider<MessageCallProcessor>> mcps;
-    protected final Map<String, Provider<ContractCreationProcessor>> ccps;
+    protected final MessageCallProcessor mcp;
+    protected final ContractCreationProcessor ccp;
     protected AbstractMessageProcessor messageCallProcessor;
     protected AbstractMessageProcessor contractCreationProcessor;
     protected HederaEvmOperationTracer tracer;
@@ -82,19 +82,18 @@ public abstract class HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcpProvider,
+            final Provider<ContractCreationProcessor> ccpProvider,
             final BlockMetaSource blockMetaSource) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
         this.gasCalculator = gasCalculator;
 
-        this.mcps = mcps;
-        this.ccps = ccps;
-        this.messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
-        this.contractCreationProcessor =
-                ccps.get(dynamicProperties.evmVersion()).get();
+        this.messageCallProcessor = mcpProvider.get();
+        this.contractCreationProcessor = ccpProvider.get();
+        mcp = mcpProvider.get();
+        ccp = ccpProvider.get();
         this.blockMetaSource = blockMetaSource;
     }
 
@@ -151,12 +150,6 @@ public abstract class HederaEvmTxProcessor {
 
         tracer.init(initialFrame);
 
-        if (dynamicProperties.dynamicEvmVersion()) {
-            final String evmVersion = dynamicProperties.evmVersion();
-            messageCallProcessor = mcps.get(evmVersion).get();
-            contractCreationProcessor = ccps.get(evmVersion).get();
-        }
-
         while (!messageFrameStack.isEmpty()) {
             process(messageFrameStack.peekFirst(), tracer);
         }
@@ -191,8 +184,8 @@ public abstract class HederaEvmTxProcessor {
         /* Return leftover gas */
         final long selfDestructRefund = gasCalculator.getSelfDestructRefundAmount()
                 * Math.min(
-                        initialFrame.getSelfDestructs().size(),
-                        gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
+                initialFrame.getSelfDestructs().size(),
+                gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
 
         gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 

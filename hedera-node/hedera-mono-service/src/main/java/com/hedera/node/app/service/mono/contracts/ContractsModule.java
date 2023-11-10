@@ -65,6 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
@@ -83,11 +84,11 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Module(
         includes = {
-            StoresModule.class,
-            ContractsV_0_30Module.class,
-            ContractsV_0_34Module.class,
-            ContractsV_0_38Module.class,
-            ContractsV_0_45Module.class
+                StoresModule.class,
+                ContractsV_0_30Module.class,
+                ContractsV_0_34Module.class,
+                ContractsV_0_38Module.class,
+                ContractsV_0_45Module.class
         })
 public interface ContractsModule {
     int SYSTEM_ACCOUNT_BOUNDARY = 750;
@@ -188,8 +189,7 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    @V_0_30
     static MessageCallProcessor provideV_0_30MessageCallProcessor(
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
@@ -199,8 +199,7 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
+    @V_0_34
     static MessageCallProcessor provideV_0_34MessageCallProcessor(
             final @V_0_34 EVM evm,
             final @V_0_34 PrecompileContractRegistry precompiles,
@@ -211,22 +210,20 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
+    @V_0_38
     static MessageCallProcessor provideV_0_38MessageCallProcessor(
             final @V_0_38 EVM evm,
             final @V_0_38 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaMessageCallProcessorV038(
+        return  new HederaMessageCallProcessorV038(
                 evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
     }
 
     @Provides
     @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
+    @V_0_45
     static MessageCallProcessor provideV_0_45MessageCallProcessor(
             final @V_0_45 EVM evm,
             final @V_0_45 PrecompileContractRegistry precompiles,
@@ -239,250 +236,14 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
-    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
-    static ContractCreationProcessor provideV_0_34ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_34 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
-    static ContractCreationProcessor provideV_0_38ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_38 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
-    static ContractCreationProcessor provideV_0_45ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_45 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
-    static CallLocalEvmTxProcessor provideV_0_30CallLocalEvmTxProcessor(
-            final CodeCache codeCache,
-            final LivePricesSource livePricesSource,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_30 Provider<MessageCallProcessor> mcp,
-            final @V_0_30 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_30Module.EVM_VERSION_0_30, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_30Module.EVM_VERSION_0_30, ccp);
-        return new HederaCallLocalEvmTxProcessorV030(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
-    static CallLocalEvmTxProcessor provideV_0_34CallLocalEvmTxProcessor(
-            final CodeCache codeCache,
-            final LivePricesSource livePricesSource,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_34 Provider<MessageCallProcessor> mcp,
-            final @V_0_34 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_34Module.EVM_VERSION_0_34, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_34Module.EVM_VERSION_0_34, ccp);
-        return new HederaCallLocalEvmTxProcessorV030(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
-    static CallLocalEvmTxProcessor provideV_0_38CallLocalEvmTxProcessor(
-            final CodeCache codeCache,
-            final LivePricesSource livePricesSource,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_38 Provider<MessageCallProcessor> mcp,
-            final @V_0_38 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_38Module.EVM_VERSION_0_38, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_38Module.EVM_VERSION_0_38, ccp);
-        return new HederaCallLocalEvmTxProcessorV030(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
-    static CallLocalEvmTxProcessor provideV_0_45CallLocalEvmTxProcessor(
-            final CodeCache codeCache,
-            final LivePricesSource livePricesSource,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_45 Provider<MessageCallProcessor> mcp,
-            final @V_0_45 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_45Module.EVM_VERSION_0_45, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_45Module.EVM_VERSION_0_45, ccp);
-        return new HederaCallLocalEvmTxProcessorV045(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
-    static CallEvmTxProcessor provideV_0_30CallEvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final CodeCache codeCache,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_30 Provider<MessageCallProcessor> mcp,
-            final @V_0_30 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_30Module.EVM_VERSION_0_30, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_30Module.EVM_VERSION_0_30, ccp);
-        return new HederaCallEvmTxProcessorV030(
-                worldState,
-                livePricesSource,
-                codeCache,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                aliasManager,
-                blockMetaSource);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
-    static CallEvmTxProcessor provideV_0_34CallEvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final CodeCache codeCache,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_34 Provider<MessageCallProcessor> mcp,
-            final @V_0_34 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_34Module.EVM_VERSION_0_34, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_34Module.EVM_VERSION_0_34, ccp);
-        return new HederaCallEvmTxProcessorV030(
-                worldState,
-                livePricesSource,
-                codeCache,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                aliasManager,
-                blockMetaSource);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
-    static CallEvmTxProcessor provideV_0_38CallEvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final CodeCache codeCache,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_38 Provider<MessageCallProcessor> mcp,
-            final @V_0_38 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_38Module.EVM_VERSION_0_38, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_38Module.EVM_VERSION_0_38, ccp);
-        return new HederaCallEvmTxProcessorV030(
-                worldState,
-                livePricesSource,
-                codeCache,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                aliasManager,
-                blockMetaSource);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
-    static CallEvmTxProcessor provideV_0_45CallEvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final CodeCache codeCache,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_45 Provider<MessageCallProcessor> mcp,
-            final @V_0_45 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_45Module.EVM_VERSION_0_45, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_45Module.EVM_VERSION_0_45, ccp);
-        return new HederaCallEvmTxProcessorV045(
-                worldState,
-                livePricesSource,
-                codeCache,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                aliasManager,
-                blockMetaSource);
-    }
-
-    @Provides
-    @Singleton
     @Named("HederaPrecompiledContractsDetector")
     static Predicate<Address> provideHederaPrecompiledContractsDetector() {
         // all addresses between 0-750 (inclusive) are treated as system accounts
         // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
         return address -> address.numberOfLeadingZeroBytes() >= 18
                 && (Integer.compareUnsigned(address.getInt(16), 359) == 0
-                        || Integer.compareUnsigned(address.getInt(16), 360) == 0
-                        || Integer.compareUnsigned(address.getInt(16), 361) == 0);
+                || Integer.compareUnsigned(address.getInt(16), 360) == 0
+                || Integer.compareUnsigned(address.getInt(16), 361) == 0);
     }
 
     @Provides

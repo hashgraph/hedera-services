@@ -144,7 +144,7 @@ class HederaEvmTxProcessorTest {
                 });
 
         evmTxProcessor = new MockHederaEvmTxProcessor(
-                worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+                worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps.get(globalDynamicProperties.evmVersion()), ccps.get(globalDynamicProperties.evmVersion()), blockMetaSource);
 
         final var hederaEvmOperationTracer = new DefaultHederaTracer();
         evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
