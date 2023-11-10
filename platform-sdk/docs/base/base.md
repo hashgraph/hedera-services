@@ -32,7 +32,7 @@ Additional modules will follow in future since we plan to split swirlds-common i
 
 ## Structure and best practices in the rest of the repository
 
-Platform Base defines a lot of pattern and best practices for the modules
+Platform Base defines a lot of patterns and best practices for the modules.
 The team sees it as a good idea to follow the same pattern in the rest of the repository.
 Therefore, the Platform Base team tries to help all other colleagues to have a great structure and module definition in the complete repository.
 Here the team creates issues and pull requests to help all the other teams to have a great structure as well.
