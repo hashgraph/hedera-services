@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
@@ -36,9 +38,18 @@ public interface HtsCall {
      * @param fullResult the full result of the call
      * @param nonGasCost any additional cost beyond the gas requirement
      */
-    record PricedResult(HederaSystemContract.FullResult fullResult, long nonGasCost) {
+    record PricedResult(
+            HederaSystemContract.FullResult fullResult, long nonGasCost, @Nullable ResponseCodeEnum responseCode) {
         public static PricedResult gasOnly(HederaSystemContract.FullResult result) {
-            return new PricedResult(result, 0L);
+            return new PricedResult(result, 0L, null);
+        }
+
+        public PricedResult withResponseCode(ResponseCodeEnum responseCode) {
+            return new PricedResult(fullResult(), nonGasCost(), responseCode);
+        }
+
+        public PricedResult withGasRequirement(long nonGasCost) {
+            return new PricedResult(fullResult(), nonGasCost, responseCode());
         }
     }
 

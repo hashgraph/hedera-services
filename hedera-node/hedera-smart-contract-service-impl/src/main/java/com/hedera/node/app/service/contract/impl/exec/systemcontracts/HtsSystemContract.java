@@ -16,9 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
@@ -28,6 +33,7 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -37,7 +43,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
     private static final String HTS_PRECOMPILE_NAME = "HTS";
     public static final String HTS_PRECOMPILE_ADDRESS = "0x167";
-
+    private static final ContractID contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
     private final HtsCallFactory callFactory;
 
     @Inject
@@ -69,13 +75,31 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute(frame);
+            final var enhancement = FrameUtils.proxyUpdaterFor(frame).enhancement();
+            final var responseCode = pricedResult.responseCode();
+
+            if (responseCode == SUCCESS) {
+                final var output = pricedResult.fullResult().result().getOutput();
+                enhancement
+                        .systemOperations()
+                        .externalizeResult(
+                                contractFunctionResultSuccessFor(pricedResult.nonGasCost(), output, contractID),
+                                responseCode);
+            } else {
+                enhancement
+                        .systemOperations()
+                        .externalizeResult(
+                                contractFunctionResultFailedFor(
+                                        pricedResult.nonGasCost(), responseCode.toString(), contractID),
+                                responseCode);
+            }
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         }
-        if (pricedResult.nonGasCost() > 0) {
+        /*if (pricedResult.nonGasCost() > 0) {
             throw new AssertionError("Not implemented");
-        }
+        }*/
         return pricedResult.fullResult();
     }
 }

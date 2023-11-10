@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -104,7 +105,7 @@ class HtsSystemContractTest {
     @Test
     void callWithNonGasCostNotImplemented() {
         givenValidCallAttempt();
-        final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L);
+        final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS);
         given(call.execute(frame)).willReturn(pricedResult);
 
         assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));

@@ -18,13 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -32,12 +27,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSyst
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hyperledger.besu.datatypes.Address;
 
 public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     protected final Token token;
-
-    private final ContractID contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
 
     public AbstractTokenViewCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
@@ -57,24 +49,13 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     }
 
     protected PricedResult externalizeSuccessfulResult(long gasRequirement) {
-        final var result = gasOnly(resultOfViewingToken(token));
-        final var output = result.fullResult().result().getOutput();
-
-        enhancement
-                .systemOperations()
-                .externalizeResult(contractFunctionResultSuccessFor(gasRequirement, output, contractID), SUCCESS);
-        return result;
+        return gasOnly(resultOfViewingToken(token))
+                .withGasRequirement(gasRequirement)
+                .withResponseCode(SUCCESS);
     }
 
     protected PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        final var result = gasOnly(viewCallResultWith(responseCode, gasRequirement));
-
-        enhancement
-                .systemOperations()
-                .externalizeResult(
-                        contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID),
-                        responseCode);
-        return result;
+        return gasOnly(viewCallResultWith(responseCode, gasRequirement)).withResponseCode(responseCode);
     }
 
     /**
