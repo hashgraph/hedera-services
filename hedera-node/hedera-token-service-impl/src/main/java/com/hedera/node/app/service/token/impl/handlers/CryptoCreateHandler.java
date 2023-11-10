@@ -48,7 +48,7 @@ import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isKeyAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmptyAndNotImmutable;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -128,7 +128,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // FUTURE: Clean up the error codes to be consistent.
         final var key = op.key();
         final var isInternal = !txn.hasTransactionID();
-        final var keyIsEmpty = isEmpty(key);
+        // Key here can be IMMUTABLE_SENTINEL_KEY, which can be used for lazy created accounts
+        final var keyIsEmpty = isEmptyAndNotImmutable(key);
         if (!isInternal && keyIsEmpty) {
             if (key == null) {
                 throw new PreCheckException(INVALID_ALIAS_KEY);

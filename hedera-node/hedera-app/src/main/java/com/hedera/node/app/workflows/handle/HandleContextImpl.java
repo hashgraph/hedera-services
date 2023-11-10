@@ -512,14 +512,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayerId) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
                 () -> recordListBuilder.addRemovablePreceding(configuration());
-        var modifiedTxBody = txBody;
-        if (!txBody.hasTransactionID()) {
-            modifiedTxBody = txBody.copyBuilder()
-                    .transactionID(recordBuilder.transactionID())
-                    .build();
-        }
         return doDispatchPrecedingTransaction(
-                syntheticPayerId, modifiedTxBody, recordBuilderFactory, recordBuilderClass, callback);
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 
     @NonNull
