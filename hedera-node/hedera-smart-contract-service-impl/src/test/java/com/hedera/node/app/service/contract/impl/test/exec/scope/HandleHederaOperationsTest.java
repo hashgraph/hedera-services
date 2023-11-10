@@ -161,7 +161,6 @@ class HandleHederaOperationsTest {
 
     @Test
     void lazyCreationCostInGasHardcoded() {
-        assertEquals(1L, subject.lazyCreationCostInGas());
         given(context.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
         given(feeCalculator.calculate()).willReturn(fees);
         given(fees.totalFee()).willReturn(20_000_000L);
