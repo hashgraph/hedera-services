@@ -68,7 +68,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             @NonNull final HtsCall call, @NonNull final Bytes input, @NonNull final MessageFrame frame) {
         final HtsCall.PricedResult pricedResult;
         try {
-            pricedResult = call.execute();
+            pricedResult = call.execute(frame);
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());

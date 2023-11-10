@@ -18,10 +18,10 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.AssortedOpsXTestConstants.COINBASE_ID;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
