@@ -74,7 +74,6 @@ class Erc721XTestConstants {
             Map.entry(
                     Bytes.fromHex("86B3FA87EE245373978E0D2D334DBDE866C9B8B039036B87C5EB2FD89BCB6BAB"),
                     Bytes.fromHex("000000000000000000000000d893f18b69a06f7ffffad77202c2f627cb2c9605")));
-    static final AccountID COINBASE_ID = AccountID.newBuilder().accountNum(98L).build();
     static final AccountID TOKEN_TREASURY_ID =
             AccountID.newBuilder().accountNum(1001L).build();
     static final AccountID COUNTERPARTY_ID =
