@@ -559,7 +559,8 @@ class QueueThreadTests {
                 .setStopBehavior(Stoppable.StopBehavior.INTERRUPTABLE)
                 .setHandler((final Integer next) -> {
                     count.set(next);
-                    if (enableLongSleep.get()) {
+                    // Disable long sleep for subsequent calls
+                    if (enableLongSleep.getAndSet(false)) {
                         longSleepStarted.countDown();
                         SECONDS.sleep(999999999);
                     }

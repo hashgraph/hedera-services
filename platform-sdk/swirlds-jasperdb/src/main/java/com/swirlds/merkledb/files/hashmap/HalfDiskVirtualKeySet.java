@@ -20,12 +20,12 @@ import static com.swirlds.merkledb.files.DataFileCommon.deleteDirectoryAndConten
 
 import com.swirlds.common.bloom.BloomFilter;
 import com.swirlds.common.bloom.hasher.SelfSerializableBloomHasher;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -84,7 +84,7 @@ public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySe
         bloomFilter = new BloomFilter<>(bloomFilterHashCount, new SelfSerializableBloomHasher<>(), bloomFilterSize);
 
         try {
-            tempDir = Files.createTempDirectory(STORE_PREFIX).resolve("data");
+            tempDir = TemporaryFileBuilder.buildTemporaryDirectory(STORE_PREFIX).resolve("data");
             flushedData = new HalfDiskHashMap<>(
                     halfDiskHashMapSize,
                     keySerializer,
