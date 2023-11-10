@@ -195,7 +195,7 @@ tasks.register<JavaExec>("modrun") {
     dependsOn(tasks.assemble)
     workingDir = layout.projectDirectory.dir("..").asFile
     jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
-    mainClass.set("com.swirlds.platform.Browser")
+    mainClass.set("com.hedera.node.app.ServicesMain")
 }
 
 val cleanRun =
