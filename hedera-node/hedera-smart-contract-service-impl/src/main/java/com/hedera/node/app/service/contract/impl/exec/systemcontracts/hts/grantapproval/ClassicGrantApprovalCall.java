@@ -30,9 +30,9 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -56,7 +56,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
 
     @NonNull
     @Override
-    public PricedResult execute(final MessageFrame frame) {
+    public PricedResult execute() {
         if (token == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
@@ -77,19 +77,30 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
 
+            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement));
+        }
+    }
+
+    @NonNull
+    @Override
+    public PricedResult execute(final MessageFrame frame) {
+        final var result = execute();
+
+        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
             final var tokenAddress = asLongZeroAddress(token.tokenNum());
+
             if (tokenType.equals(TokenType.FUNGIBLE_COMMON)) {
                 frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
             } else {
                 frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
             }
-
-            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement));
         }
+
+        return result;
     }
 
     private Log getLogForFungibleAdjustAllowance(final Address logger) {
-        return EncodingFacade.LogBuilder.logBuilder()
+        return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
@@ -99,7 +110,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
     }
 
     private Log getLogForNftAdjustAllowance(final Address logger) {
-        return EncodingFacade.LogBuilder.logBuilder()
+        return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))

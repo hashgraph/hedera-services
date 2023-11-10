@@ -31,9 +31,9 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,11 +52,6 @@ public class InternalEventValidator {
      * Whether this node is in a single-node network.
      */
     private final boolean singleNodeNetwork;
-
-    /**
-     * Valid events are passed to this consumer.
-     */
-    private final Consumer<GossipEvent> eventConsumer;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -87,20 +82,17 @@ public class InternalEventValidator {
      * @param platformContext    the platform context
      * @param time               a time object, for rate limiting logging
      * @param singleNodeNetwork  true if this node is in a single-node network, otherwise false
-     * @param eventConsumer      validated events are passed to this consumer
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public InternalEventValidator(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             final boolean singleNodeNetwork,
-            @NonNull final Consumer<GossipEvent> eventConsumer,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         Objects.requireNonNull(time);
 
         this.singleNodeNetwork = singleNodeNetwork;
-        this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.transactionConfig = platformContext.getConfiguration().getConfigData(TransactionConfig.class);
@@ -271,18 +263,22 @@ public class InternalEventValidator {
     /**
      * Validate the internal data integrity of an event.
      * <p>
-     * If the event is determined to be valid, it is passed to the event consumer.
+     * If the event is determined to be valid, it is returned.
      *
      * @param event the event to validate
+     * @return the event if it is valid, otherwise null
      */
-    public void handleEvent(@NonNull final GossipEvent event) {
+    @Nullable
+    public GossipEvent validateEvent(@NonNull final GossipEvent event) {
         if (areRequiredFieldsNonNull(event)
                 && isTransactionByteCountValid(event)
                 && areParentsInternallyConsistent(event)
                 && isEventGenerationValid(event)) {
-            eventConsumer.accept(event);
+            return event;
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+
+            return null;
         }
     }
 }

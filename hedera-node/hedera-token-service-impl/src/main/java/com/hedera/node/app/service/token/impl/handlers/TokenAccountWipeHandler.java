@@ -85,7 +85,6 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        pureChecks(context.body());
         final var op = context.body().tokenWipeOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
@@ -202,8 +201,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
         final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType =
-                readableTokenStore.get(op.tokenWipeOrThrow().tokenOrThrow()).tokenType();
+        final var tokenType = readableTokenStore
+                .get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT))
+                .tokenType();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
         return feeContext
                 .feeCalculator(

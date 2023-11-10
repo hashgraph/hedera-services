@@ -395,8 +395,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    // @HapiTest Wrong status! Expected EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT, was
-    // INVALID_TRANSACTION_BODY! recheck after ContractUpdateHandler.handle() implemented
+    @HapiTest
     private HapiSpec updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;

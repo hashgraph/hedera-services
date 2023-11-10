@@ -25,7 +25,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
@@ -93,7 +92,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public @NonNull PricedResult execute() {
         final var recordBuilder =
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
         final var gasRequirement =

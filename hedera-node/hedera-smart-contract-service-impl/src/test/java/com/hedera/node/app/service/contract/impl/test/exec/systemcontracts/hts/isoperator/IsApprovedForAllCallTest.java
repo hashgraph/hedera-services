@@ -98,7 +98,7 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
                 gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER, true);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         final boolean verdict = IsApprovedForAllTranslator.ERC_IS_APPROVED_FOR_ALL

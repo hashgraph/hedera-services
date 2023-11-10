@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRe
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -198,6 +199,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .willReturn(cryptoCreateRecordBuilder);
+        given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         //        given(handleContext.feeCalculator()).willReturn(fees);
@@ -209,15 +211,15 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .alias(ecEvmAlias.value())
+                            .alias(ecKeyAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver))
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {

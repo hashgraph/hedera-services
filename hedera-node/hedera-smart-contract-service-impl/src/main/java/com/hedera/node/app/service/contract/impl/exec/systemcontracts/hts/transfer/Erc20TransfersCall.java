@@ -39,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implements the ERC-20 {@code transfer()} and {@code transferFrom()} calls of the HTS contract.
@@ -86,7 +85,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public @NonNull PricedResult execute() {
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
