@@ -115,18 +115,6 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
         return outgoingEdges.iterator();
     }
 
-    // TODO unused
-
-    /**
-     * Get the outgoing edges of this vertex.
-     *
-     * @return the outgoing edges of this vertex
-     */
-    @NonNull
-    public List<ModelEdge> getOutgoingEdges() {
-        return outgoingEdges;
-    }
-
     /**
      * {@inheritDoc}
      */

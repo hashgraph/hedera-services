@@ -26,12 +26,6 @@ public final class DirectSchedulerChecks {
 
     private DirectSchedulerChecks() {}
 
-    // TODO we need to ensure the following:
-    // - at most one scheduler has edges leading into each direct scheduler
-    // - concurrent schedulers never have edges leading into a direct scheduler
-    // - it should be legal for wires travelling through direct schedulers and through transformers to have edges
-    //   into a direct scheduler, as long as they all originate from the same scheduler and it is non-concurrent
-
     /**
      * Check for illegal direct scheduler use. Rules are as follows:
      *
@@ -60,6 +54,8 @@ public final class DirectSchedulerChecks {
      * @return true if there is illegal direct scheduler use
      */
     public static boolean checkForIllegalDirectSchedulerUse(@NonNull final Collection<ModelVertex> vertices) {
-        return false; // TODO
+        // FUTURE WORK: implement direct scheduler illegal use checks.
+        // This task was delayed in order to get other more urgent features out the door.
+        return false;
     }
 }
