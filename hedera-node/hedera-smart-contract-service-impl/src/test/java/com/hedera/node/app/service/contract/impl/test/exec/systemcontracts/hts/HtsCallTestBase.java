@@ -21,6 +21,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,6 +39,9 @@ public class HtsCallTestBase {
 
     @Mock
     protected SystemContractGasCalculator gasCalculator;
+
+    @Mock
+    protected MessageFrame frame;
 
     protected HederaWorldUpdater.Enhancement mockEnhancement() {
         return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);

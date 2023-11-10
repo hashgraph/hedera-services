@@ -1,6 +1,6 @@
 # Platform Base
 
-Platform base is a superset of modules that belong to the base team and are used everywhere within the project.
+Platform base is a set of modules that belong to the base team and are used everywhere within the project.
 
 ## Goals
 
