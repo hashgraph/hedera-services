@@ -199,8 +199,7 @@ public abstract class TaskScheduler<OUT> {
      * @param handler handles the provided data
      * @param data    the data to be processed by the task scheduler
      */
-    protected abstract void put(
-            @NonNull Consumer<Object> handler, @NonNull Object data); // TODO fix nullity annotations
+    protected abstract void put(@NonNull Consumer<Object> handler, @NonNull Object data);
 
     /**
      * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this
