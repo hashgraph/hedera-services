@@ -97,7 +97,7 @@ public class HtsCallAttempt {
             try {
                 // First try to decode the redirect with standard ABI encoding using a 32-byte address
                 abiCall = REDIRECT_FOR_TOKEN.decodeCall(input.toArrayUnsafe());
-            } catch (Exception ignore) {
+            } catch (IllegalArgumentException ignore) {
                 // Otherwise use the "packed" encoding with a 20-byte address
             }
             final Address tokenAddress;
