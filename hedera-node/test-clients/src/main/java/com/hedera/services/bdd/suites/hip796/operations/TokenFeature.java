@@ -3,6 +3,7 @@ package com.hedera.services.bdd.suites.hip796.operations;
 public enum TokenFeature {
     LOCKING,
     PARTITIONING,
+    INTER_PARTITION_MANAGEMENT,
     FREEZING,
     WIPING,
     PAUSING,

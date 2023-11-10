@@ -4,7 +4,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import java.util.function.UnaryOperator;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_UNDER_TEST;
 
 /**
  * Self-explanatory factory methods that return the canonical {@link HapiSpecRegistry} names of
@@ -48,5 +48,25 @@ public class TokenAttributeNames {
 
     public static String adminKeyOf(@NonNull final String tokenName) {
         return tokenName + "-ADMIN-KEY";
+    }
+
+    public static String treasuryOf(@NonNull final String tokenName) {
+        return tokenName + "-TREASURY";
+    }
+
+    public static String autoRenewAccountOf(@NonNull final String tokenName) {
+        return tokenName + "-AUTO-RENEW-ACCOUNT";
+    }
+
+    public static String partitionWithDefaultTokenPrefixIfMissing(@NonNull final String tokenPartitionName) {
+        return tokenPartitionName.contains("|") ? tokenPartitionName : partition(tokenPartitionName);
+    }
+
+    public static String partition(@NonNull final String partition) {
+        return partition(TOKEN_UNDER_TEST, partition);
+    }
+
+    public static String partition(@NonNull final String tokenName, @NonNull final String partition) {
+        return tokenName + "|" + partition;
     }
 }

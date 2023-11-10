@@ -34,11 +34,11 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
         return defaultHapiSpec("ManageLockKeyCapabilities")
                 .given(
                         // Create two tokens "RotateToken" and "RemoveToken" with lock capability
-                        Hip796Verbs.fungibleTokenDefinition("RotateToken")
+                        Hip796Verbs.fungibleTokenWithFeatures("RotateToken")
                                 .lockable()
                                 .administeredBy("token-administrator"),
 
-                        Hip796Verbs.fungibleTokenDefinition("RemoveToken")
+                        Hip796Verbs.fungibleTokenWithFeatures("RemoveToken")
                                 .lockable()
                                 .administeredBy("token-administrator")
                 )
