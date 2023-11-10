@@ -304,7 +304,7 @@ public class HevmTransactionFactory {
             try {
                 return Bytes.fromHex(new String(initcode.contents().toByteArray())
                         + body.constructorParameters().toHex());
-            } catch (NullPointerException ignore) {
+            } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
         }
