@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
@@ -49,4 +50,9 @@ public interface HtsCall {
      */
     @NonNull
     PricedResult execute();
+
+    @NonNull
+    default PricedResult execute(MessageFrame frame) {
+        return execute();
+    }
 }
