@@ -47,7 +47,7 @@ import java.util.concurrent.TimeoutException;
  * {@link SignatureVerification#key()} is that key, and {@link SignatureVerification#passed()} is true if,
  * and only if, it did not encounter {@link #numCanFail} failing verifications in the list.
  */
-final class CompoundSignatureVerificationFuture implements SignatureVerificationFuture {
+public final class CompoundSignatureVerificationFuture implements SignatureVerificationFuture {
     /**
      * The Key we verified. This will *never* be null, because we would not have attempted signature verification
      * without having a key. If an EVM address was used, we would have already extracted the key, so it can be
@@ -78,7 +78,7 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
      * @param futures The {@link TransactionSignature}s, from which the pass/fail status of the
      * {@link SignatureVerification} is derived. This list must contain at least one element.
      */
-    CompoundSignatureVerificationFuture(
+    public CompoundSignatureVerificationFuture(
             @NonNull final Key key,
             @Nullable final Bytes evmAlias,
             @NonNull final List<Future<SignatureVerification>> futures,

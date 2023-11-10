@@ -25,8 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -35,6 +37,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
@@ -49,8 +52,15 @@ class XTestConstants {
             AccountID.newBuilder().accountNum(950L).build();
 
     static final TransactionBody PLACEHOLDER_CALL_BODY = TransactionBody.newBuilder()
-            .transactionID(TransactionID.newBuilder().accountID(MISC_PAYER_ID).build())
+            .transactionID(TransactionID.newBuilder()
+                    .accountID(MISC_PAYER_ID)
+                    .transactionValidStart(Timestamp.newBuilder()
+                            .seconds(Instant.now().getEpochSecond())
+                            .build())
+                    .build())
+            .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
             .contractCall(ContractCallTransactionBody.DEFAULT)
+            .transactionFee(10_000_000L)
             .build();
 
     static final AccountID SENDER_ID =

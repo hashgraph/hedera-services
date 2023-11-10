@@ -94,4 +94,5 @@ module com.hedera.node.app {
             com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.validation;
+    exports com.hedera.node.app.signature.impl;
 }

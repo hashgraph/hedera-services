@@ -649,7 +649,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             validate(
                     verifier,
                     function,
-                    body(),
+                    txBody,
                     payer(),
                     payerKey,
                     childCategory,
@@ -714,7 +714,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
         // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
         // and create an appropriate record to save in state and send to the record stream.
-        final var duplicateCheckResult = recordCache.hasDuplicate(transactionBody.transactionID(), nodeID);
+        final var duplicateCheckResult = recordCache.hasDuplicate(body().transactionID(), nodeID);
         if (duplicateCheckResult != NO_DUPLICATE) {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
@@ -725,7 +725,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         solvencyPreCheck.checkSolvency(body(), payer, functionality, payerAccount, fee, true);
 
         // Check the time box of the transaction
-        checker.checkTimeBox(transactionBody, userTransactionConsensusTime);
+        checker.checkTimeBox(body(), userTransactionConsensusTime);
 
         // Check if the payer has the required permissions
         if (!authorizer.isAuthorized(payer, function)) {
@@ -736,7 +736,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(payer, functionality, transactionBody);
+        final var privileges = authorizer.hasPrivilegedAuthorization(payer, functionality, body());
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
             throw new PreCheckException(ResponseCodeEnum.AUTHORIZATION_FAILED);
         }

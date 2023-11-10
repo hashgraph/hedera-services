@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.signature;
 
+import static com.hedera.node.app.fixtures.workflows.prehandle.FakeSignatureVerificationFuture.badFuture;
+import static com.hedera.node.app.fixtures.workflows.prehandle.FakeSignatureVerificationFuture.goodFuture;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static com.hedera.node.app.spi.fixtures.Scenarios.BOB;
 import static com.hedera.node.app.spi.fixtures.Scenarios.CAROL;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
 import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ECDSA_KEY_INFOS;
 import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ED25519_KEY_INFOS;
-import static com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture.badFuture;
-import static com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture.goodFuture;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,10 +41,10 @@ import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.node.app.fixtures.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

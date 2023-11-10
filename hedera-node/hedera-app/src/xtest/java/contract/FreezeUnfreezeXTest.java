@@ -18,11 +18,12 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
+import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
@@ -30,8 +31,7 @@ import static contract.AssociationsXTestConstants.B_TOKEN_ID;
 import static contract.AssociationsXTestConstants.C_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.C_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
-import static contract.XTestConstants.AN_ECDSA_KEY;
-import static contract.XTestConstants.AN_ED25519_KEY;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -43,6 +43,7 @@ import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -53,6 +54,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -178,15 +180,19 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output));
-        // FREEZE DIFFERENT FREEZE KEY
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output));
+        //         FREEZE DIFFERENT FREEZE KEY
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
                         .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output));
     }
 
     @Override
@@ -208,9 +214,20 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                                 .accountId(OWNER_ID)
                                 .alias(OWNER_ADDRESS)
                                 .tinybarBalance(100_000_000L)
-                                .key(AN_ED25519_KEY)
+                                .key(ALICE.account().key())
                                 .build());
-                put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
+                put(
+                        RECEIVER_ID,
+                        Account.newBuilder()
+                                .accountId(RECEIVER_ID)
+                                .key(ALICE.account().key())
+                                .build());
+                put(
+                        MISC_PAYER_ID,
+                        Account.newBuilder()
+                                .accountId(MISC_PAYER_ID)
+                                .key(ALICE.account().key())
+                                .build());
             }
         };
     }
@@ -225,7 +242,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                                 .tokenId(A_TOKEN_ID)
                                 .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .freezeKey(AN_ED25519_KEY)
+                                .freezeKey(ALICE.account().key())
                                 .build());
                 put(
                         B_TOKEN_ID,
@@ -233,6 +250,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                                 .tokenId(B_TOKEN_ID)
                                 .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .freezeKey(Key.DEFAULT)
                                 .build());
                 put(
                         C_TOKEN_ID,
@@ -240,7 +258,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                                 .tokenId(C_TOKEN_ID)
                                 .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .freezeKey(AN_ECDSA_KEY)
+                                .freezeKey(Scenarios.BOB.account().key())
                                 .build());
             }
         };
@@ -250,6 +268,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, 1_000L);
+        addErc20Relation(tokenRelationships, MISC_PAYER_ID, 10_000L);
         return tokenRelationships;
     }
 
