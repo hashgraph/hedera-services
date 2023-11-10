@@ -57,7 +57,7 @@ class GetAllowanceCallTest extends HtsCallTestBase {
                 true,
                 true);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
@@ -77,7 +77,7 @@ class GetAllowanceCallTest extends HtsCallTestBase {
         given(addressIdConverter.convert(any())).willReturn(B_NEW_ACCOUNT_ID);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(GetAllowanceTranslator.ERC_GET_ALLOWANCE
@@ -101,7 +101,7 @@ class GetAllowanceCallTest extends HtsCallTestBase {
         given(addressIdConverter.convert(any())).willReturn(B_NEW_ACCOUNT_ID);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(GetAllowanceTranslator.GET_ALLOWANCE

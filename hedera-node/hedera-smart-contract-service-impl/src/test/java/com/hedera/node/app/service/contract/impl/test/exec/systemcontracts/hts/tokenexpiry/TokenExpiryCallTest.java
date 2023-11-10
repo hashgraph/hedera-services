@@ -41,7 +41,7 @@ class TokenExpiryCallTest extends HtsCallTestBase {
     void returnsValidTokenExpiryStatusForPresentToken() {
         final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -56,7 +56,7 @@ class TokenExpiryCallTest extends HtsCallTestBase {
     void returnsTokenExpiryStatusForMissingToken() {
         final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), false, null);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -72,7 +72,7 @@ class TokenExpiryCallTest extends HtsCallTestBase {
     void returnsTokenExpiryStatusForMissingTokenStaticCall() {
         final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), true, null);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());

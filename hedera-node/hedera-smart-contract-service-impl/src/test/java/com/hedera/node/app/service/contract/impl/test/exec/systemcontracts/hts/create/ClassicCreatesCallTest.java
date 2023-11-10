@@ -69,7 +69,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -84,7 +84,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -99,7 +99,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -114,7 +114,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -129,7 +129,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -144,7 +144,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -159,7 +159,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -174,7 +174,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -189,7 +189,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -204,7 +204,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -219,7 +219,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -234,7 +234,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -249,7 +249,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(TOKEN_HAS_NO_SUPPLY_KEY);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(TOKEN_HAS_NO_SUPPLY_KEY.protoName().getBytes()), result.getOutput());

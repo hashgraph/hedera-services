@@ -37,7 +37,7 @@ class DefaultFreezeStatusCallTest extends HtsCallTestBase {
     void returnsDefaultFreezeStatusForPresentToken() {
         final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -52,7 +52,7 @@ class DefaultFreezeStatusCallTest extends HtsCallTestBase {
     void returnsDefaultFreezeStatusForMissingToken() {
         final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, null);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -67,7 +67,7 @@ class DefaultFreezeStatusCallTest extends HtsCallTestBase {
     void returnsDefaultFreezeStatusForMissingTokenStaticCall() {
         final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), true, null);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());

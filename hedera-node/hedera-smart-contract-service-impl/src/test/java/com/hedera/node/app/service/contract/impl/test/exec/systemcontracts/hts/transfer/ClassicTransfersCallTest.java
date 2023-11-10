@@ -86,7 +86,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
         givenRetryingSubject();
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(asBytesResult(INT64_ENCODER.encodeElements((long) SUCCESS.protoOrdinal())), result.getOutput());
@@ -110,7 +110,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
         givenRetryingSubject();
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(asBytesResult(INT64_ENCODER.encodeElements((long) SUCCESS.protoOrdinal())), result.getOutput());
@@ -134,7 +134,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
         givenRetryingSubject();
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -147,7 +147,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     void unsupportedV2transferCompletesWithNotSupportedResponseCode() {
         givenV2SubjectWithV2Disabled();
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -160,7 +160,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(systemAccountCreditScreen.creditsToSystemAccount(CryptoTransferTransactionBody.DEFAULT))
                 .willReturn(true);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(INVALID_RECEIVING_NODE_ACCOUNT.protoName().getBytes()), result.getOutput());
@@ -177,7 +177,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
