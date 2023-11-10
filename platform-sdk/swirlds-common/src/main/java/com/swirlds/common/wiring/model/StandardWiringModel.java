@@ -20,15 +20,19 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.SolderType;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
+import com.swirlds.common.wiring.schedulers.SequentialThreadScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -54,6 +58,11 @@ public class StandardWiringModel extends WiringModel {
      * Schedules heartbeats. Not created unless needed.
      */
     private HeartbeatScheduler heartbeatScheduler = null;
+
+    /**
+     * Thread schedulers need to have their threads started/stopped.
+     */
+    private final List<SequentialThreadScheduler<?>> threadSchedulers = new ArrayList<>();
 
     /**
      * Constructor.
@@ -138,6 +147,16 @@ public class StandardWiringModel extends WiringModel {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
+        if (scheduler instanceof final SequentialThreadScheduler<?> threadScheduler) {
+            threadSchedulers.add(threadScheduler);
+        }
+    }
+
+    /**
      * Find an existing vertex
      *
      * @param vertexName the name of the vertex
@@ -191,6 +210,10 @@ public class StandardWiringModel extends WiringModel {
         if (heartbeatScheduler != null) {
             heartbeatScheduler.start();
         }
+
+        for (final SequentialThreadScheduler<?> threadScheduler : threadSchedulers) {
+            threadScheduler.start();
+        }
     }
 
     /**
@@ -200,6 +223,10 @@ public class StandardWiringModel extends WiringModel {
     public void stop() {
         if (heartbeatScheduler != null) {
             heartbeatScheduler.stop();
+        }
+
+        for (final SequentialThreadScheduler<?> threadScheduler : threadSchedulers) {
+            threadScheduler.stop();
         }
     }
 }

@@ -31,6 +31,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 
+// TODO collapse this with its implementation
+
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
  * of a system and to generate diagrams.
@@ -157,6 +159,9 @@ public abstract class WiringModel implements Startable, Stoppable {
      */
     public abstract void registerVertex(
             @NonNull String vertexName, @NonNull TaskSchedulerType type, boolean insertionIsBlocking);
+
+    // TODO can this be merged with registerVertext?
+    public abstract void registerScheduler(@NonNull TaskScheduler<?> scheduler);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.
