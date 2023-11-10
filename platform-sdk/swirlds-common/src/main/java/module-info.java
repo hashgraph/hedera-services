@@ -44,7 +44,6 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.synchronization.views;
     exports com.swirlds.common.merkle.utility;
     exports com.swirlds.common.metrics;
-    exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
     exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
@@ -162,6 +161,7 @@ module com.swirlds.common {
             com.swirlds.platform.test,
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
+    exports com.swirlds.common.threading.atomic;
 
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;

@@ -20,8 +20,8 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.atomic.AtomicDouble;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.threading.atomic.AtomicDouble;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;
