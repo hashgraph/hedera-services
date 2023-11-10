@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
@@ -32,7 +33,10 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +47,8 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithFungibleToken() {
-        subject = new IsApprovedForAllCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(
+                gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
 
         final var result = subject.execute().fullResult().result();
 
@@ -53,8 +58,8 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingOwner() {
-        subject =
-                new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(
+                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
 
         final var result = subject.execute().fullResult().result();
 
@@ -64,30 +69,39 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void checksForPresentOwnerAndFindsApprovedOperator() {
-        subject =
-                new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(
+                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        final boolean verdict = IsApprovedForAllCall.IS_APPROVED_FOR_ALL
-                .getOutputs()
-                .decode(result.getOutput().toArray())
-                .get(0);
-        assertTrue(verdict);
+        assertHasSuccessVerdict(true, result.getOutput());
     }
 
     @Test
     void checksForPresentOwnerAndDetectsNoOperator() {
-        subject = new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER);
+        subject = new IsApprovedForAllCall(
+                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER, false);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        final boolean verdict = IsApprovedForAllCall.IS_APPROVED_FOR_ALL
+        assertHasSuccessVerdict(false, result.getOutput());
+    }
+
+    @Test
+    void ercChecksForPresentOwnerAndDetectsNoOperator() {
+        subject = new IsApprovedForAllCall(
+                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER, true);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        final boolean verdict = IsApprovedForAllTranslator.ERC_IS_APPROVED_FOR_ALL
                 .getOutputs()
                 .decode(result.getOutput().toArray())
                 .get(0);
@@ -96,17 +110,25 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void returnsFalseForPresentOwnerAndMissingOperator() {
-        subject =
-                new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(
+                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        final boolean verdict = IsApprovedForAllCall.IS_APPROVED_FOR_ALL
+        assertHasSuccessVerdict(false, result.getOutput());
+    }
+
+    private void assertHasSuccessVerdict(final boolean verdict, @NonNull final Bytes output) {
+        final var outputs = IsApprovedForAllTranslator.CLASSIC_IS_APPROVED_FOR_ALL
                 .getOutputs()
-                .decode(result.getOutput().toArray())
-                .get(0);
-        assertFalse(verdict);
+                .decode(output.toArray());
+        assertEquals(SUCCESS.protoOrdinal(), (long) outputs.get(0));
+        if (verdict) {
+            assertTrue((boolean) outputs.get(1));
+        } else {
+            assertFalse((boolean) outputs.get(1));
+        }
     }
 }
