@@ -2241,6 +2241,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(ACCOUNT)))))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
