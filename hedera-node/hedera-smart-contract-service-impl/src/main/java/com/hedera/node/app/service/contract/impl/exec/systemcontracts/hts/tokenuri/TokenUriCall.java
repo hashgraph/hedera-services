@@ -33,6 +33,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class TokenUriCall extends AbstractNftViewCall {
 
+    public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
+
     public TokenUriCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
@@ -46,11 +48,23 @@ public class TokenUriCall extends AbstractNftViewCall {
      */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
-            @NonNull final Token token, @NonNull final Nft nft) {
+            @NonNull final Token token, final Nft nft) {
         requireNonNull(token);
-        requireNonNull(nft);
-        final var metadata = new String(nft.metadata().toByteArray());
+        String metadata;
+        if (nft != null) {
+            metadata = new String(nft.metadata().toByteArray());
+        } else {
+            metadata = URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+        }
         return successResult(
                 TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), gasCalculator.viewGasRequirement());
+    }
+
+    @Override
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
+        requireNonNull(token);
+        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
+
+        return resultOfViewingNft(token, nft);
     }
 }

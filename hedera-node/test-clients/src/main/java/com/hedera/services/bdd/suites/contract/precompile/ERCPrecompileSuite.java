@@ -1024,6 +1024,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .withSymbol(tokenSymbol)))));
     }
 
+    @HapiTest
     private HapiSpec getErc721TokenURI() {
         final var tokenURITxn = "tokenURITxn";
         final var nonExistingTokenURITxn = "nonExistingTokenURITxn";
