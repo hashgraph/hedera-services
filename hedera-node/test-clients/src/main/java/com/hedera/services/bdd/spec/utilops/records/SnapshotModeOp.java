@@ -178,7 +178,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 dumpLoc.write("➡️\n\n");
                 dumpLoc.write(item.itemRecord() + "\n\n");
             }
-            dumpLoc.flush();
         }
     }
 
@@ -316,7 +315,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS, TAKE_FROM_HAPI_TEST_STREAMS -> writeSnapshotOf(postPlaceholderItems);
                 case FUZZY_MATCH_AGAINST_MONO_STREAMS,
-                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems, spec);
+                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -327,14 +326,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * Given a list of parsed items from the record stream, fuzzy-matches them against the snapshot.
      *
      * @param postPlaceholderItems the list of parsed items from the record stream
-     * @param spec
      */
-    private void fuzzyMatchAgainstSnapshot(@NonNull final List<ParsedItem> postPlaceholderItems, final HapiSpec spec) {
+    private void fuzzyMatchAgainstSnapshot(@NonNull final List<ParsedItem> postPlaceholderItems) {
         log.info("Now fuzzy-matching {} post-placeholder records against snapshot", postPlaceholderItems.size());
         final var itemsFromSnapshot = snapshotToMatchAgainst.parsedItems();
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
         final var snapshotPlaceholderNum = snapshotToMatchAgainst.getPlaceholderNum();
-        final var streamLinedIngestChecks = spec.setup().streamlinedIngestChecks();
         for (int i = 0; i < minItems; i++) {
             final var fromSnapshot = itemsFromSnapshot.get(i);
             final var fromStream = postPlaceholderItems.get(i);

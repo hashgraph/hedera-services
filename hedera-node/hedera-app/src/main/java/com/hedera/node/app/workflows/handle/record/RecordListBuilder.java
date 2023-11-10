@@ -389,11 +389,10 @@ public final class RecordListBuilder {
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
         for (int i = 0; i < count; i++) {
             final var recordBuilder = childRecordBuilders.get(i);
-            final var maybeRecord = recordBuilder
+            records.add(recordBuilder
                     .transactionID(idBuilder.nonce(nextNonce++).build())
                     .syncBodyIdFromRecordId()
-                    .build();
-            records.add(maybeRecord);
+                    .build());
         }
 
         return new Result(userTxnRecord, unmodifiableList(records));

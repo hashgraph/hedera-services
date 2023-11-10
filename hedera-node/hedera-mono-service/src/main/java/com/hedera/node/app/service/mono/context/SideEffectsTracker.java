@@ -55,6 +55,8 @@ import org.hyperledger.besu.datatypes.Address;
  */
 @Singleton
 public class SideEffectsTracker {
+    private static final Comparator<FcTokenAssociation> FC_TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.comparingLong(FcTokenAssociation::token).thenComparingLong(FcTokenAssociation::account);
     private static final long INAPPLICABLE_NEW_SUPPLY = -1;
     public static final int MISSING_NUMBER = -1;
     private static final int MAX_TOKENS_TOUCHED = 1_000;
@@ -308,8 +310,7 @@ public class SideEffectsTracker {
         // Sort the associations by token id and then by account id to ensure a consistent order
         // to be matched with modular service
         if (!autoAssociations.isEmpty()) {
-            newAssociations.sort(
-                    Comparator.comparingLong(FcTokenAssociation::token).thenComparingLong(FcTokenAssociation::account));
+            newAssociations.sort(FC_TOKEN_ASSOCIATION_COMPARATOR);
         }
         return newAssociations;
     }

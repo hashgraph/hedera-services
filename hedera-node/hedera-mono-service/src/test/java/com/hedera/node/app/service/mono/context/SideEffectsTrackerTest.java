@@ -40,6 +40,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +138,7 @@ class SideEffectsTrackerTest {
 
     @Test
     void usesSingletonForNoAutoAssociations() {
-        assertSame(Collections.emptyList(), subject.getTrackedAutoAssociations());
+        assertEquals(new ArrayList<>(), subject.getTrackedAutoAssociations());
     }
 
     @Test

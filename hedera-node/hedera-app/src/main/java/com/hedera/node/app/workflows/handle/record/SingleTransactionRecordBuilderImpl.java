@@ -124,7 +124,9 @@ public class SingleTransactionRecordBuilderImpl
                 GenesisAccountRecordBuilder,
                 GasFeeRecordBuilder,
                 TokenAccountWipeRecordBuilder {
-
+    private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
+                    .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -251,10 +253,13 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
+
         // sort the automatic associations to match the order of mono-service records
-        automaticTokenAssociations.sort(
-                Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
-                        .thenComparingLong(a -> a.accountIdOrThrow().accountNum()));
+        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+
         final var transactionRecord = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
@@ -264,7 +269,7 @@ public class SingleTransactionRecordBuilderImpl
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
-                .automaticTokenAssociations(automaticTokenAssociations)
+                .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
                 .build();
 
@@ -378,7 +383,7 @@ public class SingleTransactionRecordBuilderImpl
                     .build();
             return this;
         } catch (Exception e) {
-            return this;
+            throw new RuntimeException(e);
         }
     }
 

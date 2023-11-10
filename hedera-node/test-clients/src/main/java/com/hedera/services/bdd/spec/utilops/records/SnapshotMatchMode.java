@@ -42,7 +42,8 @@ public enum SnapshotMatchMode {
      * Some of the ingest checks in mono-service are moved into pureChecks or handle in modular service. So any
      * response code added in spec.streamlinedIngestChecks will not produce a record in mono-service, as it is rejected in ingest.
      * But in modular service we produce a record. This will not cause any issue for differential testing, because we test
-     * transactions that have reached consensus. Use this snapshot mode to ignore the extra produced records during fuzzy matching.
+     * transactions that have reached consensus. Use this snapshot mode to still fuzzy-match against records whose
+     * receipt's status would be rejected in pre-check by mono-service.
      */
     EXPECT_STREAMLINED_INGEST_RECORDS,
 }
