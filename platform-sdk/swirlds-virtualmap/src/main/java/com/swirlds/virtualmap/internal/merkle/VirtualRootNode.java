@@ -699,6 +699,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     protected void destroyNode() {
         if (pipeline != null) {
             pipeline.destroyCopy(this);
+        } else {
+            logger.info(
+                    VIRTUAL_MERKLE_STATS.getMarker(),
+                    "Destroying virtual root node at route {}, but its pipeline is null. It may happen during failed reconnect",
+                    getRoute());
+            closeDataSource();
         }
     }
 
@@ -953,15 +959,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void onShutdown(final boolean immediately) {
-
         if (immediately) {
             // If immediate shutdown is required then let the hasher know it is being stopped. If shutdown
             // is not immediate, the hasher will eventually stop once it finishes all of its work.
             hasher.shutdown();
         }
+        closeDataSource();
+    }
 
-        // We can now try to shut down the data source. If this doesn't shut things down, then there
-        // isn't much we can do aside from logging the fact. The node may well die before too long.
+    private void closeDataSource() {
+        // Shut down the data source. If this doesn't shut things down, then there isn't
+        // much we can do aside from logging the fact. The node may well die before too long
         if (dataSource != null) {
             try {
                 dataSource.close();
