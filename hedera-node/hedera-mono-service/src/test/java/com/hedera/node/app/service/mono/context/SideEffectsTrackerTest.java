@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.context;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -151,7 +151,8 @@ class SideEffectsTrackerTest {
         subject.trackAutoAssociation(bToken, bAccount);
 
         assertEquals(expected, subject.getTrackedAutoAssociations());
-        assertNotSame(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());
+
+        assertIterableEquals(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());
 
         subject.reset();
 
