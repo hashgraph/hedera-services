@@ -55,7 +55,8 @@ public class ContractCallHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         context.recordBuilder(ContractCallRecordBuilder.class)
                 .contractCallResult(outcome.result())
-                .contractID(outcome.recipientIdIfCalled());
+                .contractID(outcome.recipientIdIfCalled())
+                .withGasFee(outcome.gasCostInTinybar());
         throwIfUnsuccessful(outcome.status());
     }
 

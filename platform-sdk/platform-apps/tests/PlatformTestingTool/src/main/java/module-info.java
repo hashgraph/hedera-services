@@ -42,7 +42,6 @@ module com.swirlds.demo.platform {
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires java.management;
-    requires java.sql;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }
