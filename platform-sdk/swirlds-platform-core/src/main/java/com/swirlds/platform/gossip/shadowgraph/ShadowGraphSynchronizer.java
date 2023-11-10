@@ -126,12 +126,6 @@ public class ShadowGraphSynchronizer {
     private final boolean filterLikelyDuplicates;
 
     /**
-     * For events that are not self events but are an ancestor of a self event, we must have had this event for at least
-     * this amount of time before it is eligible to be sent. Ignored if {@link #filterLikelyDuplicates} is false.
-     */
-    private final Duration ancestorFilterThreshold;
-
-    /**
      * For events that are neither self events nor ancestors of self events, we must have had this event for at least
      * this amount of time before it is eligible to be sent. Ignored if {@link #filterLikelyDuplicates} is false.
      */
@@ -168,7 +162,6 @@ public class ShadowGraphSynchronizer {
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
-        this.ancestorFilterThreshold = syncConfig.ancestorFilterThreshold();
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
     }
 
@@ -390,12 +383,7 @@ public class ShadowGraphSynchronizer {
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             sendList = filterLikelyDuplicates(
-                    shadowGraph,
-                    selfId,
-                    ancestorFilterThreshold,
-                    nonAncestorFilterThreshold,
-                    time.now(),
-                    eventsTheyMayNeed);
+                    shadowGraph, selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
         } else {
             sendList = eventsTheyMayNeed;
         }

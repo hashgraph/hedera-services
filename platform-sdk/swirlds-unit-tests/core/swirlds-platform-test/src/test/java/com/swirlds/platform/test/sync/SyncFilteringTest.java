@@ -122,7 +122,6 @@ class SyncFilteringTest {
 
         // Step 3: see what gets filtered out depending on the current time
 
-        final Duration ancestorThreshold = Duration.ofSeconds(1);
         final Duration nonAncestorThreshold = Duration.ofSeconds(3);
 
         clock.reset();
@@ -130,18 +129,9 @@ class SyncFilteringTest {
 
             final Set<EventImpl> expectedEvents = new HashSet<>();
 
-            // we always expect all self events
-            for (final EventImpl event : selfEvents) {
-                expectedEvents.add(event);
-            }
-
-            // We only expect ancestor events if we've had them for longer than the ancestor threshold
-            for (final EventImpl event : ancestors) {
-                final Duration eventAge = Duration.between(event.getBaseEvent().getTimeReceived(), clock.now());
-                if (CompareTo.isGreaterThan(eventAge, ancestorThreshold)) {
-                    expectedEvents.add(event);
-                }
-            }
+            // we always expect all self events and ancestors of self events
+            expectedEvents.addAll(selfEvents);
+            expectedEvents.addAll(ancestors);
 
             // We only expect non-ancestor events if we've had them for longer than the non-ancestor threshold
             for (final EventImpl event : nonAncestors) {
@@ -151,8 +141,8 @@ class SyncFilteringTest {
                 }
             }
 
-            final List<EventImpl> filteredEvents = SyncUtils.filterLikelyDuplicates(
-                    shadowGraph, selfId, ancestorThreshold, nonAncestorThreshold, clock.now(), allEvents);
+            final List<EventImpl> filteredEvents =
+                    SyncUtils.filterLikelyDuplicates(shadowGraph, selfId, nonAncestorThreshold, clock.now(), allEvents);
 
             assertEquals(expectedEvents.size(), filteredEvents.size());
             for (final EventImpl event : filteredEvents) {

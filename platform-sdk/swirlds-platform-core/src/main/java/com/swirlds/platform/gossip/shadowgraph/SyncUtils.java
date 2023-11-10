@@ -340,13 +340,10 @@ public final class SyncUtils {
      * <ul>
      * <li>Always send self events right away.</li>
      * <li>Don't send non-ancestors of self events unless we've known about that event for a long time.</li>
-     * <li>Don't send ancestors of self events right away, but send them sooner than non-ancestors.</li>
      * </ul>
      *
      * @param shadowGraph          the shadow graph
      * @param selfId               the id of this node
-     * @param ancestorThreshold    for each event that is not a self event but is an ancestor of a self event, the
-     *                             amount of time the event must be known about before it is eligible to be sent
      * @param nonAncestorThreshold for each event that is not a self event and is not an ancestor of a self event, the
      *                             amount of time the event must be known about before it is eligible to be sent
      * @param now                  the current time
@@ -357,7 +354,6 @@ public final class SyncUtils {
     public static List<EventImpl> filterLikelyDuplicates(
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final NodeId selfId,
-            @NonNull final Duration ancestorThreshold,
             @NonNull final Duration nonAncestorThreshold,
             @NonNull final Instant now,
             @NonNull final List<EventImpl> eventsTheyNeed) {
@@ -391,12 +387,8 @@ public final class SyncUtils {
             final boolean isAncestor = selfEventAncestorHashes.contains(event.getBaseHash());
 
             if (isAncestor) {
-                if (CompareTo.isGreaterThan(timeKnown, ancestorThreshold)) {
-                    // This event is a self ancestor and we've known about it for long enough to send.
-                    filteredList.add(event);
-                }
-                // We won't send this event now, but we might do so at a future time if needed.
-                continue;
+                // Always send ancestors of self events right away.
+                filteredList.add(event);
             }
 
             if (CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {

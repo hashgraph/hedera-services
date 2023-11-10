@@ -40,10 +40,6 @@ import java.time.Duration;
  *                                        with a peer
  * @param filterLikelyDuplicates          if true then do not send events that are likely to be duplicates when they are
  *                                        received by the peer
- * @param ancestorFilterThreshold         ignored if {@link #filterLikelyDuplicates} is false. For each event that is
- *                                        not a self event but is an ancestor of a self event, we must know about the
- *                                        event for at least this amount of time before the event is eligible to be
- *                                        sent
  * @param nonAncestorFilterThreshold      ignored if {@link #filterLikelyDuplicates} is false. For each event that is
  *                                        not a self event and is not an ancestor of a self event, we must know about
  *                                        the event for at least this amount of time before the event is eligible to be
@@ -57,13 +53,12 @@ import java.time.Duration;
 public record SyncConfig(
         @ConfigProperty(defaultValue = "25") int syncSleepAfterFailedNegotiation,
         @ConfigProperty(defaultValue = "17") int syncProtocolPermitCount,
-        @ConfigProperty(defaultValue = "true") boolean onePermitPerPeer,
+        @ConfigProperty(defaultValue = "true") boolean onePermitPerPeer, // TODO turn this off prior to merge
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
         @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled,
-        @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
-        @ConfigProperty(defaultValue = "1s") Duration ancestorFilterThreshold,
+        @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates, // TODO turn this off prior to merge
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
         @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}
