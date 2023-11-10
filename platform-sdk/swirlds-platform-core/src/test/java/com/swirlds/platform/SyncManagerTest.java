@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -31,11 +30,9 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -60,7 +57,6 @@ class SyncManagerTest {
         public TransactionPool transactionPool;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
-        public CriticalQuorum criticalQuorum;
         public DummyEventQueue eventQueue;
         public Configuration configuration;
 
@@ -77,19 +73,6 @@ class SyncManagerTest {
             final int size = addressBook.getSize();
 
             connectionGraph = new RandomGraph(size, 40, 0);
-            criticalQuorum = new CriticalQuorum() {
-                @Override
-                public boolean isInCriticalQuorum(final NodeId nodeId) {
-                    if (hashgraph.isInCriticalQuorum.containsKey(nodeId)) {
-                        return hashgraph.isInCriticalQuorum.get(nodeId);
-                    } else {
-                        return false;
-                    }
-                }
-
-                @Override
-                public void eventAdded(final EventImpl event) {}
-            };
             configuration = new TestConfigBuilder()
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
                     .withValue("event.eventIntakeQueueThrottleSize", "100")
@@ -101,10 +84,6 @@ class SyncManagerTest {
             syncManager = new SyncManagerImpl(
                     platformContext,
                     eventQueue,
-                    connectionGraph,
-                    selfId,
-                    criticalQuorum,
-                    hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,
@@ -205,30 +184,5 @@ class SyncManagerTest {
         // It is not ok to initiate a sync if the intake queue is full.
         test.hashgraph.eventIntakeQueueSize = 101;
         assertFalse(test.syncManager.shouldInitiateSync());
-    }
-
-    /**
-     * Verify the behavior of SyncManager's getNeighborsToCall function
-     */
-    @Test
-    @Order(3)
-    void getNeighborsToCall() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId selfId = test.hashgraph.selfId;
-        final NodeId firstNode = addressBook.getNodeId(0);
-        final int lastIndex = addressBook.getSize() - 1;
-        final NodeId lastNode = addressBook.getNodeId(lastIndex);
-
-        // Test of the current algorithm
-        for (int i = 0; i < 10; i++) {
-            final List<NodeId> next = test.syncManager.getNeighborsToCall();
-            final int firstIndex = addressBook.getIndexOfNodeId(firstNode);
-            final int nextIndex = addressBook.getIndexOfNodeId(next.get(0));
-            final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-            assertNotEquals(null, next);
-            assertTrue(next.size() <= 10);
-            assertTrue(nextIndex >= firstIndex && nextIndex <= lastIndex && nextIndex != selfIndex);
-        }
     }
 }
