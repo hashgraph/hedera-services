@@ -17,9 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.records;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import org.junit.jupiter.api.Test;
@@ -27,11 +24,22 @@ import org.junit.jupiter.api.Test;
 class GasFeeRecordBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
-        final var subject = mock(GasFeeRecordBuilder.class);
-        doCallRealMethod().when(subject).withGasFee(123L);
-        given(subject.transactionFee()).willReturn(456L);
-        given(subject.transactionFee(123L + 456L)).willReturn(subject);
+        final var subject = new GasFeeRecordBuilder() {
+            private long totalFee = 456L;
 
-        assertSame(subject, subject.withGasFee(123L));
+            @Override
+            public long transactionFee() {
+                return totalFee;
+            }
+
+            @Override
+            public GasFeeRecordBuilder transactionFee(final long transactionFee) {
+                totalFee = transactionFee;
+                return this;
+            }
+        };
+
+        assertSame(subject, subject.withTinybarGasFee(123L));
+        assertEquals(123L + 456L, subject.transactionFee());
     }
 }

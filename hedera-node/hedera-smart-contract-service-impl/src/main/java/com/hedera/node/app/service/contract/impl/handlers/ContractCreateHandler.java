@@ -61,7 +61,7 @@ public class ContractCreateHandler implements TransactionHandler {
         context.recordBuilder(ContractCreateRecordBuilder.class)
                 .contractCreateResult(outcome.result())
                 .contractID(outcome.recipientIdIfCreated())
-                .withGasFee(outcome.gasCostInTinybar());
+                .withTinybarGasFee(outcome.tinybarGasCost());
         throwIfUnsuccessful(outcome.status());
     }
 

@@ -52,7 +52,7 @@ class CallOutcomeTest {
     }
 
     @Test
-    void calledIdIsFromResultIfExtant() {
+    void calledIdIsFromResult() {
         final var outcome = new CallOutcome(
                 SUCCESS_RESULT.asProtoResultOf(updater), INVALID_CONTRACT_ID, SUCCESS_RESULT.gasPrice());
         assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCalled());

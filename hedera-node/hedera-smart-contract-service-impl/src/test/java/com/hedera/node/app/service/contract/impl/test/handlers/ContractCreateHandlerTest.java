@@ -89,7 +89,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
-        given(recordBuilder.withGasFee(SUCCESS_RESULT.gasPrice() * expectedResult.gasUsed()))
+        given(recordBuilder.withTinybarGasFee(SUCCESS_RESULT.gasPrice() * expectedResult.gasUsed()))
                 .willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
@@ -107,7 +107,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
         given(recordBuilder.contractID(null)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
-        given(recordBuilder.withGasFee(HALT_RESULT.gasPrice() * expectedResult.gasUsed()))
+        given(recordBuilder.withTinybarGasFee(HALT_RESULT.gasPrice() * expectedResult.gasUsed()))
                 .willReturn(recordBuilder);
         assertFailsWith(INVALID_SIGNATURE, () -> subject.handle(handleContext));
     }

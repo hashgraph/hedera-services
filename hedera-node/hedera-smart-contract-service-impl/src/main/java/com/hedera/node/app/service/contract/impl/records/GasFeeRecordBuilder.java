@@ -33,12 +33,12 @@ public interface GasFeeRecordBuilder {
     GasFeeRecordBuilder transactionFee(long transactionFee);
 
     /**
-     * Updates this record builder to include an additional gas fee.
+     * Updates this record builder to include an additional tinybar-denominated gas fee.
      *
-     * @param gasFee the gas fee to add
+     * @param gasFee the tinybar-denominated gas fee to add
      * @return the updated {@link GasFeeRecordBuilder}
      */
-    default GasFeeRecordBuilder withGasFee(final long gasFee) {
+    default GasFeeRecordBuilder withTinybarGasFee(final long gasFee) {
         return transactionFee(transactionFee() + gasFee);
     }
 }

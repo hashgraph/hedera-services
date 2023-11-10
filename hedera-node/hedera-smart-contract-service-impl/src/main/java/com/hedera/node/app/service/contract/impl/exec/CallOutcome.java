@@ -30,9 +30,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param result the result of the call
  * @param status the resolved status of the call
- * @param gasPrice the gas price used for the call
+ * @param tinybarGasPrice the tinybar-denominated gas price used for the call
  */
-public record CallOutcome(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum status, long gasPrice) {
+public record CallOutcome(
+        @NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum status, long tinybarGasPrice) {
 
     public CallOutcome {
         requireNonNull(result);
@@ -63,8 +64,8 @@ public record CallOutcome(@NonNull ContractFunctionResult result, @NonNull Respo
      *
      * @return the gas cost of the call in tinybar
      */
-    public long gasCostInTinybar() {
-        return gasPrice * result.gasUsed();
+    public long tinybarGasCost() {
+        return tinybarGasPrice * result.gasUsed();
     }
 
     /**
