@@ -17,7 +17,6 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.ClassicViewsXTestConstants.ADMIN_KEY;
 import static contract.ClassicViewsXTestConstants.AUTORENEW_SECONDS;
 import static contract.ClassicViewsXTestConstants.CLASSIC_QUERIES_X_TEST_ID;
@@ -65,6 +64,7 @@ import static contract.MiscViewsXTestConstants.SECRET;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.ONE_HBAR;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.TupleType;
