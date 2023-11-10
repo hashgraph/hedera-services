@@ -281,6 +281,30 @@ public abstract class AbstractXTest {
         }
     }
 
+    protected void addUsableRelation(
+            @NonNull final Map<EntityIDPair, TokenRelation> tokenRels,
+            @NonNull final AccountID accountID,
+            @NonNull final TokenID tokenID,
+            @NonNull final Consumer<TokenRelation.Builder> spec) {
+        final var rel =
+                TokenRelation.newBuilder().accountId(accountID).tokenId(tokenID).kycGranted(true);
+        spec.accept(rel);
+        tokenRels.put(
+                EntityIDPair.newBuilder().tokenId(tokenID).accountId(accountID).build(), rel.build());
+    }
+
+    protected void addNft(
+            @NonNull final Map<NftID, Nft> nfts,
+            @NonNull final TokenID tokenID,
+            final long serialNo,
+            @NonNull final Consumer<Nft.Builder> spec) {
+        final var nftId =
+                NftID.newBuilder().tokenId(tokenID).serialNumber(serialNo).build();
+        final var nftBuilder = Nft.newBuilder().metadata(Bytes.wrap("0.0." + tokenID.tokenNum() + "." + serialNo));
+        spec.accept(nftBuilder);
+        nfts.put(nftId, nftBuilder.build());
+    }
+
     protected void assertExpectedStorage(
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
             @NonNull ReadableKVState<AccountID, Account> accounts) {}
