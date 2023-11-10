@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
@@ -45,7 +46,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
     /**
@@ -58,13 +59,8 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
-    private final org.hyperledger.besu.datatypes.Address spender;
-
-    @NonNull
-    private final BlockValues blockValues;
-
-    @NonNull
-    private final Wei value;
+    private final AccountID spenderId;
+    private final long gasRequirement;
 
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -72,16 +68,14 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             @NonNull final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
-            @NonNull final AddressIdConverter addressIdConverter,
-            @NonNull final BlockValues blockValues,
-            @NonNull final Wei value) {
+            @NonNull final AddressIdConverter addressIdConverter) {
         super(systemContractGasCalculator, enhancement);
         this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-        this.spender = requireNonNull(spender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
-        this.blockValues = blockValues;
-        this.value = value;
+
+        this.spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+        this.gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
     }
 
     @Override
@@ -96,15 +90,8 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         if (treasuryAccount == null) {
             return externalizeUnsuccessfulResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
-
         if (token.autoRenewAccount() == null) {
             return externalizeUnsuccessfulResult(INVALID_EXPIRATION_TIME, gasCalculator.viewGasRequirement());
-        }
-        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
-
-        final long gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
-        if (!value.greaterOrEqualThan(Wei.of(gasRequirement))) {
-            return externalizeUnsuccessfulResult(INSUFFICIENT_TX_FEE, gasCalculator.viewGasRequirement());
         }
 
         final var recordBuilder = systemContractOperations()
@@ -138,6 +125,14 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             }
             return gasOnly(successResult(encodedOutput, gasRequirement));
         }
+    }
+
+    @Override
+    public @NonNull PricedResult execute(final MessageFrame frame) {
+        if (!frame.getValue().greaterOrEqualThan(Wei.of(gasRequirement))) {
+            return externalizeUnsuccessfulResult(INSUFFICIENT_TX_FEE, gasCalculator.viewGasRequirement());
+        }
+        return execute();
     }
 
     // @TODO extract externalizeResult() calls into a single location on a higher level
