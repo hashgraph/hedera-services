@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_FRACTION;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Key;
@@ -232,8 +233,8 @@ public class TokenTupleUtils {
             @NonNull final Nft nft,
             final long serialNumber,
             @NonNull final String ledgerId,
-            Account ownerAccount) {
-
+            @NonNull Account ownerAccount) {
+        requireNonNull(ownerAccount);
         final var nftMetaData = nft.metadata() != null ? nft.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
 
         return Tuple.of(
