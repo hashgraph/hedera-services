@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.CREATE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +51,7 @@ public class CustomCreateOperation extends AbstractCustomCreateOperation {
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
 
         final var origin = frame.getRecipientAddress();
-        final var originNonce = updater.getAccount(origin).getNonce();
+        final var originNonce = requireNonNull(updater.getAccount(origin)).getNonce();
         // Decrement nonce by 1 to normalize the effect of transaction execution
         final var address = Address.contractAddress(origin, originNonce - 1);
 
