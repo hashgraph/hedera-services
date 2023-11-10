@@ -468,8 +468,10 @@ public class HandleWorkflow {
                         }
                     }
 
-                    // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    // Notify responsible facility if system-file was uploaded.
+                    // Returns SUCCESS if no system-file was uploaded
+                    final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
+                    recordBuilder.status(fileUpdateResult);
 
                     // Notify if dual state was updated
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);

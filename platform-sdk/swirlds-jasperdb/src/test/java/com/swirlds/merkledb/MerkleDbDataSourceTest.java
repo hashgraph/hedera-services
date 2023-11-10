@@ -25,6 +25,7 @@ import static com.swirlds.merkledb.MerkleDbTestUtils.shuffle;
 import static com.swirlds.virtualmap.datasource.VirtualDataSource.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -136,7 +137,7 @@ class MerkleDbDataSourceTest {
         assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
 
         // close data source
-        dataSource.closeAndDelete();
+        dataSource.close();
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
@@ -144,7 +145,7 @@ class MerkleDbDataSourceTest {
         assertEventuallyFalse(
                 () -> Files.exists(testDirectory.resolve(tableName)),
                 Duration.ofSeconds(1),
-                "Database should have been deleted by closeAndDelete()");
+                "Database should have been deleted by close()");
     }
 
     private static Stream<Arguments> provideParameters() {
@@ -202,11 +203,11 @@ class MerkleDbDataSourceTest {
         } catch (Exception e) {
             e.printStackTrace();
             // close data source
-            dataSource.closeAndDelete();
+            dataSource.close();
             System.exit(1);
         } finally {
             // close data source
-            dataSource.closeAndDelete();
+            dataSource.close();
         }
     }
 
@@ -238,7 +239,7 @@ class MerkleDbDataSourceTest {
         assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
 
         // close data source
-        dataSource.closeAndDelete();
+        dataSource.close();
     }
 
     @ParameterizedTest
@@ -298,7 +299,7 @@ class MerkleDbDataSourceTest {
         IntStream.range(incFirstLeafPath + 21, exclLastLeafPath)
                 .forEach(i -> assertLeaf(testType, dataSource, i, i, i + 10_000));
         // close data source
-        dataSource.closeAndDelete();
+        dataSource.close();
 
         // check db count
         assertEventuallyEquals(
@@ -341,7 +342,7 @@ class MerkleDbDataSourceTest {
                 "creating/loading same LeafRecord gives different results");
         assertLeaf(testType, dataSource, 250, 500);
         // close data source
-        dataSource.closeAndDelete();
+        dataSource.close();
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
@@ -370,7 +371,7 @@ class MerkleDbDataSourceTest {
                 "Thread interrupt status should NOT be cleared (two total interrupts)");
         savingThread.join();
         // close data source
-        dataSource.closeAndDelete();
+        dataSource.close();
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
@@ -401,10 +402,10 @@ class MerkleDbDataSourceTest {
         dataSource.getDatabase().snapshot(snapshotDbPath, dataSource);
         // close data source
         dataSource.close();
-        // check directory still exists and temporary snapshot path does not
-        assertTrue(
+        // check directory is deleted on close
+        assertFalse(
                 Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
-                "Database dir should still exist");
+                "Data source dir should be deleted");
         final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
         assertTrue(
                 Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
@@ -415,7 +416,7 @@ class MerkleDbDataSourceTest {
         // check all the leaf data
         IntStream.range(count, count * 2).forEach(i -> assertLeaf(testType, dataSource2, i, i));
         // close data source
-        dataSource2.closeAndDelete();
+        dataSource2.close();
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
@@ -449,7 +450,7 @@ class MerkleDbDataSourceTest {
         closingThread.join();
         savingThread.join();
         // close data source
-        dataSource.closeAndDelete();
+        dataSource.close();
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
@@ -505,7 +506,7 @@ class MerkleDbDataSourceTest {
                     "Data source in expected long key mode.");
         } finally {
             // close data source
-            dataSource.closeAndDelete();
+            dataSource.close();
         }
     }
 
