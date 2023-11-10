@@ -32,7 +32,9 @@ public class NoOpFeeAccumulator implements FeeAccumulator {
     public void chargeFees(@NonNull AccountID payer, AccountID nodeAccount, @NonNull Fees fees) {}
 
     @Override
-    public void chargeNetworkFee(@NonNull AccountID payer, long networkFee) {}
+    public boolean chargeNetworkFee(@NonNull AccountID payer, long networkFee) {
+        return false;
+    }
 
     @Override
     public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {}

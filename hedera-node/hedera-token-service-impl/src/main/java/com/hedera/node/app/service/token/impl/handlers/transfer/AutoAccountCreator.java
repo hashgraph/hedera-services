@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
@@ -92,20 +91,10 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
-        // TODO : distribute autocreation fee and deduct payer balance
-        //        final var payer = handleContext.body().transactionID().accountID();
-        //        final var payerAccount = accountStore.get(payer);
-        //        final var currentBalance = payerAccount.tinybarBalance();
-        //        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
-        //        final var payerCopy = payerAccount.copyBuilder()
-        //                .tinybarBalance(currentBalance - fee)
-        //                .build();
-        //        accountStore.put(payerCopy.copyBuilder().build());
-
         final Predicate<Key> verifier =
                 key -> handleContext.verificationFor(key).passed();
-
-        final var childRecord = handleContext.dispatchRemovableChildTransaction(
+        // dispatch the auto-creation record as a preceding record
+        final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         var fee = autoCreationFeeFor(syntheticCreation);
@@ -142,11 +131,8 @@ public class AutoAccountCreator {
         final var topLevelPayer = handleContext.payer();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
-        final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
-        //        final var fees = handleContext.feeCalculator().computePayment(txn, payerAccount.key());
-        //        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
-        // TODO : need to use fee calculator
-        return 100;
+        final var fees = handleContext.dispatchComputeFees(syntheticCreation.build(), topLevelPayer);
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**
@@ -187,7 +173,7 @@ public class AutoAccountCreator {
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO);
+        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 }

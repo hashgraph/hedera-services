@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.utility;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;

@@ -21,26 +21,23 @@ import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.validation.InternalEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the event signature validator.
+ * Wiring for the {@link com.swirlds.platform.event.validation.InternalEventValidator InternalEventValidator}.
  */
-public class EventSignatureValidationScheduler {
-
+public class InternalEventValidatorScheduler {
     private final TaskScheduler<GossipEvent> taskScheduler;
-
     private final InputWire<GossipEvent, GossipEvent> eventInput;
-    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
 
     /**
      * Constructor.
      *
      * @param model the wiring model
      */
-    public EventSignatureValidationScheduler(@NonNull final WiringModel model) {
-        taskScheduler = model.schedulerBuilder("eventSignatureValidator")
+    public InternalEventValidatorScheduler(@NonNull final WiringModel model) {
+        taskScheduler = model.schedulerBuilder("internalEventValidator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -48,14 +45,13 @@ public class EventSignatureValidationScheduler {
                 .build()
                 .cast();
 
-        eventInput = taskScheduler.buildInputWire("unvalidated events");
-        minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
+        eventInput = taskScheduler.buildInputWire("non-validated events");
     }
 
     /**
-     * Passes events to the signature validator.
+     * Gets the event input wire
      *
-     * @return the event input channel
+     * @return the event input wire
      */
     @NonNull
     public InputWire<GossipEvent, GossipEvent> getEventInput() {
@@ -63,17 +59,7 @@ public class EventSignatureValidationScheduler {
     }
 
     /**
-     * Passes the minimum generation non ancient to the signature validator.
-     *
-     * @return the minimum generation non ancient input channel
-     */
-    @NonNull
-    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
-        return minimumGenerationNonAncientInput;
-    }
-
-    /**
-     * Get the output of the signature validator, i.e. a stream of events with valid signatures.
+     * Get the output of the internal validator, i.e. a stream of events with validated internal data.
      *
      * @return the event output channel
      */
@@ -83,14 +69,11 @@ public class EventSignatureValidationScheduler {
     }
 
     /**
-     * Bind an orphan buffer to this wiring.
+     * Bind an internal event validator to this wiring.
      *
-     * @param eventValidator the orphan buffer to bind
+     * @param internalEventValidator the validator to bind
      */
-    public void bind(@NonNull final EventValidator eventValidator) {
-        // Future work:
-        //   - ensure that the signature validator passed in is the new implementation.
-        //   - Bind the input channels to the appropriate functions.
-        //   - Ensure that functions return a value instead of passing it to an internal lambda.
+    public void bind(@NonNull final InternalEventValidator internalEventValidator) {
+        eventInput.bind(internalEventValidator::validateEvent);
     }
 }

@@ -38,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeCo
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeHashOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeSizeOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomLogOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomPrevRandaoOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSLoadOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSStoreOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation;
@@ -277,14 +276,6 @@ public interface V030Module {
     static Operation provideExtCodeCopyOperation(
             @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
         return new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
-    }
-
-    @Provides
-    @Singleton
-    @IntoSet
-    @ServicesV030
-    static Operation providePrevRandaoOperation(@NonNull final GasCalculator gasCalculator) {
-        return new CustomPrevRandaoOperation(gasCalculator);
     }
 
     @Provides

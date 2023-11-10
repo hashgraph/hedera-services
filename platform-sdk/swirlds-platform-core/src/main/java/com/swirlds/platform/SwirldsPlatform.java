@@ -59,6 +59,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
@@ -78,13 +80,15 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
-import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -161,6 +165,7 @@ import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -388,11 +393,12 @@ public class SwirldsPlatform implements Platform {
 
         EventCounter.registerEventCounterMetrics(metrics);
 
-        // Manually wire components for now.
-        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, dispatchBuilder, getAddressBook());
-        metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
-                wiring.wireAppCommunicationComponent(notificationEngine);
+                new AppCommunicationComponent(notificationEngine, platformContext);
+
+        components.add(appCommunicationComponent);
+
+        metrics.addUpdater(appCommunicationComponent::updateLatestCompleteStateQueueSize);
 
         final Hash epochHash;
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
@@ -448,24 +454,32 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 platformStatusManager,
                 this::haltRequested,
-                wiring::handleFatalError,
+                this::handleFatalError,
                 appCommunicationComponent,
                 issScratchpad));
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        stateManagementComponent = wiring.wireStateManagementComponent(
+        stateManagementComponent = new DefaultStateManagementComponent(
+                platformContext,
+                threadManager,
+                dispatchBuilder,
+                getAddressBook(),
                 new PlatformSigner(keysAndCerts),
                 actualMainClassName,
                 selfId,
                 swirldName,
                 txn -> this.createSystemTransaction(txn, true),
-                this::haltRequested,
                 appCommunicationComponent,
+                appCommunicationComponent,
+                appCommunicationComponent,
+                this::haltRequested,
+                this::handleFatalError,
                 preconsensusEventWriter,
-                platformStatusManager::getCurrentStatus,
-                platformStatusManager::submitStatusAction);
-        wiring.registerComponents(components);
+                platformStatusManager,
+                platformStatusManager);
+
+        components.add(stateManagementComponent);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
 
@@ -1210,5 +1224,22 @@ public class SwirldsPlatform implements Platform {
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
+    }
+
+    /**
+     * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
+     */
+    private void handleFatalError(
+            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
+        logger.fatal(
+                EXCEPTION.getMarker(),
+                "{}\nCaller stack trace:\n{}\nThrowable provided:",
+                new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg),
+                StackTrace.getStackTrace().toString(),
+                throwable);
+        // Let the state management component attempt to handle the fatal error
+        stateManagementComponent.onFatalError();
+
+        SystemExitUtils.exitSystem(exitCode, msg);
     }
 }
