@@ -306,13 +306,13 @@ public class SideEffectsTracker {
      * @return the created auto-associations
      */
     public List<FcTokenAssociation> getTrackedAutoAssociations() {
-        final var newAssociations = new ArrayList<>(autoAssociations);
         // Sort the associations by token id and then by account id to ensure a consistent order
         // to be matched with modular service
         if (!autoAssociations.isEmpty()) {
+            final var newAssociations = new ArrayList<>(autoAssociations);
             newAssociations.sort(FC_TOKEN_ASSOCIATION_COMPARATOR);
         }
-        return newAssociations;
+        return autoAssociations;
     }
 
     /**
