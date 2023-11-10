@@ -136,7 +136,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path.mono";
-    private static final String RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.sidecarDir.mod";
+    private static final String RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.path.mod";
     private static final String SIDECAR_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.sidecarDir.mod";
 
     private static SidecarWatcher sidecarWatcher;
@@ -173,8 +173,7 @@ public class TraceabilitySuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         try {
-            var initSpec = defaultHapiSpec("initialize").given().when().then();
-            initialize(initSpec);
+            initialize();
         } catch (final Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(defaultHapiSpec("initialize")
@@ -215,9 +214,8 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec beforeAll() {
-        var initSpec = defaultHapiSpec("initialize").given().when().then();
         try {
-            initialize(initSpec);
+            initialize();
         } catch (final Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return defaultHapiSpec("initialize")
@@ -225,7 +223,7 @@ public class TraceabilitySuite extends HapiSuite {
                     .when()
                     .then(assertionsHold((spec, opLog) -> fail("Watch service couldn't be" + " initialized.")));
         }
-        return initSpec;
+        return defaultHapiSpec("initialize").given().when().then();
     }
 
     @HapiTest
@@ -5303,8 +5301,8 @@ public class TraceabilitySuite extends HapiSuite {
         return initCode.concat(ByteStringUtils.wrapUnsafely(params.length > 4 ? stripSelector(params) : params));
     }
 
-    private static void initialize(HapiSpec initSpec) throws Exception {
-        final var recordStreamFolderPath = getRecordStreamFolderPath(initSpec);
+    private static void initialize() throws Exception {
+        final var recordStreamFolderPath = getRecordStreamFolderPath();
         final var absolutePath =
                 recordStreamFolderPath.toAbsolutePath().toString();
         log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
@@ -5314,8 +5312,8 @@ public class TraceabilitySuite extends HapiSuite {
         sidecarWatcher.watch();
     }
 
-    private static Path getRecordStreamFolderPath(HapiSpec initSpec) {
-        return switch (initSpec.targetNetworkType()) {
+    private static Path getRecordStreamFolderPath() {
+        return switch (HapiSpec.targetNetworkType()) {
             case HAPI_TEST_NETWORK -> Paths.get(
                     HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY),
                     HapiSpecSetup.getDefaultPropertySource().get(SIDECAR_FOLDER_PATH_MOD_PROPERTY_KEY));

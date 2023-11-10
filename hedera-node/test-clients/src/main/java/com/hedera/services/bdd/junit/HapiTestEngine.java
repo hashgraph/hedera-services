@@ -333,8 +333,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     (HapiSuite) parent.testClass.getDeclaredConstructor().newInstance();
             // Second, call the method to get the HapiSpec
             testMethod.setAccessible(true);
+            HapiSpec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
             final var spec = (HapiSpec) testMethod.invoke(suite);
-            spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
             // Third, call `runSuite` with just the one HapiSpec.
             final var result = suite.runSpecSync(spec);
             // Fourth, report the result. YAY!!
