@@ -164,18 +164,21 @@ public final class SignedStateFileWriter {
         writeEmergencyRecoveryFile(directory, signedState);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
         writeSettingsUsed(directory, platformContext.getConfiguration());
-        copyPreconsensusEventStreamFiles(
-                platformContext,
-                selfId,
-                directory,
-                signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+
+        if (selfId != null) {
+            copyPreconsensusEventStreamFiles(
+                    platformContext,
+                    selfId,
+                    directory,
+                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+        }
     }
 
     /**
      * Copy preconsensus event files into the signed state directory. These files are necessary for the platform to use
-     * the state file as a starting point. Note that starting with this only the PCES files in the state file does not
+     * the state file as a starting point. Note: starting a node using the PCES files in the state directory does not
      * guarantee that there is no data loss (i.e. there may be transactions that reach consensus after the state
-     * snapshot that are not replayed), but it does allow a node to start up and participate in gossip.
+     * snapshot), but it does allow a node to start up and participate in gossip.
      *
      * <p>
      * This general strategy is not very elegant is very much a hack. But it will allow us to do migration testing using
@@ -208,7 +211,80 @@ public final class SignedStateFileWriter {
                 destinationDirectory.resolve("preconsensus-events").resolve(Long.toString(selfId.id()));
         Files.createDirectories(pcesDestination);
 
-        // Gather all PCES files currently on disk.
+        final List<PreconsensusEventFile> allFiles = gatherPreconsensusFilesOnDisk(selfId, platformContext);
+        if (allFiles.isEmpty()) {
+            return;
+        }
+
+        // Sort by sequence number
+        Collections.sort(allFiles);
+
+        // Discard all files that either have an incorrect origin or that do not contain non-ancient events.
+        final List<PreconsensusEventFile> filesToCopy =
+                getRequiredPreconsensusFiles(allFiles, minimumGenerationNonAncient);
+        if (filesToCopy.isEmpty()) {
+            return;
+        }
+
+        copyPreconsensusFileList(filesToCopy, pcesDestination);
+    }
+
+    /**
+     * Get the preconsensus files that we need to copy to a state. We need any file that has a matching origin and that
+     * contains non-ancient events (w.r.t. the state).
+     *
+     * @param allFiles                    all PCES files on disk
+     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
+     *                                    state that is being written
+     * @return the list of files to copy
+     */
+    @NonNull
+    private static List<PreconsensusEventFile> getRequiredPreconsensusFiles(
+            @NonNull final List<PreconsensusEventFile> allFiles, final long minimumGenerationNonAncient) {
+
+        final List<PreconsensusEventFile> filesToCopy = new ArrayList<>();
+        final PreconsensusEventFile lastFile = allFiles.get(allFiles.size() - 1);
+        for (final PreconsensusEventFile file : allFiles) {
+            if (file.getOrigin() == lastFile.getOrigin()
+                    && file.getMaximumGeneration() >= minimumGenerationNonAncient) {
+                filesToCopy.add(file);
+            }
+        }
+
+        if (filesToCopy.isEmpty()) {
+            logger.warn(
+                    STATE_TO_DISK.getMarker(),
+                    "No preconsensus event files meeting specified criteria found to copy. "
+                            + "Minimum generation non-ancient: {}",
+                    minimumGenerationNonAncient);
+        } else {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    """
+                            Found {} preconsensus event files meeting specified criteria to copy.
+                            Minimum generation non-ancient: {}
+                            First file to copy: {}
+                            Last file to copy: {}
+                            """,
+                    filesToCopy.size(),
+                    minimumGenerationNonAncient,
+                    filesToCopy.get(0).getPath(),
+                    filesToCopy.get(filesToCopy.size() - 1).getPath());
+        }
+
+        return filesToCopy;
+    }
+
+    /**
+     * Gather all PCES files on disk.
+     *
+     * @param selfId          the id of this node
+     * @param platformContext the platform context
+     * @return a list of all PCES files on disk
+     */
+    @NonNull
+    private static List<PreconsensusEventFile> gatherPreconsensusFilesOnDisk(
+            @NonNull final NodeId selfId, @NonNull final PlatformContext platformContext) throws IOException {
         final List<PreconsensusEventFile> allFiles = new ArrayList<>();
         final Path preconsensusEventStreamDirectory =
                 PreconsensusEventFileManager.getDatabaseDirectory(platformContext, selfId);
@@ -224,28 +300,30 @@ public final class SignedStateFileWriter {
 
         if (allFiles.isEmpty()) {
             logger.warn(STATE_TO_DISK.getMarker(), "No preconsensus event files found to copy");
-            return;
+        } else {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    """
+                            Found {} preconsensus files on disk.
+                            First file: {}
+                            Last file: {}""",
+                    allFiles.size(),
+                    allFiles.get(0).getPath(),
+                    allFiles.get(allFiles.size() - 1).getPath());
         }
 
-        // Sort by sequence number
-        Collections.sort(allFiles);
+        return allFiles;
+    }
 
-        // Discard all files that either have an incorrect origin or that do not contain non-ancient events
-        final List<PreconsensusEventFile> filesToCopy = new ArrayList<>();
-        final PreconsensusEventFile lastFile = allFiles.get(allFiles.size() - 1);
-        for (final PreconsensusEventFile file : allFiles) {
-            if (file.getOrigin() == lastFile.getOrigin()
-                    && file.getMaximumGeneration() <= minimumGenerationNonAncient) {
-                filesToCopy.add(file);
-            }
-        }
-
-        if (filesToCopy.isEmpty()) {
-            logger.warn(
-                    STATE_TO_DISK.getMarker(), "No preconsensus event files meeting specified criteria found to copy");
-            return;
-        }
-
+    /**
+     * Copy a list of preconsensus event files into a directory.
+     *
+     * @param filesToCopy     the files to copy
+     * @param pcesDestination the directory where the files should be copied
+     */
+    private static void copyPreconsensusFileList(
+            @NonNull final List<PreconsensusEventFile> filesToCopy, @NonNull final Path pcesDestination)
+            throws IOException {
         logger.info(
                 STATE_TO_DISK.getMarker(),
                 "Copying {} preconsensus event files to state snapshot directory",
@@ -254,31 +332,52 @@ public final class SignedStateFileWriter {
         // Although the last file may be currently in the process of being written, all previous files will
         // be closed and immutable and so it's safe to hard link them.
         for (int index = 0; index < filesToCopy.size() - 1; index++) {
-            final PreconsensusEventFile file = filesToCopy.get(index);
-            final Path destination = pcesDestination.resolve(file.getFileName());
-            try {
-                Files.createLink(destination, file.getPath());
-            } catch (final IOException e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Exception when hard linking preconsensus event file {} to {}",
-                        file.getPath(),
-                        destination,
-                        e);
-            }
+            hardLinkPreconsensusFile(filesToCopy.get(index), pcesDestination);
         }
 
         // The last file might be in the process of being written, so we need to do a deep copy of it.
-        try {
-            Files.copy(lastFile.getPath(), pcesDestination.resolve(lastFile.getFileName()));
-        } catch (final IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Exception when copying preconsensus event file", e);
-        }
+        deepCopyPreconsensusFile(filesToCopy.get(filesToCopy.size() - 1), pcesDestination);
 
         logger.info(
                 STATE_TO_DISK.getMarker(),
                 "Finished copying {} preconsensus event files to state snapshot directory",
                 filesToCopy.size());
+    }
+
+    /**
+     * Hard link a PCES file.
+     *
+     * @param file            the file to link
+     * @param pcesDestination the directory where the file should be linked into
+     */
+    private static void hardLinkPreconsensusFile(
+            @NonNull final PreconsensusEventFile file, @NonNull final Path pcesDestination) {
+        final Path destination = pcesDestination.resolve(file.getFileName());
+        try {
+            Files.createLink(destination, file.getPath());
+        } catch (final IOException e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Exception when hard linking preconsensus event file {} to {}",
+                    file.getPath(),
+                    destination,
+                    e);
+        }
+    }
+
+    /**
+     * Deep copy a PCES file.
+     *
+     * @param file            the file to copy
+     * @param pcesDestination the directory where the file should be copied into
+     */
+    private static void deepCopyPreconsensusFile(
+            @NonNull final PreconsensusEventFile file, @NonNull final Path pcesDestination) {
+        try {
+            Files.copy(file.getPath(), pcesDestination.resolve(file.getFileName()));
+        } catch (final IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception when copying preconsensus event file", e);
+        }
     }
 
     /**

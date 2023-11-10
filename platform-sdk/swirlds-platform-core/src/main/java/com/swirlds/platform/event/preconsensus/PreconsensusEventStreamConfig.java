@@ -93,7 +93,7 @@ import java.time.Duration;
  * @param replayHashPoolSize                              the number of threads used for hashing events during replay
  * @param copyRecentStreamToStateSnapshots                if true, then copy recent PCES files into the saved state
  *                                                        snapshot directories every time we take a state snapshot. The
- *                                                        files copied are gauranteed to contain all non-ancient events
+ *                                                        files copied are guaranteed to contain all non-ancient events
  *                                                        w.r.t. the state snapshot.
  */
 @ConfigData("event.preconsensus")
