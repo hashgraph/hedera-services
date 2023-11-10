@@ -29,6 +29,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -448,8 +449,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void externalizeSystemContractResults(
-            @NonNull final ContractFunctionResult result, final ResultStatus status) {
-        enhancement.systemOperations().externalizeResult(result, status);
+            @NonNull final ContractFunctionResult result,
+            final ResultStatus status,
+            @NonNull ResponseCodeEnum responseStatus) {
+        enhancement.systemOperations().externalizeResult(result, status, responseStatus);
     }
 
     /**
