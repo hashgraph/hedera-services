@@ -88,14 +88,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.onRamp();
-        busyTimer.activate();
-        try {
-            handler.accept(data);
-        } catch (final Throwable t) {
-            uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-        }
-        busyTimer.deactivate();
-        offRamp.offRamp();
+        handleAndOffRamp(handler, data);
     }
 
     /**
@@ -107,15 +100,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
         if (!accepted) {
             return false;
         }
-
-        busyTimer.activate();
-        try {
-            handler.accept(data);
-        } catch (final Throwable t) {
-            uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-        }
-        busyTimer.deactivate();
-        offRamp.offRamp();
+        handleAndOffRamp(handler, data);
         return true;
     }
 
@@ -125,6 +110,16 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.forceOnRamp();
+        handleAndOffRamp(handler, data);
+    }
+
+    /**
+     * Helper method. Handles the data and then off ramps.
+     *
+     * @param handler the handler
+     * @param data    the data
+     */
+    private void handleAndOffRamp(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         busyTimer.activate();
         try {
             handler.accept(data);

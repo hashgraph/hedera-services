@@ -31,7 +31,7 @@ public final class DirectSchedulerChecks {
      *
      * <ul>
      * <li>
-     * Calling a into a component with type {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT}
+     * Calling into a component with type {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT}
      * from a component with {@link com.swirlds.common.wiring.builders.TaskSchedulerType#CONCURRENT CONCURRENT} is not
      * allowed.
      * </li>
