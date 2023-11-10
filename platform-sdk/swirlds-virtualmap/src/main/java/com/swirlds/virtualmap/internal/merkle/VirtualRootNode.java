@@ -702,7 +702,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         } else {
             logger.info(
                     VIRTUAL_MERKLE_STATS.getMarker(),
-                    "Destroying virtual root node, but" + " its pipeline is null. It must be during failed reconnect");
+                    "Destroying virtual root node at route {}, but its pipeline is null. It may happen during failed reconnect",
+                    getRoute());
             closeDataSource();
         }
     }
