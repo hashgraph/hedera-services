@@ -80,6 +80,12 @@ public class TokenDefOperation extends UtilOp {
         return this;
     }
 
+    public TokenDefOperation withRelation(@NonNull final String accountName) {
+        requireNonNull(accountName);
+        desiredAccountTokenRelations.put(accountName, new DesiredAccountTokenRelation());
+        return this;
+    }
+
     public TokenDefOperation withRelation(
             @NonNull final String accountName,
             @NonNull final Consumer<DesiredAccountTokenRelation> spec) {

@@ -54,12 +54,12 @@ public class GeneralSuite extends HapiSuite {
                                 .withPartitions(RED_PARTITION, BLUE_PARTITION)
                                 .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
                 ).when(
-                        lockUnits(ALICE, RED_PARTITION, FUNGIBLE_INITIAL_BALANCE / 2)
+                        lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2)
                 ).then(
                         assertPartitionInheritedExpectedProperties(RED_PARTITION),
                         assertPartitionInheritedExpectedProperties(BLUE_PARTITION),
                         // Alice cannot transfer any of her locked balance
-                        assertInsufficientUnlockedBalanceToTransfer(ALICE, RED_PARTITION, FUNGIBLE_INITIAL_BALANCE / 2 + 1),
+                        assertInsufficientUnlockedBalanceToTransfer(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1),
                         // Alice can still transfer her unlocked balance to the token treasury
                         cryptoTransfer(moving(
                                 FUNGIBLE_INITIAL_BALANCE / 2,

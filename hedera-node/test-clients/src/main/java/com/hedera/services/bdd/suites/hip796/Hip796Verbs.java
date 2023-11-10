@@ -5,6 +5,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.hip796.operations.TokenDefOperation;
@@ -104,16 +105,30 @@ public class Hip796Verbs {
     }
 
     // --- Lock management verbs ---
-    public static HapiSpecOperation lockUnits(
+    public static HapiTxnOp lockUnits(
             @NonNull final String account,
-            @NonNull final String partitionToken,
+            @NonNull final String token,
+            final long amount) {
+        throw new AssertionError("Not implemented");
+    }
+
+    public static HapiTxnOp unlockUnits(
+            @NonNull final String account,
+            @NonNull final String token,
             final long amount) {
         throw new AssertionError("Not implemented");
     }
 
     public static HapiSpecOperation lockNfts(
             @NonNull final String account,
-            @NonNull final String partitionToken,
+            @NonNull final String token,
+            final long... serialNos) {
+        throw new AssertionError("Not implemented");
+    }
+
+    public static HapiSpecOperation unlockNfts(
+            @NonNull final String account,
+            @NonNull final String token,
             final long... serialNos) {
         throw new AssertionError("Not implemented");
     }
@@ -161,7 +176,7 @@ public class Hip796Verbs {
     // --- Lock validation verbs ---
     public static HapiCryptoTransfer assertInsufficientUnlockedBalanceToTransfer(
             @NonNull final String account,
-            @NonNull final String partitionToken,
+            @NonNull final String token,
             final long amount) {
         throw new AssertionError("Not implemented");
     }

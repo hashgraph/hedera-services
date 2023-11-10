@@ -2,7 +2,11 @@ package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,6 +14,19 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.lockNfts;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.lockUnits;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.unlockUnits;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.treasuryOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCKING;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 
 /**
  * A suite for user stories Lock-1 through Lock-8 from HIP-796.
@@ -41,38 +58,24 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canLockSubsetOfUnlockedTokens() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theToken = "TheToken";
-        final long totalUnlockedTokens = 1000L; // The `x` from the user story
-        final long tokensToLock = 500L; // This should be within the range of `0 <= tokensToLock <= totalUnlockedTokens`
-
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate(theToken)
-                                .initialSupply(totalUnlockedTokens)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(lockKeyHolder, TokenKeyType.LOCK), // Assuming there is an enum for different key types
-                        tokenAssociate(tokenHolder, theToken),
-                        cryptoTransfer(
-                                moving(totalUnlockedTokens, theToken)
-                                        .between(TOKEN_TREASURY, tokenHolder)
-                        )
+                        fungibleTokenWithFeatures(LOCKING).withRelation(ALICE)
                 ).when(
-                        tokenLock(theToken)
-                                .locking(tokensToLock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("tokenLockTxn")
+                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2)
                 ).then(
-                        getAccountInfo(tokenHolder)
-                                .hasToken(theToken, totalUnlockedTokens - tokensToLock), // Check if the lock was successful
-                        validateTransaction("tokenLockTxn")
-                                .hasPrecheck(OK)
-                                .hasPriority(recordWith().status(SUCCESS))
+                        // Can't unlock more than the locked amount
+                        unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
+                        // Can't lock more than the unlocked amount
+                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
+                        // But if we unlock just enough units
+                        unlockUnits(ALICE, TOKEN_UNDER_TEST, 1),
+                        // Now the above lock works
+                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                 );
     }
 
@@ -87,37 +90,18 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canLockSubsetOfUnlockedTokensInPartition() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theToken = "TheToken";
-        final String partition = "TokenPartition";
-        final long totalUnlockedTokens = 1000L; // The `x` from the user story
-        final long tokensToLock = 500L; // This should be within the range of `0 <= tokensToLock <= totalUnlockedTokens`
-
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokensInPartition")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("tokenTreasury").balance(0L),
-                        tokenCreate(theToken)
-                                .initialSupply(totalUnlockedTokens)
-                                .treasury("tokenTreasury")
-                                .withCustom(lockKeyHolder, "lock"),
-                        tokenAssociate(tokenHolder, theToken),
-                        cryptoTransfer(moving(totalUnlockedTokens, theToken).between("tokenTreasury", tokenHolder)),
-                        tokenPartitionCreate(theToken).partitionName(partition).treasury("tokenTreasury")
+                        fungibleTokenWithFeatures(LOCKING, PARTITIONING)
+                                .withPartition(RED_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
                 ).when(
-                        tokenLock(theToken)
-                                .locking(tokensToLock)
-                                .forAccount(tokenHolder)
-                                .forPartition(partition)
-                                .signedBy(lockKeyHolder)
-                                .via("tokenLockTxn")
+                        lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2)
                 ).then(
-                        getAccountBalance(tokenHolder)
-                                .hasTokenBalance(theToken, totalUnlockedTokens - tokensToLock, partition), // Check if the lock was successful within the partition
-                        assertStatus(SUCCESS, "tokenLockTxn")
-                );
+                        // Can't lock more than the unlocked amount
+                        lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1)
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
     }
 
     /**
@@ -131,37 +115,20 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canUnlockSubsetOfLockedTokens() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theToken = "TheToken";
-        final long totalLockedTokens = 1000L; // Assume `x` tokens are already locked
-        final long tokensToUnlock = 500L; // This should be within the range of `0 <= tokensToUnlock <= totalLockedTokens`
-
-        return defaultHapiSpec("CanUnlockSubsetOfLockedTokens")
+        return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("tokenTreasury").balance(0L),
-                        tokenCreate(theToken)
-                                .initialSupply(totalLockedTokens)
-                                .treasury("tokenTreasury")
-                                .withCustom(lockKeyHolder, "lock"),
-                        tokenAssociate(tokenHolder, theToken),
-                        tokenLock(theToken) // Assume there's a method to lock the tokens initially
-                                .locking(totalLockedTokens)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder, tokenHolder)
-                                .via("initialLockTxn")
+                        fungibleTokenWithFeatures(LOCKING).withRelation(ALICE)
                 ).when(
-                        tokenUnlock(theToken)
-                                .unlocking(tokensToUnlock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("tokenUnlockTxn")
+                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2)
                 ).then(
-                        getAccountBalance(tokenHolder)
-                                .hasTokenBalance(theToken, totalLockedTokens - tokensToUnlock), // Check if the unlock was successful
-                        assertStatus(SUCCESS, "tokenUnlockTxn")
+                        // Can't unlock more than the locked amount
+                        unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
+                        // But if we lock just enough additional units
+                        lockUnits(ALICE, TOKEN_UNDER_TEST, 1),
+                        // Now the above unlock works
+                        unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                 );
     }
 
@@ -176,42 +143,24 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canUnlockSubsetOfLockedTokensInPartition() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theToken = "TheToken";
-        final String thePartition = "ThePartition";
-        final long totalLockedTokens = 1000L; // Assume `x` tokens are already locked in a partition
-        final long tokensToUnlock = 500L; // This should be within the range of `0 <= tokensToUnlock <= totalLockedTokens`
-
         return defaultHapiSpec("CanUnlockSubsetOfLockedTokensInPartition")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("tokenTreasury").balance(0L),
-                        tokenCreate(theToken)
-                                .initialSupply(totalLockedTokens)
-                                .treasury("tokenTreasury")
-                                .withCustom(lockKeyHolder, "lock"),
-                        createPartition(theToken, thePartition)
-                                .forToken(theToken)
-                                .startAt(1L)
-                                .endAt(totalLockedTokens),
-                        tokenAssociate(tokenHolder, theToken),
-                        partitionLock(theToken, thePartition) // Assume there's a method to lock the tokens in a partition initially
-                                .locking(totalLockedTokens)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder, tokenHolder)
-                                .via("initialPartitionLockTxn")
+                        fungibleTokenWithFeatures(LOCKING)
+                                .withPartition(RED_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
                 ).when(
-                        partitionUnlock(theToken, thePartition)
-                                .unlocking(tokensToUnlock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("partitionUnlockTxn")
+                        lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2)
                 ).then(
-                        getPartitionBalance(tokenHolder, theToken, thePartition)
-                                .hasLockedTokenAmount(totalLockedTokens - tokensToUnlock), // Check if the unlock was successful within the partition
-                        assertStatus(SUCCESS, "partitionUnlockTxn")
+                        // Can't unlock more than the locked amount
+                        unlockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1)
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
+                        // But if we lock just enough additional units
+                        lockUnits(ALICE, partition(RED_PARTITION), 1),
+                        // But if we unlock just enough units
+                        lockUnits(ALICE, partition(RED_PARTITION), 1),
+                        // Now the above unlock works
+                        unlockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                 );
     }
 
@@ -224,33 +173,22 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canLockSpecificNFTSerials() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theNFT = "TheNFT";
-        final long[] nftSerialsToLock = {1L, 2L}; // Serial numbers of the NFTs to be locked
-
         return defaultHapiSpec("CanLockSpecificNFTSerials")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("nftTreasury").balance(0L),
-                        tokenCreate(theNFT)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury("nftTreasury"),
-                        mintNFT(theNFT, nftSerialsToLock.length)
-                                .serialNumbers(nftSerialsToLock)
-                                .signedBy("nftTreasury"),
-                        tokenAssociate(tokenHolder, theNFT)
+                        nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L))
                 ).when(
-                        lockNFTs(theNFT, nftSerialsToLock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("nftLockTxn")
+                        lockNfts(ALICE, TOKEN_UNDER_TEST, 1L)
                 ).then(
-                        getAccountNFTs(tokenHolder, theNFT)
-                                .hasSerialNosLocked(nftSerialsToLock), // Assuming there's a method to check locked NFT serials
-                        assertStatus(SUCCESS, "nftLockTxn")
+                        // Can't transfer the locked serial no
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_NFT_ID),
+                        // Can transfer the unlocked serial no
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
                 );
     }
 
@@ -263,36 +201,24 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canLockSpecificNFTSerialsInPartition() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String thePartitionedNFT = "ThePartitionedNFT";
-        final long[] nftSerialsToLock = {1L, 2L}; // Serial numbers of the NFTs to be locked
-        final String partition = "partition1";
-
         return defaultHapiSpec("CanLockSpecificNFTSerialsInPartition")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("nftTreasury").balance(0L),
-                        tokenCreate(thePartitionedNFT)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury("nftTreasury")
-                                .withPartition(partition), // Assuming tokenCreate can be chained with partition creation
-                        mintNFT(thePartitionedNFT, nftSerialsToLock.length)
-                                .serialNumbers(nftSerialsToLock)
-                                .signedBy("nftTreasury")
-                                .toPartition(partition), // Assuming mintNFT can specify partition
-                        tokenAssociate(tokenHolder, thePartitionedNFT)
+                        nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
+                                .withPartition(RED_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L)))
                 ).when(
-                        lockNFTsInPartition(thePartitionedNFT, partition, nftSerialsToLock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("nftPartitionLockTxn")
+                        lockNfts(ALICE, partition(RED_PARTITION), 1L)
                 ).then(
-                        getAccountNFTsInPartition(tokenHolder, thePartitionedNFT, partition)
-                                .hasSerialNosLocked(nftSerialsToLock), // Assuming there's a method to check locked NFT serials in partition
-                        assertStatus(SUCCESS, "nftPartitionLockTxn")
+                        // Can't transfer the locked serial no
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_NFT_ID),
+                        // Can transfer the unlocked serial no
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
                 );
     }
 
@@ -305,37 +231,24 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canUnlockSpecificNFTSerials() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theNFT = "TheNFT";
-        final long[] nftSerialsToUnlock = {1L, 2L}; // Serial numbers of the NFTs to be unlocked
-
         return defaultHapiSpec("CanUnlockSpecificNFTSerials")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("nftTreasury").balance(0L),
-                        tokenCreate(theNFT)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury("nftTreasury"),
-                        mintNFT(theNFT, nftSerialsToUnlock.length)
-                                .serialNumbers(nftSerialsToUnlock)
-                                .signedBy("nftTreasury"),
-                        lockNFTs(theNFT, nftSerialsToUnlock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("nftLockTxn"),
-                        tokenAssociate(tokenHolder, theNFT)
+                        nonFungibleTokenWithFeatures(LOCKING)
+                                .withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L))
                 ).when(
-                        unlockNFTs(theNFT, nftSerialsToUnlock)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("nftUnlockTxn")
+                        lockNfts(ALICE, TOKEN_UNDER_TEST, 1L)
                 ).then(
-                        getAccountNFTs(tokenHolder, theNFT)
-                                .hasSerialNosUnlocked(nftSerialsToUnlock), // Assuming there's a method to check unlocked NFT serials
-                        assertStatus(SUCCESS, "nftUnlockTxn")
+                        // Can't transfer the locked serial no
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_NFT_ID),
+                        unlockUnits(ALICE, TOKEN_UNDER_TEST, 1L),
+                        // Now we can transfer the serial no
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
                 );
     }
 
@@ -348,41 +261,24 @@ public class LockSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canUnlockSpecificNFTSerialsInPartition() {
-        final String lockKeyHolder = "lockKeyHolder";
-        final String tokenHolder = "tokenHolder";
-        final String theNFT = "TheNFT";
-        final String partition = "PartitionA";
-        final long[] nftSerialsToUnlock = {1L, 2L}; // Serial numbers of the NFTs to be unlocked
-
-        return new HapiSpec("CanUnlockSpecificNFTSerialsInPartition")
+        return defaultHapiSpec("CanUnlockSpecificNFTSerialsInPartition")
                 .given(
-                        newKeyNamed(lockKeyHolder),
-                        cryptoCreate(tokenHolder),
-                        cryptoCreate("nftTreasury").balance(0L),
-                        tokenCreate(theNFT)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury("nftTreasury"),
-                        mintNFT(theNFT, nftSerialsToUnlock.length)
-                                .serialNumbers(nftSerialsToUnlock)
-                                .signedBy("nftTreasury"),
-                        lockNFTs(theNFT, nftSerialsToUnlock)
-                                .inPartition(partition)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("nftLockTxn"),
-                        tokenAssociate(tokenHolder, theNFT)
+                        nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L)))
                 ).when(
-                        unlockNFTs(theNFT, nftSerialsToUnlock)
-                                .inPartition(partition)
-                                .forAccount(tokenHolder)
-                                .signedBy(lockKeyHolder)
-                                .via("nftUnlockTxn")
+                        lockNfts(ALICE, partition(RED_PARTITION), 1L)
                 ).then(
-                        getAccountNFTs(tokenHolder, theNFT)
-                                .inPartition(partition)
-                                .hasSerialNosUnlocked(nftSerialsToUnlock), // Assuming a method to check unlocked NFT serials within a partition
-                        assertStatus(SUCCESS, "nftUnlockTxn")
+                        // Can't transfer the locked serial no
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
+                                // FUTURE - replace with a lock-specific specific error code
+                                .hasKnownStatus(INVALID_NFT_ID),
+                        unlockUnits(ALICE, partition(RED_PARTITION), 1L),
+                        // Now we can transfer the serial no
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        )
                 );
     }
 
