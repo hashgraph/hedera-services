@@ -111,6 +111,7 @@ public class TransferLogic {
         var autoCreationFee = 0L;
         var updatedPayerBalance = Long.MIN_VALUE;
         boolean failedAutoCreation = false;
+        boolean hasSuccessfulAutoCreation = false;
         for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -126,6 +127,7 @@ public class TransferLogic {
                 validity = result.getKey();
                 // We break this loop on the first non-OK validity
                 failedAutoCreation = validity != OK;
+                hasSuccessfulAutoCreation |= validity == OK;
                 autoCreationFee += result.getValue();
                 if (validity == OK && (change.isForToken())) {
                     validity = tokenStore.tryTokenChange(change);
@@ -160,7 +162,11 @@ public class TransferLogic {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
                 payAutoCreationFee(autoCreationFee);
-                autoCreationLogic.submitRecordsTo(recordsHistorian);
+                // If the auto creation is successful submit the records to historian,
+                // even if auto creation fee is 0 (which can be the case if the payer is a superuser)
+                if (hasSuccessfulAutoCreation) {
+                    autoCreationLogic.submitRecordsTo(recordsHistorian);
+                }
             }
         } else {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);

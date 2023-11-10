@@ -189,6 +189,7 @@ class AutoCreationLogicTest {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
                 .willReturn(syntheticEDAliasCreation);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -224,6 +225,7 @@ class AutoCreationLogicTest {
                 EthSigsUtils.recoverAddressFromPubKey(JKey.mapKey(key).getECDSASecp256k1Key()));
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, 0L, 0)).willReturn(syntheticECAliasCreation);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -264,6 +266,7 @@ class AutoCreationLogicTest {
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownChange(evmAddressAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -303,6 +306,7 @@ class AutoCreationLogicTest {
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownTokenChange(evmAddressAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -339,6 +343,7 @@ class AutoCreationLogicTest {
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownNftChange(evmAddressAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -368,6 +373,7 @@ class AutoCreationLogicTest {
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(syntheticEDAliasCreation);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownTokenChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -403,6 +409,7 @@ class AutoCreationLogicTest {
         given(mockCryptoCreate.getAlias()).willReturn(edKeyAlias);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(cryptoCreateAccount);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownTokenChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -437,6 +444,7 @@ class AutoCreationLogicTest {
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(syntheticEDAliasCreation);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownNftChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -475,6 +483,7 @@ class AutoCreationLogicTest {
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
                 .willReturn(syntheticEDAliasCreation);
+        given(txnCtx.activePayer()).willReturn(payer);
 
         final var input1 = wellKnownTokenChange(edKeyAlias);
         final var input2 = anotherTokenChange();

@@ -137,7 +137,7 @@ class SideEffectsTrackerTest {
 
     @Test
     void usesSingletonForNoAutoAssociations() {
-        assertSame(Collections.emptyList(), subject.getTrackedAutoAssociations());
+        assertEquals(Collections.emptyList(), subject.getTrackedAutoAssociations());
     }
 
     @Test
