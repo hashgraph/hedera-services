@@ -42,6 +42,10 @@ public class TokenAttributeNames {
         return tokenName + "-SUPPLY-KEY";
     }
 
+    public static String partitionManagementKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-PARTITION-MANAGEMENT-KEY";
+    }
+
     public static String customFeeScheduleKeyOf(@NonNull final String tokenName) {
         return tokenName + "-FEE-SCHEDULE-KEY";
     }
@@ -52,6 +56,10 @@ public class TokenAttributeNames {
 
     public static String treasuryOf(@NonNull final String tokenName) {
         return tokenName + "-TREASURY";
+    }
+
+    public static String managementContractOf(@NonNull final String tokenName) {
+        return  tokenName+  "-MANAGEMENT-CONTRACT";
     }
 
     public static String autoRenewAccountOf(@NonNull final String tokenName) {

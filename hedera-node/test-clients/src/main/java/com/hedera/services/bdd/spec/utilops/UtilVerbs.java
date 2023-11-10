@@ -479,6 +479,16 @@ public class UtilVerbs {
         return overridingAllOf(allOverrides);
     }
 
+    public static HapiSpecOperation withHeadlongAddressesFor(
+            @NonNull final List<String> accounts,
+            @NonNull final Function<Map<String, Address>, List<HapiSpecOperation>> opFn) {
+        return withOpContext((spec, opLog) -> {
+            final Map<String, Address> addresses = new HashMap<>();
+            // FUTURE - populate this map
+            allRunFor(spec, opFn.apply(addresses));
+        });
+    }
+
     public static HapiSpecOperation overridingTwo(
             final String aProperty, final String aValue, final String bProperty, final String bValue) {
         return overridingAllOf(Map.of(

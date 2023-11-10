@@ -48,7 +48,7 @@ public class GeneralSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canCreateFungibleTokenWithLockingAndPartitioning() {
-        return defaultHapiSpec("canCreateFungibleTokenWithLockingAndPartitioning")
+        return defaultHapiSpec("CanCreateFungibleTokenWithLockingAndPartitioning")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING, LOCKING)
                                 .withPartitions(RED_PARTITION, BLUE_PARTITION)

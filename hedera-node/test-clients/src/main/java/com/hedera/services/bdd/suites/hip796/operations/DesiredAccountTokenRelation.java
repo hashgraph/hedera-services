@@ -21,13 +21,38 @@ public class DesiredAccountTokenRelation {
     private boolean kycGranted;
     private boolean locked;
     private long balance;
+    private boolean receiverSigRequired = false;
     private boolean includingOnlyPartitionRelations = false;
     private List<Long> ownedSerialNos = new ArrayList<>();
+    private String managingContract = null;
     private Map<String, DesiredAccountTokenRelation> desiredPartitionRelations = new HashMap<>();
+
+    public DesiredAccountTokenRelation managedBy(@NonNull final String contract) {
+        requireNonNull(contract);
+        managingContract = contract;
+        return this;
+    }
 
     public DesiredAccountTokenRelation onlyForPartition(@NonNull final String partition) {
         requireNonNull(partition);
         return alsoForPartition(partition, DesiredAccountTokenRelation::includingOnlyPartitionRelations);
+    }
+
+    public DesiredAccountTokenRelation onlyForPartition(
+            @NonNull final String partition,
+            @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
+        requireNonNull(partition);
+        return alsoForPartition(partition, pr -> spec.accept(pr.includingOnlyPartitionRelations()));
+    }
+
+    public DesiredAccountTokenRelation andPartition(@NonNull final String partition) {
+        requireNonNull(partition);
+        return alsoForPartition(partition);
+    }
+
+    public DesiredAccountTokenRelation andPartition(@NonNull final String partition, @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
+        requireNonNull(partition);
+        return alsoForPartition(partition, spec);
     }
 
     public DesiredAccountTokenRelation alsoForPartition(@NonNull final String partition) {
@@ -74,6 +99,11 @@ public class DesiredAccountTokenRelation {
     public DesiredAccountTokenRelation ownedSerialNos(@NonNull final Long... serialNos) {
         requireNonNull(serialNos);
         this.ownedSerialNos = Arrays.asList(serialNos);
+        return this;
+    }
+
+    public DesiredAccountTokenRelation receiverSigRequired() {
+        receiverSigRequired = true;
         return this;
     }
 }

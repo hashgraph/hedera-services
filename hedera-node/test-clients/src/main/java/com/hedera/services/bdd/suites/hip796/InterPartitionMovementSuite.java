@@ -2,13 +2,36 @@ package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withHeadlongAddressesFor;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.DIFFERENT_USER_PARTITION_MOVE_UNITS_FUNCTION;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.SAME_USER_PARTITION_MOVE_UNITS_FUNCTION;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.deletePartition;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.moveNftsBetweenDifferentUserPartitions;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.moveNftsBetweenSameUserPartitions;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.moveUnitsBetweenDifferentUserPartitions;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.moveUnitsBetweenSameUserPartitions;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.managementContractOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionKeyOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionManagementKeyOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionWithDefaultTokenPrefixIfMissing;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTER_PARTITION_MANAGEMENT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 /**
  * A suite for user stories Move-1 through Move-5 from HIP-796.
@@ -21,7 +44,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
         return List.of(
                 partitionMoveWithoutUserSignature(),
                 partitionMoveWithUserSignature(),
-                moveNftsBetweenPartitions(),
+                moveNftsBetweenUserPartitionsWithoutUserSignature(),
                 moveNftsBetweenPartitionsWithUserSignature(),
                 moveTokensViaSmartContractAsPartitionMoveKey());
     }
@@ -38,48 +61,17 @@ public class InterPartitionMovementSuite extends HapiSuite {
     private HapiSpec partitionMoveWithoutUserSignature() {
         return defaultHapiSpec("PartitionMoveWithoutUserSignature")
                 .given(
-                        // Creating the token and partitions
-                        newTokenWithFixedSupply("tokenA")
-                                .initialSupply(10000)
-                                .treasury("treasuryAccount"),
-
-                        // Creating partition definitions
-                        newPartition("partition1").forToken("tokenA"),
-                        newPartition("partition2").forToken("tokenA"),
-
-                        // Associating the `partition-move-manager`'s account with the token
-                        // This may also include setting up necessary keys
-                        associateAccount("partitionMoveManagerAccount", "tokenA"),
-                        withRole("partitionMoveManagerAccount", "partition-move-manager"),
-
-                        // Distributing tokens to a partition
-                        // This assumes partitions can hold balances directly
-                        // If not, the move should be from the user's balance within the partition
-                        distributeTokens("tokenA", "partition1", 1000),
-
-                        // Setting up any necessary keys and permissions
-                        // This would likely involve assigning the partition-move-manager key
-                        // or permission that allows them to move tokens without user signatures
-                        withMoveManagerPrivileges("partitionMoveManagerAccount", "tokenA")
-                )
+                        fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).andPartition(BLUE_PARTITION)))
                 .when(
-                        // The actual operation to move fungible tokens between partitions
-                        moveTokensBetweenPartitions(
-                                "partition1",
-                                "partition2",
-                                1000
-                        ).via("partitionMoveTxn").signedBy("partition-move-manager")
+                        deletePartition(RED_PARTITION)
                 )
                 .then(
-                        // Verifying the move was successful
-                        assertBalance("partition1").hasTokenBalance(0),
-                        assertBalance("partition2").hasTokenBalance(1000),
-
-                        // Optionally verifying the transaction record
-                        // to ensure it was executed as expected
-                        assertTransaction("partitionMoveTxn")
-                                .hasKnownStatus(SUCCESS)
-                                .hasMemo("[Move-1] Moving 1000 tokens from partition1 to partition2")
+                        // Even though the red partition is deleted, we can still move Alice's units out of it
+                        moveUnitsBetweenSameUserPartitions(ALICE, RED_PARTITION, BLUE_PARTITION, FUNGIBLE_INITIAL_BALANCE),
+                        // Even though Alice was not associated to the green partition, we can still move their units into it
+                        moveUnitsBetweenSameUserPartitions(ALICE, BLUE_PARTITION, GREEN_PARTITION, 2 * FUNGIBLE_INITIAL_BALANCE)
                 );
     }
 
@@ -95,47 +87,26 @@ public class InterPartitionMovementSuite extends HapiSuite {
     private HapiSpec partitionMoveWithUserSignature() {
         return defaultHapiSpec("PartitionMoveWithUserSignature")
                 .given(
-                        // Token and partitions setup
-                        newTokenWithFixedSupply("tokenB")
-                                .initialSupply(10000)
-                                .treasury("treasuryAccount"),
-
-                        newPartition("partition3").forToken("tokenB"),
-                        newPartition("partition4").forToken("tokenB"),
-
-                        // Associating user accounts with the token
-                        associateAccount("userAccount1", "tokenB"),
-                        associateAccount("userAccount2", "tokenB"),
-
-                        // Assigning roles and permissions
-                        withRole("partitionMoveManagerAccount", "partition-move-manager"),
-                        withRole("userAccount1", "signatory"),
-
-                        // Distributing tokens to the user's partition
-                        distributeTokens("tokenB", "partition3", "userAccount1", 5000),
-
-                        // Move manager permissions setup
-                        withMoveManagerPrivileges("partitionMoveManagerAccount", "tokenB")
+                        fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).andPartition(BLUE_PARTITION))
+                                .withRelation(BOB, r -> r.onlyForPartition(GREEN_PARTITION))
                 )
                 .when(
-                        // Move operation with signature from the debited user's account
-                        moveTokensBetweenPartitions(
-                                "partition3",
-                                "partition4",
-                                2500
-                        ).via("partitionMoveTxn")
-                                .signedBy("partitionMoveManagerAccount", "userAccount1")
+                        deletePartition(RED_PARTITION)
                 )
                 .then(
-                        // Assertions to ensure the operation succeeded
-                        assertBalance("partition3", "userAccount1").hasTokenBalance(2500),
-                        assertBalance("partition4", "userAccount2").hasTokenBalance(2500),
-
-                        // Confirming the transaction was signed by the required parties
-                        assertTransaction("partitionMoveTxn")
-                                .hasKnownStatus(SUCCESS)
-                                .hasSignatories("partitionMoveManagerAccount", "userAccount1")
-                                .hasMemo("[Move-2] Moving 2500 tokens from userAccount1's partition3 to userAccount2's partition4")
+                        // Even though the red partition is deleted, we can still move Alice's units out of it
+                        // if we have her signature
+                        moveUnitsBetweenDifferentUserPartitions(
+                                ALICE, RED_PARTITION, BOB, BLUE_PARTITION, FUNGIBLE_INITIAL_BALANCE)
+                                .signedByPayerAnd(partitionKeyOf(TOKEN_UNDER_TEST))
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        moveUnitsBetweenDifferentUserPartitions(
+                                ALICE, RED_PARTITION, BOB, BLUE_PARTITION, FUNGIBLE_INITIAL_BALANCE),
+                        // Even though Bob was not associated to the blue partition, they can still receive units in it
+                        moveUnitsBetweenDifferentUserPartitions(
+                                ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, FUNGIBLE_INITIAL_BALANCE)
                 );
     }
 
@@ -148,40 +119,24 @@ public class InterPartitionMovementSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiApiSpec moveNftsBetweenPartitions() {
-        return HapiApiSpec.defaultHapiSpec("MoveNftsBetweenPartitions")
+    public HapiSpec moveNftsBetweenUserPartitionsWithoutUserSignature() {
+        return defaultHapiSpec("MoveNftsBetweenUserPartitionsWithoutUserSignature")
                 .given(
-                        newKeyNamed("PartitionMoveManager"),
-                        cryptoCreate("tokenOwner"),
-                        cryptoCreate("partitionManager").key("PartitionMoveManager"),
-                        tokenCreate("SomeToken")
-                                .initialSupply(0)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
-                        mintToken("SomeToken", List.of(metadata("first"), metadata("second"))),
-                        tokenAssociate("tokenOwner", "SomeToken"),
-                        cryptoTransfer(
-                                movingUnique("SomeToken", 1L, 2L).between("treasury", "tokenOwner")
-                        ),
-                        // Assuming there is a way to create partitions, though it's not part of HAPI yet.
-                        // These methods are speculative and just for example purposes.
-                        createPartition("PartitionOne").forToken("SomeToken"),
-                        createPartition("PartitionTwo").forToken("SomeToken"),
-                        tokenAssociate("tokenOwner", "PartitionOne", "PartitionTwo")
-                ).when(
-                        cryptoApproveAllowance()
-                                .payingWith("partitionManager")
-                                .addNftAllowance("tokenOwner", "SomeToken", serialNos(1L, 2L), "partitionManager")
-                                .signedBy("tokenOwner", "partitionManager"),
-                        moveNFT("SomeToken", 1L).toPartition("PartitionTwo").via("partitionManager"),
-                        moveNFT("SomeToken", 2L).toPartition("PartitionOne").via("partitionManager")
-                ).then(
-                        getTokenNftInfo("SomeToken", 1L)
-                                .hasExpectedPartition("PartitionTwo"),
-                        getTokenNftInfo("SomeToken", 2L)
-                                .hasExpectedPartition("PartitionOne"),
-                        validatePartitionBalance("PartitionOne", "SomeToken").hasNFTs(2L),
-                        validatePartitionBalance("PartitionTwo", "SomeToken").hasNFTs(1L)
-                );
+                        nonFungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L)))
+                )
+                .when(
+                        deletePartition(RED_PARTITION)
+                )
+                .then(
+                        // Even though the red partition is deleted, we can still move Alice's NFTs out of it
+                        moveNftsBetweenSameUserPartitions(
+                                ALICE, RED_PARTITION, BLUE_PARTITION, 1L, 2L),
+                        // Even though Alice was not associated to the green partition, we can still move their NFTs into it
+                        moveNftsBetweenSameUserPartitions(
+                                ALICE, BLUE_PARTITION, GREEN_PARTITION, 1L, 2L, 3L));
     }
 
     /**
@@ -194,48 +149,39 @@ public class InterPartitionMovementSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec moveNftsBetweenPartitionsWithUserSignature() {
-        final String partitionMoveManager = "partitionMoveManager";
-        final String sourceAccount = "sourceAccount";
-        final String destinationAccount = "destinationAccount";
-        final String someToken = "SomeToken";
-        final long serialNumber = 1L; // example serial number
-
         return defaultHapiSpec("MoveNftsBetweenPartitionsWithUserSignature")
                 .given(
-                        newKeyNamed(partitionMoveManager),
-                        cryptoCreate(sourceAccount),
-                        cryptoCreate(destinationAccount),
-                        tokenCreate(someToken)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0),
-                        mintToken(someToken, List.of(metadata("example"))),
-                        tokenAssociate(sourceAccount, someToken),
-                        tokenAssociate(destinationAccount, someToken),
-                        cryptoTransfer(
-                                movingUnique(someToken, serialNumber).between(TREASURY, sourceAccount)
-                        ),
-                        // Create partitions and associate them with the accounts
-                        createPartition("PartitionA").forToken(someToken).onAccount(sourceAccount),
-                        createPartition("PartitionB").forToken(someToken).onAccount(destinationAccount)
-                ).when(
-                        // Move NFT from PartitionA on sourceAccount to PartitionB on destinationAccount
-                        // Requires signature from sourceAccount
-                        moveNFT(someToken, serialNumber)
-                                .fromPartition("PartitionA").onAccount(sourceAccount)
-                                .toPartition("PartitionB").onAccount(destinationAccount)
-                                .via(partitionMoveManager)
-                                .signedBy(sourceAccount, partitionMoveManager)
-                ).then(
-                        // Validate the NFT is now associated with the correct partition and account
-                        getAccountNfts(destinationAccount)
-                                .hasNfts(1),
-                        getAccountInfo(destinationAccount)
-                                .hasToken(someToken)
-                                .logged(),
-                        // Ensure source account's partition no longer has the NFT
-                        getAccountNfts(sourceAccount)
-                                .hasNoNfts()
-                );
+                        nonFungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L)))
+                                .withRelation(BOB, r -> r.onlyForPartition(GREEN_PARTITION).receiverSigRequired())
+                )
+                .when(
+                        deletePartition(RED_PARTITION)
+                )
+                .then(
+                        // Even though the red partition is deleted, we can still move Alice's NFTs out of it
+                        // if we have her signature
+                        moveNftsBetweenDifferentUserPartitions(
+                                ALICE, RED_PARTITION, BOB, BLUE_PARTITION, 1L, 2L)
+                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST))
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        moveNftsBetweenDifferentUserPartitions(
+                                ALICE, RED_PARTITION, BOB, BLUE_PARTITION, 1L, 2L),
+                        // Even though Bob was not associated to the blue partition, they can still receive Alice's
+                        // NFTs in it, as long as BOTH Alice and Bob sign (note Bob's receiver sig requirement)
+                        moveNftsBetweenDifferentUserPartitions(
+                                ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, 3L)
+                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST))
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        moveNftsBetweenDifferentUserPartitions(
+                                ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, 3L)
+                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST), ALICE)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        moveNftsBetweenDifferentUserPartitions(
+                                ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, 3L)
+                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST), ALICE, BOB));
     }
 
     /**
@@ -248,40 +194,61 @@ public class InterPartitionMovementSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec moveTokensViaSmartContractAsPartitionMoveKey() {
-        final String smartContractAdmin = "smartContractAdmin";
-        final String sourceAccount = "sourceAccount";
-        final String destinationAccount = "destinationAccount";
-        final String someToken = "SomeToken";
-
         return defaultHapiSpec("MoveTokensViaSmartContractAsPartitionMoveKey")
                 .given(
-                        fileCreate("smartContractByteCode").path(PATH_TO_SMART_CONTRACT_BYTECODE),
-                        contractCreate(smartContractAdmin).bytecode("smartContractByteCode"),
-                        cryptoCreate(sourceAccount),
-                        cryptoCreate(destinationAccount),
-                        tokenCreate(someToken),
-                        tokenAssociate(sourceAccount, someToken),
-                        tokenAssociate(destinationAccount, someToken),
-                        cryptoTransfer(moving(100, someToken).between(TREASURY, sourceAccount)),
-                        // Create partitions and associate them with the accounts
-                        createPartition("PartitionA").forToken(someToken).onAccount(sourceAccount),
-                        createPartition("PartitionB").forToken(someToken).onAccount(destinationAccount),
-                        // Set smart contract as partition move key
-                        updateToken(someToken).partitionMoveKey(smartContractAdmin)
+                        fungibleTokenWithFeatures(INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION, GREEN_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).andPartition(BLUE_PARTITION))
+                                .withRelation(BOB, r -> r.onlyForPartition(GREEN_PARTITION))
+                                .withRelation(CAROL, r -> r.onlyForPartition(RED_PARTITION).andPartition(BLUE_PARTITION)
+                                        .managedBy(managementContractOf(TOKEN_UNDER_TEST)))
+                                .managedByContract()
                 ).when(
-                        // Smart contract moves tokens from PartitionA on sourceAccount to PartitionB on destinationAccount
-                        contractCall(smartContractAdmin, "moveTokensBetweenPartitions", someToken, 100)
-                                .sending(100)
-                                .via("tokenMoveTransaction")
+                        deletePartition(RED_PARTITION)
                 ).then(
-                        // Validate the tokens are now associated with the correct partition and account
-                        getAccountBalance(destinationAccount)
-                                .hasTokenBalance(someToken, 100),
-                        getAccountBalance(sourceAccount)
-                                .hasTokenBalance(someToken, 0),
-                        // Confirm transaction status
-                        getTxnRecord("tokenMoveTransaction").logged()
-                );
+                        withHeadlongAddressesFor(List.of(
+                                        ALICE,
+                                        BOB,
+                                        CAROL,
+                                        partition(RED_PARTITION),
+                                        partition(BLUE_PARTITION),
+                                        partition(GREEN_PARTITION)
+                                ), addresses -> List.of(
+                                        // Can move Alice's units out of deleted red partition into their blue partition
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                SAME_USER_PARTITION_MOVE_UNITS_FUNCTION.getName(),
+                                                addresses.get(ALICE),
+                                                addresses.get(partition(RED_PARTITION)),
+                                                addresses.get(partition(BLUE_PARTITION)),
+                                                FUNGIBLE_INITIAL_BALANCE),
+                                        // Can move Alice's units out of blue partition into unassociated green partition
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                SAME_USER_PARTITION_MOVE_UNITS_FUNCTION.getName(),
+                                                addresses.get(ALICE),
+                                                addresses.get(partition(RED_PARTITION)),
+                                                addresses.get(partition(GREEN_PARTITION)),
+                                                2 * FUNGIBLE_INITIAL_BALANCE),
+                                        // Cannot move Alice's units to Bob without Alice's signature
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                DIFFERENT_USER_PARTITION_MOVE_UNITS_FUNCTION.getName(),
+                                                addresses.get(ALICE),
+                                                addresses.get(partition(GREEN_PARTITION)),
+                                                addresses.get(BOB),
+                                                addresses.get(partition(GREEN_PARTITION)),
+                                                2 * FUNGIBLE_INITIAL_BALANCE
+                                        ).hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                        // But CAN move contract-managed Carol's units to Bob
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                DIFFERENT_USER_PARTITION_MOVE_UNITS_FUNCTION.getName(),
+                                                addresses.get(CAROL),
+                                                addresses.get(partition(BLUE_PARTITION)),
+                                                addresses.get(BOB),
+                                                addresses.get(partition(BLUE_PARTITION)),
+                                                FUNGIBLE_INITIAL_BALANCE))));
     }
 
     @Override

@@ -31,6 +31,8 @@ public class TokenDefOperation extends UtilOp {
     private List<DesiredPartition> desiredPartitions = new ArrayList<>();
     private Map<String, DesiredAccountTokenRelation> desiredAccountTokenRelations = new HashMap<>();
     private final String specRegistryName;
+
+    private String managingContract;
     private final TokenType type;
 
     public TokenDefOperation(
@@ -41,6 +43,11 @@ public class TokenDefOperation extends UtilOp {
         requireNonNull(features);
         this.specRegistryName = requireNonNull(specRegistryName);
         this.features = features.length > 0 ? EnumSet.copyOf(Arrays.asList(features)) : EnumSet.noneOf(TokenFeature.class);
+    }
+
+    public TokenDefOperation managedByContract() {
+        managingContract = TokenAttributeNames.managementContractOf(specRegistryName);
+        return this;
     }
 
     public TokenDefOperation withPartitions(@NonNull final String... partitions) {
@@ -78,7 +85,7 @@ public class TokenDefOperation extends UtilOp {
             @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
         requireNonNull(spec);
         requireNonNull(accountName);
-        final var desiredAccountTokenRelation = new DesiredAccountTokenRelation(type);
+        final var desiredAccountTokenRelation = new DesiredAccountTokenRelation();
         spec.accept(desiredAccountTokenRelation);
         desiredAccountTokenRelations.put(accountName, desiredAccountTokenRelation);
         return this;

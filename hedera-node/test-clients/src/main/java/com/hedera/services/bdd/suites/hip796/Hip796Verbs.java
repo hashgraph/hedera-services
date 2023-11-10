@@ -1,5 +1,6 @@
 package com.hedera.services.bdd.suites.hip796;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -59,10 +60,14 @@ import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_UNDER_TEST;
  * </pre>
  */
 public class Hip796Verbs {
-
     private Hip796Verbs() {
         throw new UnsupportedOperationException();
     }
+
+    public static final Function SAME_USER_PARTITION_MOVE_UNITS_FUNCTION = new Function(
+            "moveBetweenSameUserPartitions(address,address,address,int64)");
+    public static final Function DIFFERENT_USER_PARTITION_MOVE_UNITS_FUNCTION = new Function(
+            "moveBetweenSameUserPartitions(address,address,address,address,int64)");
 
     public static void main(String... args) {
         System.out.println("Hello world");
@@ -109,6 +114,46 @@ public class Hip796Verbs {
     public static HapiSpecOperation lockNfts(
             @NonNull final String account,
             @NonNull final String partitionToken,
+            final long... serialNos) {
+        throw new AssertionError("Not implemented");
+    }
+
+    // --- Partition management verbs ---
+    public static HapiSpecOperation deletePartition(@NonNull final String partitionToken) {
+        throw new AssertionError("Not implemented");
+    }
+
+    // --- Inter-partition management verbs ---
+    public static HapiCryptoTransfer moveUnitsBetweenSameUserPartitions(
+            @NonNull final String account,
+            @NonNull final String fromPartitionToken,
+            @NonNull final String toPartitionToken,
+            final long amount) {
+        throw new AssertionError("Not implemented");
+    }
+
+    public static HapiCryptoTransfer moveNftsBetweenSameUserPartitions(
+            @NonNull final String account,
+            @NonNull final String fromPartitionToken,
+            @NonNull final String toPartitionToken,
+            final long... serialNos) {
+        throw new AssertionError("Not implemented");
+    }
+
+    public static HapiCryptoTransfer moveUnitsBetweenDifferentUserPartitions(
+            @NonNull final String fromAccount,
+            @NonNull final String fromPartitionToken,
+            @NonNull final String toAccount,
+            @NonNull final String toPartitionToken,
+            final long amount) {
+        throw new AssertionError("Not implemented");
+    }
+
+    public static HapiCryptoTransfer moveNftsBetweenDifferentUserPartitions(
+            @NonNull final String fromAccount,
+            @NonNull final String fromPartitionToken,
+            @NonNull final String toAccount,
+            @NonNull final String toPartitionToken,
             final long... serialNos) {
         throw new AssertionError("Not implemented");
     }

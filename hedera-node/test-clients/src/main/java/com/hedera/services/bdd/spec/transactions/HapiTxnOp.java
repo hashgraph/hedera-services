@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -53,6 +54,7 @@ import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -575,6 +577,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     public T feeUsd(double price) {
         usdFee = OptionalDouble.of(price);
         return self();
+    }
+
+    public T signedByPayerAnd(String... keys) {
+        return signedBy(Stream.concat(Stream.of(DEFAULT_PAYER), Stream.of(keys)).toArray(String[]::new));
     }
 
     public T signedBy(String... keys) {
