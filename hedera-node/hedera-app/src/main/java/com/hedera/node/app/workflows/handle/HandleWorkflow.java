@@ -415,7 +415,6 @@ public class HandleWorkflow {
                         }
                     }
                 } catch (final HandleException ex) {
-                    ex.printStackTrace();
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
                             ? "node " + creator.nodeId()
                             : "account " + payer;
@@ -483,7 +482,6 @@ public class HandleWorkflow {
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
-                    e.printStackTrace();
                     rollback(e.getStatus(), stack, recordListBuilder);
                     if (!hasWaivedFees) {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -497,7 +495,6 @@ public class HandleWorkflow {
                 try {
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                 } catch (final HandleException chargeException) {
-                    chargeException.printStackTrace();
                     logger.error(
                             "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
                             payer,

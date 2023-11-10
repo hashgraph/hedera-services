@@ -127,7 +127,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             try {
                 tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
             } catch (final Exception unexpectedException) {
-                unexpectedException.printStackTrace();
                 // If some random exception happened, then we should not charge the node for it. Instead,
                 // we will just record the exception and try again during handle. Then if we fail again
                 // at handle, then we will throw away the transaction (hopefully, deterministically!)
@@ -159,7 +158,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 throw new PreCheckException(INVALID_NODE_ACCOUNT);
             }
         } catch (PreCheckException preCheck) {
-            preCheck.printStackTrace();
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
             logger.debug("Transaction failed pre-check", preCheck);
@@ -217,7 +215,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
             context = new PreHandleContextImpl(storeFactory, txInfo.txBody(), configuration, dispatcher);
         } catch (PreCheckException preCheck) {
-            preCheck.printStackTrace();
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
             // that it does exist.
@@ -248,7 +245,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             dispatcher.dispatchPreHandle(context);
             // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
         } catch (PreCheckException preCheck) {
-            preCheck.printStackTrace();
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
             // verifications that we have determined so far.
