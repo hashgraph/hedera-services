@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.contracts;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.mono.contracts.ContractsModule.provideCallLocalEvmTxProcessorFactory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -173,21 +172,6 @@ class ContractsModuleTest {
                 .entityCreator(entityCreator)
                 .autoCreationLogic(autoCreationLogic)
                 .build();
-    }
-
-    @Test
-    void canManufactureCallLocalProcessors() {
-        final var pretendVersion = "0.0.1";
-        given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
-        final var supplier = provideCallLocalEvmTxProcessorFactory(
-                codeCache,
-                livePricesSource,
-                globalDynamicProperties,
-                gasCalculator,
-                Map.of(pretendVersion, () -> messageCallProcessor),
-                Map.of(pretendVersion, () -> contractCreationProcessor),
-                aliasManager);
-        assertInstanceOf(CallLocalEvmTxProcessor.class, supplier.get());
     }
 
     @Test
@@ -394,16 +378,5 @@ class ContractsModuleTest {
         assertNull(result.getHaltReason());
         assertEquals(2600, result.getGasCost());
         assertEquals(Bytes.EMPTY, bytesCaptor.getValue());
-    }
-
-    @Test
-    void allProcessorsLoad() {
-        var versions = subject.contractCreateProcessors().keySet();
-        assertEquals(versions, subject.messageCallProcessors().keySet());
-
-        for (var version : versions) {
-            subject.messageCallProcessors().get(version).get();
-            subject.contractCreateProcessors().get(version).get();
-        }
     }
 }

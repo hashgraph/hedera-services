@@ -40,23 +40,21 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
  * com.hederahashgraph.api.proto.java.ContractCreateTransactionBody} transactions
  */
-@Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
-    @Inject
     public CreateEvmTxProcessor(
             final HederaMutableWorldState worldState,
             final LivePricesSource livePricesSource,
             final CodeCache codeCache,
             final GlobalDynamicProperties globalDynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcp,
+            final Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcp, ccp, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

@@ -70,13 +70,13 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
             final GlobalDynamicProperties properties,
             final NodeLocalProperties nodeProperties,
             final AccountStore accountStore,
-            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
+            final Map<String, Supplier<CallLocalEvmTxProcessor>> evmTxProcessorProvider,
             final EntityIdSource ids,
             final OptionValidator validator,
             final AliasManager aliasManager,
             final StaticBlockMetaProvider blockMetaProvider) {
         this.accountStore = accountStore;
-        this.evmTxProcessorProvider = evmTxProcessorProvider;
+        this.evmTxProcessorProvider = evmTxProcessorProvider.get(properties.evmVersion());
         this.aliasManager = aliasManager;
         this.ids = ids;
         this.validator = validator;

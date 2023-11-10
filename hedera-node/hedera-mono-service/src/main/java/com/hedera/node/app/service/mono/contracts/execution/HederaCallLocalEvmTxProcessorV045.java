@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
@@ -32,6 +33,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
@@ -49,7 +52,7 @@ public class HederaCallLocalEvmTxProcessorV045 extends CallLocalEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps.get(dynamicProperties.evmVersion()), ccps.get(dynamicProperties.evmVersion()), aliasManager);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -91,8 +94,8 @@ public class HederaCallLocalEvmTxProcessorV045 extends CallLocalEvmTxProcessor {
          * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
          * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
         //                validateTrue(code != null, INVALID_CONTRACT_ID);
-        if (!dynamicProperties.allowCallsToNonContractAccounts() && code == null) {
-            throw new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID);
+        if (!dynamicProperties.allowCallsToNonContractAccounts() && (code == null || code.equals(CodeV0.EMPTY_CODE))) {
+            throw new InvalidTransactionException(INVALID_CONTRACT_ID);
         }
 
         return baseInitialFrame

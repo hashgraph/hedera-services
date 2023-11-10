@@ -36,10 +36,10 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcp,
+            final Provider<ContractCreationProcessor> ccp,
             final BlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, blockMetaSource);
     }
 
     @Override

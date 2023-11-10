@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
@@ -59,8 +61,8 @@ public class HederaCallEvmTxProcessorV045 extends CallEvmTxProcessor {
                 codeCache,
                 dynamicProperties,
                 gasCalculator,
-                mcps,
-                ccps,
+                mcps.get(dynamicProperties.evmVersion()),
+                ccps.get(dynamicProperties.evmVersion()),
                 aliasManager,
                 blockMetaSource);
         this.codeCache = codeCache;
@@ -139,8 +141,8 @@ public class HederaCallEvmTxProcessorV045 extends CallEvmTxProcessor {
          * hence the code should be null and there must be a value transfer.
          */
         //                validateTrue(code != null, INVALID_CONTRACT_ID);
-        if (!dynamicProperties.allowCallsToNonContractAccounts() && code == null) {
-            throw new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID);
+        if (!dynamicProperties.allowCallsToNonContractAccounts() && (code == null || code.equals(CodeV0.EMPTY_CODE))) {
+            throw new InvalidTransactionException(INVALID_CONTRACT_ID);
         }
 
         return baseInitialFrame

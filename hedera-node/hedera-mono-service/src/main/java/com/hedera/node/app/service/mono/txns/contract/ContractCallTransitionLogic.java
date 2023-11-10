@@ -51,8 +51,10 @@ import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -87,7 +89,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final AccountStore accountStore,
             final HederaWorldState worldState,
             final TransactionRecordService recordService,
-            final CallEvmTxProcessor evmTxProcessor,
+            final Map<String, Supplier<CallEvmTxProcessor>> evmTxProcessor,
             final GlobalDynamicProperties properties,
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
@@ -101,7 +103,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         this.worldState = worldState;
         this.accountStore = accountStore;
         this.recordService = recordService;
-        this.evmTxProcessor = evmTxProcessor;
+        this.evmTxProcessor = evmTxProcessor.get(properties.evmVersion()).get();
         this.properties = properties;
         this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
