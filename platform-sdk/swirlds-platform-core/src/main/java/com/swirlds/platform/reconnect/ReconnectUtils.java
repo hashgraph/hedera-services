@@ -52,10 +52,8 @@ public final class ReconnectUtils {
         connection.getDos().flush();
         final long endReconnectMsg = connection.getDis().readLong();
         if (endReconnectMsg != END_RECONNECT_MSG) {
-            throw new IOException(
-                    "Did not receive expected end reconnect message. Expecting %x, Received %x"
-                            .formatted(END_RECONNECT_MSG, endReconnectMsg)
-            );
+            throw new IOException("Did not receive expected end reconnect message. Expecting %x, Received %x"
+                    .formatted(END_RECONNECT_MSG, endReconnectMsg));
         }
     }
 
