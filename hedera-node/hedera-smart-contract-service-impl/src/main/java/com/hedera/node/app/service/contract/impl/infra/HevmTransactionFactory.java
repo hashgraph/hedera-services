@@ -282,7 +282,7 @@ public class HevmTransactionFactory {
         if (!isEmpty(effectiveKey)) {
             try {
                 attributeValidator.validateKey(body.adminKeyOrElse(Key.DEFAULT));
-            } catch (HandleException ignore) {
+            } catch (HandleException | NullPointerException ignore) {
                 throw new HandleException(SERIALIZATION_FAILED);
             }
         }
