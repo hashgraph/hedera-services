@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops;
+package com.hedera.services.bdd.spec.utilops.records;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.TargetNetworkType;

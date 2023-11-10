@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops;
+package com.swirlds.common.wiring;
 
 /**
- * Enumerates non-default matching modes in which {@link SnapshotModeOp} fuzzy-matching can be run.
+ * The type of solder connection.
  */
-public enum SnapshotMatchMode {
+public enum SolderType {
     /**
-     * Allows for non-deterministic contract call results.
+     * When data is passed to the input wire, call {@link InputWire#put(Object)}. May block if the input wire has
+     * backpressure enabled and the input wire is full.
      */
-    NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+    PUT,
     /**
-     * Allows for non-deterministic function parameters.
+     * When data is passed to the input wire, call {@link InputWire#inject(Object)}. Ignores back pressure.
      */
-    NONDETERMINISTIC_FUNCTION_PARAMETERS
+    INJECT,
+    /**
+     * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has
+     * backpressure enabled and the input wire is full, then the data will be dropped.
+     */
+    OFFER
 }

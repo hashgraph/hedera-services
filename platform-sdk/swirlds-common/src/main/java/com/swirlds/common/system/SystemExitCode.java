@@ -49,13 +49,17 @@ public enum SystemExitCode {
      */
     EMERGENCY_RECOVERY_ERROR(206),
     /**
+     * An exit was called but no code was supplied
+     */
+    NO_EXIT_CODE(254),
+    /**
      * An unrecoverable error.
      */
     FATAL_ERROR(255);
 
     private final int exitCode;
 
-    SystemExitCode(int exitCode) {
+    SystemExitCode(final int exitCode) {
         this.exitCode = exitCode;
     }
 
