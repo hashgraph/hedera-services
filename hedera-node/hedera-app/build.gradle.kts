@@ -194,7 +194,7 @@ tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
     workingDir = layout.projectDirectory.dir("..").asFile
-    jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
+    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }
 
