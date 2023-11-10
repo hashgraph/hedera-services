@@ -186,11 +186,24 @@ public class WiringModel implements Startable, Stoppable {
     }
 
     /**
+     * Reserved for framework use. Do not call this method directly.
+     * <p>
+     * Register a task scheduler with the wiring model.
+     * </p>
+     *
+     * @param scheduler the task scheduler to register
+     */
+    public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
+        registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
+        if (scheduler.getType() == TaskSchedulerType.SEQUENTIAL_THREAD) {
+            threadSchedulers.add((SequentialThreadScheduler<?>) scheduler);
+        }
+    }
+
+    /**
      * Reserved for internal framework use. Do not call this method directly.
      * <p>
-     * Register a vertex in the wiring model. These are either task schedulers or wire transformers. Vertices always
-     * have a single Java object output type, although there may be many consumers of that output. Vertices may have
-     * many input types.
+     * Register a vertex in the wiring model. These are either task schedulers or wire transformers.
      *
      * @param vertexName          the name of the vertex
      * @param type                the type of task scheduler that corresponds to this vertex.
@@ -205,13 +218,6 @@ public class WiringModel implements Startable, Stoppable {
         final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
-        }
-    }
-
-    // TODO can this be merged with registerVertext?
-    public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
-        if (scheduler instanceof final SequentialThreadScheduler<?> threadScheduler) {
-            threadSchedulers.add(threadScheduler);
         }
     }
 

@@ -43,7 +43,9 @@ public abstract class TaskScheduler<OUT> {
     private final boolean flushEnabled;
     private final WiringModel model;
     private final String name;
+    private final TaskSchedulerType type;
     private final OutputWire<OUT> primaryOutputWire;
+    private final boolean insertionIsBlocking;
 
     /**
      * Constructor.
@@ -64,9 +66,10 @@ public abstract class TaskScheduler<OUT> {
 
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
+        this.type = Objects.requireNonNull(type);
         this.flushEnabled = flushEnabled;
         primaryOutputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, type, insertionIsBlocking);
+        this.insertionIsBlocking = insertionIsBlocking;
     }
 
     /**
@@ -121,6 +124,25 @@ public abstract class TaskScheduler<OUT> {
     @NonNull
     public String getName() {
         return name;
+    }
+
+    /**
+     * Get the type of this task scheduler.
+     *
+     * @return the type of this task scheduler
+     */
+    @NonNull
+    public TaskSchedulerType getType() {
+        return type;
+    }
+
+    /**
+     * Get whether or not this task scheduler can block when data is inserted into it.
+     *
+     * @return true if this task scheduler can block when data is inserted into it, false otherwise
+     */
+    public boolean isInsertionBlocking() {
+        return insertionIsBlocking;
     }
 
     /**

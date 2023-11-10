@@ -182,17 +182,17 @@ public class SequentialThreadScheduler<OUT> extends TaskScheduler<OUT> implement
                 continue;
             }
 
+            busyTimer.activate();
             for (final SequentialThreadTask task : buffer) {
-                busyTimer.activate();
                 try {
                     task.handle();
                 } catch (final Throwable t) {
                     uncaughtExceptionHandler.uncaughtException(thread, t);
                 } finally {
                     offRamp.offRamp();
-                    busyTimer.deactivate();
                 }
             }
+            busyTimer.deactivate();
 
             buffer.clear();
         }
