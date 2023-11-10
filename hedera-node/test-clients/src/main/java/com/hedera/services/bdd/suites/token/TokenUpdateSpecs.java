@@ -660,6 +660,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
