@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -85,9 +84,6 @@ class SyncManagerTest {
             syncManager = new SyncManagerImpl(
                     platformContext,
                     eventQueue,
-                    connectionGraph,
-                    selfId,
-                    hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,
@@ -188,30 +184,5 @@ class SyncManagerTest {
         // It is not ok to initiate a sync if the intake queue is full.
         test.hashgraph.eventIntakeQueueSize = 101;
         assertFalse(test.syncManager.shouldInitiateSync());
-    }
-
-    /**
-     * Verify the behavior of SyncManager's getNeighborsToCall function
-     */
-    @Test
-    @Order(3)
-    void getNeighborsToCall() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId selfId = test.hashgraph.selfId;
-        final NodeId firstNode = addressBook.getNodeId(0);
-        final int lastIndex = addressBook.getSize() - 1;
-        final NodeId lastNode = addressBook.getNodeId(lastIndex);
-
-        // Test of the current algorithm
-        for (int i = 0; i < 10; i++) {
-            final List<NodeId> next = test.syncManager.getNeighborsToCall();
-            final int firstIndex = addressBook.getIndexOfNodeId(firstNode);
-            final int nextIndex = addressBook.getIndexOfNodeId(next.get(0));
-            final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-            assertNotEquals(null, next);
-            assertTrue(next.size() <= 10);
-            assertTrue(nextIndex >= firstIndex && nextIndex <= lastIndex && nextIndex != selfIndex);
-        }
     }
 }

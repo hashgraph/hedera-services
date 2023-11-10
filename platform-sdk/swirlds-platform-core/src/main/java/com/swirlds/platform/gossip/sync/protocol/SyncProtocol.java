@@ -35,7 +35,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -122,17 +121,6 @@ public class SyncProtocol implements Protocol {
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.time = Objects.requireNonNull(time);
-    }
-
-    /**
-     * Checks whether the peer must be contacted to determine if we have fallen behind
-     *
-     * @return true if the peer is needed for fallen behind, else false
-     */
-    private boolean peerNeededForFallenBehind() {
-        final List<NodeId> neededForFallenBehind = fallenBehindManager.getNeededForFallenBehind();
-
-        return neededForFallenBehind != null && neededForFallenBehind.contains(peerId);
     }
 
     /**

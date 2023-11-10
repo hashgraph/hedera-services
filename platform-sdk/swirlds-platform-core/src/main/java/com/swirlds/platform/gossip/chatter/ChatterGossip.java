@@ -155,7 +155,6 @@ public class ChatterGossip extends AbstractGossip {
                 swirldStateManager,
                 stateManagementComponent,
                 syncMetrics,
-                eventObserverDispatcher,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);

@@ -56,7 +56,6 @@ import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
@@ -127,7 +126,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state queue
      * @param syncMetrics                   metrics for sync
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -144,7 +142,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
@@ -200,9 +197,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         syncManager = new SyncManagerImpl(
                 platformContext,
                 intakeQueue,
-                topology.getConnectionGraph(),
-                selfId,
-                addressBook,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
 
