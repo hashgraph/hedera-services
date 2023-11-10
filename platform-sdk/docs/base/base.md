@@ -7,7 +7,7 @@ Platform base is a set of modules that belong to the base team and are used ever
 The modules that belong to Platform Base must fulfill the following requirements:
 
 - They must provide an easy to understand API
-- They must provide documentation for all public interfaces, classes, methods...
+- They must provide documentation for all public interfaces, classes, methods
 - They must provide documentation for each package (`package-info.java`)
 - Each module must be a Java module
 - Today all features must be supported on the modulepath and the classpath (might be modulepath only in future).
