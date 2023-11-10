@@ -12,7 +12,6 @@ open module com.swirlds.merkle.test {
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
-    requires java.sql;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
 }

@@ -16,16 +16,31 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ANOTHER_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.YET_ANOTHER_ED25519_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ActiveContractVerificationStrategyTest {
     private static final long ACTIVE_NUMBER = 1234L;
     private static final long SOME_OTHER_NUMBER = 2345L;
@@ -60,21 +75,26 @@ class ActiveContractVerificationStrategyTest {
             .ed25519(Bytes.fromHex("1234567812345678123456781234567812345678123456781234567812345678"))
             .build();
 
+    @Mock
+    private HandleContext context;
+
     @Test
     void validatesKeysAsExpectedWhenDelegatePermissionNotRequiredAndUsingTopLevelSigs() {
         final var subject =
                 new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, false, UseTopLevelSigs.YES);
 
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(ACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(ACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(DELEGATABLE_ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(DELEGATABLE_ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(DELEGATABLE_INACTIVE_ID_KEY));
         assertEquals(
-                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION, subject.decideFor(CRYPTO_KEY));
+                VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(DELEGATABLE_INACTIVE_ADDRESS_KEY));
+        assertEquals(
+                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
+                subject.decideForPrimitive(CRYPTO_KEY));
     }
 
     @Test
@@ -82,16 +102,18 @@ class ActiveContractVerificationStrategyTest {
         final var subject =
                 new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true, UseTopLevelSigs.YES);
 
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(DELEGATABLE_ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(DELEGATABLE_ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(DELEGATABLE_INACTIVE_ID_KEY));
         assertEquals(
-                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION, subject.decideFor(CRYPTO_KEY));
+                VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(DELEGATABLE_INACTIVE_ADDRESS_KEY));
+        assertEquals(
+                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
+                subject.decideForPrimitive(CRYPTO_KEY));
     }
 
     @Test
@@ -99,14 +121,91 @@ class ActiveContractVerificationStrategyTest {
         final var subject =
                 new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true, UseTopLevelSigs.NO);
 
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ID_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ADDRESS_KEY));
-        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(CRYPTO_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(DELEGATABLE_ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(DELEGATABLE_ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(DELEGATABLE_INACTIVE_ID_KEY));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(DELEGATABLE_INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(CRYPTO_KEY));
+    }
+
+    @Test
+    void signatureTestApprovesAllValidKeyLists() {
+        final var subject = mock(VerificationStrategy.class);
+        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+        given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+        given(subject.decideForPrimitive(YET_ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+
+        final var test = subject.asSignatureTestIn(context);
+        final var key = Key.newBuilder()
+                .keyList(KeyList.newBuilder().keys(AN_ED25519_KEY, ANOTHER_ED25519_KEY, YET_ANOTHER_ED25519_KEY))
+                .build();
+        assertTrue(test.test(key));
+    }
+
+    @Test
+    void signatureTestRejectsIncompleteKeyLists() {
+        final var subject = mock(VerificationStrategy.class);
+        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+        given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
+
+        final var test = subject.asSignatureTestIn(context);
+        final var key = Key.newBuilder()
+                .keyList(KeyList.newBuilder().keys(AN_ED25519_KEY, ANOTHER_ED25519_KEY, YET_ANOTHER_ED25519_KEY))
+                .build();
+        assertFalse(test.test(key));
+    }
+
+    @Test
+    void signatureTestApprovesSufficientThresholdKeys() {
+        final var subject = mock(VerificationStrategy.class);
+        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+        given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
+        given(subject.decideForPrimitive(YET_ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+
+        final var test = subject.asSignatureTestIn(context);
+        final var key = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .threshold(2)
+                        .keys(KeyList.newBuilder().keys(AN_ED25519_KEY, ANOTHER_ED25519_KEY, YET_ANOTHER_ED25519_KEY))
+                        .build())
+                .build();
+        assertTrue(test.test(key));
+    }
+
+    @Test
+    void signatureTestRejectsInsufficientThresholdKeys() {
+        final var subject = mock(VerificationStrategy.class);
+        doCallRealMethod().when(subject).asSignatureTestIn(context);
+        given(subject.decideForPrimitive(AN_ED25519_KEY)).willReturn(VerificationStrategy.Decision.VALID);
+        given(subject.decideForPrimitive(ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
+        given(subject.decideForPrimitive(YET_ANOTHER_ED25519_KEY)).willReturn(VerificationStrategy.Decision.INVALID);
+
+        final var test = subject.asSignatureTestIn(context);
+        final var key = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .threshold(2)
+                        .keys(KeyList.newBuilder().keys(AN_ED25519_KEY, ANOTHER_ED25519_KEY, YET_ANOTHER_ED25519_KEY))
+                        .build())
+                .build();
+        assertFalse(test.test(key));
+    }
+
+    @Test
+    void unsupportedKeyTypesAreNotPrimitive() {
+        final var subject = mock(VerificationStrategy.class);
+        doCallRealMethod().when(subject).asSignatureTestIn(context);
+
+        final var aRsa3072Key = Key.newBuilder().rsa3072(Bytes.wrap("NONSENSE")).build();
+
+        final var test = subject.asSignatureTestIn(context);
+        assertFalse(test.test(aRsa3072Key));
     }
 }
