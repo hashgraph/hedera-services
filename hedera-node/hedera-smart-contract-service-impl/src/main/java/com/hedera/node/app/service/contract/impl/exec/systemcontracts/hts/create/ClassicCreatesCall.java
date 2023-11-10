@@ -139,6 +139,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         }
     }
 
+    // @TODO extract externalizeResult() calls into a single location on a higher level
     private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
         final var result = gasOnly(revertResult(responseCode, gasRequirement));
         final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
