@@ -506,12 +506,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pendingCreation;
     }
 
-    public void addSidecars(MessageFrame frame,
-                            ActionSidecarContentTracer tracer,
-                            ContractStateChanges stateChanges,
-                            ContractID recipientId,
-                            MutableAccount recipientAccount
-                            ) {
-        enhancement.operations().addSidecars(frame, tracer, stateChanges,recipientId, recipientAccount);
+    public void addActionAndStateChangesSidecars(ActionSidecarContentTracer tracer, ContractStateChanges stateChanges) {
+        enhancement.operations().addActionAndStateChangesSidecars(tracer, stateChanges);
+    }
+
+    public void addBytecodeSidecar(MessageFrame frame, ContractID recipientId,
+                                   MutableAccount recipientAccount) {
+        enhancement.operations().addBytecodeSidecar(frame, recipientId, recipientAccount);
     }
 }

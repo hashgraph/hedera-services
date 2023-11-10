@@ -27,9 +27,7 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -76,6 +74,7 @@ public final class RecordListBuilder {
      */
     private List<SingleTransactionRecordBuilderImpl> childRecordBuilders;
 
+    private Map<Long, Integer> creationChildRecorBuildersRegistry = new HashMap();
     /**
      * Creates a new instance with the given user transaction consensus timestamp.
      *
@@ -350,4 +349,13 @@ public final class RecordListBuilder {
      */
     public record Result(
             @NonNull SingleTransactionRecord userTransactionRecord, @NonNull List<SingleTransactionRecord> records) {}
+
+    public void registerCreationChildRecordBuilder(Long contractNum) {
+        creationChildRecorBuildersRegistry.put(contractNum, childRecordBuilders.size() - 1);
+    }
+
+    public SingleTransactionRecordBuilderImpl getCreationChildRecordBuilder(Long contractNum) {
+        var index = creationChildRecorBuildersRegistry.get(contractNum);
+        return index != null ? childRecordBuilders.get(index) : null;
+    }
 }

@@ -21,14 +21,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
@@ -677,5 +670,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public void revertChildRecords() {
         recordListBuilder.revertChildrenOf(recordBuilder);
+    }
+
+    public void registerCreationChildRecordBuilder(Long contractNum) {
+        recordListBuilder.registerCreationChildRecordBuilder(contractNum);
+    }
+
+    public SingleTransactionRecordBuilderImpl getCreationChildRecordBuilder(Long contractNum) {
+        return recordListBuilder.getCreationChildRecordBuilder(contractNum);
     }
 }

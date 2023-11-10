@@ -95,11 +95,11 @@ public class FrameRunner {
         var updater = ((ProxyWorldUpdater)frame.getWorldUpdater());
         if (frame.getState() == COMPLETED_SUCCESS) {
             var result = successFrom(gasUsed, senderId, recipientId, asEvmContractId(recipientAddress), frame);
-            updater.addSidecars(frame, tracer, result.stateChanges(), recipientId, updater.getAccount(recipientAddress));
+            updater.addActionAndStateChangesSidecars(tracer, result.stateChanges());
             return result;
         } else {
             var result = failureFrom(gasUsed, senderId, frame);
-            updater.addSidecars(frame, tracer, result.stateChanges(), null, null);
+            updater.addActionAndStateChangesSidecars(tracer, result.stateChanges());
             return result;
         }
     }

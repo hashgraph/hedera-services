@@ -256,7 +256,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      *
      * @param alias the hollow account to be finalized as a contract
      */
-    void finalizeHollowAccount(@NonNull Address alias, @Nullable ContractBytecode bytecode);
+    void finalizeHollowAccount(@NonNull Address alias, ContractBytecode contractBytecode);
 
     /**
      * Returns all storage updates that would be committed by this updater, necessary for constructing

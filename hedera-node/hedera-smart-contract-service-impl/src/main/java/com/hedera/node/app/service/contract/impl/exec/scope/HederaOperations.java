@@ -249,10 +249,8 @@ public interface HederaOperations {
      */
     void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode);
 
-    void addSidecars(MessageFrame frame,
-                     ActionSidecarContentTracer tracer,
-                     ContractStateChanges stateChanges,
-                     ContractID recipientId,
-                     MutableAccount recipientAccount
-    );
+    void addActionAndStateChangesSidecars(ActionSidecarContentTracer tracer, ContractStateChanges stateChanges);
+
+    void addBytecodeSidecar(MessageFrame frame, ContractID recipientId,
+                                   MutableAccount recipientAccount);
 }

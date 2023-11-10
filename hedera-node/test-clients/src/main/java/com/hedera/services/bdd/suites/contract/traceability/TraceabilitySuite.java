@@ -4041,18 +4041,22 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecode(TRACEABILITY_TXN, contract));
     }
 
+    @HapiTest
     @Order(13)
     HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("traceabilityE2EScenario13")
+        return propertyPreservingHapiSpec("traceabilityE2EScenario13")
+                .preserving(CHAIN_ID_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via(AUTO_ACCOUNT_TXN),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).exposingIdTo(accountIDAtomicReference::set),
                         getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT))
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        logIt("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -4084,10 +4088,13 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecodeWithMinimalFieldsSidecarFor(FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
     }
 
+    @HapiTest
     @Order(14)
     private HapiSpec traceabilityE2EScenario14() {
-        return defaultHapiSpec("traceabilityE2EScenario14")
+        return propertyPreservingHapiSpec("traceabilityE2EScenario14")
+                .preserving(CHAIN_ID_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -4127,6 +4134,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     @Order(15)
     HapiSpec traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
@@ -4265,6 +4273,7 @@ public class TraceabilitySuite extends HapiSuite {
                         }))
                 .then();
     }
+
 
     @Order(16)
     HapiSpec traceabilityE2EScenario16() {
@@ -4459,13 +4468,16 @@ public class TraceabilitySuite extends HapiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
     }
 
+    @HapiTest
     @Order(19)
     HapiSpec traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
-        return defaultHapiSpec("traceabilityE2EScenario19")
+        return propertyPreservingHapiSpec("traceabilityE2EScenario19")
+                .preserving(CHAIN_ID_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4501,6 +4513,7 @@ public class TraceabilitySuite extends HapiSuite {
                                             .build())));
                 }));
     }
+
 
     @Order(20)
     private HapiSpec traceabilityE2EScenario20() {

@@ -258,16 +258,18 @@ public class QueryHederaOperations implements HederaOperations {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
     }
 
+    @Override
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode) {
         throw new UnsupportedOperationException("Queries cannot create accounts");
     }
 
-    public void addSidecars(MessageFrame frame,
-                     ActionSidecarContentTracer tracer,
-                     ContractStateChanges stateChanges,
-                     ContractID recipientId,
-                     MutableAccount recipientAccount
-    ){
+    @Override
+    public void addActionAndStateChangesSidecars(ActionSidecarContentTracer tracer, ContractStateChanges stateChanges){
+
+    }
+
+    @Override
+    public void addBytecodeSidecar(MessageFrame frame, ContractID recipientId, MutableAccount recipientAccount) {
 
     }
 }

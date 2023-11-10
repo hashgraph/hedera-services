@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.*;
@@ -310,6 +311,8 @@ public class HandleHederaOperations implements HederaOperations {
                 context.payer());
 
         final var contractId = ContractID.newBuilder().contractNum(number).build();
+        //save a reference to a child record builder, in order to add bytecode sidecar after frame is executed
+        context.registerCreationChildRecordBuilder(contractId.contractNum());
         // add additional create record fields
         recordBuilder
                 .contractID(contractId)
@@ -333,7 +336,6 @@ public class HandleHederaOperations implements HederaOperations {
         var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
         recordBuilder
                 .contractID(contractId)
-                // add dummy transaction, because SingleTransactionRecord require NonNull on build
                 .transaction(Transaction.DEFAULT)
                 // todo add null check or make it nonNull
                 .addContractBytecode(bytecode, false)
@@ -341,14 +343,10 @@ public class HandleHederaOperations implements HederaOperations {
                         .contractID(contractId)
                         .evmAddress(evmAddress)
                         .build());
+        context.registerCreationChildRecordBuilder(contractId.contractNum());
     }
 
-    public void addSidecars(
-            MessageFrame frame,
-            ActionSidecarContentTracer tracer,
-            ContractStateChanges stateChanges,
-            ContractID recipientId,
-            MutableAccount recipientAccount) {
+    public void addActionAndStateChangesSidecars(ActionSidecarContentTracer tracer, ContractStateChanges stateChanges) {
         var enabledSidecars =
                 context.configuration().getConfigData(ContractsConfig.class).sidecars();
         if (enabledSidecars.contains(SidecarType.CONTRACT_ACTION)) {
@@ -368,21 +366,41 @@ public class HandleHederaOperations implements HederaOperations {
                 context.recordBuilder(ContractCallRecordBuilder.class).addContractStateChanges(stateChanges, false);
             }
         }
+    }
 
-        if (enabledSidecars.contains(SidecarType.CONTRACT_BYTECODE)
-                && frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
-            var bytecodeBuilder = ContractBytecode.newBuilder().contractId(recipientId);
-            if (recipientAccount != null && !frame.getState().equals(MessageFrame.State.REVERT)) {
-                bytecodeBuilder.runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
-            }
+    public void addBytecodeSidecar(MessageFrame frame, ContractID recipientId,
+                                   MutableAccount recipientAccount) {
+        var enabledSidecars =
+                context.configuration().getConfigData(ContractsConfig.class).sidecars();
 
+        if (enabledSidecars.contains(SidecarType.CONTRACT_BYTECODE)) {
             var body = context.body().data().value();
-            if (body instanceof ContractCreateTransactionBody
-                    && !((ContractCreateTransactionBody) body).hasInitcode()) {
-                bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
+            //toplevel sidecars
+            if(frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
+                var bytecodeBuilder = ContractBytecode.newBuilder();
+                //add contract id and runtime if frame is not reverted
+                if (recipientAccount != null && !frame.getState().equals(MessageFrame.State.REVERT)) {
+                    bytecodeBuilder.contractId(recipientId);
+                    bytecodeBuilder.runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
+                }
+
+                var recordBuilder = context.recordBuilder(ContractCreateRecordBuilder.class);
+                if(body instanceof ContractCreateTransactionBody) {
+                    if(!((ContractCreateTransactionBody) body).hasInitcode()) {
+                        bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
+                    }
+                } else if (body instanceof EthereumTransactionBody) {
+                    // try to find creation child record builder by contract number
+                    var childRecordBuilder = (ContractCreateRecordBuilder) context.getCreationChildRecordBuilder(recipientId.contractNum());
+                    recordBuilder = childRecordBuilder == null ? recordBuilder : childRecordBuilder;
+                } else {
+                    //contract call create
+                    var childRecordBuilder = (ContractCreateRecordBuilder) context.getCreationChildRecordBuilder(recipientId.contractNum());
+                    recordBuilder = childRecordBuilder == null ? recordBuilder : childRecordBuilder;
+                    bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
+                }
+                recordBuilder.addContractBytecode(bytecodeBuilder.build(), false);
             }
-            context.recordBuilder(ContractCreateRecordBuilder.class)
-                    .addContractBytecode(bytecodeBuilder.build(), false);
         }
     }
 }

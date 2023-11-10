@@ -76,7 +76,6 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
         frame.warmUpAddress(alias);
         return alias;
     }
-
     @Override
     protected void onSuccess(@NonNull final MessageFrame frame, @NonNull MessageFrame childFrame, @NonNull final Address creation) {
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
@@ -90,6 +89,7 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
             updater.finalizeHollowAccount(creation, contractBytecode);
         }
     }
+
 
     private Address eip1014AddressFor(@NonNull final MessageFrame frame) {
         // If the recipient has an EIP-1014 address, it must have been used here

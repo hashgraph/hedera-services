@@ -16,10 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -33,6 +30,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -651,4 +649,8 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
+
+    void registerCreationChildRecordBuilder(Long contractNum);
+
+    SingleTransactionRecordBuilder getCreationChildRecordBuilder(Long contractNum);
 }
