@@ -20,30 +20,56 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody.Builder;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.RoyaltyFeeWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import javax.inject.Singleton;
 
 @Singleton
 public class CreateSyntheticTxnFactory {
 
-    public static TokenCreateTransactionBody.Builder createToken(TokenCreateWrapper tokenCreateWrapper) {
-        final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
+    private CreateSyntheticTxnFactory() {
+        // Singleton constructor
+    }
 
-        txnBodyBuilder.name(tokenCreateWrapper.getName());
-        txnBodyBuilder.symbol(tokenCreateWrapper.getSymbol());
-        txnBodyBuilder.decimals(tokenCreateWrapper.getDecimals());
-        txnBodyBuilder.tokenType(
-                tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : TokenType.NON_FUNGIBLE_UNIQUE);
-        txnBodyBuilder.supplyType(
-                tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
-        txnBodyBuilder.maxSupply(tokenCreateWrapper.getMaxSupply());
-        txnBodyBuilder.initialSupply(tokenCreateWrapper.getInitSupply());
+    @NonNull
+    public static TokenCreateTransactionBody.Builder createToken(@NonNull final TokenCreateWrapper tokenCreateWrapper) {
+        final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
+        txnBodyBuilder
+                .name(tokenCreateWrapper.getName())
+                .symbol(tokenCreateWrapper.getSymbol())
+                .decimals(tokenCreateWrapper.getDecimals())
+                .tokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : TokenType.NON_FUNGIBLE_UNIQUE)
+                .supplyType(tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE)
+                .maxSupply(tokenCreateWrapper.getMaxSupply())
+                .initialSupply(tokenCreateWrapper.getInitSupply())
+                .freezeDefault(tokenCreateWrapper.isFreezeDefault())
+                .memo(tokenCreateWrapper.getMemo());
 
         // checks for treasury
         if (tokenCreateWrapper.getTreasury() != null) {
             txnBodyBuilder.treasury(tokenCreateWrapper.getTreasury());
         }
 
+        // Set keys if they exist
+        setTokenKeys(tokenCreateWrapper, txnBodyBuilder);
+
+        // Set expiry details
+        setExpiry(tokenCreateWrapper, txnBodyBuilder);
+
+        // Add custom fees
+        addCustomFees(tokenCreateWrapper, txnBodyBuilder);
+
+        return txnBodyBuilder;
+    }
+
+    private static void setTokenKeys(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
             if (tokenKeyWrapper.isUsedForAdminKey()) {
@@ -68,10 +94,10 @@ public class CreateSyntheticTxnFactory {
                 txnBodyBuilder.pauseKey(key);
             }
         });
-        txnBodyBuilder.freezeDefault(tokenCreateWrapper.isFreezeDefault());
-        txnBodyBuilder.memo(tokenCreateWrapper.getMemo());
+    }
 
-        // checks for expiry
+    private static void setExpiry(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, @NonNull final Builder txnBodyBuilder) {
         if (tokenCreateWrapper.getExpiry().second() != 0) {
             txnBodyBuilder.expiry(Timestamp.newBuilder()
                     .seconds(tokenCreateWrapper.getExpiry().second())
@@ -83,22 +109,21 @@ public class CreateSyntheticTxnFactory {
         if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != null) {
             txnBodyBuilder.autoRenewPeriod(tokenCreateWrapper.getExpiry().autoRenewPeriod());
         }
+    }
 
-        if (tokenCreateWrapper.getFixedFees() != null) {
-            txnBodyBuilder.customFees(tokenCreateWrapper.getFixedFees().stream()
-                    .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
-                    .toList());
+    private static void addCustomFees(
+            @NonNull final TokenCreateWrapper tokenCreateWrapper, @NonNull final Builder txnBodyBuilder) {
+        final var fractionalFees =
+                tokenCreateWrapper.getFractionalFees().stream().map(FractionalFeeWrapper::asGrpc);
+        final var fixedFees = tokenCreateWrapper.getFixedFees().stream().map(FixedFeeWrapper::asGrpc);
+        final var royaltyFees = tokenCreateWrapper.getRoyaltyFees().stream().map(RoyaltyFeeWrapper::asGrpc);
+
+        var allFees = Stream.of(fractionalFees, fixedFees, royaltyFees)
+                .flatMap(Function.identity())
+                .toList();
+
+        if (!allFees.isEmpty()) {
+            txnBodyBuilder.customFees(allFees);
         }
-        if (tokenCreateWrapper.getFractionalFees() != null) {
-            txnBodyBuilder.customFees(tokenCreateWrapper.getFractionalFees().stream()
-                    .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
-                    .toList());
-        }
-        if (tokenCreateWrapper.getFractionalFees() != null) {
-            txnBodyBuilder.customFees(tokenCreateWrapper.getRoyaltyFees().stream()
-                    .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
-                    .toList());
-        }
-        return txnBodyBuilder;
     }
 }

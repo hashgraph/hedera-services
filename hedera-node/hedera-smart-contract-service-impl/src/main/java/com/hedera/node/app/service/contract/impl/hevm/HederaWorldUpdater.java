@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -270,7 +271,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param result    The result of the system contract call
      * @param status    Whether the result is an error
      */
-    void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
+    void externalizeSystemContractResults(
+            @NonNull final ContractFunctionResult result,
+            ResultStatus status,
+            @NonNull ResponseCodeEnum responseStatus);
 
     /**
      * Returns the {@link ExchangeRate} for the current consensus timestamp

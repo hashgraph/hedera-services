@@ -33,6 +33,7 @@ import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
+import com.hedera.services.bdd.suites.throttling.GasLimitThrottlingSuite;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import java.util.Collection;
 import java.util.List;
@@ -442,7 +443,7 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> throttling() {
         return List.of(
-                //				extractSpecsFromSuite(GasLimitThrottlingSuite::new),
+                extractSpecsFromSuite(GasLimitThrottlingSuite::new),
                 //				extractSpecsFromSuite(PrivilegedOpsSuite::new), TODO FAILS
                 extractSpecsFromSuite(ThrottleDefValidationSuite::new));
     }
