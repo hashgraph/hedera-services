@@ -17,10 +17,10 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
-import static contract.AssortedOpsXTestConstants.SENDER_ALIAS;
-import static contract.Erc721XTestConstants.COINBASE_ID;
+import static contract.XTestConstants.COINBASE_ID;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_ALIAS;
 import static contract.XTestConstants.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

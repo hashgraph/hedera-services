@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall.IS_APPROVED_FOR_ALL;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,6 +31,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
+    public static final Function CLASSIC_IS_APPROVED_FOR_ALL =
+            new Function("isApprovedForAll(address,address,address)", "(int64,bool)");
+    public static final Function ERC_IS_APPROVED_FOR_ALL = new Function("isApprovedForAll(address,address)", "(bool)");
+
     @Inject
     public IsApprovedForAllTranslator() {
         // Dagger2
@@ -40,7 +45,7 @@ public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), IS_APPROVED_FOR_ALL.selector());
+        return matchesClassicSelector(attempt.selector()) || matchesErcSelector(attempt.selector());
     }
 
     /**
@@ -48,12 +53,34 @@ public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public IsApprovedForAllCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        final var args = IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
-        return new IsApprovedForAllCall(
-                attempt.systemContractGasCalculator(),
-                attempt.enhancement(),
-                attempt.redirectToken(),
-                args.get(0),
-                args.get(1));
+        if (matchesErcSelector(attempt.selector())) {
+            final var args = ERC_IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
+            return new IsApprovedForAllCall(
+                    attempt.systemContractGasCalculator(),
+                    attempt.enhancement(),
+                    attempt.redirectToken(),
+                    args.get(0),
+                    args.get(1),
+                    true);
+        } else {
+            final var args =
+                    CLASSIC_IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
+            final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
+            return new IsApprovedForAllCall(
+                    attempt.systemContractGasCalculator(),
+                    attempt.enhancement(),
+                    token,
+                    args.get(1),
+                    args.get(2),
+                    false);
+        }
+    }
+
+    private boolean matchesClassicSelector(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, CLASSIC_IS_APPROVED_FOR_ALL.selector());
+    }
+
+    private boolean matchesErcSelector(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ERC_IS_APPROVED_FOR_ALL.selector());
     }
 }

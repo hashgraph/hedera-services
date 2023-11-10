@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPEND
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -29,10 +30,15 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.log.Log;
 
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
 
@@ -70,7 +76,46 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long) status.protoOrdinal())
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
+
             return gasOnly(FullResult.successResult(encodedOutput, gasRequirement));
         }
+    }
+
+    @NonNull
+    @Override
+    public PricedResult execute(final MessageFrame frame) {
+        final var result = execute();
+
+        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
+            final var tokenAddress = asLongZeroAddress(token.tokenNum());
+
+            if (tokenType.equals(TokenType.FUNGIBLE_COMMON)) {
+                frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
+            } else {
+                frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
+            }
+        }
+
+        return result;
+    }
+
+    private Log getLogForFungibleAdjustAllowance(final Address logger) {
+        return LogBuilder.logBuilder()
+                .forLogger(logger)
+                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(spender.accountNum()))
+                .forDataItem(amount)
+                .build();
+    }
+
+    private Log getLogForNftAdjustAllowance(final Address logger) {
+        return LogBuilder.logBuilder()
+                .forLogger(logger)
+                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                .forIndexedArgument(asLongZeroAddress(senderId.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(spender.accountNum()))
+                .forIndexedArgument(amount)
+                .build();
     }
 }

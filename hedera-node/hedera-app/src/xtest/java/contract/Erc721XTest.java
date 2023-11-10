@@ -17,7 +17,6 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.Erc721XTestConstants.COINBASE_ID;
 import static contract.Erc721XTestConstants.COUNTERPARTY_ADDRESS;
 import static contract.Erc721XTestConstants.COUNTERPARTY_ID;
 import static contract.Erc721XTestConstants.ERC721_FULL_ID;
@@ -31,6 +30,7 @@ import static contract.Erc721XTestConstants.PARTY_ADDRESS;
 import static contract.Erc721XTestConstants.PARTY_ID;
 import static contract.Erc721XTestConstants.TOKEN_TREASURY_ADDRESS;
 import static contract.Erc721XTestConstants.TOKEN_TREASURY_ID;
+import static contract.XTestConstants.COINBASE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

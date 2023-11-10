@@ -18,14 +18,16 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapp
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator.CLASSIC_IS_APPROVED_FOR_ALL;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator.ERC_IS_APPROVED_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -34,7 +36,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,21 +45,22 @@ import java.util.Optional;
  * Implements the token redirect {@code isApprovedForAll()} call of the HTS system contract.
  */
 public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
-    public static final Function IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address)", ReturnTypes.BOOL);
 
     private final Address owner;
     private final Address operator;
+    private final boolean isErcRedirect;
 
     public IsApprovedForAllCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             @NonNull final Address owner,
-            @NonNull final Address operator) {
+            @NonNull final Address operator,
+            final boolean isErcRedirect) {
         super(gasCalculator, enhancement, token);
         this.owner = requireNonNull(owner);
         this.operator = requireNonNull(operator);
+        this.isErcRedirect = isErcRedirect;
     }
 
     /**
@@ -84,8 +86,14 @@ public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
                     AccountID.newBuilder().accountNum(operatorNum).build(),
                     token.tokenIdOrThrow());
         }
-        return successResult(
-                IS_APPROVED_FOR_ALL.getOutputs().encodeElements(verdict), gasCalculator.viewGasRequirement());
+        if (isErcRedirect) {
+            return successResult(
+                    ERC_IS_APPROVED_FOR_ALL.getOutputs().encodeElements(verdict), gasCalculator.viewGasRequirement());
+        } else {
+            return successResult(
+                    CLASSIC_IS_APPROVED_FOR_ALL.getOutputs().encodeElements((long) SUCCESS.protoOrdinal(), verdict),
+                    gasCalculator.viewGasRequirement());
+        }
     }
 
     private boolean operatorMatches(
