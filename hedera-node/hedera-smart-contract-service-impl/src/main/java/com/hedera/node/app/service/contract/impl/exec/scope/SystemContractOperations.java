@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -110,7 +111,10 @@ public interface SystemContractOperations {
      * @param result    contract function result
      * @param status    whether the result is success or an error
      */
-    void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status);
+    void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResultStatus status,
+            @NonNull final ResponseCodeEnum responseStatus);
 
     /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
