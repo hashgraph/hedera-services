@@ -255,10 +255,10 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     }
 
     @Test
-    void constructsIsOperator() {
+    void constructsIsApprovedForAllErc() {
         final var address = asHeadlongAddress(EIP_1014_ADDRESS);
         final var input = TestHelpers.bytesForRedirect(
-                IsApprovedForAllCall.IS_APPROVED_FOR_ALL
+                IsApprovedForAllTranslator.ERC_IS_APPROVED_FOR_ALL
                         .encodeCallWithArgs(address, address)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
@@ -275,6 +275,26 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 false,
                 blockValues,
                 value);
+        assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
+    }
+
+    @Test
+    void constructsIsApprovedForAllClassic() {
+        final var address = asHeadlongAddress(EIP_1014_ADDRESS);
+        final var input = Bytes.wrap(IsApprovedForAllTranslator.CLASSIC_IS_APPROVED_FOR_ALL
+                .encodeCallWithArgs(address, address, address)
+                .array());
+        final var subject = new HtsCallAttempt(
+                input,
+                EIP_1014_ADDRESS,
+                false,
+                mockEnhancement(),
+                DEFAULT_CONFIG,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
 
