@@ -150,7 +150,7 @@ public final class SignedStateFileWriter {
      */
     public static void writeSignedStateFilesToDirectory(
             @Nullable final PlatformContext platformContext,
-            @Nullable NodeId selfId,
+            @Nullable final NodeId selfId,
             @NonNull final Path directory,
             @NonNull final SignedState signedState)
             throws IOException {
@@ -257,14 +257,24 @@ public final class SignedStateFileWriter {
                     "No preconsensus event files meeting specified criteria found to copy. "
                             + "Minimum generation non-ancient: {}",
                     minimumGenerationNonAncient);
+        } else if (filesToCopy.size() == 1) {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    """
+                            Found 1 preconsensus event file meeting specified criteria to copy.
+                                Minimum generation non-ancient: {}
+                                File: {}
+                            """,
+                    minimumGenerationNonAncient,
+                    filesToCopy.get(0).getPath());
         } else {
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     """
                             Found {} preconsensus event files meeting specified criteria to copy.
-                            Minimum generation non-ancient: {}
-                            First file to copy: {}
-                            Last file to copy: {}
+                                Minimum generation non-ancient: {}
+                                First file to copy: {}
+                                Last file to copy: {}
                             """,
                     filesToCopy.size(),
                     minimumGenerationNonAncient,
@@ -300,13 +310,20 @@ public final class SignedStateFileWriter {
 
         if (allFiles.isEmpty()) {
             logger.warn(STATE_TO_DISK.getMarker(), "No preconsensus event files found to copy");
+        } else if (allFiles.size() == 1) {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    """
+                            Found 1 preconsensus file on disk.
+                                File: {}""",
+                    allFiles.get(0).getPath());
         } else {
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     """
                             Found {} preconsensus files on disk.
-                            First file: {}
-                            Last file: {}""",
+                                First file: {}
+                                Last file: {}""",
                     allFiles.size(),
                     allFiles.get(0).getPath(),
                     allFiles.get(allFiles.size() - 1).getPath());
@@ -322,8 +339,7 @@ public final class SignedStateFileWriter {
      * @param pcesDestination the directory where the files should be copied
      */
     private static void copyPreconsensusFileList(
-            @NonNull final List<PreconsensusEventFile> filesToCopy, @NonNull final Path pcesDestination)
-            throws IOException {
+            @NonNull final List<PreconsensusEventFile> filesToCopy, @NonNull final Path pcesDestination) {
         logger.info(
                 STATE_TO_DISK.getMarker(),
                 "Copying {} preconsensus event files to state snapshot directory",
