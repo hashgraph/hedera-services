@@ -294,7 +294,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
 
