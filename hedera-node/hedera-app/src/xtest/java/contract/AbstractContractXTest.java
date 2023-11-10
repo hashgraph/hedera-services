@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -50,6 +51,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -82,8 +85,8 @@ import org.mockito.Mock;
 public abstract class AbstractContractXTest extends AbstractXTest {
     private static final SyntheticIds LIVE_SYNTHETIC_IDS = new SyntheticIds();
     private static final VerificationStrategies LIVE_VERIFICATION_STRATEGIES = new VerificationStrategies();
-    static final long GAS_TO_OFFER = 2_000_000L;
-    static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
+    protected static final long GAS_TO_OFFER = 2_000_000L;
+    protected static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
 
     @Mock
     private MessageFrame frame;
@@ -99,7 +102,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     private HtsCallFactory callAttemptFactory;
 
-    private ContractScaffoldingComponent component;
+    protected ContractScaffoldingComponent component;
 
     @BeforeEach
     void setUp() {
@@ -182,6 +185,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         internalRunHtsCallAndExpectRevert(sender, input, status, null);
     }
 
+    protected ContractCreateHandler createHandler() {
+        return CONTRACT_SERVICE.handlers().contractCreateHandler();
+    }
+
+    protected ContractCallHandler callHandler() {
+        return CONTRACT_SERVICE.handlers().contractCallHandler();
+    }
+
     protected void runHtsCallAndExpectRevert(
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
@@ -255,7 +266,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
         final var call = callAttemptFactory.createCallFrom(input, frame);
 
-        final var pricedResult = call.execute();
+        final var pricedResult = call.execute(frame);
         resultAssertions.accept(pricedResult);
         // Note that committing a reverted calls should have no effect on state
         ((SavepointStackImpl) context.savepointStack()).commitFullStack();
@@ -311,6 +322,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             final var result = fullResult.result();
             resultAssertion.accept(result);
         };
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final AccountID accountID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(accountID.accountNumOrThrow())));
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final TokenID tokenID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(tokenID.tokenNum())));
     }
 
     public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
