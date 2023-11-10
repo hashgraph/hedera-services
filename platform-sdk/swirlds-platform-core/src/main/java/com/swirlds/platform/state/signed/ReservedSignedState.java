@@ -196,7 +196,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     /**
      * Check if this reservation has been closed.
      */
-    public boolean isClosed(){
+    public boolean isClosed() {
         return closed;
     }
 }
