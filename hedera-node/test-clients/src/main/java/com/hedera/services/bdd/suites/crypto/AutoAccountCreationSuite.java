@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -305,7 +306,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest//here
+    @HapiTest // here
     private HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return defaultHapiSpec("autoCreateWithNftFallBackFeeFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -377,7 +378,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var approxTransferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
-        return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
+        return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
@@ -513,13 +514,17 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_A_CREATE),
-                        getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY).logged(),
+                        getTxnRecord(TOKEN_A_CREATE)
+                                .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY)
+                                .logged(),
                         tokenCreate(B_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(initialTokenSupply)
                                 .treasury(TOKEN_TREASURY)
                                 .via(TOKEN_B_CREATE),
-                        getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY).logged(),
+                        getTxnRecord(TOKEN_A_CREATE)
+                                .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY)
+                                .logged(),
                         getTxnRecord(TOKEN_B_CREATE).hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2))
                 .when(
@@ -716,7 +721,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
 
-    @HapiTest//here
+    @HapiTest // here paid staking rewards?
     private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
@@ -735,7 +740,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getContractInfo(contract).has(contractWith().noStakePeriodStart()));
     }
 
-    @HapiTest //here
+    @HapiTest
     private HapiSpec hollowAccountCreationWithCryptoTransfer() {
         final var initialTokenSupply = 1000;
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
@@ -840,12 +845,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest//here
+    @HapiTest // here
     private HapiSpec failureAfterHollowAccountCreationReclaimsAlias() {
         final var underfunded = "underfunded";
         final var secondTransferTxn = "SecondTransferTxn";
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
-        return defaultHapiSpec("failureAfterHollowAccountCreationReclaimsAlias")
+        return defaultHapiSpec("failureAfterHollowAccountCreationReclaimsAlias", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1302,7 +1307,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 
-    @HapiTest //here
+    @HapiTest // here - in different order
     private HapiSpec multipleAutoAccountCreations() {
         return defaultHapiSpec("multipleAutoAccountCreations")
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1335,7 +1340,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
     }
 
-    @HapiTest//here
+    @HapiTest
     private HapiSpec transferHbarsToEVMAddressAlias() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -1439,7 +1444,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
 
-    @HapiTest //here - done
+    @HapiTest
     private HapiSpec transferFungibleToEVMAddressAlias() {
 
         final var fungibleToken = "fungibleToken";
@@ -1535,7 +1540,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
-    @HapiTest//here - done
+    @HapiTest
     private HapiSpec transferNonFungibleToEVMAddressAlias() {
         final var nonFungibleToken = "nonFungibleToken";
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
