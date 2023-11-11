@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.evm.contracts.operations.HederaExcepti
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +30,6 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperati
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -48,7 +46,6 @@ import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;

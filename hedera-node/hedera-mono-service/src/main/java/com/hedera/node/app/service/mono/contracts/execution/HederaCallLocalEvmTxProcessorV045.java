@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Provider;
@@ -33,8 +33,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
@@ -52,7 +50,14 @@ public class HederaCallLocalEvmTxProcessorV045 extends CallLocalEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps.get(dynamicProperties.evmVersion()), ccps.get(dynamicProperties.evmVersion()), aliasManager);
+        super(
+                codeCache,
+                livePricesSource,
+                dynamicProperties,
+                gasCalculator,
+                mcps.get(dynamicProperties.evmVersion()),
+                ccps.get(dynamicProperties.evmVersion()),
+                aliasManager);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

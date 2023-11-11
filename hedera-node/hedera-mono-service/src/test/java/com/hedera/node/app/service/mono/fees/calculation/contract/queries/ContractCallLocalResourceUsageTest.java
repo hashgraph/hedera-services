@@ -68,7 +68,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

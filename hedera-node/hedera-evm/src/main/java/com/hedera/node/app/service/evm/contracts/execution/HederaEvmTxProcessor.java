@@ -183,8 +183,8 @@ public abstract class HederaEvmTxProcessor {
         /* Return leftover gas */
         final long selfDestructRefund = gasCalculator.getSelfDestructRefundAmount()
                 * Math.min(
-                initialFrame.getSelfDestructs().size(),
-                gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
+                        initialFrame.getSelfDestructs().size(),
+                        gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
 
         gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
