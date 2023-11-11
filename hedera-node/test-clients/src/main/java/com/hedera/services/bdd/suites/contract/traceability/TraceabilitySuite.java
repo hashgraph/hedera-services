@@ -135,9 +135,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 public class TraceabilitySuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
-    private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path.mono";
-    private static final String RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.path.mod";
-    private static final String SIDECAR_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.sidecarDir.mod";
+    private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
+    private static final String RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.path.hapiTests";
 
     private static SidecarWatcher sidecarWatcher;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
@@ -5315,8 +5314,7 @@ public class TraceabilitySuite extends HapiSuite {
     private static Path getRecordStreamFolderPath() {
         return switch (HapiSpec.targetNetworkType()) {
             case HAPI_TEST_NETWORK -> Paths.get(
-                    HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY),
-                    HapiSpecSetup.getDefaultPropertySource().get(SIDECAR_FOLDER_PATH_MOD_PROPERTY_KEY));
+                    HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY));
             case CI_DOCKER_NETWORK -> Paths.get(HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY));
             case STANDALONE_MONO_NETWORK -> Paths.get(
                     HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY));
