@@ -202,6 +202,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
         failIfLegacyOnly();
         // Use the "hapi-fees" module to calculate the fees, and convert to one of our "Fees" objects.
         final var overflowCalc = new OverflowCheckingCalc();
+        System.out.println("Usage: " + usage);
+        System.out.println("FeeData: " + feeData);
         final var feeObject = overflowCalc.fees(usage, feeData, currentRate, 1);
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
     }

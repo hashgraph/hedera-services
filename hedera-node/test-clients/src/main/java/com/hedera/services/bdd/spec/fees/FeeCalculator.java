@@ -125,6 +125,10 @@ public class FeeCalculator {
             throws Throwable {
         final FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
         final var subType = activityMetrics.getSubType();
+        if (op == HederaFunctionality.CryptoTransfer) {
+            System.out.println("subType: " + subType);
+            System.out.println("CryptoTransfer fee: " + forOp(op, subType, activityMetrics));
+        }
         return forOp(op, subType, activityMetrics);
     }
 
@@ -153,7 +157,9 @@ public class FeeCalculator {
     private FeeData metricsFor(final Transaction txn, final int numPayerSigs, final ActivityMetrics metricsCalculator)
             throws Throwable {
         final SigValueObj sigUsage = sigUsageGiven(txn, numPayerSigs);
+        System.out.println(sigUsage);
         final TransactionBody body = CommonUtils.extractTransactionBody(txn);
+        System.out.println(body);
         return metricsCalculator.compute(body, sigUsage);
     }
 

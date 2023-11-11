@@ -509,11 +509,14 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeHbarTransfers,
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
-        return feeContext
+        System.out.println("subType: " + subType);
+        final var ans = feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
+        System.out.println("  -> " + ans.totalFee());
+        return ans;
     }
 
     /**
