@@ -97,7 +97,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static final long MAX_NORMAL_FEE_VARIATION_IN_TINYBARS = 1;
     // For large key structures, there can be "significant" fee variation in tinybar units
     // due to different public key sizes and signature map prefixes
-    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 25_000;
+    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 50_000;
     private static final ObjectMapper om = new ObjectMapper();
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(

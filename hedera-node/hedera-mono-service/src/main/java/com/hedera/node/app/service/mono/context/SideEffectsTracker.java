@@ -311,6 +311,7 @@ public class SideEffectsTracker {
         if (!autoAssociations.isEmpty()) {
             final var newAssociations = new ArrayList<>(autoAssociations);
             newAssociations.sort(FC_TOKEN_ASSOCIATION_COMPARATOR);
+            return newAssociations;
         }
         return autoAssociations;
     }

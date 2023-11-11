@@ -250,7 +250,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             // If we have been given an EVM address, then we can just put it into the store
             if (isOfEvmAddressSize(alias)) {
                 accountStore.putAlias(alias, createdAccountID);
-                recordBuilder.evmAddress(alias);
+//                recordBuilder.evmAddress(alias);
             } else {
                 // The only other kind of alias it could be is a key-alias. And in that case, it could be an ED25519
                 // protobuf-encoded key, or it could be an ECDSA_SECP256K1 protobuf-encoded key. In this latter case,
@@ -263,7 +263,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 final var evmAddress = extractEvmAddress(key);
                 if (evmAddress != null) {
                     accountStore.putAlias(evmAddress, createdAccountID);
-                    recordBuilder.evmAddress(evmAddress);
+//                    recordBuilder.evmAddress(evmAddress);
                 }
                 accountStore.putAlias(alias, createdAccountID);
             }
