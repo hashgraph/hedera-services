@@ -25,26 +25,16 @@ import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMod
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallEvmTxProcessorV030;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallEvmTxProcessorV045;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV030;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV038;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV045;
-import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
-import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.node.app.service.mono.store.StoresModule;
-import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -60,14 +50,9 @@ import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
@@ -79,16 +64,15 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Module(
         includes = {
-                StoresModule.class,
-                ContractsV_0_30Module.class,
-                ContractsV_0_34Module.class,
-                ContractsV_0_38Module.class,
-                ContractsV_0_45Module.class
+            StoresModule.class,
+            ContractsV_0_30Module.class,
+            ContractsV_0_34Module.class,
+            ContractsV_0_38Module.class,
+            ContractsV_0_45Module.class
         })
 public interface ContractsModule {
     int SYSTEM_ACCOUNT_BOUNDARY = 750;
@@ -217,7 +201,7 @@ public interface ContractsModule {
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return  new HederaMessageCallProcessorV038(
+        return new HederaMessageCallProcessorV038(
                 evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
     }
 
@@ -242,8 +226,8 @@ public interface ContractsModule {
         // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
         return address -> address.numberOfLeadingZeroBytes() >= 18
                 && (Integer.compareUnsigned(address.getInt(16), 359) == 0
-                || Integer.compareUnsigned(address.getInt(16), 360) == 0
-                || Integer.compareUnsigned(address.getInt(16), 361) == 0);
+                        || Integer.compareUnsigned(address.getInt(16), 360) == 0
+                        || Integer.compareUnsigned(address.getInt(16), 361) == 0);
     }
 
     @Provides

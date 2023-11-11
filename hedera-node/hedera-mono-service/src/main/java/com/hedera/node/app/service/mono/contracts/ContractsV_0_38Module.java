@@ -29,15 +29,12 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOpe
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperationV038;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_34;
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_38;
-import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_45;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaCallEvmTxProcessorV030;
 import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV030;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperationV038;

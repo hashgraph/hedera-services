@@ -126,7 +126,13 @@ class CallLocalEvmTxProcessorTest {
                 Map.of(EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1));
 
         callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
-                codeCache, livePricesSource, globalDynamicProperties, gasCalculator, mcps.get(globalDynamicProperties.evmVersion()), ccps.get(globalDynamicProperties.evmVersion()), aliasManager);
+                codeCache,
+                livePricesSource,
+                globalDynamicProperties,
+                gasCalculator,
+                mcps.get(globalDynamicProperties.evmVersion()),
+                ccps.get(globalDynamicProperties.evmVersion()),
+                aliasManager);
 
         callLocalEvmTxProcessor.setWorldState(worldState);
         callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);
