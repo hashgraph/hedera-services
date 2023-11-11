@@ -21,19 +21,15 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -116,43 +112,6 @@ public class ConversionUtils {
     }
 
     /**
-     * Given a validated {@link ContractCreateTransactionBody} and its pending id, returns the
-     * corresponding {@link CryptoCreateTransactionBody} to dispatch.
-     *
-     * @param pendingId the pending id
-     * @param body the {@link ContractCreateTransactionBody}
-     * @return the corresponding {@link CryptoCreateTransactionBody}
-     */
-    public static CryptoCreateTransactionBody accountCreationFor(
-            @NonNull final ContractID pendingId,
-            @Nullable final com.hedera.pbj.runtime.io.buffer.Bytes evmAddress,
-            @NonNull final ContractCreateTransactionBody body) {
-        requireNonNull(body);
-        requireNonNull(pendingId);
-        final var builder = CryptoCreateTransactionBody.newBuilder()
-                .maxAutomaticTokenAssociations(body.maxAutomaticTokenAssociations())
-                .declineReward(body.declineReward())
-                .memo(body.memo());
-        if (body.hasAutoRenewPeriod()) {
-            builder.autoRenewPeriod(body.autoRenewPeriodOrThrow());
-        }
-        if (body.hasStakedNodeId()) {
-            builder.stakedNodeId(body.stakedNodeIdOrThrow());
-        } else if (body.hasStakedAccountId()) {
-            builder.stakedAccountId(body.stakedAccountIdOrThrow());
-        }
-        if (body.hasAdminKey() && !isEmpty(body.adminKeyOrThrow())) {
-            builder.key(body.adminKeyOrThrow());
-        } else {
-            builder.key(Key.newBuilder().contractID(pendingId));
-        }
-        if (evmAddress != null) {
-            builder.alias(evmAddress);
-        }
-        return builder.build();
-    }
-
-    /**
      * Given a {@link BigInteger}, returns either its long value or zero if it is out-of-range.
      *
      * @param value the {@link BigInteger}
@@ -181,14 +140,14 @@ public class ConversionUtils {
 
     /**
      * Given a {@link ContractID}, returns its address as a headlong address.
-     * @param contractId
-     * @return
+     * @param contractId the contract id
+     * @return the headlong address
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final ContractID contractId) {
         requireNonNull(contractId);
         final var integralAddress = contractId.hasContractNum()
-                ? asEvmAddress(contractId.contractNum())
-                : contractId.evmAddress().toByteArray();
+                ? asEvmAddress(contractId.contractNumOrThrow())
+                : contractId.evmAddressOrThrow().toByteArray();
         return asHeadlongAddress(integralAddress);
     }
 
