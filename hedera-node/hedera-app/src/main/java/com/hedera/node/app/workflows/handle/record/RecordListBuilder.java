@@ -408,6 +408,6 @@ public final class RecordListBuilder {
 
     public SingleTransactionRecordBuilderImpl getCreationChildRecordBuilder(Long contractNum) {
         var index = creationChildRecorBuildersRegistry.get(contractNum);
-        return index != null ? childRecordBuilders.get(index) : null;
+        return (index != null && index<creationChildRecorBuildersRegistry.size()) ? childRecordBuilders.get(index) : null;
     }
 }

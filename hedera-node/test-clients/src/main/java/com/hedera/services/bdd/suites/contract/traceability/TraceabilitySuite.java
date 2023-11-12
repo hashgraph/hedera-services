@@ -4052,8 +4052,7 @@ public class TraceabilitySuite extends HapiSuite {
                                 .via(AUTO_ACCOUNT_TXN),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).exposingIdTo(accountIDAtomicReference::set),
                         getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        logIt("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"))
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -4065,7 +4064,7 @@ public class TraceabilitySuite extends HapiSuite {
                         .via(FIRST_CREATE_TXN))
                 .then(
                         withOpContext((spec, opLog) -> {
-                            final HapiGetTxnRecord txnRecord = getTxnRecord(FIRST_CREATE_TXN);
+                            final HapiGetTxnRecord txnRecord = getTxnRecord(FIRST_CREATE_TXN).logged();
                             allRunFor(
                                     spec,
                                     txnRecord,

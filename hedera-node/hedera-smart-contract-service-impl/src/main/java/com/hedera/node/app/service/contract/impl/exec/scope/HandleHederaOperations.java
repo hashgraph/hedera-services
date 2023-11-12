@@ -303,21 +303,6 @@ public class HandleHederaOperations implements HederaOperations {
                 AccountID.newBuilder().accountNum(contractNumber).build());
     }
 
-    @Override
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
-        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
-        recordBuilder
-                .contractID(contractId)
-                // add dummy transaction, because SingleTransactionRecord require NonNull on build
-                .transaction(Transaction.newBuilder()
-                        .signedTransactionBytes(Bytes.EMPTY)
-                        .build())
-                .contractCreateResult(ContractFunctionResult.newBuilder()
-                        .contractID(contractId)
-                        .evmAddress(evmAddress)
-                        .build());
-    }
-
     private void dispatchAndMarkCreation(
             final long number,
             @NonNull final CryptoCreateTransactionBody bodyToDispatch,
@@ -382,6 +367,8 @@ public class HandleHederaOperations implements HederaOperations {
                 throw new UncheckedIOException(internal);
             }
         };
+    }
+
     public void externalizeHollowAccountMerge(
             @NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode) {
         var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
@@ -441,11 +428,11 @@ public class HandleHederaOperations implements HederaOperations {
                         bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
                     }
                 } else if (body instanceof EthereumTransactionBody) {
-                    // try to find creation child record builder by contract number
-                    var childRecordBuilder = (ContractCreateRecordBuilder) context.getCreationChildRecordBuilder(recipientId.contractNum());
-                    recordBuilder = childRecordBuilder == null ? recordBuilder : childRecordBuilder;
+                    // ethereum create has no child records, so we create new builder only for this sidecar
+                    recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+                            .transaction(Transaction.DEFAULT);
                 } else {
-                    //contract call create
+                    //find if we have any child record builders by contract number
                     var childRecordBuilder = (ContractCreateRecordBuilder) context.getCreationChildRecordBuilder(recipientId.contractNum());
                     recordBuilder = childRecordBuilder == null ? recordBuilder : childRecordBuilder;
                     bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
