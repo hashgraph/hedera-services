@@ -2,6 +2,12 @@ package com.hedera.services.bdd.suites.hip796.operations;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * Represents a desired partition of a token.
  */
@@ -10,6 +16,7 @@ public class DesiredPartition {
     private String name;
     private String memo;
     private long initialSupply;
+    private List<Long> assignedSerialNos = new ArrayList<>();
 
     public DesiredPartition(@NonNull final String specRegistryName) {
         this.specRegistryName = specRegistryName;
@@ -17,6 +24,12 @@ public class DesiredPartition {
 
     public DesiredPartition name(@NonNull final String name) {
         this.name = name;
+        return this;
+    }
+
+    public DesiredPartition assignedSerialNos(@NonNull final Long... serialNos) {
+        requireNonNull(serialNos);
+        this.assignedSerialNos = Arrays.asList(serialNos);
         return this;
     }
 

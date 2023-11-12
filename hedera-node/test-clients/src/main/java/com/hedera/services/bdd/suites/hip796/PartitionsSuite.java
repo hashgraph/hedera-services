@@ -2,14 +2,57 @@ package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withHeadlongAddressesFor;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.CREATE_PARTITION_FUNCTION;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.DELETE_PARTITION_FUNCTION;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.UPDATE_PARTITION_FUNCTION;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.addPartition;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.managementContractOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionMoveKeyOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.treasuryOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.ADMIN_CONTROL;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.FREEZING;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTER_PARTITION_MANAGEMENT;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.KYC_MANAGEMENT;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PAUSING;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.SUPPLY_MANAGEMENT;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.WIPING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
  * A suite for user stories Partitions-1 through Partitions-18 from HIP-796.
@@ -51,19 +94,11 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec createNewPartitionDefinitions() {
         return defaultHapiSpec("CreateNewPartitionDefinitions")
                 .given(
-                        fungibleTokenDefinition("TokenWithPartitions")
-                                .administeredBy("token-administrator")
-                                .partitionAdministeredBy("partition-administrator")
-                )
-                .when(
-                        createPartitionDefinition("TokenWithPartitions", "NewPartition1")
-                                .by("partition-administrator"),
-                        createPartitionDefinition("TokenWithPartitions", "NewPartition2")
-                                .by("partition-administrator")
-                )
-                .then(
-                        queryPartitionDefinition("TokenWithPartitions", "NewPartition1").exists(),
-                        queryPartitionDefinition("TokenWithPartitions", "NewPartition2").exists()
+                        fungibleTokenWithFeatures(PARTITIONING)
+                ).when().then(
+                        // These default to using the TOKEN_UNDER_TEST
+                        addPartition(RED_PARTITION),
+                        addPartition(BLUE_PARTITION)
                 );
     }
 
@@ -78,21 +113,16 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec updatePartitionDefinitionsMemo() {
         return defaultHapiSpec("UpdatePartitionDefinitionsMemo")
                 .given(
-                        fungibleTokenDefinition("TokenWithPartitionsToUpdate")
-                                .administeredBy("token-administrator")
-                                .partitionAdministeredBy("partition-administrator"),
-                        createPartitionDefinition("TokenWithPartitionsToUpdate", "PartitionToChange")
-                                .withMemo("InitialMemo")
-                                .by("partition-administrator")
+                        fungibleTokenWithFeatures(PARTITIONING, ADMIN_CONTROL)
+                                .withPartition(RED_PARTITION, p -> p.memo("TBD"))
                 )
                 .when(
-                        updatePartitionDefinition("TokenWithPartitionsToUpdate", "PartitionToChange")
-                                .withMemo("UpdatedMemo")
-                                .by("partition-administrator")
+                        // The partition should inherit the admin key and allow this
+                        tokenUpdate(partition(RED_PARTITION))
+                                .entityMemo("Ah much better")
                 )
                 .then(
-                        queryPartitionDefinition("TokenWithPartitionsToUpdate", "PartitionToChange")
-                                .hasMemo("UpdatedMemo")
+                        getTokenInfo(partition(RED_PARTITION)).hasEntityMemo("Ah much better")
                 );
     }
 
@@ -106,13 +136,15 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec deletePartitionDefinitions() {
         return defaultHapiSpec("DeletePartitionDefinitions")
                 .given(
-                        tokenExistsWithPartitions("MyToken", "ExistingPartition")
+                        fungibleTokenWithFeatures(PARTITIONING, ADMIN_CONTROL)
+                                .withPartition(RED_PARTITION)
                 )
                 .when(
-                        deletePartition("MyToken", "ExistingPartition").signedBy("partitionAdminKey")
+                        // The partition should inherit the admin key and allow this
+                        tokenDelete(partition(RED_PARTITION))
                 )
                 .then(
-                        ensurePartitionDoesNotExist("MyToken", "ExistingPartition")
+                        getTokenInfo(partition(RED_PARTITION)).isDeleted()
                 );
     }
 
@@ -127,27 +159,21 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec transferBetweenPartitions() {
         return defaultHapiSpec("TransferBetweenPartitions")
                 .given(
-                        fungibleTokenDefinition("TokenWithMoveablePartitions")
-                                .administeredBy("token-administrator")
-                                .partitionMoveManagedBy("partition-move-manager"),
-                        createPartitionDefinition("TokenWithMoveablePartitions", "PartitionA")
-                                .by("partition-administrator"),
-                        createPartitionDefinition("TokenWithMoveablePartitions", "PartitionB")
-                                .by("partition-administrator"),
-                        mintTokensToPartition("TokenWithMoveablePartitions", "PartitionA", "userAccount", 1000),
-                        mintTokensToPartition("TokenWithMoveablePartitions", "PartitionB", "userAccount", 500)
-                )
+                        fungibleTokenWithFeatures(PARTITIONING, INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION)
+                                        .andPartition(BLUE_PARTITION, pr -> pr.balance(0))))
                 .when(
-                        transferBetweenPartitions("TokenWithMoveablePartitions", "userAccount")
-                                .fromPartition("PartitionA").amount(200)
-                                .toPartition("PartitionB")
-                                .by("partition-move-manager")
+                        // Even though Alice doesn't sign, this is possible with the partition move key
+                        cryptoTransfer(
+                                moving(FUNGIBLE_INITIAL_BALANCE, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, ALICE, partition(BLUE_PARTITION))
+                        ).signedBy(DEFAULT_PAYER, partitionMoveKeyOf(TOKEN_UNDER_TEST))
                 )
                 .then(
-                        queryPartitionBalance("TokenWithMoveablePartitions", "PartitionA", "userAccount")
-                                .hasAmount(800),
-                        queryPartitionBalance("TokenWithMoveablePartitions", "PartitionB", "userAccount")
-                                .hasAmount(700)
+                        getAccountBalance(ALICE)
+                                .hasTokenBalance(partition(RED_PARTITION), 0)
+                                .hasTokenBalance(partition(BLUE_PARTITION), FUNGIBLE_INITIAL_BALANCE)
                 );
     }
 
@@ -161,23 +187,25 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec transferNFTsWithinPartitions() {
         return defaultHapiSpec("TransferNFTsWithinPartitions")
                 .given(
-                        newKeyNamed("PartitionMoveKey"),
-                        tokenCreatedWithPartitionSupport("MyNftToken"),
-                        nftIssuedToPartition("MyNftToken", "PartitionA", "Serial1"),
-                        nftIssuedToPartition("MyNftToken", "PartitionB", "Serial2"),
-                        withOpContext((spec, opLog) -> {
-                            var tokenInfo = getTokenInfo("MyNftToken").answeredBy(spec);
-                            var partitionAInfo = getPartitionInfo("MyNftToken", "PartitionA").answeredBy(spec);
-                            var partitionBInfo = getPartitionInfo("MyNftToken", "PartitionB").answeredBy(spec);
-                            allHoldingsAreValid(tokenInfo, partitionAInfo, partitionBInfo);
-                        })
-                )
+                        nonFungibleTokenWithFeatures(PARTITIONING, INTER_PARTITION_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L))
+                                        .andPartition(BLUE_PARTITION)))
                 .when(
-                        moveNFT("MyNftToken", "Serial1").fromPartition("PartitionA").toPartition("PartitionB").signedBy("PartitionMoveKey")
+                        // Even though Alice doesn't sign, this is possible with the partition move key
+                        cryptoTransfer(
+                                movingUnique(partition(RED_PARTITION), 1L)
+                                        .betweenWithPartitionChange(ALICE, ALICE, partition(BLUE_PARTITION))
+                        ).signedBy(DEFAULT_PAYER, partitionMoveKeyOf(TOKEN_UNDER_TEST))
                 )
                 .then(
-                        validateNFTOwnership("MyNftToken", "Serial1", "PartitionB"),
-                        validateNFTNotOwned("MyNftToken", "Serial1", "PartitionA")
+                        getAccountBalance(ALICE)
+                                .hasTokenBalance(partition(RED_PARTITION), 0)
+                                .hasTokenBalance(partition(BLUE_PARTITION), FUNGIBLE_INITIAL_BALANCE),
+                        // The total supplies of the token types reflect the serial number re-assignments
+                        getTokenInfo(TOKEN_UNDER_TEST).hasTotalSupply(NON_FUNGIBLE_INITIAL_SUPPLY - 1),
+                        getTokenInfo(partition(RED_PARTITION)).hasTotalSupply(0),
+                        getTokenInfo(partition(BLUE_PARTITION)).hasTotalSupply(1)
                 );
     }
 
@@ -192,26 +220,35 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec pauseTokenTransfersIncludingPartitions() {
         return defaultHapiSpec("PauseTokenTransfersIncludingPartitions")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("PauseKey"),
-                        tokenCreatedWithPartitionSupport("MyToken")
-                                .adminKey("AdminKey")
-                                .pauseKey("PauseKey")
-                )
+                        nonFungibleTokenWithFeatures(PARTITIONING, PAUSING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Given Alice a serial number of both the parent and each partition
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L))))
                 .when(
-                        pauseToken("MyToken").signedBy("PauseKey")
+                        tokenPause(TOKEN_UNDER_TEST)
                 )
                 .then(
-                        attemptingToTransferToken("MyToken", "PartitionA").hasKnownStatus(TOKEN_IS_PAUSED),
-                        attemptingToTransferToken("MyToken", "PartitionB").hasKnownStatus(TOKEN_IS_PAUSED)
+                        // Both RED and BLUE partitions are paused, as well as the parent
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(TOKEN_IS_PAUSED),
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(TOKEN_IS_PAUSED),
+                        cryptoTransfer(movingUnique(partition(BLUE_PARTITION), 3L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(TOKEN_IS_PAUSED)
                 );
     }
 
     /**
      * <b>Partitions-7</b>
      * <p>As a `token-administrator`, I want to `freeze` all token transfers for my `token-definition`
-     * on a particular account, including for all partitions of the `token-definition`,
-     * by freezing the `token-definition` itself.
+     * on a particular account, including for all partitions of the `token-definition`, by freezing the
+     * `token-definition` itself.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -219,34 +256,34 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec freezeTokenTransfersForAccountIncludingPartitions() {
         return defaultHapiSpec("FreezeTokenTransfersForAccountIncludingPartitions")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("FreezeKey"),
-                        cryptoCreate("TargetAccount"),
-                        tokenCreate("MyToken")
-                                .adminKey("AdminKey")
-                                .freezeKey("FreezeKey")
-                                .freezeDefault(false)
-                )
+                        nonFungibleTokenWithFeatures(PARTITIONING, FREEZING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Given Alice a serial number of both the parent and each partition
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L))))
                 .when(
-                        cryptoTransfer(
-                                movingUniqueWithPartition("MyToken", "PartitionA").between("Treasury", "TargetAccount")
-                        ).hasKnownStatus(SUCCESS),
-                        freezeToken("MyToken", "TargetAccount").signedBy("FreezeKey")
+                        tokenFreeze(TOKEN_UNDER_TEST, ALICE)
                 )
                 .then(
-                        cryptoTransfer(
-                                movingUniqueWithPartition("MyToken", "PartitionA").between("TargetAccount", "Treasury")
-                        ).hasKnownStatus(TOKEN_ACCOUNT_FROZEN),
-                        cryptoTransfer(
-                                movingUniqueWithPartition("MyToken", "PartitionB").between("TargetAccount", "Treasury")
-                        ).hasKnownStatus(TOKEN_ACCOUNT_FROZEN)
+                        // Both RED and BLUE partitions are frozen, as well as the parent
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        cryptoTransfer(movingUnique(partition(BLUE_PARTITION), 3L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
                 );
     }
 
     /**
      * <b>Partitions-8</b>
-     * <p>As a `token-administrator`, I want to require `kyc` to be set on the account for the association with my `token-definition`
-     * to enable transfers of any tokens in partitions of the `token-definition`.
+     * <p>As a `token-administrator`, I want to require `kyc` to be set on the account for the association with my
+     * `token-definition` to enable transfers of any tokens in partitions of the `token-definition`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -254,35 +291,34 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec requireKycForTokenTransfersIncludingPartitions() {
         return defaultHapiSpec("RequireKycForTokenTransfersIncludingPartitions")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("KycKey"),
-                        cryptoCreate("AccountA"),
-                        cryptoCreate("AccountB"),
-                        tokenCreate("PartitionedToken")
-                                .adminKey("AdminKey")
-                                .kycKey("KycKey")
-                                .initialSupply(0)
-                                .withPartition("Partition1"),
-                        tokenAssociate("AccountA", "PartitionedToken"),
-                        tokenAssociate("AccountB", "PartitionedToken")
-                )
-                .when(
-                        cryptoTransfer(
-                                moving(100, "PartitionedToken").between("AccountA", "AccountB")
-                        ).hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                        nonFungibleTokenWithFeatures(PARTITIONING, KYC_MANAGEMENT)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Auto-grant KYC to ALICE here
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L)))
+                ).when(
+                        revokeTokenKyc(TOKEN_UNDER_TEST, ALICE)
                 )
                 .then(
-                        grantKyc("PartitionedToken", "AccountA"),
-                        grantKyc("PartitionedToken", "AccountB"),
-                        cryptoTransfer(
-                                moving(100, "PartitionedToken").between("AccountA", "AccountB")
-                        ).signedBy("KycKey").hasKnownStatus(SUCCESS)
+                        // All transfers, including the RED and BLUE partitions, fail without KYC
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                        cryptoTransfer(movingUnique(partition(BLUE_PARTITION), 3L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN)
                 );
     }
 
     /**
      * <b>Partitions-9</b>
-     * <p>As a `token-administrator`, I want to `pause` all token transfers for a specific `partition-definition` of my `token-definition`.
+     * <p>As a `token-administrator`, I want to `pause` all token transfers for a specific `partition-definition` of
+     * my `token-definition`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -290,33 +326,35 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec pauseTransfersForSpecificPartition() {
         return defaultHapiSpec("PauseTransfersForSpecificPartition")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("PauseKey"),
-                        cryptoCreate("tokenTreasury"),
-                        tokenCreate("PartitionedToken")
-                                .adminKey("AdminKey")
-                                .pauseKey("PauseKey")
-                                .treasury("tokenTreasury")
-                                .initialSupply(1000)
-                                .withPartition("GoldPartition")
-                )
+                        nonFungibleTokenWithFeatures(PARTITIONING, PAUSING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Given Alice a serial number of both the parent and each partition
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L))))
                 .when(
-                        tokenPause("PartitionedToken").partition("GoldPartition")
+                        // Pause the RED partition
+                        tokenPause(partition(RED_PARTITION))
                 )
                 .then(
-                        cryptoTransfer(
-                                moving(100, "PartitionedToken").between("tokenTreasury", "GoldPartition")
+                        // Parent token is not paused
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))),
+                        // Only the RED partition is paused
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
                         ).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUnpause("PartitionedToken").partition("GoldPartition"),
-                        cryptoTransfer(
-                                moving(100, "PartitionedToken").between("tokenTreasury", "GoldPartition")
-                        ).hasKnownStatus(SUCCESS)
+                        // The BLUE partition is not paused
+                        cryptoTransfer(movingUnique(partition(BLUE_PARTITION), 3L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                 );
     }
 
     /**
      * <b>Partitions-10</b>
-     * <p>As a `token-administrator`, I want to `freeze` all token transfers for a specific `partition-definition` of my `token-definition` on a particular account.
+     * <p>As a `token-administrator`, I want to `freeze` all token transfers for a specific `partition-definition`
+     * of my `token-definition` on a particular account.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -324,38 +362,35 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec freezeTransfersForSpecificPartitionOnAccount() {
         return defaultHapiSpec("FreezeTransfersForSpecificPartitionOnAccount")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("FreezeKey"),
-                        cryptoCreate("tokenTreasury").balance(0L),
-                        cryptoCreate("userAccount").balance(0L),
-                        tokenCreate("PartitionedToken")
-                                .adminKey("AdminKey")
-                                .freezeKey("FreezeKey")
-                                .treasury("tokenTreasury")
-                                .initialSupply(1000)
-                                .withPartition("SilverPartition"),
-                        tokenAssociate("userAccount", "PartitionedToken"),
-                        cryptoTransfer(
-                                moving(100, "PartitionedToken").between("tokenTreasury", "userAccount")
-                        )
-                )
+                        nonFungibleTokenWithFeatures(PARTITIONING, FREEZING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Given Alice a serial number of both the parent and each partition
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L))))
                 .when(
-                        tokenFreeze("PartitionedToken").partition("SilverPartition").forAccount("userAccount")
+                        // Freeze Alice for the RED partition
+                        tokenFreeze(partition(RED_PARTITION), ALICE)
                 )
                 .then(
-                        cryptoTransfer(
-                                moving(50, "PartitionedToken").between("userAccount", "SilverPartition")
+                        // Alice not frozen out of parent token
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))),
+                        // Alice frozen out of the RED partition
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
                         ).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        tokenUnfreeze("PartitionedToken").partition("SilverPartition").forAccount("userAccount"),
-                        cryptoTransfer(
-                                moving(50, "PartitionedToken").between("userAccount", "SilverPartition")
-                        ).hasKnownStatus(SUCCESS)
+                        // Alice not frozen out of the blue partition
+                        cryptoTransfer(movingUnique(partition(BLUE_PARTITION), 3L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                 );
     }
 
     /**
      * <b>Partitions-11</b>
-     * <p>As a `partition-administrator`, I want to require a kyc flag to be set on the partition of an account to enable transfers of tokens in that partition.
+     * <p>As a `partition-administrator`, I want to require a kyc flag to be set on the partition of an account to
+     * enable transfers of tokens in that partition.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -363,34 +398,18 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec requireKycForPartitionTransfers() {
         return defaultHapiSpec("RequireKycForPartitionTransfers")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("KycKey"),
-                        cryptoCreate("tokenTreasury").balance(0L),
-                        cryptoCreate("userAccount").balance(0L),
-                        tokenCreate("KYCPartitionedToken")
-                                .adminKey("AdminKey")
-                                .kycKey("KycKey")
-                                .treasury("tokenTreasury")
-                                .initialSupply(1000)
-                                .withPartition("GoldPartition"),
-                        tokenAssociate("userAccount", "KYCPartitionedToken")
+                        cryptoCreate(ALICE),
+                        nonFungibleTokenWithFeatures(PARTITIONING, KYC_MANAGEMENT)
+                                .withPartition(RED_PARTITION, p -> p.assignedSerialNos(1L))
                 )
                 .when(
-                        cryptoTransfer(
-                                moving(100, "KYCPartitionedToken").between("tokenTreasury", "userAccount").via("initialTransfer")
-                        )
+                        // Explicit associate Alice without KYC
+                        tokenAssociate(ALICE, partition(RED_PARTITION))
                 )
                 .then(
-                        // Attempt to transfer tokens without KYC should fail
-                        cryptoTransfer(
-                                moving(50, "KYCPartitionedToken").between("userAccount", "GoldPartition")
-                        ).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        // Grant KYC to the user for this token
-                        tokenGrantKyc("KYCPartitionedToken").partition("GoldPartition").to("userAccount"),
-                        // Now that KYC is granted, transfer should succeed
-                        cryptoTransfer(
-                                moving(50, "KYCPartitionedToken").between("userAccount", "GoldPartition")
-                        )
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
+                                .between(treasuryOf(TOKEN_UNDER_TEST), ALICE)
+                        ).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN)
                 );
     }
 
@@ -399,31 +418,31 @@ public class PartitionsSuite extends HapiSuite {
      * <p>As a `token-administrator`, I want to be able to create a new `token-definition`
      * with a fixed supply and a `partition-key`.
      *
+     * <p><b>TODO</b> - confirm this is how total supply should be reported by the token info query
+     * for a partitioned token.
+     *
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
     private HapiSpec createFixedSupplyTokenWithPartitionKey() {
         return defaultHapiSpec("CreateFixedSupplyTokenWithPartitionKey")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("PartitionKey"),
-                        cryptoCreate("tokenTreasury").balance(0L)
+                        // Without a supply key, this will be a fixed supply token
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .initialSupply(6L)
+                                .withPartition(RED_PARTITION, p -> p.initialSupply(1L))
+                                .withPartition(BLUE_PARTITION, p -> p.initialSupply(2L))
+                                .withPartition(GREEN_PARTITION, p -> p.initialSupply(3L))
                 )
-                .when(
-                        tokenCreate("FixedPartitionedToken")
-                                .adminKey("AdminKey")
-                                .partitionKey("PartitionKey")
-                                .treasury("tokenTreasury")
-                                .initialSupply(1000)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .maxSupply(1000)  // This will actually make it a fixed supply
-                                .withPartition("PlatinumPartition")
-                )
+                .when( )
                 .then(
-                        // The partition "PlatinumPartition" should exist within "FixedPartitionedToken"
-                        getTokenInfo("FixedPartitionedToken").logged(),
-                        // Attempt to create another partition should fail since it's fixed supply
-                        attemptToCreatePartition("FixedPartitionedToken", "NewPartition").hasKnownStatus(TOKEN_IS_IMMUTABLE)
+                        // Even though the entire supply is contained in the partition definitions,
+                        // the parent token still has the initial supply (while each partition has
+                        // just the supply allocated to it?)
+                        getTokenInfo(TOKEN_UNDER_TEST).hasTotalSupply(6L),
+                        getTokenInfo(partition(RED_PARTITION)).hasTotalSupply(1L),
+                        getTokenInfo(partition(BLUE_PARTITION)).hasTotalSupply(2L),
+                        getTokenInfo(partition(GREEN_PARTITION)).hasTotalSupply(3L)
                 );
     }
 
@@ -432,30 +451,37 @@ public class PartitionsSuite extends HapiSuite {
      * <p>As a node operator, I do not want to honor deletion of a `token-definition`
      * that has any `partition-definition` that is not also already deleted.
      *
+     * <p><b>IMPLEMENTATION DETAIL:</b> This will likely require a new {@link com.hedera.hapi.node.state.token.Token}
+     * field to track the number of un-deleted child partitions of a parent token type. Otherwise we would need to
+     * iterate over all partitions of a parent token type to confirm all are deleted.
+     *
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
     private HapiSpec notHonorDeletionOfTokenWithExistingPartitions() {
         return defaultHapiSpec("NotHonorDeletionOfTokenWithExistingPartitions")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        tokenCreate("TokenWithPartition")
-                                .adminKey("AdminKey")
-                                .withPartition("FirstPartition"),
-                        tokenCreate("TokenWithoutPartition")
-                                .adminKey("AdminKey")
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .initialSupply(6L)
+                                .withPartition(RED_PARTITION, p -> p.initialSupply(1L))
+                                .withPartition(BLUE_PARTITION, p -> p.initialSupply(2L))
+                                .withPartition(GREEN_PARTITION, p -> p.initialSupply(3L))
                 )
                 .when(
                         // Attempt to delete "TokenWithPartition" which has a partition should fail
-                        tokenDelete("TokenWithPartition").hasKnownStatus(PARTITIONED_TOKEN_CANNOT_BE_DELETED),
-                        // Removing partition first before deleting the token
-                        removePartition("TokenWithPartition", "FirstPartition")
+                        tokenDelete(TOKEN_UNDER_TEST)
+                                // FUTURE - use a partition-specific status code
+                                .hasKnownStatus(TOKEN_WAS_DELETED),
+                        // Even deleting both RED and BLUE partitions, still cannot delete the parent
+                        tokenDelete(partition(RED_PARTITION)),
+                        tokenDelete(partition(BLUE_PARTITION)),
+                        tokenDelete(TOKEN_UNDER_TEST)
+                                // FUTURE - use a partition-specific status code
+                                .hasKnownStatus(TOKEN_WAS_DELETED)
                 )
                 .then(
-                        // After removal of partition, token deletion should succeed
-                        tokenDelete("TokenWithPartition"),
-                        // Deleting token without any partitions should succeed
-                        tokenDelete("TokenWithoutPartition")
+                        tokenDelete(partition(GREEN_PARTITION)),
+                        tokenDelete(TOKEN_UNDER_TEST)
                 );
     }
 
@@ -469,20 +495,20 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec mintToSpecificPartitionOfTreasury() {
         return defaultHapiSpec("MintToSpecificPartitionOfTreasury")
                 .given(
-                        newKeyNamed("SupplyKey"),
-                        tokenCreate("TokenWithPartitions")
-                                .initialSupply(0)
-                                .supplyKey("SupplyKey")
-                                .withPartition("TreasuryPartition")
+                        fungibleTokenWithFeatures(PARTITIONING, SUPPLY_MANAGEMENT)
+                                .initialSupply(99L)
+                                .withPartition(RED_PARTITION, p -> p.initialSupply(0))
+                                .withPartition(BLUE_PARTITION, p -> p.initialSupply(0))
                 )
                 .when(
-                        // Minting tokens specifically to the "TreasuryPartition"
-                        mintToken("TokenWithPartitions", 100)
-                                .toPartition("TreasuryPartition")
+                        // Minting tokens specifically to the RED partition
+                        mintToken(partition(RED_PARTITION), 1L)
                 )
                 .then(
                         // Validate that the minted tokens have been allocated to the specified partition
-                        getTokenInfo("TokenWithPartitions").hasPartitionSupply("TreasuryPartition", 100)
+                        getTokenInfo(TOKEN_UNDER_TEST).hasTotalSupply(100L),
+                        getTokenInfo(partition(RED_PARTITION)).hasTotalSupply(1L),
+                        getTokenInfo(partition(BLUE_PARTITION)).hasTotalSupply(0L)
                 );
     }
 
@@ -496,20 +522,20 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec burnFromSpecificPartitionOfTreasury() {
         return defaultHapiSpec("BurnFromSpecificPartitionOfTreasury")
                 .given(
-                        newKeyNamed("SupplyKey"),
-                        tokenCreate("TokenWithPartitions")
-                                .initialSupply(1000)
-                                .supplyKey("SupplyKey")
-                                .withPartition("TreasuryPartition")
+                        fungibleTokenWithFeatures(PARTITIONING, SUPPLY_MANAGEMENT)
+                                .initialSupply(99L)
+                                .withPartition(RED_PARTITION, p -> p.initialSupply(1))
+                                .withPartition(BLUE_PARTITION, p -> p.initialSupply(1))
                 )
                 .when(
-                        // Burning tokens specifically from the "TreasuryPartition"
-                        burnToken("TokenWithPartitions", 100)
-                                .fromPartition("TreasuryPartition")
+                        // Burning tokens specifically from the RED partition
+                        burnToken(partition(RED_PARTITION), 1L)
                 )
                 .then(
-                        // Validate that the tokens have been burnt from the specified partition
-                        getTokenInfo("TokenWithPartitions").hasPartitionSupply("TreasuryPartition", 900)
+                        // Validate that the burned tokens have been deducted from the specified partition
+                        getTokenInfo(TOKEN_UNDER_TEST).hasTotalSupply(100L),
+                        getTokenInfo(partition(RED_PARTITION)).hasTotalSupply(0L),
+                        getTokenInfo(partition(BLUE_PARTITION)).hasTotalSupply(1L)
                 );
     }
 
@@ -523,25 +549,20 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec wipeFromSpecificPartitionInUserAccount() {
         return defaultHapiSpec("WipeFromSpecificPartitionInUserAccount")
                 .given(
-                        newKeyNamed("WipeKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("PartitionedToken")
-                                .initialSupply(1000)
-                                .wipeKey("WipeKey")
-                                .withPartition("UserPartition"),
-                        tokenAssociate("user", "PartitionedToken"),
-                        mintToken("PartitionedToken", 100)
-                                .toPartition("UserPartition"),
-                        tokenBalance("PartitionedToken").forAccount("user").hasTokenBalance(100)
+                        nonFungibleTokenWithFeatures(PARTITIONING, WIPING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Given Alice a serial number of both the parent and each partition
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L)))
                 )
                 .when(
-                        // Wiping tokens specifically from the "UserPartition" of user's account
-                        wipeTokenAccount("PartitionedToken", "user", 50)
-                                .fromPartition("UserPartition")
+                        wipeTokenAccount(partition(RED_PARTITION), ALICE, List.of(2L))
                 )
                 .then(
                         // Validate that the tokens have been wiped from the specified partition
-                        tokenBalance("PartitionedToken").forAccount("user").hasTokenBalance(50)
+                        getTokenNftInfo(partition(RED_PARTITION), 2L).hasCostAnswerPrecheck(INVALID_NFT_ID)
                 );
     }
 
@@ -556,40 +577,32 @@ public class PartitionsSuite extends HapiSuite {
     private HapiSpec smartContractAdministersPartitions() {
         return defaultHapiSpec("SmartContractAdministersPartitions")
                 .given(
-                        // Create a smart contract that is the token-administrator
-                        fileCreate("PartitionSmartContract"),
-                        contractCreate("PartitionSmartContract")
-                                .adminKey(THRESHOLD),
-                        newKeyNamed("AdminKey"),
-                        cryptoCreate("tokenAdmin").key("AdminKey"),
-                        withOpContext((spec, opLog) -> {
-                            var admin = spec.registry().getAccountID("tokenAdmin");
-                            var contract = spec.registry().getContractID("PartitionSmartContract");
-                            spec.registry().saveKey("adminKey", Key.newBuilder().setContractID(contract).build());
-                        })
+                        fungibleTokenWithFeatures(PARTITIONING, ADMIN_CONTROL)
+                                .managedByContract()
                 )
                 .when(
                         // The smart contract creates a token with a partition
-                        tokenCreate("PartitionedToken")
-                                .adminKey("adminKey")
-                                .initialSupply(0)
-                                .withPartition("InitialPartition")
+                        contractCall(managementContractOf(TOKEN_UNDER_TEST),
+                                CREATE_PARTITION_FUNCTION.getName(), RED_PARTITION, "NEVER RED"),
+                        // The smart contract updates the token's partition details
+                        contractCall(managementContractOf(TOKEN_UNDER_TEST),
+                                UPDATE_PARTITION_FUNCTION.getName(),
+                                // Don't update the name
+                                false, "",
+                                // Do update the memo
+                                true, "ALWAYS BLUE")
                 )
                 .then(
-                        // The smart contract updates the token's partition details
-                        tokenUpdate("PartitionedToken")
-                                .partition("InitialPartition", "UpdatedPartition")
-                                .via("partitionUpdateTxn"),
-
-                        // Verifying partition details were updated
-                        getTxnRecord("partitionUpdateTxn").hasPriority(recordWith().partition("UpdatedPartition")),
-
-                        // The smart contract deletes a partition from the token
-                        tokenDelete("PartitionedToken").partition("UpdatedPartition")
-                                .via("partitionDeleteTxn"),
-
-                        // Verifying partition is deleted
-                        getTxnRecord("partitionDeleteTxn").hasPriority(recordWith().status(SUCCESS))
+                        // The contract deletes the partition
+                        withHeadlongAddressesFor(List.of(partition(RED_PARTITION)), addresses -> List.of(
+                                contractCall(
+                                        managementContractOf(TOKEN_UNDER_TEST),
+                                        DELETE_PARTITION_FUNCTION.getName(),
+                                        addresses.get(partition(RED_PARTITION))))),
+                        getTokenInfo(partition(RED_PARTITION))
+                                .isDeleted()
+                                .hasName(RED_PARTITION)
+                                .hasEntityMemo("ALWAYS BLUE")
                 );
     }
 

@@ -2,11 +2,7 @@ package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,8 +23,7 @@ import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleToken
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.managementContractOf;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionKeyOf;
-import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionManagementKeyOf;
-import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionWithDefaultTokenPrefixIfMissing;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionMoveKeyOf;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTER_PARTITION_MANAGEMENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -165,7 +160,7 @@ public class InterPartitionMovementSuite extends HapiSuite {
                         // if we have her signature
                         moveNftsBetweenDifferentUserPartitions(
                                 ALICE, RED_PARTITION, BOB, BLUE_PARTITION, 1L, 2L)
-                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST))
+                                .signedByPayerAnd(partitionMoveKeyOf(TOKEN_UNDER_TEST))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         moveNftsBetweenDifferentUserPartitions(
                                 ALICE, RED_PARTITION, BOB, BLUE_PARTITION, 1L, 2L),
@@ -173,15 +168,15 @@ public class InterPartitionMovementSuite extends HapiSuite {
                         // NFTs in it, as long as BOTH Alice and Bob sign (note Bob's receiver sig requirement)
                         moveNftsBetweenDifferentUserPartitions(
                                 ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, 3L)
-                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST))
+                                .signedByPayerAnd(partitionMoveKeyOf(TOKEN_UNDER_TEST))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         moveNftsBetweenDifferentUserPartitions(
                                 ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, 3L)
-                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST), ALICE)
+                                .signedByPayerAnd(partitionMoveKeyOf(TOKEN_UNDER_TEST), ALICE)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         moveNftsBetweenDifferentUserPartitions(
                                 ALICE, BLUE_PARTITION, BOB, BLUE_PARTITION, 3L)
-                                .signedByPayerAnd(partitionManagementKeyOf(TOKEN_UNDER_TEST), ALICE, BOB));
+                                .signedByPayerAnd(partitionMoveKeyOf(TOKEN_UNDER_TEST), ALICE, BOB));
     }
 
     /**

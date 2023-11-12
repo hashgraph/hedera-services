@@ -42,7 +42,7 @@ public class TokenAttributeNames {
         return tokenName + "-SUPPLY-KEY";
     }
 
-    public static String partitionManagementKeyOf(@NonNull final String tokenName) {
+    public static String partitionMoveKeyOf(@NonNull final String tokenName) {
         return tokenName + "-PARTITION-MANAGEMENT-KEY";
     }
 
@@ -50,6 +50,9 @@ public class TokenAttributeNames {
         return tokenName + "-FEE-SCHEDULE-KEY";
     }
 
+    public static String feeCollectorFor(@NonNull final String tokenName) {
+        return tokenName + "-FEE_COLLECTOR";
+    }
     public static String adminKeyOf(@NonNull final String tokenName) {
         return tokenName + "-ADMIN-KEY";
     }

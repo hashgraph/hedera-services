@@ -2,11 +2,39 @@ package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdExceeds;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.treasuryOf;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * A suite for user stories Association-1 through Association-7 from HIP-796.
@@ -38,31 +66,19 @@ public class PartitionAssociationsSuite extends HapiSuite {
     private HapiSpec associateWithPartitionedTokenAutomatically() {
         return defaultHapiSpec("AssociateWithPartitionedTokenAutomatically")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("PartitionedToken")
-                                .adminKey("TokenAdminKey")
-                                .withPartition("GoldPartition")
-                                .withPartition("SilverPartition")
-                                .initialSupply(0)
+                        nonFungibleTokenWithFeatures(PARTITIONING)
+                                .withPartition(BLUE_PARTITION, p -> p.assignedSerialNos(2L))
                 )
                 .when(
-                        // The user associates with the 'PartitionedToken' token-definition
-                        tokenAssociate("user", "PartitionedToken"),
-                        // Tokens are issued to a specific partition
-                        mintToken("PartitionedToken", List.of(Metadata.newBuilder().setMemo("GoldPartition").build())),
-                        // The tokens for 'GoldPartition' are transferred to the user
+                        tokenAssociate(ALICE, TOKEN_UNDER_TEST),
+                        // We transfer a serial no of the BLUE partition to Alice, who only the parent associated
                         cryptoTransfer(
-                                movingUnique(1)
-                                        .withMemo("GoldPartition")
-                                        .between("treasury", "user")
-                        )
+                                movingUnique(partition(BLUE_PARTITION), 2L )
+                                        .between(treasuryOf(TOKEN_UNDER_TEST), ALICE))
                 )
                 .then(
-                        // Verify the user is now associated with the 'GoldPartition' partition-definition automatically
-                        getAccountInfo("user").hasAssociationWith("PartitionedToken", "GoldPartition"),
-                        // Verify the user's balance for the 'GoldPartition' reflects the transferred amount
-                        getAccountBalance("user").hasTokenBalance("PartitionedToken", "GoldPartition", 1)
+                        // Alice now owns SN#2, despite not being explicitly associated with the BLUE partition
+                        getTokenNftInfo(partition(BLUE_PARTITION), 2L).hasAccountID(ALICE)
                 );
     }
 
@@ -78,22 +94,25 @@ public class PartitionAssociationsSuite extends HapiSuite {
     private HapiSpec associateWithPartitionAndToken() {
         return defaultHapiSpec("AssociateWithPartitionAndToken")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("PartitionedToken")
-                                .adminKey("TokenAdminKey")
-                                .initialSupply(0)
-                                .withPartition("PlatinumPartition")
+                        cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                        fungibleTokenWithFeatures(PARTITIONING).withPartitions(RED_PARTITION)
                 )
                 .when(
-                        // User associates with the specific 'PlatinumPartition' of the 'PartitionedToken'
-                        tokenAssociate("user", "PartitionedToken", "PlatinumPartition")
+                        // Alice associates with a partition of the token
+                        tokenAssociate(ALICE, partition(RED_PARTITION)),
+                        // And receives units of the parent token type from its treasury
+                        cryptoTransfer(moving(1L, TOKEN_UNDER_TEST)
+                                .between(treasuryOf(TOKEN_UNDER_TEST), ALICE))
+                                .payingWith(treasuryOf(TOKEN_UNDER_TEST))
+                                .blankMemo()
+                                .via("parentTokenTransfer")
                 )
                 .then(
-                        // Verify the user is associated with the 'PlatinumPartition' partition-definition
-                        getAccountInfo("user").hasAssociationWith("PartitionedToken", "PlatinumPartition"),
-                        // Verify the user is also associated with the parent 'PartitionedToken' token-definition
-                        getAccountInfo("user").hasAssociationWith("PartitionedToken")
+                        // There is no extra cost for the association to the parent token type, so the charged
+                        // fee is within 10% of the canonical fungible transfer fee of 1/10 of a cent
+                        validateChargedUsd("parentTokenTransfer", 0.001, 10),
+                        // This should not use any auto-association slots
+                        getAccountInfo(ALICE).has(accountWith().maxAutoAssociations(0))
                 );
     }
 
@@ -108,29 +127,26 @@ public class PartitionAssociationsSuite extends HapiSuite {
     private HapiSpec autoAssociateSiblingPartitions() {
         return defaultHapiSpec("AutoAssociateSiblingPartitions")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("PartitionedToken")
-                                .adminKey("TokenAdminKey")
-                                .initialSupply(0)
-                                .withPartition("GoldPartition")
-                                .withPartition("SilverPartition")
-                                .withPartition("BronzePartition"),
-                        tokenAssociate("user", "GoldPartition")
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                .withPartitions(BLUE_PARTITION)
+                                // No parent association, just the RED partition
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
                 )
                 .when(
-                        // Transfer to user account for 'SilverPartition' which is a sibling partition to 'GoldPartition'
-                        cryptoTransfer(
-                                moving(100, "SilverPartition").between("treasury", "user")
-                        )
+                        // Alice receives units of the BLUE partition from its treasury
+                        cryptoTransfer(moving(1L, partition(BLUE_PARTITION))
+                                .between(treasuryOf(TOKEN_UNDER_TEST), ALICE))
+                                .payingWith(treasuryOf(TOKEN_UNDER_TEST))
+                                .blankMemo()
+                                .via("blueTokenTransfer")
                 )
                 .then(
-                        // Verify that the user is automatically associated with 'SilverPartition' after the transfer
-                        getAccountInfo("user").hasAssociationWith("SilverPartition"),
-                        // Verify no extra cost incurred for the auto-association
-                        validateFeeForLastOperation(),
-                        // Verify auto-association slot for 'user' has not been used
-                        getAccountInfo("user").autoAssociationSlotsRemaining(10) // Assuming the user had 10 slots initially
+                        // There is significant extra cost for the association to the BLUE partition, so the
+                        // charged fee exceeds even twice the fungible transfer fee of 1/10 of a cent
+                        validateChargedUsdExceeds("blueTokenTransfer", 0.002),
+                        // But this should not use any auto-association slots
+                        getAccountInfo(ALICE).has(accountWith().maxAutoAssociations(0))
                 );
     }
 
@@ -145,35 +161,33 @@ public class PartitionAssociationsSuite extends HapiSuite {
     private HapiSpec autoAssociateChildPartitions() {
         return defaultHapiSpec("AutoAssociateChildPartitions")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("MasterToken")
-                                .adminKey("TokenAdminKey")
-                                .initialSupply(0)
-                                // Assume that defining partitions here will make them "child" partitions of 'MasterToken'
-                                .withPartition("GoldPartition")
-                                .withPartition("SilverPartition"),
-                        tokenAssociate("user", "MasterToken")
+                        cryptoCreate(CIVILIAN_PAYER).balance(ONE_HUNDRED_HBARS),
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                // No partitions associated yet, just the parent token definition
+                                .withRelation(ALICE)
                 )
                 .when(
-                        // Transfer to user account for 'GoldPartition' which is a "child" partition to 'MasterToken'
-                        cryptoTransfer(
-                                moving(100, "GoldPartition").between("treasury", "user")
-                        )
+                        // Alice receives units of the RED partition from its treasury
+                        cryptoTransfer(moving(1L, partition(RED_PARTITION))
+                                .between(treasuryOf(TOKEN_UNDER_TEST), ALICE))
+                                .payingWith(CIVILIAN_PAYER)
+                                .blankMemo()
+                                .via("redTokenTransfer")
                 )
                 .then(
-                        // Verify that the user is automatically associated with 'GoldPartition' after the transfer
-                        getAccountInfo("user").hasAssociationWith("GoldPartition"),
-                        // Verify no extra cost incurred for the auto-association
-                        validateFeeForLastOperation(),
-                        // Verify auto-association slot for 'user' has not been used
-                        getAccountInfo("user").autoAssociationSlotsRemaining(10) // Assuming the user had 10 slots initially
+                        // There is significant extra cost for the association to the RED partition, so the
+                        // charged fee exceeds even twice the fungible transfer fee of 1/10 of a cent
+                        validateChargedUsdExceeds("redTokenTransfer", 0.002),
+                        // But this should not use any auto-association slots
+                        getAccountInfo(ALICE).has(accountWith().maxAutoAssociations(0))
                 );
     }
 
     /**
      * <b>Association-5</b>
-     * <p>As a user, if a partition in my account holds no tokens, I want to disassociate from that `partition-definition`.
+     * <p>As a user, if a partition in my account holds no tokens, I want to disassociate from that
+     * `partition-definition`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -181,34 +195,26 @@ public class PartitionAssociationsSuite extends HapiSuite {
     private HapiSpec disassociateEmptyPartition() {
         return defaultHapiSpec("DisassociateEmptyPartition")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("MasterToken")
-                                .adminKey("TokenAdminKey")
-                                .initialSupply(0)
-                                .withPartition("EmptyPartition"),
-                        tokenAssociate("user", "MasterToken"),
-                        // Assume the user has previously been associated with 'EmptyPartition' implicitly or explicitly
-                        cryptoTransfer(
-                                moving(100, "EmptyPartition").between("treasury", "user")
-                        ),
-                        cryptoTransfer(
-                                moving(100, "EmptyPartition").between("user", "treasury")
-                        )
-                )
-                .when(
-                        // User attempts to disassociate from 'EmptyPartition' which now holds no tokens
-                        tokenDisassociate("user", "EmptyPartition")
-                )
-                .then(
-                        // Verify that the user is no longer associated with 'EmptyPartition'
-                        getAccountInfo("user").hasNoAssociationWith("EmptyPartition")
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                // No parent association, just the RED partition
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).balance(0L)),
+                        nonFungibleTokenWithFeatures("NFT", PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                // No parent association, just the RED partition
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
+                ).when().then(
+                        // Ok to dissociate with no fungible units
+                        tokenDissociate(ALICE, partition(RED_PARTITION)),
+                        // Ok to dissociate with no serial nos
+                        tokenDissociate(ALICE, partition("NFT", RED_PARTITION))
                 );
     }
 
-o/**
+    /**
      * <b>Association-6</b>
-     * <p>As a user, if a partition in my account holds tokens, I do not want to permit disassociation from that `partition-definition`.
+     * <p>As a user, if a partition in my account holds tokens, I do not want to permit disassociation from
+     * that `partition-definition`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -216,26 +222,21 @@ o/**
     private HapiSpec doNotAllowDisassociateWithNonEmptyPartition() {
         return defaultHapiSpec("DoNotAllowDisassociateWithNonEmptyPartition")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("MasterToken")
-                                .adminKey("TokenAdminKey")
-                                .initialSupply(100)
-                                .withPartition("NonEmptyPartition"),
-                        tokenAssociate("user", "MasterToken"),
-                        cryptoTransfer(
-                                moving(100, "NonEmptyPartition").between("treasury", "user")
-                        )
-                        // User now holds tokens in 'NonEmptyPartition'
-                )
-                .when(
-                        // User attempts to disassociate from 'NonEmptyPartition' which holds tokens
-                        tokenDisassociate("user", "NonEmptyPartition")
-                                .hasKnownStatus(TOKEN_NOT_EMPTY) // Example status representing that a token partition is not empty
-                )
-                .then(
-                        // Verify that the user is still associated with 'NonEmptyPartition'
-                        getAccountInfo("user").hasAssociationWith("NonEmptyPartition")
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                // No parent association, just the RED partition
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).balance(1L)),
+                        nonFungibleTokenWithFeatures("NFT", PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                // No parent association, just the RED partition
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).ownedSerialNos(1L))
+                ).when().then(
+                        // Not ok to dissociate with fungible units
+                        tokenDissociate(ALICE, partition(RED_PARTITION))
+                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                        // Not ok to dissociate with serial nos
+                        tokenDissociate(ALICE, partition("NFT", RED_PARTITION))
+                                .hasKnownStatus(ACCOUNT_STILL_OWNS_NFTS)
                 );
     }
 
@@ -244,32 +245,32 @@ o/**
      * <p>As a node operator, I do not want to permit a user to disassociate from a `token-definition`
      * if the user account has any related partitions. The partitions must be removed first.
      *
+     * <p><b>IMPLEMENTATION DETAIL:</b> This will likely require a new {@link com.hedera.hapi.node.state.token.TokenRelation}
+     * field to track the number of child partitions of a parent token type that a particular account
+     * is associated to. Otherwise we would need to iterate over all partitions of a parent token type to
+     * determine if any are associated with the account being dissociated from the parent.
+     *
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
     private HapiSpec ensurePartitionsRemovedBeforeTokenDisassociation() {
         return defaultHapiSpec("EnsurePartitionsRemovedBeforeTokenDisassociation")
                 .given(
-                        newKeyNamed("TokenAdminKey"),
-                        cryptoCreate("user"),
-                        tokenCreate("MasterToken")
-                                .adminKey("TokenAdminKey")
-                                .initialSupply(100)
-                                .withPartition("PartitionA"),
-                        tokenAssociate("user", "MasterToken"),
-                        // User is associated with the 'MasterToken' that has 'PartitionA'
-                        cryptoTransfer(
-                                moving(10, "PartitionA").between("treasury", "user")
-                        )
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION)
+                                // Both a parent association and the RED partition association (though 0 balance)
+                                .withRelation(ALICE, r -> r.alsoForPartition(RED_PARTITION).balance(0L))
                 )
                 .when(
-                        // User attempts to disassociate from 'MasterToken' which has a non-empty partition
-                        tokenDisassociate("user", "MasterToken")
-                                .hasKnownStatus(TOKEN_HAS_NON_EMPTY_PARTITIONS) // Example status representing non-empty related partitions exist
+                        // Alice cannot dissociate from the parent token type since they are associated to RED
+                        tokenDissociate(ALICE, TOKEN_UNDER_TEST)
+                                // FUTURE - replace with a partition-specific status code
+                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                        // But now if Alice dissociates from RED, they can dissociate from the parent token type
+                        tokenDissociate(ALICE, partition(RED_PARTITION))
                 )
                 .then(
-                        // Verify that the user is still associated with 'MasterToken'
-                        getAccountInfo("user").hasAssociationWith("MasterToken")
+                        tokenDissociate(ALICE, TOKEN_UNDER_TEST)
                 );
     }
 

@@ -12,6 +12,11 @@ import com.hedera.services.bdd.suites.hip796.operations.TokenDefOperation;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import static com.hedera.services.bdd.suites.HapiSuite.FUNGIBLE_INITIAL_SUPPLY;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_UNDER_TEST;
 
@@ -68,19 +73,26 @@ public class Hip796Verbs {
     public static final Function SAME_USER_PARTITION_MOVE_UNITS_FUNCTION = new Function(
             "moveBetweenSameUserPartitions(address,address,address,int64)");
     public static final Function DIFFERENT_USER_PARTITION_MOVE_UNITS_FUNCTION = new Function(
-            "moveBetweenSameUserPartitions(address,address,address,address,int64)");
+            "moveBetweenDifferentUserPartitions(address,address,address,address,int64)");
+    public static final Function CREATE_PARTITION_FUNCTION = new Function(
+            "createPartition(address,string,string)");
+    public static final Function DELETE_PARTITION_FUNCTION = new Function(
+            "deletePartition(address)");
+    public static final Function UPDATE_PARTITION_FUNCTION = new Function(
+            "deletePartition(address,bool,string,bool,string)");
 
-    public static void main(String... args) {
-        System.out.println("Hello world");
-    }
 
     // --- Token definition factories ---
     public static TokenDefOperation nonFungibleTokenWithFeatures(@NonNull final TokenFeature... features) {
-        return fungibleTokenWithFeatures(TOKEN_UNDER_TEST, features);
+        return nonFungibleTokenWithFeatures(TOKEN_UNDER_TEST, features);
     }
 
     public static TokenDefOperation nonFungibleTokenWithFeatures(@NonNull final String token, @NonNull final TokenFeature... features) {
-        return tokenWithFeatures(token, TokenType.NON_FUNGIBLE_UNIQUE, features);
+        // It never makes sense to create a non-fungible token without a supply key
+        final var featuresWithSupplyKey = Stream.concat(Stream.of(TokenFeature.SUPPLY_MANAGEMENT), Arrays.stream(features))
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(TokenFeature.class)))
+                .toArray(new TokenFeature[0]);
+        return tokenWithFeatures(token, TokenType.NON_FUNGIBLE_UNIQUE, featuresWithSupplyKey);
     }
 
     public static TokenDefOperation fungibleTokenWithFeatures(@NonNull final TokenFeature... features) {
@@ -138,6 +150,10 @@ public class Hip796Verbs {
         throw new AssertionError("Not implemented");
     }
 
+    public static HapiSpecOperation addPartition(@NonNull final String partitionToken) {
+        throw new AssertionError("Not implemented");
+    }
+
     // --- Inter-partition management verbs ---
     public static HapiCryptoTransfer moveUnitsBetweenSameUserPartitions(
             @NonNull final String account,
@@ -169,21 +185,6 @@ public class Hip796Verbs {
             @NonNull final String fromPartitionToken,
             @NonNull final String toAccount,
             @NonNull final String toPartitionToken,
-            final long... serialNos) {
-        throw new AssertionError("Not implemented");
-    }
-
-    // --- Lock validation verbs ---
-    public static HapiCryptoTransfer assertInsufficientUnlockedBalanceToTransfer(
-            @NonNull final String account,
-            @NonNull final String token,
-            final long amount) {
-        throw new AssertionError("Not implemented");
-    }
-
-    public static HapiCryptoTransfer assertCannotTransferLocked(
-            @NonNull final String account,
-            @NonNull final String partitionToken,
             final long... serialNos) {
         throw new AssertionError("Not implemented");
     }

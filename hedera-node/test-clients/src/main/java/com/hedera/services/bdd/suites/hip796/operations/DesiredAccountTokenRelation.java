@@ -21,6 +21,7 @@ public class DesiredAccountTokenRelation {
     private boolean kycGranted;
     private boolean locked;
     private long balance;
+    private long autoRenewPeriod;
     private boolean receiverSigRequired = false;
     private boolean includingOnlyPartitionRelations = false;
     private List<Long> ownedSerialNos = new ArrayList<>();
@@ -30,6 +31,11 @@ public class DesiredAccountTokenRelation {
     public DesiredAccountTokenRelation managedBy(@NonNull final String contract) {
         requireNonNull(contract);
         managingContract = contract;
+        return this;
+    }
+
+    public DesiredAccountTokenRelation autoRenewPeriod(final long autoRenewPeriod) {
+        this.autoRenewPeriod = autoRenewPeriod;
         return this;
     }
 
@@ -83,6 +89,11 @@ public class DesiredAccountTokenRelation {
 
     public DesiredAccountTokenRelation kycGranted() {
         kycGranted = true;
+        return this;
+    }
+
+    public DesiredAccountTokenRelation kycRevoked() {
+        kycGranted = false;
         return this;
     }
 

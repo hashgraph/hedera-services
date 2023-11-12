@@ -65,7 +65,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -159,6 +161,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -167,6 +170,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
@@ -1117,7 +1121,7 @@ public class UtilVerbs {
                     ContractID nextID = spec.registry().getContractId(contractList + nextIndex);
                     Assertions.assertEquals(currentID.getShardNum(), nextID.getShardNum());
                     Assertions.assertEquals(currentID.getRealmNum(), nextID.getRealmNum());
-                    Assertions.assertTrue(currentID.getContractNum() < nextID.getContractNum());
+                    assertTrue(currentID.getContractNum() < nextID.getContractNum());
                     currentID = nextID;
                     nextIndex++;
                 }
@@ -1150,15 +1154,7 @@ public class UtilVerbs {
 
     public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
         return assertionsHold((spec, assertLog) -> {
-            var subOp = getTxnRecord(txn).logged();
-            allRunFor(spec, subOp);
-
-            var rcd = subOp.getResponseRecord();
-            double actualUsdCharged = (1.0 * rcd.getTransactionFee())
-                    / ONE_HBAR
-                    / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
-                    * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
-                    / 100;
+            final var actualUsdCharged = getChargedUsed(spec, txn);
             assertEquals(
                     expectedUsd,
                     actualUsdCharged,
@@ -1166,6 +1162,23 @@ public class UtilVerbs {
                     String.format(
                             "%s fee (%s) more than %.2f percent different than expected!",
                             CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+        });
+    }
+
+    public static CustomSpecAssert validateChargedUsdExceeds(String txn, double amount) {
+        return validateChargedUsd(txn, actualUsdCharged -> {
+            assertTrue(
+                    actualUsdCharged > amount,
+                    String.format(
+                            "%s fee (%s) is not greater than %s!",
+                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, amount));
+        });
+    }
+
+    public static CustomSpecAssert validateChargedUsd(String txn, DoubleConsumer validator) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsed(spec, txn);
+            validator.accept(actualUsdCharged);
         });
     }
 
@@ -1454,4 +1467,18 @@ public class UtilVerbs {
 
         return privateKeyByteArray;
     }
+
+    private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).logged();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        return (1.0 * rcd.getTransactionFee())
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
 }

@@ -291,6 +291,18 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
+    public TransactionRecordAsserts feeNotGreaterThanUsd(final double amount) {
+        this.<Long>registerTypedProvider(TRANSACTION_FEE, spec -> fee -> {
+            try {
+                assertTrue(fee > amount, "Fee should have exceeded " + amount + " but was " + fee);
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
+        return this;
+    }
+
     public TransactionRecordAsserts feeGreaterThan(final long amount) {
         this.<Long>registerTypedProvider(TRANSACTION_FEE, spec -> fee -> {
             try {

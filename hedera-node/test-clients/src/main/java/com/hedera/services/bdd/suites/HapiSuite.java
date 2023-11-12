@@ -53,7 +53,7 @@ public abstract class HapiSuite {
     protected static String RED_PARTITION = "RED_PARTITION";
     protected static String BLUE_PARTITION = "BLUE_PARTITION";
     protected static String GREEN_PARTITION = "GREEN_PARTITION";
-    protected static String BLACK_PARTITION = "BLACK_PARTITION";
+    protected static String CIVILIAN_PAYER = "CIVILIAN_PAYER";
     public static long FUNGIBLE_INITIAL_SUPPLY = 1_000_000_000L;
     public static long NON_FUNGIBLE_INITIAL_SUPPLY = 10L;
     public static long FUNGIBLE_INITIAL_BALANCE = FUNGIBLE_INITIAL_SUPPLY / 100;
