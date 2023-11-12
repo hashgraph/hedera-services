@@ -25,6 +25,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -611,46 +613,41 @@ public class PartitionsSuite extends HapiSuite {
      * <p>If freeze or pause is set at the `token-definition` level then it takes precedence over the
      * `partition-definition` level.
      *
+     * <p><b>TODO</b> - confirm the significance of this story is just that a token-level freeze or pause
+     * cannot be reversed by a partition-level unfreeze or unpause.
+     *
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
     private HapiSpec freezeOrPauseAtTokenLevelOverridesPartition() {
         return defaultHapiSpec("FreezeOrPauseAtTokenLevelOverridesPartition")
                 .given(
-                        newKeyNamed("AdminKey"),
-                        newKeyNamed("FreezeKey"),
-                        newKeyNamed("PauseKey"),
-                        cryptoCreate("tokenAdmin").key("AdminKey"),
-                        tokenCreate("MultiPartitionToken")
-                                .adminKey("AdminKey")
-                                .freezeKey("FreezeKey")
-                                .pauseKey("PauseKey")
-                                .initialSupply(0)
-                                .withPartition("FirstPartition")
-                                .withPartition("SecondPartition")
-                )
-                .when(
-                        // Token-level operations are performed
-                        tokenFreeze("MultiPartitionToken")
-                                .signedBy("FreezeKey", "tokenAdmin")
-                                .via("tokenFreezeTxn"),
-
-                        tokenPause("MultiPartitionToken")
-                                .signedBy("PauseKey", "tokenAdmin")
-                                .via("tokenPauseTxn")
+                        nonFungibleTokenWithFeatures(PARTITIONING, PAUSING, FREEZING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                // Given Alice a serial number of both the parent and each partition
+                                .withRelation(ALICE, r -> r
+                                        .ownedSerialNos(1L)
+                                        .alsoForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(2L))
+                                        .andPartition(BLUE_PARTITION, pr -> pr.ownedSerialNos(3L)))
+                ).when(
+                        // If the token definition is paused then an explicit unpause at the partition
+                        // level won't undo that
+                        tokenPause(TOKEN_UNDER_TEST),
+                        tokenUnpause(partition(RED_PARTITION)),
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(TOKEN_IS_PAUSED),
+                        // So now unpause the token definition for the analogous freeze test
+                        tokenPause(TOKEN_UNDER_TEST)
                 )
                 .then(
-                        // Checking that token-level freeze and pause are in effect
-                        getTxnRecord("tokenFreezeTxn").hasPriority(recordWith().status(SUCCESS)),
-                        getTxnRecord("tokenPauseTxn").hasPriority(recordWith().status(SUCCESS)),
-
-                        // Attempting partition-level transfers which should fail due to token-level freeze or pause
-                        cryptoTransfer(movingUnique(1).betweenPartitions("FirstPartition", "SecondPartition"))
-                                .hasKnownStatus(TOKEN_IS_FROZEN_OR_PAUSED),
-
-                        // Verifying partition-level operations cannot override token-level freeze or pause
-                        getAccountBalance("FirstPartition").hasTokenBalance("MultiPartitionToken", 0),
-                        getAccountBalance("SecondPartition").hasTokenBalance("MultiPartitionToken", 0)
+                        // If Alice is frozen out of the token definition then an explicit freeze at the partition
+                        // level won't undo that
+                        tokenFreeze(TOKEN_UNDER_TEST, ALICE),
+                        tokenUnfreeze(partition(RED_PARTITION), ALICE),
+                        cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
+                        ).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
                 );
     }
 
