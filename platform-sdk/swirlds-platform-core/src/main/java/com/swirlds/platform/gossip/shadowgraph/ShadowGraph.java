@@ -147,7 +147,7 @@ public class ShadowGraph implements Clearable {
             throw new IllegalArgumentException("events must not be null or empty");
         }
 
-        // Set this to the oldest generation in the event list, so we can determine if previousMarker events are
+        // Set this to the oldest generation in the event list, so we can determine if parent events are
         // expired,
         // therefore allowing the event to be inserted.
         oldestGeneration = events.get(0).getGeneration();
@@ -252,7 +252,7 @@ public class ShadowGraph implements Clearable {
      * <ol>
      *     <li>this method does not modify any data</li>
      *     <li>adding events to the the graph does not affect ancestors</li>
-     *     <li>checks for expired previousMarker events are atomic</li>
+     *     <li>checks for expired parent events are atomic</li>
      * </ol>
      * <p>Note: This method is always accessed after a call to a synchronized {@link ShadowGraph} method, like
      * {@link #getTips()}, which acts as a memory gate and causes the calling thread to read the latest values for all
@@ -458,7 +458,7 @@ public class ShadowGraph implements Clearable {
     private void expire(final ShadowEvent shadow) {
         // Remove the shadow from the shadow graph
         hashToShadowEvent.remove(shadow.getEventBaseHash());
-        // Remove references to previousMarker shadows so this event gets garbage collected
+        // Remove references to parent shadows so this event gets garbage collected
         shadow.disconnect();
         shadow.getEvent().clear();
         tips.remove(shadow);
@@ -602,7 +602,7 @@ public class ShadowGraph implements Clearable {
     }
 
     /**
-     * Attach a shadow of a Hashgraph event to this graph. Only a shadow for which a previousMarker
+     * Attach a shadow of a Hashgraph event to this graph. Only a shadow for which a parent
      * hash matches a hash in this@entry is inserted.
      *
      * @param e
@@ -637,10 +637,10 @@ public class ShadowGraph implements Clearable {
     }
 
     /*
-     * Given an Event, `e`, with previousMarker p, where p may be either self-previousMarker or other-previousMarker, the
-     * following test is applied to the previousMarker p:
+     * Given an Event, `e`, with parent p, where p may be either self-parent or other-parent, the
+     * following test is applied to the parent p:
      *
-     *   has previousMarker   known previousMarker   expired previousMarker      insertable
+     *   has parent   known parent   expired parent      insertable
      *   --------------------------------------------+------------
      *   false                                       |   true
      *   true         false          false           |   false
@@ -657,12 +657,12 @@ public class ShadowGraph implements Clearable {
      *                               true            |   false
      *   false        false          false           |   true
      *
-     * The previousMarker test above is applied to both of self-previousMarker and other-previousMarker. If the test
-     * is false for either previousMarker, then `e` is not insertable. Else, `e` is insertable.
+     * The parent test above is applied to both of self-parent and other-parent. If the test
+     * is false for either parent, then `e` is not insertable. Else, `e` is insertable.
      *
      * I.e., the expression
      *
-     *  test(`e`) && test(self-previousMarker of `e`) && test(other-previousMarker of `e`)
+     *  test(`e`) && test(self-parent of `e`) && test(other-parent of `e`)
      *
      * is evaluated, where "test" is as defined above for the event `e` and for its parents.
      * The result of that evaluation  determines whether `e` is insertable.
@@ -697,7 +697,7 @@ public class ShadowGraph implements Clearable {
         final boolean hasOP = e.getOtherParent() != null;
         final boolean hasSP = e.getSelfParent() != null;
 
-        // If e has an unexpired previousMarker that is not already referenced by the shadow graph, then we log an
+        // If e has an unexpired parent that is not already referenced by the shadow graph, then we log an
         // error. This
         // is only a sanity check, so there is no need to prevent insertion
         if (hasOP) {
@@ -705,7 +705,7 @@ public class ShadowGraph implements Clearable {
             final boolean expiredOP = expired(e.getOtherParent());
             if (!knownOP && !expiredOP) {
                 logger.error(
-                        EXCEPTION.getMarker(), "Missing non-expired other previousMarker for {}", e::toMediumString);
+                        EXCEPTION.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
             }
         }
 
@@ -714,7 +714,7 @@ public class ShadowGraph implements Clearable {
             final boolean expiredSP = expired(e.getSelfParent());
             if (!knownSP && !expiredSP) {
                 logger.error(
-                        EXCEPTION.getMarker(), "Missing non-expired self previousMarker for {}", e::toMediumString);
+                        EXCEPTION.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
             }
         }
 

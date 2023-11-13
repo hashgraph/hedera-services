@@ -21,9 +21,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A missing previousMarker event and the orphans that are missing it.
+ * A missing parent event and the orphans that are missing it.
  *
- * @param parent  the previousMarker event
- * @param orphans the orphans that are missing the previousMarker
+ * @param parent  the parent event
+ * @param orphans the orphans that are missing the parent
  */
 record ParentAndOrphans(@NonNull EventDescriptor parent, @NonNull List<OrphanedEvent> orphans) {}

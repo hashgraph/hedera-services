@@ -37,7 +37,7 @@ public final class StaticValidators {
      * Determine whether a given event has a valid creation time.
      *
      * @param event the event to be validated
-     * @return true iff the creation time of the event is strictly after the creation time of its self-previousMarker
+     * @return true iff the creation time of the event is strictly after the creation time of its self-parent
      */
     public static boolean isValidTimeCreated(final EventImpl event) {
         if (event.getSelfParent() != null) {
@@ -48,7 +48,7 @@ public final class StaticValidators {
                 logger.debug(
                         INVALID_EVENT_ERROR.getMarker(),
                         () -> String.format(
-                                "Event timeCreated ERROR event %s created:%s, previousMarker created:%s",
+                                "Event timeCreated ERROR event %s created:%s, parent created:%s",
                                 event.toMediumString(),
                                 event.getTimeCreated().toString(),
                                 selfParent.getTimeCreated().toString()));
@@ -60,10 +60,10 @@ public final class StaticValidators {
     }
 
     /**
-     * Creates a validator that checks if an event's previousMarker data is correct
+     * Creates a validator that checks if an event's parent data is correct
      *
      * @param networkSize the size of the network
-     * @return an event validator that checks if the previousMarker data is valid
+     * @return an event validator that checks if the parent data is valid
      */
     public static GossipEventValidator buildParentValidator(final int networkSize) {
         return event -> {
@@ -76,11 +76,11 @@ public final class StaticValidators {
             final boolean hasOpGen = hashedData.getOtherParentGen() >= GraphGenerations.FIRST_GENERATION;
 
             if (hasSpGen != hasSpHash) {
-                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid self-previousMarker: {} ", event::toString);
+                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid self-parent: {} ", event::toString);
                 return false;
             }
             if (hasOpGen != hasOpHash) {
-                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid other-previousMarker: {} ", event::toString);
+                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid other-parent: {} ", event::toString);
                 return false;
             }
             if (networkSize > 1 && hasOpHash && hasSpHash && spHash.equals(opHash)) {

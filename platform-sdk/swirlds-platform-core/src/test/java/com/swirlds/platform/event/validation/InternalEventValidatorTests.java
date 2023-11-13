@@ -142,16 +142,16 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("An event with previousMarker inconsistency is invalid")
+    @DisplayName("An event with parent inconsistency is invalid")
     void inconsistentParents() {
-        // has null self previousMarker hash, but valid self previousMarker generation
+        // has null self parent hash, but valid self parent generation
         final GossipEvent nullSelfParentHash = generateEvent(null, randomHash(random), 7, 5, 6, 1111);
-        // has valid self previousMarker hash, but invalid self previousMarker generation
+        // has valid self parent hash, but invalid self parent generation
         final GossipEvent invalidSelfParentGeneration =
                 generateEvent(randomHash(random), randomHash(random), -1, 7, 6, 1111);
-        // has null other previousMarker hash, but valid other previousMarker generation
+        // has null other parent hash, but valid other parent generation
         final GossipEvent nullOtherParentHash = generateEvent(randomHash(random), null, 7, 5, 6, 1111);
-        // has valid other previousMarker hash, but invalid other previousMarker generation
+        // has valid other parent hash, but invalid other parent generation
         final GossipEvent invalidOtherParentGeneration =
                 generateEvent(randomHash(random), randomHash(random), 6, 5, -1, 1111);
 
@@ -181,7 +181,7 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("An event must have a generation of the max previousMarker generation + 1")
+    @DisplayName("An event must have a generation of the max parent generation + 1")
     void invalidGeneration() {
         final GossipEvent highGeneration = generateEvent(randomHash(random), randomHash(random), 8, 5, 6, 1111);
         final GossipEvent lowGeneration = generateEvent(randomHash(random), randomHash(random), 4, 5, 6, 1111);

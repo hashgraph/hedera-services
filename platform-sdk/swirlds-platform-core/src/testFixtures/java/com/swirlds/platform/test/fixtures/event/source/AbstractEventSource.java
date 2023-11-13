@@ -84,14 +84,14 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     private long eventCount;
 
     /**
-     * A dynamic value generator that is used to determine the age of the other previousMarker
-     * (for when we ask another node for the other previousMarker)
+     * A dynamic value generator that is used to determine the age of the other parent
+     * (for when we ask another node for the other parent)
      */
     private DynamicValueGenerator<Integer> otherParentRequestIndex;
 
     /**
-     * A dynamic value generator that is used to determine the age of the other previousMarker
-     * (for when another node is requesting the other previousMarker from us)
+     * A dynamic value generator that is used to determine the age of the other parent
+     * (for when another node is requesting the other parent from us)
      */
     private DynamicValueGenerator<Integer> otherParentProviderIndex;
 
@@ -125,11 +125,11 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
 
         eventCount = 0;
 
-        // with high probability, request the most recent event as an other previousMarker to this node's events
+        // with high probability, request the most recent event as an other parent to this node's events
         otherParentRequestIndex = new DynamicValueGenerator<>(integerPowerDistribution(0.95));
 
-        // initialize to always provide the most recent previousMarker for nodes requesting an event as an other
-        // previousMarker
+        // initialize to always provide the most recent parent for nodes requesting an event as an other
+        // parent
         otherParentProviderIndex = new DynamicValueGenerator<>(staticDynamicValue(0));
 
         recentEventRetentionSize = 100;
@@ -218,12 +218,12 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
             final Random random, final long eventIndex, final EventSource<?> otherParent, final Instant timestamp) {
         final IndexedEvent event;
 
-        // The higher the index, the older the event. Use the oldest previousMarker between the provided and requested
+        // The higher the index, the older the event. Use the oldest parent between the provided and requested
         // value.
         final int otherParentIndex = Math.max(
-                // event index (event age) that this node wants to use as it's other previousMarker
+                // event index (event age) that this node wants to use as it's other parent
                 getRequestedOtherParentAge(random, eventIndex),
-                // event index (event age) that the other node wants to provide as an other previousMarker to this node
+                // event index (event age) that the other node wants to provide as an other parent to this node
                 otherParent.getProvidedOtherParentAge(random, eventIndex));
 
         final IndexedEvent otherParentEvent = otherParent.getRecentEvent(random, otherParentIndex);

@@ -252,11 +252,11 @@ public abstract class EventUtils {
     }
 
     /**
-     * Calculate the age of an event's other previousMarker. Helper method for gatherOtherParentAges.
+     * Calculate the age of an event's other parent. Helper method for gatherOtherParentAges.
      *
      * @param events a list of events
      * @param eventIndex the index of the event to be considered. The age of the event's other
-     *     previousMarker is returned.
+     *     parent is returned.
      */
     private static int calculateOtherParentAge(final List<IndexedEvent> events, final int eventIndex) {
 
@@ -282,11 +282,11 @@ public abstract class EventUtils {
     }
 
     /**
-     * For each event, check the "age" of the other previousMarker. Compile age data into a map.
+     * For each event, check the "age" of the other parent. Compile age data into a map.
      *
-     * <p>The age of an other previousMarker event is defined as follows: 0 = the other previousMarker is the most
-     * recent event from it's previousMarker node 1 = the other previousMarker is the second most recent event from
-     * its other previousMarker etc.
+     * <p>The age of an other parent event is defined as follows: 0 = the other parent is the most
+     * recent event from it's parent node 1 = the other parent is the second most recent event from
+     * its other parent etc.
      *
      * <p>This method will not work correctly in the presence of forking. Age may not be constant
      * after shuffling node order.

@@ -86,7 +86,7 @@ public class PictureMetadata {
         return (int) (getGapBetweenColumns() * MARGIN_FRACTION);
     }
 
-    /** find x position on the screen for event e2 which has an other-previousMarker of e1 (or null if none) */
+    /** find x position on the screen for event e2 which has an other-parent of e1 (or null if none) */
     public int xpos(final PlatformEvent e1, final PlatformEvent e2) {
         // the gap between left side of screen and leftmost column
         // is marginFraction times the gap between columns (and similarly for right side)

@@ -120,9 +120,9 @@ class UserEventParserTest {
         long creatorId = in.readLong();
         long selfParentGen = in.readLong();
         long otherParentGen = in.readLong();
-        // self previousMarker hash, classID was not written
+        // self parent hash, classID was not written
         Hash selfParentHash = RunningHashDeserialize(in, true);
-        // other previousMarker hash, classID was not written
+        // other parent hash, classID was not written
         Hash otherParentHash = RunningHashDeserialize(in, true);
 
         Instant timeCreated = in.readInstant();

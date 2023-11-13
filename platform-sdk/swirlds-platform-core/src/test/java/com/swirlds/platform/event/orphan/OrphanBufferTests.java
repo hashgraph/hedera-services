@@ -75,7 +75,7 @@ class OrphanBufferTests {
     private static final int NODE_ID_COUNT = 100;
 
     /**
-     * The number of most recently created events to consider when choosing an other previousMarker
+     * The number of most recently created events to consider when choosing an other parent
      */
     private static final int PARENT_SELECTION_WINDOW = 100;
 
@@ -88,7 +88,7 @@ class OrphanBufferTests {
      * Create a bootstrap event for a node. This is just a descriptor, and will never be received from intake.
      *
      * @param nodeId           the node to create the bootstrap event for
-     * @param parentCandidates the list of events to choose from when selecting an other previousMarker
+     * @param parentCandidates the list of events to choose from when selecting an other parent
      * @return the bootstrap event descriptor
      */
     private EventDescriptor createBootstrapEvent(
@@ -106,8 +106,8 @@ class OrphanBufferTests {
      * @param eventHash       the hash of the event
      * @param eventCreator    the creator of the event
      * @param eventGeneration the generation of the event
-     * @param selfParent      the self previousMarker of the event
-     * @param otherParent     the other previousMarker of the event
+     * @param selfParent      the self parent of the event
+     * @param otherParent     the other parent of the event
      * @return the gossip event
      */
     private static GossipEvent createGossipEvent(
@@ -142,7 +142,7 @@ class OrphanBufferTests {
     /**
      * Create a random event
      *
-     * @param parentCandidates the list of events to choose from when selecting an other previousMarker
+     * @param parentCandidates the list of events to choose from when selecting an other parent
      * @param tips             the most recent events from each node
      * @return the random event
      */
@@ -207,11 +207,11 @@ class OrphanBufferTests {
     }
 
     /**
-     * Choose an other previousMarker from the given list of candidates. This method chooses from the last PARENT_SELECTION_WINDOW
+     * Choose an other parent from the given list of candidates. This method chooses from the last PARENT_SELECTION_WINDOW
      * events in the list.
      *
      * @param parentCandidates the list of candidates
-     * @return the chosen other previousMarker
+     * @return the chosen other parent
      */
     private EventDescriptor chooseOtherParent(@NonNull final List<EventDescriptor> parentCandidates) {
         final int startIndex = Math.max(0, parentCandidates.size() - PARENT_SELECTION_WINDOW);

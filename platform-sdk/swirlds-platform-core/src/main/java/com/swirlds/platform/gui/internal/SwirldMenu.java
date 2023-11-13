@@ -79,8 +79,8 @@ public class SwirldMenu extends JPanel {
     // location of upper-left corner
     private int x = 0;
     private int y = 0;
-    // the window whose root layered pane will be my previousMarker
-    // (previousMarker is passed in and saved, and may be used someday)
+    // the window whose root layered pane will be my parent
+    // (parent is passed in and saved, and may be used someday)
     @SuppressWarnings("unused")
     private JFrame parent = null;
     // number of pixels high and wide
@@ -164,7 +164,7 @@ public class SwirldMenu extends JPanel {
 
     /**
      * Recursively search through all components in the container tree, and delete any SwirldsMenu objects
-     * found. The search starts at root. The root should be immediately inside the given previousMarker Container.
+     * found. The search starts at root. The root should be immediately inside the given parent Container.
      *
      * @param root
      * 		the root of the tree to search
@@ -181,7 +181,7 @@ public class SwirldMenu extends JPanel {
     }
 
     /**
-     * Constructor for a menu in the upper-right of the window with the Swirlds logo. The previousMarker is the
+     * Constructor for a menu in the upper-right of the window with the Swirlds logo. The parent is the
      * window to add this to. It should already be set to the right size.
      *
      * @param platform
@@ -210,7 +210,7 @@ public class SwirldMenu extends JPanel {
         this.setBackground(new Color(0, 0, 0, 0)); // make it transparent
 
         parent.addComponentListener(
-                new ComponentListener() { // resize when previousMarker does
+                new ComponentListener() { // resize when parent does
                     @Override
                     public void componentResized(ComponentEvent e) {
                         int x = parent.getWidth() - size - getInsets().left - getInsets().right - size / 16;
@@ -381,7 +381,7 @@ public class SwirldMenu extends JPanel {
     }
 
     /**
-     * Called by the JVM to update the menu icon. It just updates its previousMarker, then draws the logo.
+     * Called by the JVM to update the menu icon. It just updates its parent, then draws the logo.
      */
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

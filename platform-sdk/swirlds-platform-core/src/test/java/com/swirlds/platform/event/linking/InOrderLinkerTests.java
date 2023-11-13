@@ -58,10 +58,10 @@ class InOrderLinkerTests {
      *
      * @param selfHash              the hash of the event
      * @param selfGeneration        the generation of the event
-     * @param selfParentHash        the hash of the self previousMarker of the event
-     * @param selfParentGeneration  the generation of the self previousMarker of the event
-     * @param otherParentHash       the hash of the other previousMarker of the event
-     * @param otherParentGeneration the generation of the other previousMarker of the event
+     * @param selfParentHash        the hash of the self parent of the event
+     * @param selfParentGeneration  the generation of the self parent of the event
+     * @param otherParentHash       the hash of the other parent of the event
+     * @param otherParentGeneration the generation of the other parent of the event
      * @return the mock event
      */
     private static GossipEvent generateMockEvent(
@@ -174,7 +174,7 @@ class InOrderLinkerTests {
     }
 
     @Test
-    @DisplayName("Events with a missing self previousMarker should exit the intake pipeline")
+    @DisplayName("Events with a missing self parent should exit the intake pipeline")
     void missingSelfParent() {
         final GossipEvent child = generateMockEvent(
                 randomHash(random),
@@ -189,7 +189,7 @@ class InOrderLinkerTests {
     }
 
     @Test
-    @DisplayName("Events with a missing other previousMarker should exit the intake pipeline")
+    @DisplayName("Events with a missing other parent should exit the intake pipeline")
     void missingOtherParent() {
         final GossipEvent child = generateMockEvent(
                 randomHash(random),

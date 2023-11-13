@@ -236,20 +236,20 @@ public class TipsetEventCreator implements EventCreator {
 
     /**
      * Create the next event for a network of size 1 (i.e. where we are the only member). We don't use the tipset
-     * algorithm like normal, since we will never have a real other previousMarker.
+     * algorithm like normal, since we will never have a real other parent.
      *
      * @return the new event
      */
     private GossipEvent createEventForSizeOneNetwork() {
         // There is a quirk in size 1 networks where we can only
-        // reach consensus if the self previousMarker is also the other previousMarker.
+        // reach consensus if the self parent is also the other parent.
         // Unexpected, but harmless. So just use the same event
         // as both parents until that issue is resolved.
         return buildAndProcessEvent(lastSelfEvent);
     }
 
     /**
-     * Create an event using the other previousMarker with the best tipset advancement weight.
+     * Create an event using the other parent with the best tipset advancement weight.
      *
      * @return the new event, or null if it is not legal to create a new event
      */
@@ -285,7 +285,7 @@ public class TipsetEventCreator implements EventCreator {
                 return null;
             }
 
-            // we are creating a genesis event, so we can use a null other previousMarker
+            // we are creating a genesis event, so we can use a null other parent
             return buildAndProcessEvent(null);
         }
 
@@ -346,7 +346,7 @@ public class TipsetEventCreator implements EventCreator {
             // place if there are no ignored nodes. But better to be safe than sorry, and returning null
             // is an acceptable way of saying "I can't create an event right now".
             noParentFoundLogger.error(
-                    EXCEPTION.getMarker(), "failed to locate eligible ignored node to use as a previousMarker");
+                    EXCEPTION.getMarker(), "failed to locate eligible ignored node to use as a parent");
             return null;
         }
 
@@ -363,13 +363,13 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         // This should be impossible.
-        throw new IllegalStateException("Failed to find an other previousMarker");
+        throw new IllegalStateException("Failed to find an other parent");
     }
 
     /**
-     * Given an other previousMarker, build the next self event and process it.
+     * Given an other parent, build the next self event and process it.
      *
-     * @param otherParent the other previousMarker, or null if there is no other previousMarker
+     * @param otherParent the other parent, or null if there is no other parent
      * @return the new event
      */
     private GossipEvent buildAndProcessEvent(@Nullable final EventDescriptor otherParent) {
@@ -405,7 +405,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * Given the parents, assemble the event object.
      *
-     * @param otherParent the other previousMarker
+     * @param otherParent the other parent
      * @return the event
      */
     @NonNull

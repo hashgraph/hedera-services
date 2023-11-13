@@ -19,11 +19,11 @@ package com.swirlds.platform.event.linking;
 import com.swirlds.common.crypto.Hash;
 
 /**
- * Identifies a previousMarker of an event
+ * Identifies a parent of an event
  *
  * @param generation
- * 		the generation of the previousMarker
+ * 		the generation of the parent
  * @param hash
- * 		the hash of the previousMarker
+ * 		the hash of the parent
  */
 public record ParentDescriptor(long generation, Hash hash) {}

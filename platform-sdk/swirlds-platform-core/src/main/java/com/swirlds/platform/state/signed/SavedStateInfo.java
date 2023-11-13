@@ -28,9 +28,9 @@ import java.nio.file.Path;
 public record SavedStateInfo(@NonNull Path stateFile, @NonNull SavedStateMetadata metadata) {
 
     /**
-     * Get the previousMarker directory.
+     * Get the parent directory.
      *
-     * @return the previousMarker directory
+     * @return the parent directory
      */
     @NonNull
     public Path getDirectory() {

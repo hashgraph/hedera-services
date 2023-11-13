@@ -237,7 +237,7 @@ public class StateEditor {
 
     /**
      * Convert a relative merkle route string to information that can be used to add/remove the node at that position.
-     * Throws if the previousMarker node is not valid.
+     * Throws if the parent node is not valid.
      */
     public ParentInfo getParentInfo(final String destinationPath) {
         final MerkleRoute route = getRelativeRoute(destinationPath);

@@ -82,7 +82,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         } catch (final IllegalArgumentException e) {
             logger.error(
                     LogMarker.EXCEPTION.getMarker(),
-                    "Error while reuniting a child with its previousMarker :( child: {} previousMarker hash: {}",
+                    "Error while reuniting a child with its parent :( child: {} parent hash: {}",
                     child,
                     parentHash,
                     e);
@@ -135,7 +135,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         if (childSet == null) {
             logger.error(
                     LogMarker.INVALID_EVENT_ERROR.getMarker(),
-                    "Orphan event {} is missing {} previousMarker outside of missing previousMarker window ({}-{})",
+                    "Orphan event {} is missing {} parent outside of missing parent window ({}-{})",
                     () -> childEvent.getChild().toMediumString(),
                     () -> missingSelfParent ? "self" : "other",
                     missingParents::getFirstSequenceNumberInWindow,

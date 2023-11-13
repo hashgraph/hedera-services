@@ -28,7 +28,7 @@ public final class EventConstants {
     /**
      * the generation number used to represent that the generation is not defined.
      * an event's computed generation number is always non-negative.
-     * in case it is used as a previousMarker generation, it means there is no previousMarker event
+     * in case it is used as a parent generation, it means there is no parent event
      */
     public static final long GENERATION_UNDEFINED = -1;
     /** the ID number used to represent that the ID is undefined */

@@ -31,15 +31,15 @@ import java.util.List;
  * This data is not relevant after consensus has been calculated.
  */
 public class EventMetadata implements Clearable {
-    /** the self previousMarker of this */
+    /** the self parent of this */
     private EventImpl selfParent;
-    /** the other previousMarker of this */
+    /** the other parent of this */
     private EventImpl otherParent;
     /** an estimate of what the consensus timestamp will be (could be a very bad guess) */
     private Instant estimatedTime;
     /** has this event been cleared (because it was old and should be discarded)? */
     private boolean cleared = false;
-    /** is this a witness? (is round > selfParent's round, or there is no self previousMarker?) */
+    /** is this a witness? (is round > selfParent's round, or there is no self parent?) */
     private boolean isWitness;
     /** has this witness decided as famous? */
     private boolean isFamous;
@@ -54,7 +54,7 @@ public class EventMetadata implements Clearable {
     /** lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01) */
     private EventImpl[] lastSee;
     /**
-     * stronglySeeP[m] is strongly-seen witness in previousMarker round by m (memoizes function from
+     * stronglySeeP[m] is strongly-seen witness in parent round by m (memoizes function from
      * Swirlds-TR-2020-01)
      */
     private EventImpl[] stronglySeeP;
@@ -126,28 +126,28 @@ public class EventMetadata implements Clearable {
     //////////////////////////////////////////
 
     /**
-     * @return the self previousMarker of this
+     * @return the self parent of this
      */
     public @Nullable EventImpl getSelfParent() {
         return selfParent;
     }
 
     /**
-     * @param selfParent the self previousMarker of this
+     * @param selfParent the self parent of this
      */
     public void setSelfParent(@Nullable final EventImpl selfParent) {
         this.selfParent = selfParent;
     }
 
     /**
-     * @return the other previousMarker of this
+     * @return the other parent of this
      */
     public @Nullable EventImpl getOtherParent() {
         return otherParent;
     }
 
     /**
-     * @param otherParent the other previousMarker of this
+     * @param otherParent the other parent of this
      */
     public void setOtherParent(@Nullable final EventImpl otherParent) {
         this.otherParent = otherParent;
@@ -278,7 +278,7 @@ public class EventMetadata implements Clearable {
 
     /**
      * @param m the member ID
-     * @return strongly-seen witness in previousMarker round by m (memoizes stronglySeeP function from
+     * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from
      *     Swirlds-TR-2020-01)
      */
     public @Nullable EventImpl getStronglySeeP(final int m) {
@@ -286,11 +286,11 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * remember event, the strongly-seen witness in previousMarker round by m (memoizes stronglySeeP
+     * remember event, the strongly-seen witness in parent round by m (memoizes stronglySeeP
      * function from Swirlds-TR-2020-01)
      *
      * @param m the member ID
-     * @param event the strongly-seen witness in previousMarker round created by m
+     * @param event the strongly-seen witness in parent round created by m
      */
     public void setStronglySeeP(final int m, @Nullable final EventImpl event) {
         stronglySeeP[m] = event;

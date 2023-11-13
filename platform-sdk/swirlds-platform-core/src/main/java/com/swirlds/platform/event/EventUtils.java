@@ -166,7 +166,7 @@ public abstract class EventUtils {
      * Compute the creation time of a new event.
      *
      * @param now        a time {@code Instant}
-     * @param selfParent the self-previousMarker of the event to be created
+     * @param selfParent the self-parent of the event to be created
      * @return a time {@code Instant} which defines the creation time of an event
      */
     public static Instant getChildTimeCreated(@NonNull final Instant now, @Nullable final BaseEvent selfParent) {
@@ -177,13 +177,13 @@ public abstract class EventUtils {
             // Ensure that events created by self have a monotonically increasing creation time.
             // This is true when the computer's clock is running normally.
             // If the computer's clock is reset to an earlier time, then the Instant.now() call
-            // above may be earlier than the self-previousMarker's creation time. In that case, it
-            // advances to several nanoseconds later than the previousMarker. If the clock is only set back
+            // above may be earlier than the self-parent's creation time. In that case, it
+            // advances to several nanoseconds later than the parent. If the clock is only set back
             // a short amount, then the timestamps will only slow down their advancement for a
             // little while, then go back to advancing one second per second. If the clock is set
-            // far in the future, then the previousMarker is created, then the clock is set to the correct
+            // far in the future, then the parent is created, then the clock is set to the correct
             // time, then the advance will slow down for a long time. One solution for that is to
-            // generate no events for enough rounds that the previousMarker will not exist (will be null
+            // generate no events for enough rounds that the parent will not exist (will be null
             // at this point), and then the correct clock time can be used again. (Assuming this
             // code has implemented nulling out parents from extremely old rounds).
             // If event x is followed by y, then y should be at least n nanoseconds later than x,
@@ -205,12 +205,12 @@ public abstract class EventUtils {
      * Calculate the creation time for a new event.
      * <p>
      * Regardless of whatever the host computer's clock says, the event creation time must always advance from self
-     * previousMarker to child. Further, the time in between the self previousMarker and the child must be large enough so that every
-     * transaction in the previousMarker can be assigned a unique timestamp at nanosecond precision.
+     * parent to child. Further, the time in between the self parent and the child must be large enough so that every
+     * transaction in the parent can be assigned a unique timestamp at nanosecond precision.
      *
      * @param now                        the current time
-     * @param selfParentCreationTime     the creation time of the self previousMarker
-     * @param selfParentTransactionCount the number of transactions in the self previousMarker
+     * @param selfParentCreationTime     the creation time of the self parent
+     * @param selfParentTransactionCount the number of transactions in the self parent
      * @return the creation time for the new event
      */
     @NonNull

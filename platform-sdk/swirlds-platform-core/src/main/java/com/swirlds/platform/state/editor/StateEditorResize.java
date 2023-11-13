@@ -36,7 +36,7 @@ public class StateEditorResize extends StateEditorOperation {
     private String parentPath = "";
     private int newSize;
 
-    @CommandLine.Parameters(index = "0", description = "The new size of the previousMarker.")
+    @CommandLine.Parameters(index = "0", description = "The new size of the parent.")
     private void setNewSize(final int newSize) {
         this.newSize = newSize;
     }
@@ -44,7 +44,7 @@ public class StateEditorResize extends StateEditorOperation {
     @CommandLine.Parameters(
             index = "1",
             arity = "0..1",
-            description = "The route of the previousMarker will be resized.")
+            description = "The route of the parent will be resized.")
     private void setParentPath(final String parentPath) {
         this.parentPath = parentPath;
     }

@@ -57,7 +57,7 @@ public final class TipsetUtils {
     /**
      * Get the descriptors of an event's parents.
      *
-     * @param event the event to get previousMarker descriptors for
+     * @param event the event to get parent descriptors for
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final EventImpl event) {
@@ -74,8 +74,8 @@ public final class TipsetUtils {
     /**
      * Get the descriptors of an event's parents.
      *
-     * @param event the event to the previousMarker descriptors for
-     * @return a list of previousMarker descriptors
+     * @param event the event to the parent descriptors for
+     * @return a list of parent descriptors
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final GossipEvent event) {

@@ -33,17 +33,17 @@ public class ParentFinder {
     }
 
     /**
-     * An event's previousMarker is required iff (a) the event does have that previousMarker event, and (b) that
-     * previousMarker event is non-ancient.
+     * An event's parent is required iff (a) the event does have that parent event, and (b) that
+     * parent event is non-ancient.
      *
-     * @return true iff the event's previousMarker is required
+     * @return true iff the event's parent is required
      */
     private static boolean requiredParent(
             final GossipEvent event, final boolean selfParent, final long minGenerationNonAncient) {
         final long parentGeneration = selfParent
                 ? event.getHashedData().getSelfParentGen()
                 : event.getHashedData().getOtherParentGen();
-        // if an event does not have a previousMarker, its generation will be EventConstants.GENERATION_UNDEFINED,
+        // if an event does not have a parent, its generation will be EventConstants.GENERATION_UNDEFINED,
         // which is always smaller than minGenerationNonAncient
         return parentGeneration >= minGenerationNonAncient;
     }

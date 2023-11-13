@@ -137,7 +137,7 @@ public class AddedEventMetrics implements EventAddedObserver {
                 metrics,
                 PLATFORM_CATEGORY,
                 "opAgeDiff",
-                "average age difference (in generations) between an event created by this node and its other previousMarker",
+                "average age difference (in generations) between an event created by this node and its other parent",
                 FORMAT_5_3,
                 AverageStat.WEIGHT_VOLATILE);
         avgCreatedReceivedTime = metrics.getOrCreate(AVG_CREATED_RECEIVED_TIME_CONFIG);
