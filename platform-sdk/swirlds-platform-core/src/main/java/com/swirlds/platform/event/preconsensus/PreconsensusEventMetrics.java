@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.common.metrics.DoubleGauge;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * Metrics for preconsensus events.

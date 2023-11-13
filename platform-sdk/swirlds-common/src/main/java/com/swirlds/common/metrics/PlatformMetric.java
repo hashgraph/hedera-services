@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.Metric;
 
 /**
  * This class is only used to simplify the migration and will be removed afterwards.

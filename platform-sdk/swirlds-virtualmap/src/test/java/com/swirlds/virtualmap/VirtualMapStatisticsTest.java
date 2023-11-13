@@ -16,20 +16,20 @@
 
 package com.swirlds.virtualmap;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.util.concurrent.ScheduledExecutorService;

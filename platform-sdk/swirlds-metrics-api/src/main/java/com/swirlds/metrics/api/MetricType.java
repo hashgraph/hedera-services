@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
 /**
  * The types of {@code Metric}

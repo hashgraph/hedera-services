@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.metrics.api.DoubleAccumulator;
+import com.swirlds.metrics.api.FloatFormats;
 import java.util.function.DoubleBinaryOperator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

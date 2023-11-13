@@ -16,10 +16,10 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricConfig;
 import java.util.EnumSet;
 
 /**

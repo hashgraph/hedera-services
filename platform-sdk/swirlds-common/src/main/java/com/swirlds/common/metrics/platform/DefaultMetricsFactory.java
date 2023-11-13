@@ -16,22 +16,22 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.DoubleAccumulator;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

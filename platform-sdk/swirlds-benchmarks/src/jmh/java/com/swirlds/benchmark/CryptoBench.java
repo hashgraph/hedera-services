@@ -18,8 +18,8 @@ package com.swirlds.benchmark;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

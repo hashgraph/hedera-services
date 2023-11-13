@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.nft;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;

@@ -16,10 +16,13 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.units.UnitConstants;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -35,8 +38,8 @@ public interface DurationGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default MetricType getMetricType() {
-        return MetricType.GAUGE;
+    default String getMetricType() {
+        return MetricTypes.GAUGE;
     }
 
     /**

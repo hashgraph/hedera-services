@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_15_3;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_16_2;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.units.TimeUnit;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * Encapsulates various signed state metrics.

@@ -24,6 +24,7 @@ javaModuleDependencies {
     //   moduleNamePrefixToGroup.put("com.", "com.swirlds")
     // Hence, we list all 'swirlds' modules that are used outside the 'swirlds' build
     moduleNameToGA.put("com.swirlds.base", "com.swirlds:swirlds-base")
+    moduleNameToGA.put("com.swirlds.metrics.api", "com.swirlds:swirlds-metrics-api")
     moduleNameToGA.put("com.swirlds.cli", "com.swirlds:swirlds-cli")
     moduleNameToGA.put("com.swirlds.common", "com.swirlds:swirlds-common")
     moduleNameToGA.put(

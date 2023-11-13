@@ -14,34 +14,35 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_3;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.function.LongBinaryOperator;
-import java.util.function.LongSupplier;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleSupplier;
 
 /**
- * An {@code LongAccumulator} accumulates a {@code long}-value.
+ * A {@code DoubleAccumulator} accumulates a {@code double}-value.
  * <p>
  * It is reset in regular intervals. The exact timing depends on the implementation.
  * <p>
- * A {@code LongAccumulator} is reset to the {@link #getInitialValue() initialValue}.
- * If no {@code initialValue} was specified, the {@code LongAccumulator} is reset to {@code 0L}.
+ * A {@code DoubleAccumulator} is reset to the {@link #getInitialValue() initialValue}.
+ * If no {@code initialValue} was specified, the {@code DoubleAccumulator} is reset to {@code 0.0}.
  */
-public interface LongAccumulator extends Metric {
+public interface DoubleAccumulator extends Metric {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    default MetricType getMetricType() {
-        return MetricType.ACCUMULATOR;
+    default String getMetricType() {
+        return MetricTypes.ACCUMULATOR;
     }
 
     /**
@@ -49,7 +50,7 @@ public interface LongAccumulator extends Metric {
      */
     @Override
     default DataType getDataType() {
-        return DataType.INT;
+        return DataType.FLOAT;
     }
 
     /**
@@ -64,7 +65,7 @@ public interface LongAccumulator extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Long get(final ValueType valueType) {
+    default Double get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
@@ -77,43 +78,42 @@ public interface LongAccumulator extends Metric {
      *
      * @return the current value
      */
-    long get();
+    double get();
 
     /**
-     * Returns the {@code initialValue} of the {@code LongAccumulator}
+     * Returns the {@code initialValue} of the {@code DoubleAccumulator}
      *
      * @return the initial value
      */
-    long getInitialValue();
+    double getInitialValue();
 
     /**
-     * Atomically updates the current value with the results of applying the {@code operator} of this
-     * {@code LongAccumulator} to the current and given value.
+     * Atomically updates the current value with the results of applying the {@code accumulator}-function of this
+     * {@code DoubleAccumulator} to the current and given value.
      * <p>
      * The function is applied with the current value as its first argument, and the provided {@code other} as the
      * second argument.
      *
      * @param other
-     * 		the update value
+     * 		the second parameter
      */
-    void update(final long other);
+    void update(final double other);
 
     /**
-     * Configuration of a {@link LongAccumulator}
+     * Configuration of a {@link DoubleAccumulator}
      */
-    final class Config extends MetricConfig<LongAccumulator, LongAccumulator.Config> {
+    final class Config extends MetricConfig<DoubleAccumulator, DoubleAccumulator.Config> {
 
-        private final LongBinaryOperator accumulator;
-        private final LongSupplier initializer;
-
-        private final long initialValue;
+        private final DoubleBinaryOperator accumulator;
+        private final DoubleSupplier initializer;
+        private final double initialValue;
 
         /**
-         * Constructor of {@code LongAccumulator.Config}
+         * Constructor of {@code DoubleAccumulator.Config}
          *
-         * By default, the {@link #getAccumulator() accumulator} is set to {@code Long::max},
-         * the {@link #getInitialValue() initialValue} is set to {@code 0L},
-         * and {@link #getFormat() format} is set to {@code "%d"}.
+         * By default, the {@link #getAccumulator() accumulator} is set to {@code Double::max},
+         * the {@link #getInitialValue() initialValue} is set to {@code 0.0},
+         * and {@link #getFormat() format} is set to {@link FloatFormats#FORMAT_11_3}.
          *
          * @param category
          * 		the kind of metric (metrics are grouped or filtered by this)
@@ -123,10 +123,10 @@ public interface LongAccumulator extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(@NonNull final String category, @NonNull final String name) {
-            super(category, name, "%d");
-            this.accumulator = Long::max;
+            super(category, name, FORMAT_11_3);
+            this.accumulator = Double::max;
             this.initializer = null;
-            this.initialValue = 0L;
+            this.initialValue = 0.0;
         }
 
         private Config(
@@ -135,9 +135,9 @@ public interface LongAccumulator extends Metric {
                 @NonNull final String description,
                 @NonNull final String unit,
                 @NonNull final String format,
-                @NonNull final LongBinaryOperator accumulator,
-                @Nullable final LongSupplier initializer,
-                final long initialValue) {
+                @NonNull final DoubleBinaryOperator accumulator,
+                @Nullable final DoubleSupplier initializer,
+                final double initialValue) {
 
             super(category, name, description, unit, format);
             this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
@@ -149,8 +149,8 @@ public interface LongAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public LongAccumulator.Config withDescription(@NonNull final String description) {
-            return new LongAccumulator.Config(
+        public DoubleAccumulator.Config withDescription(@NonNull final String description) {
+            return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
                     description,
@@ -165,8 +165,8 @@ public interface LongAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public LongAccumulator.Config withUnit(@NonNull final String unit) {
-            return new LongAccumulator.Config(
+        public DoubleAccumulator.Config withUnit(@NonNull final String unit) {
+            return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
                     getDescription(),
@@ -186,9 +186,8 @@ public interface LongAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        @NonNull
-        public LongAccumulator.Config withFormat(@NonNull final String format) {
-            return new LongAccumulator.Config(
+        public DoubleAccumulator.Config withFormat(@NonNull final String format) {
+            return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
                     getDescription(),
@@ -205,7 +204,7 @@ public interface LongAccumulator extends Metric {
          * @return the accumulator
          */
         @NonNull
-        public LongBinaryOperator getAccumulator() {
+        public DoubleBinaryOperator getAccumulator() {
             return accumulator;
         }
 
@@ -215,7 +214,7 @@ public interface LongAccumulator extends Metric {
          * @return the initializer
          */
         @Nullable
-        public LongSupplier getInitializer() {
+        public DoubleSupplier getInitializer() {
             return initializer;
         }
 
@@ -226,12 +225,12 @@ public interface LongAccumulator extends Metric {
          * due to contention among threads.
          *
          * @param accumulator
-         * 		The {@link LongBinaryOperator} that is used to accumulate the value.
+         * 		The {@link DoubleBinaryOperator} that is used to accumulate the value.
          * @return a new configuration-object with updated {@code initialValue}
          */
         @NonNull
-        public LongAccumulator.Config withAccumulator(@NonNull final LongBinaryOperator accumulator) {
-            return new LongAccumulator.Config(
+        public DoubleAccumulator.Config withAccumulator(@NonNull final DoubleBinaryOperator accumulator) {
+            return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
                     getDescription(),
@@ -240,6 +239,35 @@ public interface LongAccumulator extends Metric {
                     accumulator,
                     getInitializer(),
                     getInitialValue());
+        }
+
+        /**
+         * Getter of the initial value
+         *
+         * @return the initial value
+         */
+        public double getInitialValue() {
+            return initialValue;
+        }
+
+        /**
+         * Fluent-style setter of the initial value.
+         *
+         * @param initialValue
+         * 		the initial value
+         * @return a new configuration-object with updated {@code initialValue}
+         */
+        @NonNull
+        public DoubleAccumulator.Config withInitialValue(final double initialValue) {
+            return new DoubleAccumulator.Config(
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
+                    initialValue);
         }
 
         /**
@@ -252,8 +280,8 @@ public interface LongAccumulator extends Metric {
          * @return a new configuration-object with updated {@code initializer}
          */
         @NonNull
-        public LongAccumulator.Config withInitializer(@NonNull final LongSupplier initializer) {
-            return new LongAccumulator.Config(
+        public DoubleAccumulator.Config withInitializer(@NonNull final DoubleSupplier initializer) {
+            return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
                     getDescription(),
@@ -265,40 +293,11 @@ public interface LongAccumulator extends Metric {
         }
 
         /**
-         * Getter of the {@link LongAccumulator#getInitialValue() initialValue}
-         *
-         * @return the initial value
-         */
-        public long getInitialValue() {
-            return initialValue;
-        }
-
-        /**
-         * Fluent-style setter of the initial value.
-         *
-         * @param initialValue
-         * 		the initial value
-         * @return a reference to {@code this}
-         */
-        @NonNull
-        public LongAccumulator.Config withInitialValue(final long initialValue) {
-            return new LongAccumulator.Config(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getAccumulator(),
-                    getInitializer(),
-                    initialValue);
-        }
-
-        /**
          * {@inheritDoc}
          */
         @Override
-        public Class<LongAccumulator> getResultClass() {
-            return LongAccumulator.class;
+        public Class<DoubleAccumulator> getResultClass() {
+            return DoubleAccumulator.class;
         }
 
         /**
@@ -306,8 +305,8 @@ public interface LongAccumulator extends Metric {
          */
         @Override
         @NonNull
-        public LongAccumulator create(@NonNull final MetricsFactory factory) {
-            return factory.createLongAccumulator(this);
+        public DoubleAccumulator create(@NonNull final MetricsFactory factory) {
+            return factory.createDoubleAccumulator(this);
         }
 
         /**

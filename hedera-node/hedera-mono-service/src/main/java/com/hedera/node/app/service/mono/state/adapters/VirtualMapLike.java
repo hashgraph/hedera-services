@@ -18,9 +18,9 @@ package com.hedera.node.app.service.mono.state.adapters;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;

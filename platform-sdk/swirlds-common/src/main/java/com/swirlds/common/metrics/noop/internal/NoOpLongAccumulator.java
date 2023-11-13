@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.MetricConfig;
 
 /**
  * A no-op implementation of a long accumulator.

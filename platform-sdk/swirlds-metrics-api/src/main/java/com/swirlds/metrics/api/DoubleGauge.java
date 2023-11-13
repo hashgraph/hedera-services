@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,8 +35,8 @@ public interface DoubleGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default MetricType getMetricType() {
-        return MetricType.GAUGE;
+    default String getMetricType() {
+        return MetricTypes.GAUGE;
     }
 
     /**
@@ -87,7 +87,7 @@ public interface DoubleGauge extends Metric {
     /**
      * Configuration of a {@link DoubleGauge}
      */
-    final class Config extends MetricConfig<DoubleGauge, DoubleGauge.Config> {
+    final class Config extends MetricConfig<DoubleGauge, Config> {
 
         private final double initialValue;
 

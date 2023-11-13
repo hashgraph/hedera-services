@@ -16,15 +16,15 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.metrics.api.DoubleAccumulator;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.List;
 

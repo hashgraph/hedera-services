@@ -17,8 +17,7 @@
 package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.MetricType;
+import com.swirlds.metrics.api.MetricConfig;
 
 /**
  * A no-op implementation of an integer pair accumulator.
@@ -61,11 +60,6 @@ public class NoOpIntegerPairAccumulator<T> extends AbstractNoOpMetric implements
      */
     @Override
     public void update(final int leftValue, final int rightValue) {}
-
-    @Override
-    public MetricType getMetricType() {
-        return MetricType.ACCUMULATOR;
-    }
 
     /**
      * {@inheritDoc}

@@ -16,8 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.Objects;

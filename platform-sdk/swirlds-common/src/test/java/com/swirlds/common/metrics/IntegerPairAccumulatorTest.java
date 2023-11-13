@@ -16,11 +16,11 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.metrics.MetricType.ACCUMULATOR;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.MetricType.ACCUMULATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
@@ -68,8 +68,8 @@ class IntegerPairAccumulatorTest {
         }
 
         @Override
-        public MetricType getMetricType() {
-            return ACCUMULATOR;
+        public String getMetricType() {
+            return "ACCUMULATOR";
         }
 
         @Override

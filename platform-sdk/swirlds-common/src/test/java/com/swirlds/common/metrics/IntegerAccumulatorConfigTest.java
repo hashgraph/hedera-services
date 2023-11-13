@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.metrics.api.IntegerAccumulator;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
 import org.junit.jupiter.api.DisplayName;

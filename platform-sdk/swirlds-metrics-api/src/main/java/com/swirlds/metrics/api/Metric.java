@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
 import java.util.EnumSet;
 
@@ -77,7 +77,7 @@ public interface Metric {
      *
      * @return the metric type
      */
-    MetricType getMetricType();
+    String getMetricType();
 
     /**
      * The data-type of the {@code Metric}
