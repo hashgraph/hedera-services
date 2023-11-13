@@ -200,7 +200,8 @@ public final class AntlrUtils {
                         return text.substring(1, text.length() - 1);
                     }
                     return text;
-                }).findAny();
+                })
+                .findAny();
     }
 
     public static boolean isJavaDocNode(@NonNull final ParseTree node) {
@@ -273,14 +274,16 @@ public final class AntlrUtils {
                     Optional.ofNullable(paramContext).map(co -> co.getText()).ifPresent(firstLine -> {
                         final String paramName = firstLine.split(" ")[0].trim();
                         final String description =
-                                firstLine.substring(paramName.length()).trim() + " " + IntStream.range(
-                                        1, c.blockTagContent().size())
-                                .mapToObj(i -> c.blockTagContent().get(i).blockTagText())
-                                .filter(Objects::nonNull)
-                                .map(co -> co.getText().trim())
-                                .filter(t -> !t.isBlank())
-                                        .reduce((a, b) -> a.trim() + " " + b.trim())
-                                .orElse("");
+                                firstLine.substring(paramName.length()).trim() + " "
+                                        + IntStream.range(1, c.blockTagContent().size())
+                                                .mapToObj(i -> c.blockTagContent()
+                                                        .get(i)
+                                                        .blockTagText())
+                                                .filter(Objects::nonNull)
+                                                .map(co -> co.getText().trim())
+                                                .filter(t -> !t.isBlank())
+                                                .reduce((a, b) -> a.trim() + " " + b.trim())
+                                                .orElse("");
                         params.put(paramName.trim(), description.trim());
                     });
                 });
@@ -298,8 +301,7 @@ public final class AntlrUtils {
     public static CompilationUnitContext parse(@NonNull final String fileContent) throws IOException {
         Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
         TokenStream tokens = new CommonTokenStream(lexer);
-        JavaParser parser = new JavaParser(
-                tokens);
+        JavaParser parser = new JavaParser(tokens);
         CompilationUnitContext context = parser.compilationUnit();
         Optional.ofNullable(context.exception).ifPresent(e -> {
             throw new IllegalStateException("Error in ANTLR parsing", e);

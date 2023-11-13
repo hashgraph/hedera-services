@@ -20,6 +20,4 @@ plugins {
     // antlr
 }
 
-mainModuleInfo {
-    annotationProcessor("com.google.auto.service.processor")
-}
+mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }

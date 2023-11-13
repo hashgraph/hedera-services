@@ -101,8 +101,8 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
                     recordSource.getCharContent(true).toString());
 
             if (!recordDefinitions.isEmpty()) {
-                final JavaFileObject constantsSourceFile = getConstantSourceFile(packageName, simpleClassName,
-                        typeElement);
+                final JavaFileObject constantsSourceFile =
+                        getConstantSourceFile(packageName, simpleClassName, typeElement);
                 log("generating config constants file: " + constantsSourceFile.getName());
                 ConstantClassFactory.doWork(recordDefinitions.get(0), constantsSourceFile);
                 log("generating config doc file: " + configDocumentationFile.getFileName());

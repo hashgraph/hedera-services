@@ -95,7 +95,8 @@ extraJavaModuleInfo {
     }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
-        //requireAllDefinedDependencies() <- That is currently needed based on a limitation of the Gradlex plugin
+        // requireAllDefinedDependencies() <- That is currently needed based on a limitation of the
+        // Gradlex plugin
         requires("com.google.guava.failureaccess")
         requires("java.logging")
     }
@@ -326,7 +327,6 @@ extraJavaModuleInfo {
     knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
     knownModule("com.squareup:javapoet", "com.squareup.javapoet")
     knownModule("com.google.auto.service:auto-service-annotations", "com.google.auto.service")
-
 
     // Annotation processing only
     automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")

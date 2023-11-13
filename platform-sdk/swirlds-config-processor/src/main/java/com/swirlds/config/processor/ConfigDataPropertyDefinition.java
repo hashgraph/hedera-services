@@ -32,5 +32,4 @@ public record ConfigDataPropertyDefinition(
         @NonNull String name,
         @NonNull String type,
         @Nullable String defaultValue,
-        @Nullable String description) {
-}
+        @Nullable String description) {}

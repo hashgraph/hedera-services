@@ -69,12 +69,11 @@ public class DocumentationFactory {
                     writer.write(MarkdownSyntax.TYPE + asCode(propertyDefinition.type()) + NEWLINE);
                     if (Objects.equals(propertyDefinition.defaultValue(), ConfigProperty.UNDEFINED_DEFAULT_VALUE)) {
                         writer.write(MarkdownSyntax.NO_DEFAULT_VALUE + NEWLINE);
-                    } else if (Objects.equals(propertyDefinition.defaultValue(),
-                            ConfigProperty.NULL_DEFAULT_VALUE)) {
+                    } else if (Objects.equals(propertyDefinition.defaultValue(), ConfigProperty.NULL_DEFAULT_VALUE)) {
                         writer.write(MarkdownSyntax.DEFAULT_VALUE_IS_NULL + NEWLINE);
                     } else {
-                        writer.write(MarkdownSyntax.DEFAULT_VALUE + asCode(propertyDefinition.defaultValue())
-                                + NEWLINE);
+                        writer.write(
+                                MarkdownSyntax.DEFAULT_VALUE + asCode(propertyDefinition.defaultValue()) + NEWLINE);
                     }
                     writer.write(MarkdownSyntax.DESCRIPTION + propertyDefinition.description() + NEWLINE);
                     writer.write("\n");
