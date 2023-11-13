@@ -56,7 +56,7 @@ public class IsTokenCall extends AbstractNonRevertibleTokenViewCall {
     @Override
     protected @NonNull FullResult viewCallResultWith(
             @NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return fullResultsFor(status, gasRequirement, false);
+        return fullResultsFor(SUCCESS, gasRequirement, false);
     }
 
     private @NonNull FullResult fullResultsFor(
