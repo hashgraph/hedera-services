@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CompareTo;
@@ -47,11 +49,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Various static utility method used in syncing
  */
 public final class SyncUtils {
+
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * Private constructor to never instantiate this class
@@ -95,6 +101,16 @@ public final class SyncUtils {
             connection.getDos().writeGenerations(generations);
             connection.getDos().writeTipHashes(tipHashes);
             connection.getDos().flush();
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} sent generations: {}",
+                    connection::getDescription,
+                    generations::toString);
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} sent tips: {}",
+                    connection::getDescription,
+                    () -> SyncLogging.toShortShadows(tips));
             return null;
         };
     }
@@ -131,6 +147,17 @@ public final class SyncUtils {
             final Generations generations = connection.getDis().readGenerations();
             final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} received generations: {}",
+                    connection::getDescription,
+                    generations::toString);
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} received tips: {}",
+                    connection::getDescription,
+                    () -> SyncLogging.toShortHashes(tips));
+
             return TheirTipsAndGenerations.create(generations, tips);
         };
     }
@@ -148,6 +175,11 @@ public final class SyncUtils {
         return () -> {
             connection.getDos().writeBooleanList(theirTipsIHave);
             connection.getDos().flush();
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} sent booleans: {}",
+                    connection::getDescription,
+                    () -> SyncLogging.toShortBooleans(theirTipsIHave));
             return null;
         };
     }
@@ -166,6 +198,11 @@ public final class SyncUtils {
             if (booleans == null) {
                 throw new SyncException(connection, "peer sent null booleans");
             }
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} received booleans: {}",
+                    connection::getDescription,
+                    () -> SyncLogging.toShortBooleans(booleans));
             return booleans;
         };
     }
@@ -189,6 +226,11 @@ public final class SyncUtils {
             final AtomicBoolean writeAborted,
             final Duration syncKeepalivePeriod) {
         return () -> {
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} writing events start. send list size: {}",
+                    connection.getDescription(),
+                    events.size());
             for (final EventImpl event : events) {
                 if (event.isFromSignedState()) {
                     // if we encounter an event from a signed state, we should not send that event because it will have
@@ -201,7 +243,14 @@ public final class SyncUtils {
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
                 connection.getDos().writeEventData(event);
             }
-            if (!writeAborted.get()) {
+            if (writeAborted.get()) {
+                logger.info(SYNC_INFO.getMarker(), "{} writing events aborted", connection.getDescription());
+            } else {
+                logger.info(
+                        SYNC_INFO.getMarker(),
+                        "{} writing events done, wrote {} events",
+                        connection.getDescription(),
+                        events.size());
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_DONE);
             }
             connection.getDos().flush();
@@ -217,6 +266,8 @@ public final class SyncUtils {
             // node we have finished, and the reader will wait for it to send us the same byte.
             connection.getDos().writeByte(ByteConstants.COMM_SYNC_DONE);
             connection.getDos().flush();
+
+            logger.debug(SYNC_INFO.getMarker(), "{} sent COMM_SYNC_DONE", connection.getDescription());
 
             // (ignored)
             return null;
@@ -245,6 +296,7 @@ public final class SyncUtils {
             @NonNull final Duration maxSyncTime) {
 
         return () -> {
+            logger.info(SYNC_INFO.getMarker(), "{} reading events start", connection.getDescription());
             int eventsRead = 0;
             try {
                 final long startTime = System.nanoTime();
@@ -265,11 +317,18 @@ public final class SyncUtils {
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
+                            logger.info(
+                                    SYNC_INFO.getMarker(), "{} reading events aborted", connection.getDescription());
                             // event reading was aborted, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
                             eventsRead = Integer.MIN_VALUE;
                         }
                         case ByteConstants.COMM_EVENT_DONE -> {
+                            logger.info(
+                                    SYNC_INFO.getMarker(),
+                                    "{} reading events done, read {} events",
+                                    connection.getDescription(),
+                                    eventsRead);
                             syncMetrics.eventsReceived(startTime, eventsRead);
                             // we are done reading event, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
@@ -279,8 +338,14 @@ public final class SyncUtils {
                             // if they are still busy reading events
                         case ByteConstants.COMM_SYNC_ONGOING -> {
                             // peer is still reading events, waiting for them to finish
+                            logger.debug(
+                                    SYNC_INFO.getMarker(),
+                                    "{} received COMM_SYNC_ONGOING",
+                                    connection.getDescription());
                         }
                         case ByteConstants.COMM_SYNC_DONE -> {
+                            logger.debug(
+                                    SYNC_INFO.getMarker(), "{} received COMM_SYNC_DONE", connection.getDescription());
                             return eventsRead;
                         }
                         default -> throw new SyncException(
@@ -386,13 +451,9 @@ public final class SyncUtils {
 
             final boolean isAncestor = selfEventAncestorHashes.contains(event.getBaseHash());
 
-            if (isAncestor) {
+            if (isAncestor || CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
                 // Always send ancestors of self events right away.
-                filteredList.add(event);
-            }
-
-            if (CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
-                // This event is not a self ancestor and we've known about it for long enough to send.
+                // For all other events, only send it if we've known about it for long enough.
                 filteredList.add(event);
             }
 

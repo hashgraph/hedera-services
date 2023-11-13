@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.filterLikelyDuplicates;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getMyTipsTheyKnow;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getTheirTipsIHave;
@@ -60,6 +61,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The goal of the ShadowGraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
@@ -70,6 +73,8 @@ import java.util.stream.Collectors;
  * local.
  */
 public class ShadowGraphSynchronizer {
+
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * The shadow graph manager to use for this sync
@@ -214,6 +219,25 @@ public class ShadowGraphSynchronizer {
      */
     public boolean synchronize(@NonNull final PlatformContext platformContext, @NonNull final Connection connection)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
+        logger.info(SYNC_INFO.getMarker(), "{} sync start", connection.getDescription());
+        try {
+            return reserveSynchronize(platformContext, connection);
+        } finally {
+            logger.info(SYNC_INFO.getMarker(), "{} sync end", connection.getDescription());
+        }
+    }
+
+    /**
+     * Executes a sync using the supplied connection.
+     *
+     * @param platformContext the platform context
+     * @param connection      the connection to use
+     * @return true if the sync was successful, false if it was aborted
+     */
+    private boolean reserveSynchronize(
+            @NonNull final PlatformContext platformContext, @NonNull final Connection connection)
+            throws IOException, ParallelExecutionException, SyncException, InterruptedException {
+
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
@@ -241,6 +265,7 @@ public class ShadowGraphSynchronizer {
             timing.setTimePoint(1);
 
             if (theirTipsAndGenerations.isSyncRejected()) {
+                logger.info(SYNC_INFO.getMarker(), "{} sync rejected by other", connection.getDescription());
                 return false;
             }
 
@@ -324,6 +349,7 @@ public class ShadowGraphSynchronizer {
         }
 
         if (status != SyncFallenBehindStatus.NONE_FALLEN_BEHIND) {
+            logger.info(SYNC_INFO.getMarker(), "{} aborting sync due to {}", connection.getDescription(), status);
             return true; // abort the sync
         }
         return false;
@@ -429,8 +455,19 @@ public class ShadowGraphSynchronizer {
                 connection);
         if (eventsRead < 0 || writeAborted.get()) {
             // sync was aborted
+            logger.info(SYNC_INFO.getMarker(), "{} sync aborted", connection::getDescription);
             return false;
         }
+        logger.info(
+                SYNC_INFO.getMarker(),
+                "{} writing events done, wrote {} events",
+                connection::getDescription,
+                sendList::size);
+        logger.info(
+                SYNC_INFO.getMarker(),
+                "{} reading events done, read {} events",
+                connection.getDescription(),
+                eventsRead);
 
         syncMetrics.syncDone(
                 new SyncResult(connection.isOutbound(), connection.getOtherId(), eventsRead, sendList.size()));
@@ -478,7 +515,11 @@ public class ShadowGraphSynchronizer {
      */
     public void rejectSync(@NonNull final Connection connection) throws IOException {
         Objects.requireNonNull(connection);
-        connection.initForSync();
-        SyncUtils.rejectSync(connection, numberOfNodes);
+        try {
+            connection.initForSync();
+            SyncUtils.rejectSync(connection, numberOfNodes);
+        } finally {
+            logger.info(SYNC_INFO.getMarker(), "{} sync rejected by self", connection.getDescription());
+        }
     }
 }
