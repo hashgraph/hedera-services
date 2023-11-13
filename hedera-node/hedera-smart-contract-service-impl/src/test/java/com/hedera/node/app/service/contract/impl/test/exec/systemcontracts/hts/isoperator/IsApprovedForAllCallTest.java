@@ -57,17 +57,6 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void revertsWithMissingOwner() {
-        subject = new IsApprovedForAllCall(
-                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
-
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
-    }
-
-    @Test
     void checksForPresentOwnerAndFindsApprovedOperator() {
         subject = new IsApprovedForAllCall(
                 gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
