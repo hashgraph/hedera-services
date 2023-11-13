@@ -228,8 +228,7 @@ public class InternalEventValidator {
         if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
             identicalParentsLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
-                    "Event %s has identical self-parent and other-parent hash: %s"
-                            .formatted(event, selfParentHash));
+                    "Event %s has identical self-parent and other-parent hash: %s".formatted(event, selfParentHash));
             identicalParentsAccumulator.update(1);
             return false;
         }

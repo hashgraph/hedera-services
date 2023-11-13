@@ -704,8 +704,7 @@ public class ShadowGraph implements Clearable {
             final boolean knownOP = shadow(e.getOtherParent()) != null;
             final boolean expiredOP = expired(e.getOtherParent());
             if (!knownOP && !expiredOP) {
-                logger.error(
-                        EXCEPTION.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
+                logger.error(EXCEPTION.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
             }
         }
 
@@ -713,8 +712,7 @@ public class ShadowGraph implements Clearable {
             final boolean knownSP = shadow(e.getSelfParent()) != null;
             final boolean expiredSP = expired(e.getSelfParent());
             if (!knownSP && !expiredSP) {
-                logger.error(
-                        EXCEPTION.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
+                logger.error(EXCEPTION.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
             }
         }
 
