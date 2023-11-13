@@ -162,7 +162,7 @@ public class PreconsensusEventFileManager {
      * @return the directory where event files are stored
      */
     @NonNull
-    private static Path getDatabaseDirectory(
+    public static Path getDatabaseDirectory(
             @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
