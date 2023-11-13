@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.IntBinaryOperator;
@@ -120,7 +122,7 @@ public interface IntegerAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, "%d");
             this.accumulator = Integer::max;
             this.initializer = null;
@@ -128,12 +130,12 @@ public interface IntegerAccumulator extends Metric {
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final IntBinaryOperator accumulator,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
+                @NonNull final IntBinaryOperator accumulator,
                 final IntSupplier initializer,
                 final int initialValue) {
 
@@ -147,7 +149,7 @@ public interface IntegerAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public IntegerAccumulator.Config withDescription(final String description) {
+        public IntegerAccumulator.Config withDescription(@NonNull final String description) {
             return new IntegerAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -163,7 +165,7 @@ public interface IntegerAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public IntegerAccumulator.Config withUnit(final String unit) {
+        public IntegerAccumulator.Config withUnit(@NonNull final String unit) {
             return new IntegerAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -184,7 +186,8 @@ public interface IntegerAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public IntegerAccumulator.Config withFormat(final String format) {
+        @NonNull
+        public IntegerAccumulator.Config withFormat(@NonNull final String format) {
             return new IntegerAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -201,6 +204,7 @@ public interface IntegerAccumulator extends Metric {
          *
          * @return the accumulator
          */
+        @NonNull
         public IntBinaryOperator getAccumulator() {
             return accumulator;
         }
@@ -215,7 +219,8 @@ public interface IntegerAccumulator extends Metric {
          * 		The {@link IntBinaryOperator} that is used to accumulate the value.
          * @return a new configuration-object with updated {@code initialValue}
          */
-        public IntegerAccumulator.Config withAccumulator(final IntBinaryOperator accumulator) {
+        @NonNull
+        public IntegerAccumulator.Config withAccumulator(@NonNull final IntBinaryOperator accumulator) {
             return new IntegerAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -232,6 +237,7 @@ public interface IntegerAccumulator extends Metric {
          *
          * @return the initializer
          */
+        @Nullable
         public IntSupplier getInitializer() {
             return initializer;
         }
@@ -273,6 +279,7 @@ public interface IntegerAccumulator extends Metric {
          * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
+        @NonNull
         public IntegerAccumulator.Config withInitialValue(final int initialValue) {
             return new IntegerAccumulator.Config(
                     getCategory(),
@@ -297,7 +304,8 @@ public interface IntegerAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        IntegerAccumulator create(final MetricsFactory factory) {
+        @NonNull
+        public IntegerAccumulator create(@NonNull final MetricsFactory factory) {
             return factory.createIntegerAccumulator(this);
         }
 

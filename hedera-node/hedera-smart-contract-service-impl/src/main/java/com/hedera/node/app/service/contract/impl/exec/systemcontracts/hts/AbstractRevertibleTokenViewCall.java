@@ -17,15 +17,21 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Implementation support for view calls that require an extant token.
@@ -45,11 +51,24 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
 
     @Override
     public @NonNull PricedResult execute() {
+        PricedResult result;
         if (token == null) {
-            return gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
+            result = gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
         } else {
-            return gasOnly(resultOfViewingToken(token));
+            result = gasOnly(resultOfViewingToken(token));
         }
+
+        final var gasRequirement = result.fullResult().gasRequirement();
+        final var output = result.fullResult().result().getOutput();
+        final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        enhancement
+                .systemOperations()
+                .externalizeResult(
+                        contractFunctionResultSuccessFor(gasRequirement, output, contractID),
+                        SystemContractUtils.ResultStatus.IS_SUCCESS,
+                        SUCCESS);
+
+        return result;
     }
 
     /**

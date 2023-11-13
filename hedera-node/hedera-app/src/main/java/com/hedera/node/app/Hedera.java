@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
@@ -163,6 +164,10 @@ public final class Hedera implements SwirldMain {
      * The exchange rate manager
      */
     private ExchangeRateManager exchangeRateManager;
+    /**
+     * The fee manager
+     */
+    private FeeManager feeManager;
     /** The class responsible for remembering objects created in genesis cases */
     private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
@@ -231,8 +236,8 @@ public final class Hedera implements SwirldMain {
         version = new HederaSoftwareVersion(versionConfig.hapiVersion(), versionConfig.servicesVersion());
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
-                () -> HapiUtils.toString(version.getHapiVersion()),
-                () -> HapiUtils.toString(version.getServicesVersion()));
+                () -> HapiUtils.toString(version.getServicesVersion()),
+                () -> HapiUtils.toString(version.getHapiVersion()));
 
         // Create a record builder for any genesis records that need to be created
         this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
@@ -285,6 +290,14 @@ public final class Hedera implements SwirldMain {
     public boolean isActive() {
         return platformStatus == PlatformStatus.ACTIVE
                 && daggerApp.grpcServerManager().isRunning();
+    }
+
+    /**
+     * Indicates whether this node is FROZEN.
+     * @return True if the platform is frozen
+     */
+    public boolean isFrozen() {
+        return platformStatus == PlatformStatus.FREEZE_COMPLETE;
     }
 
     /**
@@ -483,26 +496,33 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
+                final var wasActive = platformStatus == PlatformStatus.ACTIVE;
                 platformStatus = notification.getNewStatus();
-                switch (notification.getNewStatus()) {
-                    case ACTIVE -> logger.info("Hederanode#{} is ACTIVE", nodeId);
+                switch (platformStatus) {
+                    case ACTIVE -> {
+                        logger.info("Hederanode#{} is ACTIVE", nodeId);
+                        startGrpcServer();
+                    }
                     case BEHIND -> {
                         logger.info("Hederanode#{} is BEHIND", nodeId);
-                        shutdownGrpcServer();
+                        if (wasActive) shutdownGrpcServer();
                     }
-                    case FREEZE_COMPLETE -> {
-                        logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
-                        shutdownGrpcServer();
-                    }
+                    case FREEZE_COMPLETE -> logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
                     case REPLAYING_EVENTS -> logger.info("Hederanode#{} is REPLAYING_EVENTS", nodeId);
                     case STARTING_UP -> logger.info("Hederanode#{} is STARTING_UP", nodeId);
                     case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is in CATASTROPHIC_FAILURE", nodeId);
-                        shutdownGrpcServer();
+                        if (wasActive) shutdownGrpcServer();
                     }
-                    case CHECKING -> logger.info("Hederanode#{} is CHECKING", nodeId);
+                    case CHECKING -> {
+                        logger.info("Hederanode#{} is CHECKING", nodeId);
+                        if (wasActive) shutdownGrpcServer();
+                    }
                     case OBSERVING -> logger.info("Hederanode#{} is OBSERVING", nodeId);
-                    case FREEZING -> logger.info("Hederanode#{} is FREEZING", nodeId);
+                    case FREEZING -> {
+                        logger.info("Hederanode#{} is FREEZING", nodeId);
+                        if (wasActive) shutdownGrpcServer();
+                    }
                     case RECONNECT_COMPLETE -> logger.info("Hederanode#{} is RECONNECT_COMPLETE", nodeId);
                 }
             });
@@ -575,7 +595,7 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void run() {
-        startGrpcServer();
+        logger.info("Starting the Hedera node");
     }
 
     /**
@@ -595,6 +615,9 @@ public final class Hedera implements SwirldMain {
             logger.debug("Shutting down the block manager");
             daggerApp.blockRecordManager().close();
         }
+
+        platform = null;
+        daggerApp = null;
     }
 
     /**
@@ -636,7 +659,9 @@ public final class Hedera implements SwirldMain {
      * Start the gRPC Server if it is not already running.
      */
     void startGrpcServer() {
-        daggerApp.grpcServerManager().start();
+        if (!daggerApp.grpcServerManager().isRunning()) {
+            daggerApp.grpcServerManager().start();
+        }
     }
 
     /**
@@ -678,6 +703,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager);
+
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
 
@@ -687,8 +715,8 @@ public final class Hedera implements SwirldMain {
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
-        initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeFeeManager(state);
         initializeThrottles(state);
     }
 
@@ -762,6 +790,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager);
+
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
@@ -773,8 +804,8 @@ public final class Hedera implements SwirldMain {
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
-        initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeFeeManager(state);
         initializeThrottles(state);
         // TODO We may need to update the config with the latest version in file 121
     }
@@ -806,10 +837,12 @@ public final class Hedera implements SwirldMain {
                     .configuration(configProvider)
                     .throttleManager(throttleManager)
                     .exchangeRateManager(exchangeRateManager)
+                    .feeManager(feeManager)
                     .systemFileUpdateFacility(new SystemFileUpdateFacility(
                             configProvider,
                             throttleManager,
                             exchangeRateManager,
+                            feeManager,
                             congestionMultipliers,
                             backendThrottle,
                             frontendThrottle))

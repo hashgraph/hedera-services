@@ -76,6 +76,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -319,7 +320,7 @@ class HevmTransactionFactoryTest {
         final var createMeta = new ExpiryMeta(NA, SOME_DURATION.seconds(), NON_SYSTEM_ACCOUNT_ID);
         doThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT))
                 .when(expiryValidator)
-                .resolveCreationAttempt(true, createMeta, false);
+                .resolveCreationAttempt(true, createMeta, HederaFunctionality.CONTRACT_CREATE);
         assertCreateFailsWith(INVALID_AUTORENEW_ACCOUNT, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
