@@ -20,9 +20,11 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -73,4 +75,7 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @return the builder
      */
     CryptoTransferRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+
+    @NonNull
+    CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }

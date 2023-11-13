@@ -21,8 +21,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
@@ -38,6 +40,7 @@ public class FakeCryptoTransferRecordBuilder {
             private List<AssessedCustomFee> assessedCustomFees;
             private List<AccountAmount> paidStakingRewards;
             private List<TokenAssociation> automaticTokenAssociations;
+            private ContractFunctionResult contractCallResult;
 
             @NotNull
             @Override
@@ -79,6 +82,13 @@ public class FakeCryptoTransferRecordBuilder {
             public CryptoTransferRecordBuilder addAutomaticTokenAssociation(
                     @NotNull final TokenAssociation tokenAssociation) {
                 this.automaticTokenAssociations = Arrays.asList(tokenAssociation);
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result) {
+                this.contractCallResult = result;
                 return this;
             }
         };

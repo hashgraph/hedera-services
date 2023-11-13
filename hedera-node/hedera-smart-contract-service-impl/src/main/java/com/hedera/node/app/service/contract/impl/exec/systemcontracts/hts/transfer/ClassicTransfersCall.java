@@ -24,12 +24,14 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -120,6 +122,12 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
+
+        var output = ReturnTypes.encodedRc(recordBuilder.status());
+        recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
+                .contractCallResult(Bytes.wrap(output.array()))
+                .build());
+
         return completionWith(recordBuilder.status(), gasRequirement);
     }
 
