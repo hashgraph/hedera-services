@@ -111,53 +111,6 @@ public class ContractUpdateHandler implements TransactionHandler {
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
     }
 
-    public Account update(
-            @NonNull final Account contract,
-            @NonNull final HandleContext context,
-            @NonNull final ContractUpdateTransactionBody op) {
-        final var builder = contract.copyBuilder();
-        if (op.hasAdminKey()) {
-            if (EMPTY_KEY_LIST.equals(op.adminKey())) {
-                builder.key(contract.key());
-            } else {
-                builder.key(op.adminKey());
-            }
-        }
-        if (op.hasExpirationTime()) {
-            if (contract.expiredAndPendingRemoval()) {
-                builder.expiredAndPendingRemoval(false);
-            }
-            builder.expirationSecond(op.expirationTime().seconds());
-        }
-        if (op.hasAutoRenewPeriod()) {
-            builder.autoRenewSeconds(op.autoRenewPeriod().seconds());
-        }
-        if (affectsMemo(op)) {
-            final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
-            context.attributeValidator().validateMemo(newMemo);
-            builder.memo(newMemo);
-        }
-        if (op.hasStakedAccountId()) {
-            if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
-                builder.stakedAccountId((AccountID) null);
-            } else {
-                builder.stakedAccountId(op.stakedAccountId());
-            }
-        } else if (op.hasStakedNodeId()) {
-            builder.stakedNodeId(op.stakedNodeId());
-        }
-        if (op.hasDeclineReward()) {
-            builder.declineReward(op.declineReward());
-        }
-        if (op.hasAutoRenewAccountId()) {
-            builder.autoRenewAccountId(op.autoRenewAccountId());
-        }
-        if (op.hasMaxAutomaticTokenAssociations()) {
-            builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
-        }
-        return builder.build();
-    }
-
     private void validateSemantics(
             Account contract,
             HandleContext context,
@@ -234,7 +187,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         return keyIsNotValid || candidate.contractID() != null;
     }
 
-    boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
+    private boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
         return !(op.hasProxyAccountID()
                         || op.hasFileID()
                         || affectsMemo(op)
@@ -243,11 +196,11 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasMaxAutomaticTokenAssociations();
     }
 
-    boolean affectsMemo(ContractUpdateTransactionBody op) {
+    private boolean affectsMemo(ContractUpdateTransactionBody op) {
         return op.hasMemoWrapper() || (op.memo() != null && op.memo().length() > 0);
     }
 
-    boolean isMutable(final Account contract) {
+    private boolean isMutable(final Account contract) {
         return Optional.ofNullable(contract.key())
                 .map(key -> !key.hasContractID())
                 .orElse(false);
@@ -255,5 +208,52 @@ public class ContractUpdateHandler implements TransactionHandler {
 
     private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
         return op.hasExpirationTime() && op.expirationTime().seconds() < curExpiry;
+    }
+
+    public Account update(
+            @NonNull final Account contract,
+            @NonNull final HandleContext context,
+            @NonNull final ContractUpdateTransactionBody op) {
+        final var builder = contract.copyBuilder();
+        if (op.hasAdminKey()) {
+            if (EMPTY_KEY_LIST.equals(op.adminKey())) {
+                builder.key(contract.key());
+            } else {
+                builder.key(op.adminKey());
+            }
+        }
+        if (op.hasExpirationTime()) {
+            if (contract.expiredAndPendingRemoval()) {
+                builder.expiredAndPendingRemoval(false);
+            }
+            builder.expirationSecond(op.expirationTime().seconds());
+        }
+        if (op.hasAutoRenewPeriod()) {
+            builder.autoRenewSeconds(op.autoRenewPeriod().seconds());
+        }
+        if (affectsMemo(op)) {
+            final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
+            context.attributeValidator().validateMemo(newMemo);
+            builder.memo(newMemo);
+        }
+        if (op.hasStakedAccountId()) {
+            if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
+                builder.stakedAccountId((AccountID) null);
+            } else {
+                builder.stakedAccountId(op.stakedAccountId());
+            }
+        } else if (op.hasStakedNodeId()) {
+            builder.stakedNodeId(op.stakedNodeId());
+        }
+        if (op.hasDeclineReward()) {
+            builder.declineReward(op.declineReward());
+        }
+        if (op.hasAutoRenewAccountId()) {
+            builder.autoRenewAccountId(op.autoRenewAccountId());
+        }
+        if (op.hasMaxAutomaticTokenAssociations()) {
+            builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
+        }
+        return builder.build();
     }
 }
