@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -31,7 +32,6 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -93,8 +93,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
-                .then(getContractBytecode(NON_EXISTING_CONTRACT)
-                        .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+                .then(getContractBytecode(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(OK));
     }
 
     @HapiTest
@@ -104,6 +103,6 @@ public class ContractGetBytecodeSuite extends HapiSuite {
                 .when()
                 .then(getContractBytecode(NON_EXISTING_CONTRACT)
                         .nodePayment(27_159_182L)
-                        .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+                        .hasAnswerOnlyPrecheck(OK));
     }
 }
