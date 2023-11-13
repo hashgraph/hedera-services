@@ -123,6 +123,8 @@ public class EventDeduplicator {
                 disparateSignatureAccumulator.update(1);
             }
 
+            eventIntakeMetrics.nonDuplicateEvent();
+
             return event;
         } else {
             // duplicate descriptor and signature

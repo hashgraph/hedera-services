@@ -23,6 +23,7 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.components.LinkedEventIntake;
@@ -39,16 +40,15 @@ import java.util.function.Consumer;
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
-public class PlatformWiring implements Startable, Stoppable {
-
+public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final WiringModel model;
 
-    private final InternalEventValidatorScheduler internalEventValidatorScheduler;
-    private final EventDeduplicatorScheduler eventDeduplicatorScheduler;
-    private final EventSignatureValidatorScheduler eventSignatureValidatorScheduler;
-    private final OrphanBufferScheduler orphanBufferScheduler;
-    private final InOrderLinkerScheduler inOrderLinkerScheduler;
-    private final LinkedEventIntakeScheduler linkedEventIntakeScheduler;
+    private final InternalEventValidatorWiring internalEventValidatorWiring;
+    private final EventDeduplicatorWiring eventDeduplicatorWiring;
+    private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
+    private final OrphanBufferWiring orphanBufferWiring;
+    private final InOrderLinkerWiring inOrderLinkerWiring;
+    private final LinkedEventIntakeWiring linkedEventIntakeWiring;
 
     private final boolean cyclicalBackpressurePresent;
 
@@ -61,12 +61,16 @@ public class PlatformWiring implements Startable, Stoppable {
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         model = WiringModel.create(platformContext, time);
 
-        internalEventValidatorScheduler = new InternalEventValidatorScheduler(model);
-        eventDeduplicatorScheduler = new EventDeduplicatorScheduler(model);
-        eventSignatureValidatorScheduler = new EventSignatureValidatorScheduler(model);
-        orphanBufferScheduler = new OrphanBufferScheduler(model);
-        inOrderLinkerScheduler = new InOrderLinkerScheduler(model);
-        linkedEventIntakeScheduler = new LinkedEventIntakeScheduler(model);
+        final PlatformSchedulers schedulers = PlatformSchedulers.create(model);
+
+        internalEventValidatorWiring =
+                InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
+        eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
+        eventSignatureValidatorWiring =
+                EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
+        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+        inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
+        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
 
         wire();
 
@@ -98,31 +102,26 @@ public class PlatformWiring implements Startable, Stoppable {
      * Wire the components together.
      */
     private void wire() {
-        internalEventValidatorScheduler.getEventOutput().solderTo(eventDeduplicatorScheduler.getEventInput());
-        eventDeduplicatorScheduler.getEventOutput().solderTo(eventSignatureValidatorScheduler.getEventInput());
-        eventSignatureValidatorScheduler.getEventOutput().solderTo(orphanBufferScheduler.getEventInput());
-        orphanBufferScheduler.getEventOutput().solderTo(inOrderLinkerScheduler.getEventInput());
-        inOrderLinkerScheduler.getEventOutput().solderTo(linkedEventIntakeScheduler.getEventInput());
+        internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
+        eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
+        eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        final OutputWire<Long> minimumGenerationNonAncientOutput = linkedEventIntakeScheduler
-                .getEventOutput()
-                .buildTransformer(
-                        "getMinimumGenerationNonAncient",
-                        consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient());
+        final OutputWire<Long> minimumGenerationNonAncientOutput =
+                linkedEventIntakeWiring.minimumGenerationNonAncientOutput();
 
+        minimumGenerationNonAncientOutput.solderTo(eventDeduplicatorWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(
-                eventDeduplicatorScheduler.getMinimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventSignatureValidatorScheduler.getMinimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(orphanBufferScheduler.getMinimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                inOrderLinkerScheduler.getMinimumGenerationNonAncientInput(), INJECT);
+                eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
 
         // FUTURE WORK: solder all the things!
     }
 
     /**
-     * Bind schedulers to their components.
+     * Bind components to the wiring.
      *
      * @param internalEventValidator  the internal event validator to bind
      * @param eventDeduplicator       the event deduplicator to bind
@@ -139,12 +138,12 @@ public class PlatformWiring implements Startable, Stoppable {
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final LinkedEventIntake linkedEventIntake) {
 
-        internalEventValidatorScheduler.bind(internalEventValidator);
-        eventDeduplicatorScheduler.bind(eventDeduplicator);
-        eventSignatureValidatorScheduler.bind(eventSignatureValidator);
-        orphanBufferScheduler.bind(orphanBuffer);
-        inOrderLinkerScheduler.bind(inOrderLinker);
-        linkedEventIntakeScheduler.bind(linkedEventIntake);
+        internalEventValidatorWiring.bind(internalEventValidator);
+        eventDeduplicatorWiring.bind(eventDeduplicator);
+        eventSignatureValidatorWiring.bind(eventSignatureValidator);
+        orphanBufferWiring.bind(orphanBuffer);
+        inOrderLinkerWiring.bind(inOrderLinker);
+        linkedEventIntakeWiring.bind(linkedEventIntake);
 
         // FUTURE WORK: bind all the things!
     }
@@ -158,7 +157,7 @@ public class PlatformWiring implements Startable, Stoppable {
      * @return the input method for the internal event validator, which is the first step in the intake pipeline
      */
     public InterruptableConsumer<GossipEvent> getEventInput() {
-        return internalEventValidatorScheduler.getEventInput()::put;
+        return internalEventValidatorWiring.eventInput()::put;
     }
 
     /**
@@ -169,7 +168,7 @@ public class PlatformWiring implements Startable, Stoppable {
      * @return the input method for the address book update
      */
     public Consumer<AddressBookUpdate> getAddressBookUpdateInput() {
-        return eventSignatureValidatorScheduler.getAddressBookUpdateInput()::inject;
+        return eventSignatureValidatorWiring.addressBookUpdateInput()::inject;
     }
 
     /**
@@ -181,10 +180,10 @@ public class PlatformWiring implements Startable, Stoppable {
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
     public void forceUpdateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        eventDeduplicatorScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        eventSignatureValidatorScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        orphanBufferScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
-        inOrderLinkerScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        eventDeduplicatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        eventSignatureValidatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        orphanBufferWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        inOrderLinkerWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**
@@ -201,5 +200,36 @@ public class PlatformWiring implements Startable, Stoppable {
     @Override
     public void stop() {
         model.stop();
+    }
+
+    /**
+     * Flush all the wiring objects
+     */
+    private void flushAll() {
+        internalEventValidatorWiring.flushRunnable().run();
+        eventDeduplicatorWiring.flushRunnable().run();
+        eventSignatureValidatorWiring.flushRunnable().run();
+        orphanBufferWiring.flushRunnable().run();
+        inOrderLinkerWiring.flushRunnable().run();
+        linkedEventIntakeWiring.flushRunnable().run();
+    }
+
+    /**
+     * Clear all the wiring objects.
+     * <p>
+     * This doesn't guarantee that all objects will have nothing in their internal storage, but it does guarantee
+     * that the objects will no longer be emitting any events or rounds.
+     */
+    @Override
+    public void clear() {
+        // pause the orphan buffer to break the cycle, and flush the pause through
+        orphanBufferWiring.pauseInput().inject(true);
+        orphanBufferWiring.flushRunnable().run();
+
+        // now that no cycles exist, flush all the wiring objects
+        flushAll();
+
+        // once everything has been flushed through the system, it's safe to unpause the orphan buffer
+        orphanBufferWiring.pauseInput().inject(false);
     }
 }

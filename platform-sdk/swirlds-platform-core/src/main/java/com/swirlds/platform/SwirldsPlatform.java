@@ -807,7 +807,8 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(transactionPool, "transactionPool")));
+                        Pair.of(transactionPool, "transactionPool"),
+                        Pair.of(platformWiring, "platformWiring")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
             components.add(new JvmAnchor(threadManager));
@@ -1039,6 +1040,7 @@ public class SwirldsPlatform implements Platform {
                             .accept(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
+                    platformWiring.forceUpdateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
                 }
             } finally {
                 intakeQueue.resume();
