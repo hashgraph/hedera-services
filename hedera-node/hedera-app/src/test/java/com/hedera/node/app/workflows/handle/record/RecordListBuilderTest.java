@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -642,6 +643,32 @@ class RecordListBuilderTest extends AppTestBase {
         assertCreatedRecord(records.get(2))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(2)
+                .hasParent(result.userTransactionRecord());
+    }
+
+    @Test
+    void testAddRemovableChildWithSuppressedRecord() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        // when
+        recordListBuilder
+                .addRemovableChildWithExternalizationCustomizer(
+                        CONFIGURATION, SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER)
+                .transaction(simpleCryptoTransfer());
+        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // then
+        assertThat(records).hasSize(2);
+        assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(1)
                 .hasParent(result.userTransactionRecord());
     }
 
