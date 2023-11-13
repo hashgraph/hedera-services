@@ -43,8 +43,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -157,7 +155,6 @@ public class ChatterGossip extends AbstractGossip {
                 swirldStateManager,
                 stateManagementComponent,
                 syncMetrics,
-                eventObserverDispatcher,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -293,17 +290,6 @@ public class ChatterGossip extends AbstractGossip {
     @Override
     protected boolean unidirectionalConnectionsEnabled() {
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        return new CriticalQuorumImpl(
-                platformContext.getMetrics(), selfId, addressBook, chatterConfig.criticalQuorumSoftening());
     }
 
     /**
