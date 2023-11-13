@@ -226,8 +226,9 @@ public class PrivilegesVerifier {
 
     private SystemPrivilege checkCryptoUpdate(
             @NonNull final AccountID payerId, @NonNull final CryptoUpdateTransactionBody op) {
-        final var targetId = op.accountIDToUpdateOrThrow();
-        final long targetNum = targetId.accountNumOrThrow();
+        // while dispatching hollow account finalization transaction body, the accountId is set to DEFAULT
+        final var targetId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
+        final long targetNum = targetId.accountNumOrElse(0L);
         final var treasury = accountsConfig.treasury();
         final var payerNum = payerId.accountNumOrThrow();
 
