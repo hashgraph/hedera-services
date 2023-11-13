@@ -67,14 +67,15 @@ public class HapiTestEnv {
                 nodeHosts.add("127.0.0.1:" + (FIRST_GRPC_PORT + (nodeId * 2)) + ":" + account);
             }
             sb.append("\nnextNodeId, ").append(numNodes).append("\n");
-            final var configText = sb.toString();
+            final String configText = sb.toString();
 
             for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                final var workingDir =
+                final Path workingDir =
                         Path.of("./build/hapi-test/node" + nodeId).normalize();
                 setupWorkingDirectory(workingDir, configText);
-                final var nodeName = NODE_NAMES[nodeId];
-                final var acct = AccountID.newBuilder().accountNum(3L + nodeId).build();
+                final String nodeName = NODE_NAMES[nodeId];
+                final AccountID acct =
+                        AccountID.newBuilder().accountNum(3L + nodeId).build();
                 if (useInProcessAlice && nodeId == 0) {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
@@ -90,18 +91,13 @@ public class HapiTestEnv {
     /**
      * Starts all nodes in the environment.
      */
-    public void start() {
+    public void start() throws TimeoutException {
         started = true;
         for (final var node : nodes) {
             node.start();
         }
-
         for (final var node : nodes) {
-            try {
-                node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
-            } catch (TimeoutException e) {
-                throw new RuntimeException(e);
-            }
+            node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
         }
     }
 
