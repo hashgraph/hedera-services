@@ -82,6 +82,7 @@ public class SignedStateFileManager {
     private final SignedStateMetrics metrics;
 
     private final Configuration configuration;
+    private final PlatformContext platformContext;
 
     /**
      * Provides system time
@@ -128,7 +129,8 @@ public class SignedStateFileManager {
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
-        this.configuration = Objects.requireNonNull(configuration);
+        this.platformContext = Objects.requireNonNull(context);
+        this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
@@ -177,7 +179,7 @@ public class SignedStateFileManager {
             if (request.outOfBand()) {
                 // states requested to be written out-of-band are always written to disk
                 SignedStateFileWriter.writeSignedStateToDisk(
-                        selfId, directory, state, reason, configuration);
+                        platformContext, selfId, directory, state, reason);
 
                 success = true;
                 return;
@@ -194,7 +196,7 @@ public class SignedStateFileManager {
             }
 
             SignedStateFileWriter.writeSignedStateToDisk(
-                    selfId, directory, state, reason, configuration);
+                    platformContext, selfId, directory, state, reason, configuration);
             stateWrittenToDiskInBand(state, directory, start);
 
             success = true;
