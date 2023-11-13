@@ -42,7 +42,7 @@ public final class DirectSchedulerChecks {
      * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#SEQUENTIAL_THREAD SEQUENTIAL_THREAD} is not allowed.
      * </li>
      * <li>
-     * When calling into a component A with type
+     * Calling into a component A with type
      * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT} from component B with type
      * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT} or type
      * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT_STATELESS DIRECT_STATELESS} counts as a call
