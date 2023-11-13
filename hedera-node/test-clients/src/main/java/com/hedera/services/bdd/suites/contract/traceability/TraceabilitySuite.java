@@ -130,6 +130,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.junit.jupiter.api.Order;
 
 @HapiTestSuite
 public class TraceabilitySuite extends HapiSuite {
@@ -226,6 +227,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(1)
     private HapiSpec traceabilityE2EScenario1() {
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
@@ -595,6 +597,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(2)
     private HapiSpec traceabilityE2EScenario2() {
         return defaultHapiSpec("traceabilityE2EScenario2")
                 .given(
@@ -999,6 +1002,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(3)
     private HapiSpec traceabilityE2EScenario3() {
         return defaultHapiSpec("traceabilityE2EScenario3")
                 .given(
@@ -1406,6 +1410,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(4)
     private HapiSpec traceabilityE2EScenario4() {
         return defaultHapiSpec("traceabilityE2EScenario4")
                 .given(
@@ -1696,6 +1701,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(5)
     private HapiSpec traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5")
                 .given(
@@ -1998,6 +2004,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(6)
     private HapiSpec traceabilityE2EScenario6() {
         return defaultHapiSpec("traceabilityE2EScenario6")
                 .given(
@@ -2332,6 +2339,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(7)
     private HapiSpec traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7")
                 .given(
@@ -2722,6 +2730,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(8)
     private HapiSpec traceabilityE2EScenario8() {
         return defaultHapiSpec("traceabilityE2EScenario8")
                 .given(
@@ -3073,6 +3082,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(9)
     private HapiSpec traceabilityE2EScenario9() {
         return defaultHapiSpec("traceabilityE2EScenario9")
                 .given(
@@ -3378,6 +3388,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(10)
     private HapiSpec traceabilityE2EScenario10() {
         return defaultHapiSpec("traceabilityE2EScenario10")
                 .given(
@@ -3719,6 +3730,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(11)
     private HapiSpec traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11")
                 .given(
@@ -3995,6 +4007,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(12)
     private HapiSpec traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
@@ -4027,6 +4040,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(13)
     private HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return propertyPreservingHapiSpec("traceabilityE2EScenario13")
@@ -4072,6 +4086,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(14)
     private HapiSpec traceabilityE2EScenario14() {
         return propertyPreservingHapiSpec("traceabilityE2EScenario14")
                 .preserving(CHAIN_ID_PROPERTY)
@@ -4117,6 +4132,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(15)
     private HapiSpec traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
         final String DEPLOY = "deploy";
@@ -4256,6 +4272,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(16)
     private HapiSpec traceabilityE2EScenario16() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final String PRECOMPILE_CALLER = "PrecompileCaller";
@@ -4365,6 +4382,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(17)
     private HapiSpec traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
@@ -4423,6 +4441,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(18)
     private HapiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
@@ -4447,6 +4466,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(19)
     private HapiSpec traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
@@ -4492,6 +4512,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(20)
     private HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
@@ -4517,6 +4538,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(21)
     private HapiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
