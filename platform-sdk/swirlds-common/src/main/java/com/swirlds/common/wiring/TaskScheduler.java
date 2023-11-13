@@ -166,8 +166,9 @@ public abstract class TaskScheduler<OUT> {
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
      * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
      * <p>
-     * Returns -1 if this task scheduler is not monitoring the number of unprocessed tasks. Schedulers do not track the
-     * number of unprocessed tasks by default. This method will always return -1 unless one of the following is true:
+     * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed
+     * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return -1
+     * unless one of the following is true:
      * <ul>
      * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>

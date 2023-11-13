@@ -70,7 +70,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return -1;
+        return onRamp.getCount();
     }
 
     /**
