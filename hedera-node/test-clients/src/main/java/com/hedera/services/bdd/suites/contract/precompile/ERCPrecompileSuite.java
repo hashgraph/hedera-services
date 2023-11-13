@@ -68,7 +68,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -2235,7 +2234,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         DO_SPECIFIC_APPROVAL,
@@ -2350,7 +2349,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         GET_BALANCE_OF,
@@ -2424,7 +2423,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .via(MISSING_TOKEN)
                                 .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         GET_OWNER_OF,
