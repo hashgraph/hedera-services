@@ -544,7 +544,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 .filter(Objects::nonNull)
                 .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(validationAddressBooks, CryptoStatic::verifySignature));
+            validators.add(new SignatureValidator(
+                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
