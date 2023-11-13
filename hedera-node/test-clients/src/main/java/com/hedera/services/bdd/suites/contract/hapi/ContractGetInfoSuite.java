@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -83,7 +83,7 @@ public class ContractGetInfoSuite extends HapiSuite {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
-                .then(getContractInfo(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(OK));
+                .then(getContractInfo(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
@@ -93,7 +93,7 @@ public class ContractGetInfoSuite extends HapiSuite {
                 .when()
                 .then(getContractInfo(NON_EXISTING_CONTRACT)
                         .nodePayment(27_159_182L)
-                        .hasAnswerOnlyPrecheck(OK));
+                        .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
     }
 
     @Override
