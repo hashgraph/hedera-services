@@ -153,26 +153,8 @@ public class ContractUpdateHandler implements TransactionHandler {
             builder.autoRenewAccountId(op.autoRenewAccountId());
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-            final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
-            final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
-
-            validateFalse(
-                    op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
-            final long newMax = op.maxAutomaticTokenAssociations();
-            validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
-            validateFalse(
-                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
-
-            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
         }
-
         return builder.build();
     }
 
@@ -198,6 +180,25 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         validateFalse(!onlyAffectsExpiry(op) && !isMutable(contract), MODIFYING_IMMUTABLE_CONTRACT);
         validateFalse(reducesExpiry(op, contract.expirationSecond()), EXPIRATION_REDUCTION_NOT_ALLOWED);
+
+        if (op.hasMaxAutomaticTokenAssociations()) {
+            final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+            final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+            final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
+
+            validateFalse(
+                    op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+
+            final long newMax = op.maxAutomaticTokenAssociations();
+            validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+            validateFalse(
+                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+
+            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
+        }
 
         // validate expiry metadata
         final var currentMetadata =
