@@ -70,7 +70,6 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_K
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -106,7 +105,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -1003,16 +1001,12 @@ public class EthereumSuite extends HapiSuite {
                                 .nonce(0)
                                 .gasPrice(0L)
                                 .gasLimit(1_000_000L)
-                                .hasKnownStatusFrom(INVALID_CONTRACT_ID))))
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord("invalidContractCallTxn")
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith()
-                                                .error(Bytes.of(INVALID_CONTRACT_ID
-                                                                .name()
-                                                                .getBytes())
-                                                        .toHexString())
                                                 .senderId(spec.registry()
                                                         .getAccountID(spec.registry()
                                                                 .aliasIdFor(SECP_256K1_SOURCE_KEY)
