@@ -76,29 +76,37 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute(frame);
-            final var enhancement = FrameUtils.proxyUpdaterFor(frame).enhancement();
-            final var responseCode = pricedResult.responseCode();
+            final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
+            if (proxyWorldUpdater != null) {
+                final var enhancement = proxyWorldUpdater.enhancement();
 
-            if (responseCode == SUCCESS) {
-                final var output = pricedResult.fullResult().result().getOutput();
-                enhancement
-                        .systemOperations()
-                        .externalizeResult(
-                                contractFunctionResultSuccessFor(pricedResult.nonGasCost(), output, contractID),
-                                responseCode);
-            } else {
-                enhancement
-                        .systemOperations()
-                        .externalizeResult(
-                                contractFunctionResultFailedFor(
-                                        pricedResult.nonGasCost(), responseCode.toString(), contractID),
-                                responseCode);
+
+                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
+
+                if (responseCode == SUCCESS) {
+                    final var output = pricedResult.fullResult().result().getOutput();
+                    enhancement
+                            .systemOperations()
+                            .externalizeResult(
+                                    contractFunctionResultSuccessFor(pricedResult.fullResult().gasRequirement(), output, contractID),
+                                    responseCode);
+                } else {
+                    enhancement
+                            .systemOperations()
+                            .externalizeResult(
+                                    contractFunctionResultFailedFor(
+                                            pricedResult.fullResult().gasRequirement(), responseCode.toString(), contractID),
+                                    responseCode);
+                }
             }
         } catch (final HandleException handleException) {
             throw handleException;
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
+        }
+        if (pricedResult.nonGasCost() > 0) {
+            throw new AssertionError("Not implemented");
         }
         return pricedResult.fullResult();
     }
