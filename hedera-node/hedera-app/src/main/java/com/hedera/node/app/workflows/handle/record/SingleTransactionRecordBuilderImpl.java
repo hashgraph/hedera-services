@@ -78,6 +78,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -120,6 +121,10 @@ public class SingleTransactionRecordBuilderImpl
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
                 GasFeeRecordBuilder {
+
+    private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
+                    .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
 
     // base transaction data
     private Transaction transaction;
@@ -246,6 +251,12 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
+        // sort the automatic associations to match the order of mono-service records
+        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+
         final var transactionRecord = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
@@ -255,7 +266,7 @@ public class SingleTransactionRecordBuilderImpl
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
-                .automaticTokenAssociations(automaticTokenAssociations)
+                .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
                 .build();
 
