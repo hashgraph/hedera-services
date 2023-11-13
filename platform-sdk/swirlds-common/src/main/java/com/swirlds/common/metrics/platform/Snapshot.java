@@ -57,7 +57,7 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
      * As single entry within a {@code Snapshot}
      *
      * @param valueType
-     * 		the {@link com.swirlds.common.metrics.Metric.ValueType} of this entry
+     * 		the {@link Metric.ValueType} of this entry
      * @param value
      * 		the actual value
      */

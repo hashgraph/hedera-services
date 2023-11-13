@@ -68,6 +68,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -559,9 +560,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final ExternalizedRecordCustomizer customizer) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addRemovableChild(configuration());
+                () -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(configuration(), customizer);
         return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 
