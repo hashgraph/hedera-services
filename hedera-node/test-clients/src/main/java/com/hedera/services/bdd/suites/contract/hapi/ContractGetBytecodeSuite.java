@@ -23,7 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -65,7 +65,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
         return true;
     }
 
-    //    @HapiTest
+    @HapiTest
     private HapiSpec getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("GetByteCodeWorks")
@@ -90,7 +90,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
-                .then(getContractBytecode(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(OK));
+                .then(getContractBytecode(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
@@ -100,6 +100,6 @@ public class ContractGetBytecodeSuite extends HapiSuite {
                 .when()
                 .then(getContractBytecode(NON_EXISTING_CONTRACT)
                         .nodePayment(27_159_182L)
-                        .hasAnswerOnlyPrecheck(OK));
+                        .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
     }
 }
