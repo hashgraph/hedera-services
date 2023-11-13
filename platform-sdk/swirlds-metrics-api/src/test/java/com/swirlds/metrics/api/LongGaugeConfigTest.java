@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.swirlds.metrics.api.IntegerGauge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class IntegerGaugeConfigTest {
+class LongGaugeConfigTest {
 
     private static final String DEFAULT_FORMAT = "%d";
 
@@ -37,7 +36,7 @@ class IntegerGaugeConfigTest {
     @DisplayName("Constructor should store values")
     void testConstructor() {
         // when
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
+        final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -51,26 +50,25 @@ class IntegerGaugeConfigTest {
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameter() {
-        assertThatThrownBy(() -> new IntegerGauge.Config(null, NAME)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config(" \t\n", NAME)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new LongGauge.Config(null, NAME)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new LongGauge.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new LongGauge.Config(" \t\n", NAME)).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new IntegerGauge.Config(CATEGORY, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config(CATEGORY, "")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config(CATEGORY, " \t\n"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new LongGauge.Config(CATEGORY, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new LongGauge.Config(CATEGORY, "")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new LongGauge.Config(CATEGORY, " \t\n")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSetters() {
         // given
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
+        final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME);
 
         // when
-        final IntegerGauge.Config result = config.withDescription(DESCRIPTION)
+        final LongGauge.Config result = config.withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
-                .withInitialValue(42);
+                .withInitialValue(42L);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -85,13 +83,13 @@ class IntegerGaugeConfigTest {
         assertThat(result.getDescription()).isEqualTo(DESCRIPTION);
         assertThat(result.getUnit()).isEqualTo(UNIT);
         assertThat(result.getFormat()).isEqualTo(FORMAT);
-        assertThat(result.getInitialValue()).isEqualTo(42);
+        assertThat(result.getInitialValue()).isEqualTo(42L);
     }
 
     @Test
     void testSettersWithIllegalParameters() {
         // given
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
+        final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME);
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
@@ -110,11 +108,11 @@ class IntegerGaugeConfigTest {
     @Test
     void testToString() {
         // given
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME)
+        final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
-                .withInitialValue(42);
+                .withInitialValue(42L);
 
         // then
         assertThat(config.toString()).contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, "42");

@@ -16,6 +16,7 @@
 
 package com.swirlds.metrics.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 
 /**
@@ -108,6 +109,7 @@ public interface Metric {
      *
      * @return the list of {@code ValueTypes}
      */
+    @NonNull
     EnumSet<ValueType> getValueTypes();
 
     /**
@@ -123,7 +125,7 @@ public interface Metric {
      * @throws IllegalArgumentException
      * 		if the given {@code ValueType} is {@code null} or not supported by this {@code Metric}
      */
-    Object get(final ValueType valueType);
+    Object get(@NonNull final ValueType valueType);
 
     /**
      * This method resets a {@code Metric}. It is for example called after startup to ensure that the

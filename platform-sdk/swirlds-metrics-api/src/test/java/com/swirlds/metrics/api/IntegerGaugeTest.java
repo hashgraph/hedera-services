@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
 import static com.swirlds.metrics.api.Metric.DataType.INT;
 import static com.swirlds.metrics.api.Metric.ValueType.MAX;
@@ -28,21 +28,20 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.metrics.api.LongGauge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Testing LongGauge")
-class LongGaugeTest {
+@DisplayName("Testing IntegerGauge")
+class IntegerGaugeTest {
 
-    private final LongGauge sut = new LongGauge() {
+    private final IntegerGauge sut = new IntegerGauge() {
         @Override
-        public long get() {
+        public int get() {
             return 0;
         }
 
         @Override
-        public void set(long newValue) {}
+        public void set(int newValue) {}
 
         @Override
         public String getCategory() {
@@ -90,9 +89,9 @@ class LongGaugeTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final LongGauge gauge = spy(sut);
+        final IntegerGauge gauge = spy(sut);
 
-        final Long value = gauge.get(VALUE);
+        final Integer value = gauge.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
         verify(gauge, times(1)).get();

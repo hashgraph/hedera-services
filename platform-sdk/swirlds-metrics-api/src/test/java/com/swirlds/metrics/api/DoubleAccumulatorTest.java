@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
-import static com.swirlds.metrics.api.Metric.DataType.INT;
+import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
 import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
@@ -28,26 +28,25 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.metrics.api.LongAccumulator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Testing LongAccumulator")
-class LongAccumulatorTest {
+@DisplayName("Testing DoubleAccumulator")
+class DoubleAccumulatorTest {
 
-    private final LongAccumulator sut = new LongAccumulator() {
+    private final DoubleAccumulator sut = new DoubleAccumulator() {
         @Override
-        public long get() {
+        public double get() {
             return 0;
         }
 
         @Override
-        public long getInitialValue() {
+        public double getInitialValue() {
             return 0;
         }
 
         @Override
-        public void update(long other) {}
+        public void update(double other) {}
 
         @Override
         public String getCategory() {
@@ -85,7 +84,7 @@ class LongAccumulatorTest {
 
     @Test
     void getDataType() {
-        assertThat(sut.getDataType()).isEqualTo(INT);
+        assertThat(sut.getDataType()).isEqualTo(FLOAT);
     }
 
     @Test
@@ -95,9 +94,9 @@ class LongAccumulatorTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final LongAccumulator accumulator = spy(sut);
+        final DoubleAccumulator accumulator = spy(sut);
 
-        final Long value = accumulator.get(VALUE);
+        final Double value = accumulator.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
         verify(accumulator, times(1)).get();

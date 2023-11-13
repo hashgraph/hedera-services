@@ -14,35 +14,37 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
-import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
+import static com.swirlds.metrics.api.Metric.DataType.INT;
 import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.GAUGE;
+import static com.swirlds.metrics.api.MetricType.COUNTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.metrics.api.DoubleGauge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Testing DoubleGauge")
-class DoubleGaugeTest {
+@DisplayName("Testing Counter")
+class CounterTest {
 
-    private final DoubleGauge sut = new DoubleGauge() {
+    private final Counter sut = new Counter() {
         @Override
-        public double get() {
+        public long get() {
             return 0;
         }
 
         @Override
-        public void set(double newValue) {}
+        public void add(long value) {}
+
+        @Override
+        public void increment() {}
 
         @Override
         public String getCategory() {
@@ -75,12 +77,12 @@ class DoubleGaugeTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(GAUGE);
+        assertThat(sut.getMetricType()).isEqualTo(COUNTER);
     }
 
     @Test
     void getDataType() {
-        assertThat(sut.getDataType()).isEqualTo(FLOAT);
+        assertThat(sut.getDataType()).isEqualTo(INT);
     }
 
     @Test
@@ -90,12 +92,12 @@ class DoubleGaugeTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final DoubleGauge gauge = spy(sut);
+        final Counter counter = spy(sut);
 
-        final Double value = gauge.get(VALUE);
+        final Long value = counter.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
-        verify(gauge, times(1)).get();
+        verify(counter, times(1)).get();
     }
 
     @Test

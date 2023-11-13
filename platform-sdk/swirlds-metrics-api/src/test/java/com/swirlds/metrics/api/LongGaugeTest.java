@@ -14,40 +14,34 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics.api;
 
-import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
+import static com.swirlds.metrics.api.Metric.DataType.INT;
 import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.ACCUMULATOR;
+import static com.swirlds.metrics.api.MetricType.GAUGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.metrics.api.DoubleAccumulator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Testing DoubleAccumulator")
-class DoubleAccumulatorTest {
+@DisplayName("Testing LongGauge")
+class LongGaugeTest {
 
-    private final DoubleAccumulator sut = new DoubleAccumulator() {
+    private final LongGauge sut = new LongGauge() {
         @Override
-        public double get() {
+        public long get() {
             return 0;
         }
 
         @Override
-        public double getInitialValue() {
-            return 0;
-        }
-
-        @Override
-        public void update(double other) {}
+        public void set(long newValue) {}
 
         @Override
         public String getCategory() {
@@ -80,12 +74,12 @@ class DoubleAccumulatorTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(ACCUMULATOR);
+        assertThat(sut.getMetricType()).isEqualTo(GAUGE);
     }
 
     @Test
     void getDataType() {
-        assertThat(sut.getDataType()).isEqualTo(FLOAT);
+        assertThat(sut.getDataType()).isEqualTo(INT);
     }
 
     @Test
@@ -95,12 +89,12 @@ class DoubleAccumulatorTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final DoubleAccumulator accumulator = spy(sut);
+        final LongGauge gauge = spy(sut);
 
-        final Double value = accumulator.get(VALUE);
+        final Long value = gauge.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
-        verify(accumulator, times(1)).get();
+        verify(gauge, times(1)).get();
     }
 
     @Test

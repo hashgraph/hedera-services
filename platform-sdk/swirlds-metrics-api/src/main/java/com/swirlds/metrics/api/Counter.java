@@ -58,7 +58,7 @@ public interface Counter extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Long get(final ValueType valueType) {
+    default Long get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
