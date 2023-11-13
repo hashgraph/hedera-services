@@ -16,15 +16,23 @@
 
 package com.swirlds.logging;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.swirlds.base.test.fixtures.io.SystemErrProvider;
+import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+@WithSystemError
 public class LogLevelTest {
+
+    @Inject
+    private SystemErrProvider systemErrProvider;
 
     @Test
     void logLevelWithHandlerOverwrite() {
@@ -34,6 +42,8 @@ public class LogLevelTest {
                 .withValue("logging.level.com.foo", "TRACE")
                 .withValue("logging.level.com.bar", "TRACE")
                 .withValue("logging.handler.HANDLER1.level.com.bar", "OFF")
+                .withValue("logging.handler.HANDLER2.level.com.foo", "OFF")
+                .withValue("logging.handler.HANDLER2.level", "INFO")
                 .getOrCreateConfig();
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
 
@@ -42,5 +52,134 @@ public class LogLevelTest {
         assertThat(config.isEnabled("com.bar.some.Class", Level.ERROR)).isFalse();
         assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE)).isTrue();
         assertThat(config.isEnabled("com.some.Class", Level.ERROR)).isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.INFO)).isFalse();
+    }
+
+    @Test
+    void logLevelWithHandlerOverwriteWithMarker() {
+        // given
+        final Marker markerBaz = new Marker("baz");
+        final Marker markerBum = new Marker("bum");
+        final Marker markerBrum = new Marker("brum");
+        final Marker markerPeng = new Marker("peng");
+        final Marker combinedMarker = new Marker("bum", markerBaz);
+
+        final Configuration configuration = new TestConfigBuilder()
+                // Level
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.com.foo", "TRACE")
+                .withValue("logging.level.com.bar", "TRACE")
+                // Markers
+                .withValue("logging.marker.baz", "ENABLED")
+                .withValue("logging.marker.bum", "DISABLED")
+                .withValue("logging.marker.peng", "INHERIT")
+                // Handler Markers
+                .withValue("logging.handler.HANDLER1.marker.peng", "DISABLED")
+                .withValue("logging.handler.HANDLER2.marker.peng", "ENABLED")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
+
+        // then
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz)).isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBum)).isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, combinedMarker)).isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.ERROR, markerPeng)).isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBrum)).isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.ERROR, markerBrum)).isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.INFO, markerBrum)).isFalse();
+    }
+
+    @Test
+    void logLevelWithDifferentHandlers() {
+        // given
+        final Marker markerA = new Marker("A");
+        final Marker markerB = new Marker("B");
+        final Marker markerC = new Marker("C");
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.HANDLER1.marker.A", "ENABLED")
+                .withValue("logging.handler.HANDLER2.marker.C", "DISABLED")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config1 = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
+        final HandlerLoggingLevelConfig config2 = new HandlerLoggingLevelConfig(configuration, "HANDLER2");
+
+        // then
+        assertThat(config1.isEnabled("com.example.ClassA", Level.INFO, markerA)).isTrue();
+        assertThat(config1.isEnabled("com.example.ClassB", Level.ERROR, markerB)).isTrue();
+        assertThat(config2.isEnabled("com.example.ClassC", Level.WARN, markerC)).isFalse();
+        assertThat(config2.isEnabled("com.example.ClassA", Level.INFO, markerC)).isFalse();
+    }
+
+    @Test
+    void logLevelWithDefaultHandler() {
+        // given
+        final Marker markerX = new Marker("X");
+        final Marker markerY = new Marker("Y");
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.HANDLER1.marker.X", "ENABLED")
+                .withValue("logging.handler.HANDLER2.marker.Y", "DISABLED")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config1 = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
+        final HandlerLoggingLevelConfig config2 = new HandlerLoggingLevelConfig(configuration, "HANDLER2");
+
+        // then
+        assertThat(config1.isEnabled("com.example.Class", Level.INFO, markerX)).isTrue();
+        assertThat(config1.isEnabled("com.example.Class", Level.ERROR, markerY)).isTrue();
+        assertThat(config2.isEnabled("com.example.Class", Level.DEBUG, markerY)).isFalse();
+        assertThat(config2.isEnabled("com.example.Class", Level.TRACE, markerX)).isFalse();
+    }
+
+    @Test
+    void logLevelWithInheritedHandler() {
+        // given
+        final Marker markerM = new Marker("M");
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "OFF")
+                .withValue("logging.handler.HANDLER1.marker.M", "ENABLED")
+                .withValue("logging.handler.HANDLER2.marker.M", "INHERIT")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config1 = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
+        final HandlerLoggingLevelConfig config2 = new HandlerLoggingLevelConfig(configuration, "HANDLER2");
+
+        // then
+        assertThat(config1.isEnabled("com.example.Class", Level.INFO, markerM)).isTrue();
+        assertThat(config1.isEnabled("com.example.Class", Level.TRACE, markerM)).isTrue();
+        assertThat(config2.isEnabled("com.example.Class", Level.ERROR, markerM)).isFalse();
+        assertThat(config2.isEnabled("com.example.Class", Level.DEBUG, markerM)).isFalse();
+    }
+
+    @Test void nameNull() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "ERROR")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
+
+        // when
+        final boolean result = config.isEnabled(null, Level.INFO);
+
+        // then
+        assertThat(result).isTrue();
+        assertThat(systemErrProvider.getLines()).anyMatch(s -> s.contains("Null parameter: name"));
+    }
+
+    @Test void levelNull() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "ERROR")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
+
+        // when
+        final boolean result = config.isEnabled("com.example", null);
+
+        // then
+        assertThat(result).isTrue();
+        assertThat(systemErrProvider.getLines()).anyMatch(s -> s.contains("Null parameter: level"));
     }
 }

@@ -831,14 +831,14 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /**
-     * @return the self-parent of event x, or ∅ if none or ancient
+     * @return the self-previousMarker of event x, or ∅ if none or ancient
      */
     private @Nullable EventImpl selfParent(@NonNull final EventImpl x) {
         return ancient(x.getSelfParent()) ? null : x.getSelfParent();
     }
 
     /**
-     * @return the other-parent of event x, or ∅ if none or ancient
+     * @return the other-previousMarker of event x, or ∅ if none or ancient
      */
     private @Nullable EventImpl otherParent(@NonNull final EventImpl x) {
         return ancient(x.getOtherParent()) ? null : x.getOtherParent();
@@ -854,11 +854,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /**
-     * The parent round (max of parents' rounds) of event x (function from SWIRLDS-TR-2020-01). This
+     * The previousMarker round (max of parents' rounds) of event x (function from SWIRLDS-TR-2020-01). This
      * result is not memoized.
      *
      * @param x the event being queried
-     * @return the parent round of x
+     * @return the previousMarker round of x
      */
     private long parentRound(@Nullable final EventImpl x) {
         if (x == null) {
@@ -940,7 +940,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /**
-     * The witness created by m in the parent round of x that x strongly sees (function from
+     * The witness created by m in the previousMarker round of x that x strongly sees (function from
      * SWIRLDS-TR-2020-01). This result is memoized.
      *
      * <p>This method is called multiple times by both round() and stronglySeeP1(). A measure of the
@@ -950,7 +950,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *
      * @param x the event being queried
      * @param m the member ID of the creator
-     * @return witness created by m in the parent round of x that x strongly sees, or null if none
+     * @return witness created by m in the previousMarker round of x that x strongly sees, or null if none
      */
     private @Nullable EventImpl stronglySeeP(@Nullable final EventImpl x, final long m) {
         if (x == null) { // if there is no event, then it can't see anything
@@ -966,11 +966,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // find and memoize answers for all choices of m, then return answer for just this m
         final int numMembers = addressBook.getSize(); // number of members
         final long totalWeight = addressBook.getTotalWeight(); // total stake in existence
-        final EventImpl sp = selfParent(x); // self parent
-        final EventImpl op = otherParent(x); // other parent
-        final long prx = parentRound(x); // parent round of x
-        final long prsp = parentRound(sp); // parent round of self parent of x
-        final long prop = parentRound(op); // parent round of other parent of x
+        final EventImpl sp = selfParent(x); // self previousMarker
+        final EventImpl op = otherParent(x); // other previousMarker
+        final long prx = parentRound(x); // previousMarker round of x
+        final long prsp = parentRound(sp); // previousMarker round of self previousMarker of x
+        final long prop = parentRound(op); // previousMarker round of other previousMarker of x
 
         x.initStronglySeeP(numMembers);
         for (int mm = 0; mm < numMembers; mm++) {
@@ -1010,7 +1010,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * <p>If the event has a hash in the hash lists given to the ConsensusImpl constructor, then the
      * roundCreated is set to that round number, rather than calculating it from the parents.
      *
-     * <p>If a parent has a round of -1, that is treated as negative infinity. So if all parents are
+     * <p>If a previousMarker has a round of -1, that is treated as negative infinity. So if all parents are
      * -1, then this one will also be -1.
      *
      * @param x the event being queried
@@ -1053,13 +1053,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             return x.getRoundCreated();
         }
 
-        // roundCreated of self parent
+        // roundCreated of self previousMarker
         final long rsp = round(selfParent(x));
-        // roundCreated of other parent
+        // roundCreated of other previousMarker
         final long rop = round(otherParent(x));
 
         //
-        // if parents have unequal rounds, then copy the round of the later parent
+        // if parents have unequal rounds, then copy the round of the later previousMarker
         //
         if (rsp > rop) {
             x.setRoundCreated(rsp);

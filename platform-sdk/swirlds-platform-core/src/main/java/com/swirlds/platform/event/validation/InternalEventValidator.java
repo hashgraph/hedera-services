@@ -131,17 +131,17 @@ public class InternalEventValidator {
         this.inconsistentSelfParentAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInconsistentSelfParent")
-                        .withDescription("Events that had an internal self-parent inconsistency")
+                        .withDescription("Events that had an internal self-previousMarker inconsistency")
                         .withUnit("events"));
         this.inconsistentOtherParentAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInconsistentOtherParent")
-                        .withDescription("Events that had an internal other-parent inconsistency")
+                        .withDescription("Events that had an internal other-previousMarker inconsistency")
                         .withUnit("events"));
         this.identicalParentsAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithIdenticalParents")
-                        .withDescription("Events with identical self-parent and other-parent hash")
+                        .withDescription("Events with identical self-previousMarker and other-previousMarker hash")
                         .withUnit("events"));
         this.invalidGenerationAccumulator = platformContext
                 .getMetrics()
@@ -199,23 +199,23 @@ public class InternalEventValidator {
     }
 
     /**
-     * Checks whether the parent hashes and generations of an event are internally consistent.
+     * Checks whether the previousMarker hashes and generations of an event are internally consistent.
      *
      * @param event the event to check
-     * @return true if the parent hashes and generations of the event are internally consistent, otherwise false
+     * @return true if the previousMarker hashes and generations of the event are internally consistent, otherwise false
      */
     private boolean areParentsInternallyConsistent(@NonNull final GossipEvent event) {
         final BaseEventHashedData hashedData = event.getHashedData();
 
-        // If a parent hash is missing, then the generation must also be invalid.
-        // If a parent hash is not missing, then the generation must be valid.
+        // If a previousMarker hash is missing, then the generation must also be invalid.
+        // If a previousMarker hash is not missing, then the generation must be valid.
 
         final Hash selfParentHash = hashedData.getSelfParentHash();
         final long selfParentGeneration = hashedData.getSelfParentGen();
         if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
             inconsistentSelfParentLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
-                    "Event %s has inconsistent self-parent hash and generation. Self-parent hash: %s, self-parent generation: %s"
+                    "Event %s has inconsistent self-previousMarker hash and generation. Self-previousMarker hash: %s, self-previousMarker generation: %s"
                             .formatted(event, selfParentHash, selfParentGeneration));
             inconsistentSelfParentAccumulator.update(1);
             return false;
@@ -226,17 +226,17 @@ public class InternalEventValidator {
         if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
             inconsistentOtherParentLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
-                    "Event %s has inconsistent other-parent hash and generation. Other-parent hash: %s, other-parent generation: %s"
+                    "Event %s has inconsistent other-previousMarker hash and generation. Other-previousMarker hash: %s, other-previousMarker generation: %s"
                             .formatted(event, otherParentHash, otherParentGeneration));
             inconsistentOtherParentAccumulator.update(1);
             return false;
         }
 
-        // single node networks are allowed to have identical self-parent and other-parent hashes
+        // single node networks are allowed to have identical self-previousMarker and other-previousMarker hashes
         if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
             identicalParentsLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
-                    "Event %s has identical self-parent and other-parent hash: %s".formatted(event, selfParentHash));
+                    "Event %s has identical self-previousMarker and other-previousMarker hash: %s".formatted(event, selfParentHash));
             identicalParentsAccumulator.update(1);
             return false;
         }
@@ -259,7 +259,7 @@ public class InternalEventValidator {
         if (eventGeneration != Math.max(selfParentGeneration, otherParentGeneration) + 1) {
             invalidGenerationLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
-                    "Event %s has an invalid generation. Event generation: %s, self-parent generation: %s, other-parent generation: %s"
+                    "Event %s has an invalid generation. Event generation: %s, self-previousMarker generation: %s, other-previousMarker generation: %s"
                             .formatted(event, eventGeneration, selfParentGeneration, otherParentGeneration));
             invalidGenerationAccumulator.update(1);
             return false;

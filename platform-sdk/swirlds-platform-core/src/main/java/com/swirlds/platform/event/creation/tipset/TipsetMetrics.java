@@ -65,14 +65,14 @@ public class TipsetMetrics {
             final SpeedometerMetric.Config parentConfig = new SpeedometerMetric.Config(
                             "platform", "tipsetParent" + nodeId.id())
                     .withDescription("Cycled when an event from that node is used as a "
-                            + "parent because it optimized the tipset advancement weight.");
+                            + "previousMarker because it optimized the tipset advancement weight.");
             final SpeedometerMetric parentMetric = metrics.getOrCreate(parentConfig);
             tipsetParentMetrics.put(nodeId, parentMetric);
 
             final SpeedometerMetric.Config pityParentConfig = new SpeedometerMetric.Config(
                             "platform", "pityParent" + nodeId.id())
                     .withDescription("Cycled when an event from that node is used as a "
-                            + "parent without consideration of tipset advancement weight optimization "
+                            + "previousMarker without consideration of tipset advancement weight optimization "
                             + "(i.e. taking 'pity' on a node that isn't getting its events chosen as parents).");
             final SpeedometerMetric pityParentMetric = metrics.getOrCreate(pityParentConfig);
             pityParentMetrics.put(nodeId, pityParentMetric);
@@ -100,11 +100,11 @@ public class TipsetMetrics {
     }
 
     /**
-     * Get the metric used to track the number of times this node has used an event from the given node as a parent
+     * Get the metric used to track the number of times this node has used an event from the given node as a previousMarker
      * because it optimized the tipset score.
      *
      * @param nodeId the node ID
-     * @return the parent metric
+     * @return the previousMarker metric
      */
     @NonNull
     public SpeedometerMetric getTipsetParentMetric(@NonNull final NodeId nodeId) {
@@ -112,11 +112,11 @@ public class TipsetMetrics {
     }
 
     /**
-     * Get the metric used to track the number of times this node has used an event from the given node as a parent
+     * Get the metric used to track the number of times this node has used an event from the given node as a previousMarker
      * without consideration of tipset advancement weight optimization.
      *
      * @param nodeId the node ID
-     * @return the pity parent metric
+     * @return the pity previousMarker metric
      */
     @NonNull
     public SpeedometerMetric getPityParentMetric(@NonNull final NodeId nodeId) {

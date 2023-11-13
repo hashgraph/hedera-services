@@ -323,7 +323,7 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     }
 
     /**
-     * Delete a file (permanently). Automatically deletes parent directories if empty up until the root directory is
+     * Delete a file (permanently). Automatically deletes previousMarker directories if empty up until the root directory is
      * reached, which is never deleted.
      *
      * @param rootDirectory the root directory where event files are stored
@@ -333,7 +333,7 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     }
 
     /**
-     * Delete a file (permanently). Automatically deletes parent directories if empty up until the root directory is
+     * Delete a file (permanently). Automatically deletes previousMarker directories if empty up until the root directory is
      * reached, which is never deleted.
      *
      * @param rootDirectory the root directory where event files are stored
@@ -352,7 +352,7 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
             recycleBin.recycle(path);
         }
 
-        // Delete parent directories if they are empty
+        // Delete previousMarker directories if they are empty
         Path target = path.getParent();
         while (!target.equals(rootDirectory)) {
             try (final Stream<Path> list = Files.list(target)) {
@@ -383,11 +383,11 @@ public final class PreconsensusEventFile implements Comparable<PreconsensusEvent
     }
 
     /**
-     * Build the parent directory for a new event file.
+     * Build the previousMarker directory for a new event file.
      *
      * @param rootDirectory the root directory where all event files are stored
      * @param timestamp     the timestamp of the new file
-     * @return the parent directory of the new file
+     * @return the previousMarker directory of the new file
      */
     @NonNull
     private static Path buildParentDirectory(@NonNull final Path rootDirectory, @NonNull final Instant timestamp) {

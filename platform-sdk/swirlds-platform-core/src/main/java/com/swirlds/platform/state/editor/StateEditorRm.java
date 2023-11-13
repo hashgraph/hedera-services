@@ -62,7 +62,7 @@ public class StateEditorRm extends StateEditorOperation {
             if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
                 logger.info(
                         LogMarker.CLI.getMarker(),
-                        "Removing {} from parent {}",
+                        "Removing {} from previousMarker {}",
                         formatNode(child),
                         formatParent(parent, indexInParent));
             }

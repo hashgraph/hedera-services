@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class InfoSwirld extends InfoEntity {
 
-    private final InfoApp app; // parent
+    private final InfoApp app; // previousMarker
 
     private final List<InfoMember> members = new ArrayList<>(); // children
 

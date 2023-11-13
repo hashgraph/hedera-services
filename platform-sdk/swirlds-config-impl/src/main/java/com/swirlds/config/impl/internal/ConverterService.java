@@ -29,15 +29,18 @@ import com.swirlds.config.impl.converters.FileConverter;
 import com.swirlds.config.impl.converters.FloatConverter;
 import com.swirlds.config.impl.converters.IntegerConverter;
 import com.swirlds.config.impl.converters.LongConverter;
+import com.swirlds.config.impl.converters.MarkerDecisionConverter;
 import com.swirlds.config.impl.converters.PathConverter;
 import com.swirlds.config.impl.converters.ShortConverter;
 import com.swirlds.config.impl.converters.StringConverter;
 import com.swirlds.config.impl.converters.UriConverter;
 import com.swirlds.config.impl.converters.UrlConverter;
 import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
-import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
+import com.swirlds.logging.api.internal.level.ConfigLevel;
+import com.swirlds.logging.api.internal.level.MarkerDecision;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.File;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
@@ -95,8 +98,8 @@ class ConverterService implements ConfigLifecycle {
     private static final ConfigConverter<Duration> DURATION_CONVERTER = new DurationConverter();
 
     private static final ConfigConverter<ChronoUnit> CHRONO_UNIT_CONVERTER = new ChronoUnitConverter();
-    private static final ConfigConverter<HandlerLoggingLevelConfig.ConfigLevel> CONFIG_LEVEL_CONVERTER =
-            new ConfigLevelConverter();
+    private static final ConfigConverter<ConfigLevel> CONFIG_LEVEL_CONVERTER = new ConfigLevelConverter();
+    private static final ConfigConverter<MarkerDecision> MARKER_DECISION_CONFIG_CONVERTER = new MarkerDecisionConverter();
 
     ConverterService() {
         this.converters = new HashMap<>();
@@ -193,7 +196,8 @@ class ConverterService implements ConfigLifecycle {
         add(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
         add(Duration.class, DURATION_CONVERTER);
         add(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
-        add(HandlerLoggingLevelConfig.ConfigLevel.class, CONFIG_LEVEL_CONVERTER);
+        add(ConfigLevel.class, CONFIG_LEVEL_CONVERTER);
+        add(MarkerDecision.class, MARKER_DECISION_CONFIG_CONVERTER);
         initialized = true;
     }
 

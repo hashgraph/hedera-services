@@ -69,7 +69,7 @@ public class StateEditorCp extends StateEditorOperation {
         if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
             logger.info(
                     LogMarker.CLI.getMarker(),
-                    "Copying {} to {} in parent {}",
+                    "Copying {} to {} in previousMarker {}",
                     formatNode(source),
                     formatRoute(destinationRoute),
                     formatParent(parent, indexInParent));

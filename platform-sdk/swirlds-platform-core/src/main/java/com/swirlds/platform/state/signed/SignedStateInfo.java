@@ -19,7 +19,7 @@ package com.swirlds.platform.state.signed;
 import com.swirlds.common.system.address.AddressBook;
 
 /**
- * Contains information about a signed state. A SignedStateInfo object is still ok to read after the parent SignedState
+ * Contains information about a signed state. A SignedStateInfo object is still ok to read after the previousMarker SignedState
  * object has been deleted.
  */
 public interface SignedStateInfo {

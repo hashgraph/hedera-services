@@ -34,7 +34,7 @@ import java.util.jar.Manifest;
  * This includes the list of every app installed locally. For each app, it includes the list of all known
  * swirlds running on it. For each swirld, it maintains the list of all known members stored locally. For
  * each member it maintains the list of all states stored locally. Each app, swirld, member, and state also
- * stores its name, and its parent in the hierarchy.
+ * stores its name, and its previousMarker in the hierarchy.
  */
 public class StateHierarchy {
     /** list of the known apps, each of which may have some members, swirlds, and states */

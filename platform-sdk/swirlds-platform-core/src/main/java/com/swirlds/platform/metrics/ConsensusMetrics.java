@@ -61,7 +61,7 @@ public interface ConsensusMetrics {
     /**
      * Update a statistics accumulator with dot product time. This is used
      * in the consensus impl to track performance of strong seen ancestor searches
-     * in the parent round of a given event.
+     * in the previousMarker round of a given event.
      *
      * @param nanoTime
      * 		a time interval, in nanoseconds
@@ -80,7 +80,7 @@ public interface ConsensusMetrics {
 
     /**
      * Called each time an event is assigned a newer round created than it's parents based on the number of witness
-     * in the parent round created that it strongly sees.
+     * in the previousMarker round created that it strongly sees.
      */
     void roundIncrementedByStronglySeen();
 

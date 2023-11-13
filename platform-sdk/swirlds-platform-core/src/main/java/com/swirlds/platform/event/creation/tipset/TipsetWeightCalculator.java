@@ -226,14 +226,14 @@ public class TipsetWeightCalculator {
             final Tipset parentTipset = tipsetTracker.getTipset(parent);
 
             if (parentTipset == null) {
-                // For some reason we are trying to use an ancient parent. In theory possible that a self
-                // parent may be ancient. But we shouldn't even be considering non-self parents that are ancient.
+                // For some reason we are trying to use an ancient previousMarker. In theory possible that a self
+                // previousMarker may be ancient. But we shouldn't even be considering non-self parents that are ancient.
                 if (!parent.getCreator().equals(selfId)) {
                     ancientParentLogger.error(
                             EXCEPTION.getMarker(),
                             "When looking at possible parents, we should never "
                                     + "consider ancient parents that are not self parents. "
-                                    + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
+                                    + "Parent ID = {}, previousMarker generation = {}, minimum generation non-ancient = {}",
                             parent.getCreator(),
                             parent.getGeneration(),
                             tipsetTracker.getMinimumGenerationNonAncient());

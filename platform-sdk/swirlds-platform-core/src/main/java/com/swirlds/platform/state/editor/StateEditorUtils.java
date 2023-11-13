@@ -77,7 +77,7 @@ final class StateEditorUtils {
     }
 
     /**
-     * Format a merkle parent with a child index.
+     * Format a merkle previousMarker with a child index.
      */
     public static String formatParent(final MerkleNode parent, final int childIndex) {
         return formatNode(parent) + "[" + formatChildIndex(childIndex) + "]";

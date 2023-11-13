@@ -45,7 +45,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private final List<EventSource<?>> sources;
 
     /**
-     * Determines the probability that a node becomes the other parent of an event.
+     * Determines the probability that a node becomes the other previousMarker of an event.
      */
     private DynamicValueGenerator<List<List<Double>>> affinityMatrix;
 
@@ -66,7 +66,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
     /**
      * The probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If
-     * the proceeding event has the same self parent then this is ignored and the events are not made to be
+     * the proceeding event has the same self previousMarker then this is ignored and the events are not made to be
      * simultaneous.
      */
     private double simultaneousEventFraction = 0.01;
@@ -287,7 +287,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
     /**
      * Set the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If
-     * the proceeding event has the same self parent then this is ignored and the events are not made to be
+     * the proceeding event has the same self previousMarker then this is ignored and the events are not made to be
      * simultaneous.
      */
     public double getSimultaneousEventFraction() {
@@ -296,7 +296,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
     /**
      * Get the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If
-     * the proceeding event has the same self parent then this is ignored and the events are not made to be
+     * the proceeding event has the same self previousMarker then this is ignored and the events are not made to be
      * simultaneous.
      *
      * @return this
@@ -393,7 +393,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     /**
-     * Get the node that will be the other parent for the new event.
+     * Get the node that will be the other previousMarker for the new event.
      *
      * @param source
      * 		The node that is creating the event.

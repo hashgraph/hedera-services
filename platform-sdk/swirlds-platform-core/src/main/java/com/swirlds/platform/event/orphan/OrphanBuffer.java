@@ -80,8 +80,8 @@ public class OrphanBuffer {
             new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     /**
-     * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
-     * that parent.
+     * A map where the key is the descriptor of a missing previousMarker, and the value is a list of orphans that are missing
+     * that previousMarker.
      */
     private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap =
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
@@ -161,11 +161,11 @@ public class OrphanBuffer {
     }
 
     /**
-     * Called when a parent becomes ancient.
+     * Called when a previousMarker becomes ancient.
      * <p>
-     * Accounts for events potentially becoming un-orphaned as a result of the parent becoming ancient.
+     * Accounts for events potentially becoming un-orphaned as a result of the previousMarker becoming ancient.
      *
-     * @param parentAndOrphans the parent that became ancient, along with its orphans
+     * @param parentAndOrphans the previousMarker that became ancient, along with its orphans
      */
     private void missingParentBecameAncient(@NonNull final ParentAndOrphans parentAndOrphans) {
         final EventDescriptor parentDescriptor = parentAndOrphans.parent();
@@ -211,7 +211,7 @@ public class OrphanBuffer {
         final Deque<GossipEvent> nonOrphanStack = new LinkedList<>();
         nonOrphanStack.push(event);
 
-        // When a missing parent is found, there may be many descendants of that parent who end up
+        // When a missing previousMarker is found, there may be many descendants of that previousMarker who end up
         // being un-orphaned. This loop frees all such orphans non-recursively (recursion yields pretty
         // code but can thrash the stack).
         while (!nonOrphanStack.isEmpty()) {

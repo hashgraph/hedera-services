@@ -18,11 +18,15 @@ package com.swirlds.logging.api.internal.level;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,47 +52,8 @@ public class HandlerLoggingLevelConfig {
     public static final String PROPERTY_LOGGING_LEVEL = "logging.level";
     public static final String PROPERTY_LOGGING_HANDLER_LEVEL = "logging.handler.%s.level";
     public static final String PROPERTY_PACKAGE_LEVEL = "%s.";
-
-    /**
-     * Internal enum to define the configuration level. Includes UNDEFINED which should not be exposed to public API.
-     */
-    public enum ConfigLevel {
-        UNDEFINED,
-        OFF,
-        ERROR,
-        WARN,
-        INFO,
-        DEBUG,
-        TRACE;
-
-        /**
-         * Returns true if the logging of the given level is enabled
-         *
-         * @param level the level
-         * @return true if the logging of the given level is enabled
-         */
-        public boolean enabledLoggingOfLevel(@NonNull final Level level) {
-            if (level == null) {
-                EMERGENCY_LOGGER.logNPE("level");
-                return true;
-            }
-            if (this == UNDEFINED) {
-                EMERGENCY_LOGGER.log(Level.ERROR, "Undefined logging level!");
-                return false;
-            } else if (this == OFF) {
-                return false;
-            } else if (this == ERROR) {
-                return level.enabledLoggingOfLevel(Level.ERROR);
-            } else if (this == WARN) {
-                return level.enabledLoggingOfLevel(Level.WARN);
-            } else if (this == INFO) {
-                return level.enabledLoggingOfLevel(Level.INFO);
-            } else if (this == DEBUG) {
-                return level.enabledLoggingOfLevel(Level.DEBUG);
-            }
-            return true;
-        }
-    }
+    public static final String PROPERTY_LOGGING_MARKER = "logging.marker";
+    public static final String PROPERTY_LOGGING_HANDLER_MARKER = "logging.handler.%s.marker";
 
     /**
      * The emergency logger.
@@ -99,6 +64,11 @@ public class HandlerLoggingLevelConfig {
      * The cache for the levels.
      */
     private final Map<String, ConfigLevel> levelCache;
+
+    /**
+     * The cache for the markers.
+     */
+    private final Map<String, MarkerDecision> markerCache;
 
     /**
      * The configuration properties.
@@ -119,6 +89,7 @@ public class HandlerLoggingLevelConfig {
     public HandlerLoggingLevelConfig(@NonNull Configuration configuration, @NonNull String name) {
         this.name = Objects.requireNonNull(name, "name must not be null");
         this.levelCache = new ConcurrentHashMap<>();
+        this.markerCache = new ConcurrentHashMap<>();
         this.levelConfigProperties = new ConcurrentHashMap<>();
         update(configuration);
     }
@@ -147,10 +118,29 @@ public class HandlerLoggingLevelConfig {
             levelConfigProperties.put("", defaultLevel);
         }
 
-        levelConfigProperties.putAll(
-                readLevels(PROPERTY_PACKAGE_LEVEL.formatted(PROPERTY_LOGGING_LEVEL), configuration));
-        levelConfigProperties.putAll(readLevels(PROPERTY_PACKAGE_LEVEL.formatted(propertyHandler), configuration));
+        levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
+        levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
         levelCache.clear();
+
+        markerCache.clear();
+        markerCache.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
+        markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
+    }
+
+    private Map<String, MarkerDecision> readMarkers (final String prefix,
+                                                     final Configuration configuration)
+    {
+        final Map<String, MarkerDecision> result = new HashMap<>();
+        final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
+
+        configuration.getPropertyNames().filter(n -> n.startsWith(fullPrefix)).forEach(configPropertyName -> {
+            final String name = configPropertyName.substring(fullPrefix.length());
+            final MarkerDecision markerDecision =
+                    configuration.getValue(configPropertyName, MarkerDecision.class, MarkerDecision.INHERIT);
+            result.put(name, markerDecision);
+        });
+
+        return result;
     }
 
     /**
@@ -164,8 +154,10 @@ public class HandlerLoggingLevelConfig {
     private Map<String, ConfigLevel> readLevels(
             @NonNull final String prefix, @NonNull final Configuration configuration) {
         final Map<String, ConfigLevel> result = new HashMap<>();
-        configuration.getPropertyNames().filter(n -> n.startsWith(prefix)).forEach(configPropertyName -> {
-            final String name = configPropertyName.substring(prefix.length());
+        final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
+
+        configuration.getPropertyNames().filter(n -> n.startsWith(fullPrefix)).forEach(configPropertyName -> {
+            final String name = configPropertyName.substring(fullPrefix.length());
             final ConfigLevel level =
                     configuration.getValue(configPropertyName, ConfigLevel.class, ConfigLevel.UNDEFINED);
             if (level != ConfigLevel.UNDEFINED) {
@@ -176,6 +168,10 @@ public class HandlerLoggingLevelConfig {
         return Collections.unmodifiableMap(result);
     }
 
+    public boolean isEnabled(@NonNull String name, @NonNull Level level) {
+        return isEnabled(name, level, null);
+    }
+
     /**
      * Returns true if the given level is enabled for the given name.
      *
@@ -184,7 +180,7 @@ public class HandlerLoggingLevelConfig {
      *
      * @return True if the given level is enabled for the given name.
      */
-    public boolean isEnabled(@NonNull String name, @NonNull Level level) {
+    public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
@@ -192,6 +188,20 @@ public class HandlerLoggingLevelConfig {
         if (name == null) {
             EMERGENCY_LOGGER.logNPE("name");
             return true;
+        }
+        if(marker != null) {
+            final List<String> allMarkerNames = marker.getAllMarkerNames();
+            final List<MarkerDecision> markerDecisions = allMarkerNames.stream()
+                                                                       .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerDecision.INHERIT))
+                                                                       .filter(markerDecision -> markerDecision != MarkerDecision.INHERIT)
+                                                                       .toList();
+            if(!markerDecisions.isEmpty()) {
+                if(markerDecisions.stream().anyMatch(markerDecision -> markerDecision == MarkerDecision.ENABLED)) {
+                    return true;
+                } else if (markerDecisions.stream().allMatch(markerDecision -> markerDecision == MarkerDecision.DISABLED)) {
+                    return false;
+                }
+            }
         }
 
         final ConfigLevel enabledLevel = levelCache.computeIfAbsent(name.trim(), this::getConfiguredLevel);

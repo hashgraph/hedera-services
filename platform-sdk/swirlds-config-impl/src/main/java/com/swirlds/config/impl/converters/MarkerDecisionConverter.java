@@ -17,25 +17,25 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
-import com.swirlds.logging.api.internal.level.ConfigLevel;
+import com.swirlds.logging.api.internal.level.MarkerDecision;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class ConfigLevelConverter implements ConfigConverter<ConfigLevel> {
+public class MarkerDecisionConverter implements ConfigConverter<MarkerDecision> {
 
     @Nullable
     @Override
-    public ConfigLevel convert (@NonNull final String value)
+    public MarkerDecision convert (@NonNull final String value)
             throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }
 
         try {
-            return ConfigLevel.valueOf(value.toUpperCase());
+            return MarkerDecision.valueOf(value.toUpperCase());
         } catch (final IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                    "The given value '%s' can not be converted to a logging level.".formatted(value));
+                    "The given value '%s' can not be converted to a marker decision.".formatted(value));
         }
     }
 }

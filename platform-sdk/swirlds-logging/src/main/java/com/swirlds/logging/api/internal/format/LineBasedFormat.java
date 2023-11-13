@@ -181,7 +181,7 @@ public class LineBasedFormat {
             if (parent == null) {
                 return "Marker{name='" + marker.name() + "'}";
             } else {
-                return "Marker{name='" + marker.name() + "', parent='" + asString(parent) + "'}";
+                return "Marker{name='" + marker.name() + "', previousMarker='" + asString(parent) + "'}";
             }
         }
     }

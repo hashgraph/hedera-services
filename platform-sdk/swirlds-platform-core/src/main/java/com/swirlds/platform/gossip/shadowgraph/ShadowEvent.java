@@ -21,15 +21,15 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
 
 /**
- * A shadow event wraps a hashgraph event, and provides parent pointers to shadow events.
+ * A shadow event wraps a hashgraph event, and provides previousMarker pointers to shadow events.
  *
  * The shadow event type is the vertex type of the shadow graph. This is the elemental type of {@link ShadowGraph}.
  * It provides a reference to a hashgraph event instance and the following operations:
  *
  * <ul>
- * <li>linking of a parent shadow event</li>
- * <li>unlinking of a parent shadow event</li>
- * <li>querying for parent events</li>
+ * <li>linking of a previousMarker shadow event</li>
+ * <li>unlinking of a previousMarker shadow event</li>
+ * <li>querying for previousMarker events</li>
  * </ul>
  *
  * All linking and unlinking of a shadow event is implemented by this type.
@@ -43,12 +43,12 @@ public class ShadowEvent {
     private final EventImpl event;
 
     /**
-     * self-parent
+     * self-previousMarker
      */
     private ShadowEvent selfParent;
 
     /**
-     * other-parent
+     * other-previousMarker
      */
     private ShadowEvent otherParent;
 
@@ -58,9 +58,9 @@ public class ShadowEvent {
      * @param event
      * 		the event
      * @param selfParent
-     * 		the self-parent event's shadow
+     * 		the self-previousMarker event's shadow
      * @param otherParent
-     * 		the other-parent event's shadow
+     * 		the other-previousMarker event's shadow
      */
     public ShadowEvent(final EventImpl event, final ShadowEvent selfParent, final ShadowEvent otherParent) {
         this.event = event;
@@ -79,18 +79,18 @@ public class ShadowEvent {
     }
 
     /**
-     * Get the self-parent of {@code this} shadow event
+     * Get the self-previousMarker of {@code this} shadow event
      *
-     * @return the self-parent of {@code this} shadow event
+     * @return the self-previousMarker of {@code this} shadow event
      */
     public ShadowEvent getSelfParent() {
         return this.selfParent;
     }
 
     /**
-     * Get the other-parent of {@code this} shadow event
+     * Get the other-previousMarker of {@code this} shadow event
      *
-     * @return the other-parent of {@code this} shadow event
+     * @return the other-previousMarker of {@code this} shadow event
      */
     public ShadowEvent getOtherParent() {
         return this.otherParent;

@@ -151,8 +151,8 @@ public class HashgraphPicture extends JPanel {
         if (e2 != null
                 && (!addressBook.contains(e2.getCreatorId())
                         || addressBook.getIndexOfNodeId(e2.getCreatorId()) >= addressBook.getSize())) {
-            // if the creator of the other parent has been removed,
-            // treat it as if there is no other parent
+            // if the creator of the other previousMarker has been removed,
+            // treat it as if there is no other previousMarker
             e2 = null;
         }
         if (e1 != null && e1.getGeneration() >= pictureMetadata.getMinGen()) {

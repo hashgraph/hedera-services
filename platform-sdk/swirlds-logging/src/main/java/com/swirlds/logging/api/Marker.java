@@ -18,6 +18,10 @@ package com.swirlds.logging.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -25,9 +29,9 @@ import java.util.Objects;
  * runtime
  *
  * @param name   the name of the marker
- * @param parent the parent marker (if present)
+ * @param previousMarker the previousMarker marker (if present)
  */
-public record Marker(@NonNull String name, @Nullable Marker parent) {
+public record Marker(@NonNull String name, @Nullable Marker previousMarker) {
 
     public Marker {
         Objects.requireNonNull(name, "name must not be null");
@@ -35,5 +39,15 @@ public record Marker(@NonNull String name, @Nullable Marker parent) {
 
     public Marker(@NonNull final String name) {
         this(name, null);
+    }
+
+    public List<String> getAllMarkerNames () {
+        if (previousMarker != null) {
+            final List<String> result = new ArrayList<>(previousMarker.getAllMarkerNames());
+            result.add(name);
+            return Collections.unmodifiableList(result);
+        } else {
+            return List.of(name);
+        }
     }
 }

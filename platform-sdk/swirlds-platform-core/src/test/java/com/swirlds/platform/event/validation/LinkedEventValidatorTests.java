@@ -75,7 +75,7 @@ class LinkedEventValidatorTests {
      * Generate a mock event with the given parameters
      *
      * @param timeChildCreated  the time the child was created
-     * @param timeParentCreated the time the parent was created
+     * @param timeParentCreated the time the previousMarker was created
      * @return the mock event
      */
     private EventImpl generateEvent(
@@ -96,7 +96,7 @@ class LinkedEventValidatorTests {
     }
 
     @Test
-    @DisplayName("A child created after its self parent should pass validation")
+    @DisplayName("A child created after its self previousMarker should pass validation")
     void childCreatedAfterParent() {
         final Instant now = time.now();
         final EventImpl child = generateEvent(now.plusMillis(1000), now);
@@ -108,7 +108,7 @@ class LinkedEventValidatorTests {
     }
 
     @Test
-    @DisplayName("Child created at the same time as parent")
+    @DisplayName("Child created at the same time as previousMarker")
     void childCreatedAtSameTimeAsParent() {
         final Instant now = time.now();
         final EventImpl child = generateEvent(now, now);
@@ -120,7 +120,7 @@ class LinkedEventValidatorTests {
     }
 
     @Test
-    @DisplayName("Child created before parent")
+    @DisplayName("Child created before previousMarker")
     void childCreatedBeforeParent() {
         final Instant now = time.now();
         final EventImpl child = generateEvent(now, now.plusMillis(1000));
@@ -132,7 +132,7 @@ class LinkedEventValidatorTests {
     }
 
     @Test
-    @DisplayName("Child has no self parent")
+    @DisplayName("Child has no self previousMarker")
     void childHasNoSelfParent() {
         final EventImpl child = generateEvent(time.now(), null);
         when(child.getSelfParent()).thenReturn(null);

@@ -40,7 +40,7 @@ import java.util.function.Predicate;
  * done with it before creating another one.
  *
  * <p>This returns all ancestors of the root event that are valid. It iterates in an order that
- * always returns a parent before its child. The root itself is considered to be one of the
+ * always returns a previousMarker before its child. The root itself is considered to be one of the
  * ancestors, and is last in the iteration.
  *
  * <p>Recursion happens on self parents before other parents. So if there are multiple paths from

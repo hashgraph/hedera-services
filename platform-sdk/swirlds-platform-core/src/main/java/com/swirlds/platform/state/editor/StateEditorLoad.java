@@ -87,7 +87,7 @@ public class StateEditorLoad extends StateEditorOperation {
         if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
             logger.info(
                     LogMarker.CLI.getMarker(),
-                    "Loaded {} subtree into {}, new parent is {}",
+                    "Loaded {} subtree into {}, new previousMarker is {}",
                     formatNodeType(subtree),
                     formatRoute(destinationRoute),
                     formatParent(parent, indexInParent));

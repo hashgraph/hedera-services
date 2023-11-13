@@ -72,7 +72,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     private Duration granularity = Duration.ofSeconds(10);
 
     /**
-     * If true, a separate report will be generated for each child directory contained in the specified parent.
+     * If true, a separate report will be generated for each child directory contained in the specified previousMarker.
      * <p>
      * Each individual report will be written to a file in the respective child directory
      * <p>

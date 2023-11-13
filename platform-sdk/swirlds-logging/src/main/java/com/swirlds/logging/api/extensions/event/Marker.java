@@ -25,7 +25,7 @@ import java.util.Objects;
  * runtime
  *
  * @param name   the name of the marker
- * @param parent the parent marker (if present)
+ * @param parent the previousMarker marker (if present)
  */
 public record Marker(@NonNull String name, @Nullable Marker parent) {
 

@@ -111,7 +111,7 @@ public interface EventSource<T extends EventSource<T>> {
      * @param eventIndex
      * 		the unique index of the event that will be generated
      * @param otherParent
-     * 		he node that is contributing the "other parent" event
+     * 		he node that is contributing the "other previousMarker" event
      * @param timestamp
      * 		the creation timesetamp that the event should have
      * @return The random event that was generated.
@@ -151,13 +151,13 @@ public interface EventSource<T extends EventSource<T>> {
     void setLatestEvent(Random random, IndexedEvent event);
 
     /**
-     * Get the event index (i.e. the age of the event) that this node would like to use for its other parent.
+     * Get the event index (i.e. the age of the event) that this node would like to use for its other previousMarker.
      */
     int getRequestedOtherParentAge(Random random, long eventIndex);
 
     /**
-     * Used when this node is creating an event and wants to decide the age of the other parent, i.e.
-     * when this node is requesting an other parent from another node.
+     * Used when this node is creating an event and wants to decide the age of the other previousMarker, i.e.
+     * when this node is requesting an other previousMarker from another node.
      *
      * Dynamic value returns an index.
      *
@@ -168,7 +168,7 @@ public interface EventSource<T extends EventSource<T>> {
      * By default, event source uses a random integer from a power law distribution that has a 95% chance of
      * requesting the most recent event.
      *
-     * Every time an other parent is requested, the requesting node and the providing node each propose an index
+     * Every time an other previousMarker is requested, the requesting node and the providing node each propose an index
      * (using the values from setOtherParentRequestIndex and setOtherParentProviderIndex). The largest
      * (i.e. the oldest) index is used.
      *
@@ -183,7 +183,7 @@ public interface EventSource<T extends EventSource<T>> {
     int getProvidedOtherParentAge(Random random, long eventIndex);
 
     /**
-     * Used when this node is asked to provide an event (to be an other parent) to determine the age of the
+     * Used when this node is asked to provide an event (to be an other previousMarker) to determine the age of the
      * provided event.
      *
      * Returns an index.
@@ -194,7 +194,7 @@ public interface EventSource<T extends EventSource<T>> {
      *
      * By default, event source uses 0.
      *
-     * Every time an other parent is requested, the requesting node and the providing node each propose an index
+     * Every time an other previousMarker is requested, the requesting node and the providing node each propose an index
      * (using the values from setOtherParentRequestIndex and setOtherParentProviderIndex). The largest
      * (i.e. the oldest) index is used.
      *

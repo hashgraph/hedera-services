@@ -22,9 +22,9 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 
 /**
- * A {@link GossipEvent} whose parents may or may not be missing. A parent is considered missing if it is non-ancient
- * AND it has not been received and validated. A parent might have been received but is an orphan itself, in that case
- * it is still considered missing. If any parent is missing, then this child is considered an orphan.
+ * A {@link GossipEvent} whose parents may or may not be missing. A previousMarker is considered missing if it is non-ancient
+ * AND it has not been received and validated. A previousMarker might have been received but is an orphan itself, in that case
+ * it is still considered missing. If any previousMarker is missing, then this child is considered an orphan.
  */
 public final class ChildEvent {
     private final EventImpl child;
@@ -35,13 +35,13 @@ public final class ChildEvent {
      * @param child
      * 		the event to wrap
      * @param missingSelfParent
-     * 		is the event's self-parent missing?
+     * 		is the event's self-previousMarker missing?
      * @param missingOtherParent
-     * 		is the event's other-parent missing?
+     * 		is the event's other-previousMarker missing?
      * @param selfParent
-     * 		the event's self-parent, may be null if there is no parent, or it is not found
+     * 		the event's self-previousMarker, may be null if there is no previousMarker, or it is not found
      * @param otherParent
-     * 		the event's other-parent, may be null if there is no parent, or it is not found
+     * 		the event's other-previousMarker, may be null if there is no previousMarker, or it is not found
      */
     public ChildEvent(
             final GossipEvent child,
@@ -69,15 +69,15 @@ public final class ChildEvent {
     }
 
     /**
-     * Updates the state of this child with a parent. The parent mey not have been found, it might have become ancient,
+     * Updates the state of this child with a previousMarker. The previousMarker mey not have been found, it might have become ancient,
      * in which case it is no longer missing and don't even need it.
      *
      * @param hash
-     * 		the hash of the previously missing parent
+     * 		the hash of the previously missing previousMarker
      * @param parent
-     * 		the parent, null if it has become ancient and was never received
+     * 		the previousMarker, null if it has become ancient and was never received
      * @throws IllegalArgumentException
-     * 		in case the supplied parent is not missing, or not a parent of this event at all
+     * 		in case the supplied previousMarker is not missing, or not a previousMarker of this event at all
      */
     public void parentNoLongerMissing(final Hash hash, final EventImpl parent) {
         if (missingSelfParent && hash.equals(child.getHashedData().getSelfParentHash())) {
@@ -91,11 +91,11 @@ public final class ChildEvent {
             return;
         }
         throw new IllegalArgumentException(
-                String.format("%s is not a missing parent of %s", hash.toShortString(), this));
+                String.format("%s is not a missing previousMarker of %s", hash.toShortString(), this));
     }
 
     /**
-     * @return a new instance that describes this child's self-parent
+     * @return a new instance that describes this child's self-previousMarker
      */
     public ParentDescriptor buildSelfParentDescriptor() {
         return new ParentDescriptor(
@@ -103,7 +103,7 @@ public final class ChildEvent {
     }
 
     /**
-     * @return a new instance that describes this child's other-parent
+     * @return a new instance that describes this child's other-previousMarker
      */
     public ParentDescriptor buildOtherParentDescriptor() {
         return new ParentDescriptor(
@@ -118,14 +118,14 @@ public final class ChildEvent {
     }
 
     /**
-     * @return true if this child has a missing self-parent
+     * @return true if this child has a missing self-previousMarker
      */
     public boolean isMissingSelfParent() {
         return missingSelfParent;
     }
 
     /**
-     * @return true if this child has a missing other-parent
+     * @return true if this child has a missing other-previousMarker
      */
     public boolean isMissingOtherParent() {
         return missingOtherParent;
@@ -166,10 +166,10 @@ public final class ChildEvent {
             return "both parents";
         }
         if (missingSelfParent) {
-            return "self-parent";
+            return "self-previousMarker";
         }
         if (missingOtherParent) {
-            return "other-parent";
+            return "other-previousMarker";
         }
         return "none parents";
     }
