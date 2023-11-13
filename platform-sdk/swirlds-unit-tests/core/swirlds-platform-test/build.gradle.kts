@@ -30,6 +30,7 @@ jmhModuleInfo {
 }
 
 testModuleInfo {
+    requires("com.swirlds.test.framework")
     requires("com.swirlds.common.testing")
     requires("com.swirlds.merkle")
     requires("com.swirlds.sign.tool") // should be removed in future

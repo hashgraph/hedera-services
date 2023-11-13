@@ -23,7 +23,6 @@ description = "Hedera Configuration"
 
 testModuleInfo {
     requires("com.hedera.node.config")
-    requires("com.swirlds.test.framework")
     requires("com.swirlds.common.test.fixtures")
     requires("org.assertj.core")
     requires("org.hyperledger.besu.datatypes")

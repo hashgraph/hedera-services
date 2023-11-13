@@ -3,7 +3,6 @@ module com.hedera.node.config.test.fixtures {
 
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.test.framework;
     requires com.hedera.node.config;
     requires com.swirlds.common;
     requires com.swirlds.fchashmap;
