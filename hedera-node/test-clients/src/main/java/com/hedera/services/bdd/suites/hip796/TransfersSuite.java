@@ -3,12 +3,26 @@ package com.hedera.services.bdd.suites.hip796;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.lockUnits;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleTokenWithFeatures;
+import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.unlockUnits;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTER_PARTITION_MANAGEMENT;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCKING;
+import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 
 /**
  * A suite for user stories Transfers-1 through Transfers-3 from HIP-796.
@@ -29,40 +43,21 @@ public class TransfersSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canTransferTokensToSamePartitionUser() {
-        final String sender = "TokenSender";
-        final String receiver = "TokenReceiver";
-        final String token = "PartitionedToken";
-        final String partition = "SamePartition";
-        final long transferAmount = 100L;
-
         return defaultHapiSpec("CanTransferTokensToSamePartitionUser")
                 .given(
-                        cryptoCreate(sender),
-                        cryptoCreate(receiver),
-                        newKeyNamed("TokenAdminKey"),
-                        tokenCreate(token)
-                                .initialSupply(1000)
-                                .adminKey("TokenAdminKey")
-                                .withPartition(partition, 1000) // Assumes we have a DSL method to create a partition
-                                .signedBy(DEFAULT_PAYER, "TokenAdminKey"),
-                        cryptoTransfer(moving(1000, token).between(DEFAULT_PAYER, sender)),
-                        cryptoTransfer(moving(1000, token, partition).between(DEFAULT_PAYER, sender))
-                                .via("initialPartitionCredit")
-                ).when(
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
+                                .withRelation(BOB, r -> r.onlyForPartition(BLUE_PARTITION)))
+                .when(
                         cryptoTransfer(
-                                moving(transferAmount, token, partition)
-                                        .between(sender, receiver)
-                        ).signedBy(sender)
-                                .via("transferTxn")
-                ).then(
-                        validateRecord("transferTxn")
-                                .hasPriority(recordWith().status(SUCCESS)),
-                        getTokenBalance(token)
-                                .forAccount(sender)
-                                .hasTokenBalance(900), // Assumes original balance - transferAmount
-                        getTokenBalance(token, partition)
-                                .forAccount(receiver)
-                                .hasTokenBalance(transferAmount) // Assumes received amount is correct
+                                moving(123L, partition(RED_PARTITION))
+                                        .between(ALICE, BOB)
+                        )
+                )
+                .then(
+                        getAccountBalance(BOB)
+                                .hasTokenBalance(partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE + 123L)
                 );
     }
 
@@ -76,43 +71,22 @@ public class TransfersSuite extends HapiSuite {
      */
     @HapiTest
     public HapiSpec canTransferTokensToUserWithAutoAssociation() {
-        final String sender = "TokenSender";
-        final String receiver = "TokenReceiver";
-        final String token = "PartitionedToken";
-        final String partition = "AutoAssociatePartition";
-        final long transferAmount = 100L;
-
         return defaultHapiSpec("CanTransferTokensToUserWithAutoAssociation")
                 .given(
-                        cryptoCreate(sender),
-                        cryptoCreate(receiver)
-                                .autoEnableTokenAssociations(), // Enables auto-association for new accounts
-                        newKeyNamed("TokenAdminKey"),
-                        tokenCreate(token)
-                                .initialSupply(1000)
-                                .adminKey("TokenAdminKey")
-                                .withPartition(partition, 1000) // Assumes a method to create a partition
-                                .signedBy(DEFAULT_PAYER, "TokenAdminKey"),
-                        cryptoTransfer(moving(1000, token).between(DEFAULT_PAYER, sender)),
-                        cryptoTransfer(moving(1000, token, partition).between(DEFAULT_PAYER, sender))
-                                .via("initialPartitionCredit")
-                ).when(
+                        fungibleTokenWithFeatures(PARTITIONING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
+                                .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION)))
+                .when(
+                        // Note the higher fee to cover the auto-association
                         cryptoTransfer(
-                                moving(transferAmount, token, partition)
-                                        .between(sender, receiver)
-                        ).signedBy(sender)
-                                .via("transferTxn")
-                ).then(
-                        validateRecord("transferTxn")
-                                .hasPriority(recordWith().status(SUCCESS)),
-                        getTokenBalance(token)
-                                .forAccount(sender)
-                                .hasTokenBalance(900), // Assumes original balance - transferAmount
-                        getTokenBalance(token, partition)
-                                .forAccount(receiver)
-                                .hasTokenBalance(transferAmount), // Assumes auto-association success and correct amount
-                        getAccountInfo(receiver)
-                                .has(autoAssociatedPartitions(including(partition))) // Validates auto-association
+                                moving(123L, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))
+                        ).fee(ONE_HBAR)
+                )
+                .then(
+                        getAccountBalance(BOB)
+                                .hasTokenBalance(partition(BLUE_PARTITION), 123L)
                 );
     }
 
@@ -127,44 +101,37 @@ public class TransfersSuite extends HapiSuite {
      * @return the HapiSpec for this HIP-796 user story
      */
     @HapiTest
-    public HapiSpec canTransferTokensToUserWithAutoAssociation() {
-        final String sender = "TokenSender";
-        final String receiver = "TokenReceiver";
-        final String token = "PartitionedToken";
-        final String partition = "AutoAssociatePartition";
-        final long transferAmount = 100L;
-
-        return defaultHapiSpec("CanTransferTokensToUserWithAutoAssociation")
+    public HapiSpec canTransferTokensToUserAfterUnlock() {
+        return defaultHapiSpec("CanTransferTokensToUserPostUnlock")
                 .given(
-                        cryptoCreate(sender),
-                        cryptoCreate(receiver)
-                                .autoEnableTokenAssociations(), // Enables auto-association for new accounts
-                        newKeyNamed("TokenAdminKey"),
-                        tokenCreate(token)
-                                .initialSupply(1000)
-                                .adminKey("TokenAdminKey")
-                                .withPartition(partition, 1000) // Assumes a method to create a partition
-                                .signedBy(DEFAULT_PAYER, "TokenAdminKey"),
-                        cryptoTransfer(moving(1000, token).between(DEFAULT_PAYER, sender)),
-                        cryptoTransfer(moving(1000, token, partition).between(DEFAULT_PAYER, sender))
-                                .via("initialPartitionCredit")
+                        fungibleTokenWithFeatures(PARTITIONING, LOCKING)
+                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).locked())
+                                .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION))
                 ).when(
+                        // Nothing can be transfer when Alice's balance is locked
                         cryptoTransfer(
-                                moving(transferAmount, token, partition)
-                                        .between(sender, receiver)
-                        ).signedBy(sender)
-                                .via("transferTxn")
+                                moving(123L, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))
+                        )
+                                // FUTURE - change to a lock-specific status code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
+                        unlockUnits(ALICE, partition(RED_PARTITION), 123L),
+                        // But now the 123 units can be transferred
+                        cryptoTransfer(
+                                moving(123L, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))
+                        ),
+                        // And re-locked in Bob's account
+                        lockUnits(BOB, partition(BLUE_PARTITION), 123L)
                 ).then(
-                        validateRecord("transferTxn")
-                                .hasPriority(recordWith().status(SUCCESS)),
-                        getTokenBalance(token)
-                                .forAccount(sender)
-                                .hasTokenBalance(900), // Assumes original balance - transferAmount
-                        getTokenBalance(token, partition)
-                                .forAccount(receiver)
-                                .hasTokenBalance(transferAmount), // Assumes auto-association success and correct amount
-                        getAccountInfo(receiver)
-                                .has(autoAssociatedPartitions(including(partition))) // Validates auto-association
+                        // So with the help of the lock key we have repositioned these 123 units
+                        cryptoTransfer(
+                                moving(123L, partition(BLUE_PARTITION))
+                                        .between(BOB, ALICE)
+                        )
+                                // FUTURE - change to a lock-specific status code
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
                 );
     }
 
