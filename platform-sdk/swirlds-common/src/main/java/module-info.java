@@ -167,8 +167,8 @@ module com.swirlds.common {
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.logging;
+    requires transitive com.swirlds.metrics.api;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
