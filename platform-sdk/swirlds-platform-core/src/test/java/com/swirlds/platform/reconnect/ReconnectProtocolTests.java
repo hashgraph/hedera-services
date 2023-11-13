@@ -71,8 +71,8 @@ class ReconnectProtocolTests {
      * Status getter that always returns ACTIVE
      */
     private PlatformStatusGetter activeStatusGetter;
-
     private ReconnectController reconnectController;
+    private ReconnectThrottle teacherThrottle;
 
     private static Stream<Arguments> initiateParams() {
         return Stream.of(
@@ -132,6 +132,9 @@ class ReconnectProtocolTests {
 
         reconnectController = mock(ReconnectController.class);
         when(reconnectController.blockLearnerPermit()).thenReturn(true);
+
+        teacherThrottle = mock(ReconnectThrottle.class);
+        when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
     }
 
     @DisplayName("Test the conditions under which the protocol should and should not be initiated")
@@ -426,9 +429,6 @@ class ReconnectProtocolTests {
     @Test
     @DisplayName("Teacher doesn't have a status of ACTIVE")
     void teacherNotActive() {
-        final ReconnectThrottle throttle = mock(ReconnectThrottle.class);
-        when(throttle.initiateReconnect(any())).thenReturn(true);
-
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
@@ -443,7 +443,7 @@ class ReconnectProtocolTests {
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
                 new NodeId(0),
-                throttle,
+                teacherThrottle,
                 () -> reservedSignedState,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
@@ -463,9 +463,6 @@ class ReconnectProtocolTests {
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
-
-        final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
-        when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
@@ -500,5 +497,34 @@ class ReconnectProtocolTests {
 
         verify(reconnectController, times(2)).blockLearnerPermit();
         verify(reconnectController, times(2)).cancelLearnerPermit();
+    }
+
+    @Test
+    @DisplayName("Teacher holds the learner permit while teaching")
+    void teacherCantAcquireLearnerPermit() {
+        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        when(signedState.isComplete()).thenReturn(true);
+        signedState.reserve("test");
+
+        when(reconnectController.blockLearnerPermit()).thenReturn(false);
+
+        final ReconnectProtocol protocol = new ReconnectProtocol(
+                getStaticThreadManager(),
+                new NodeId(0),
+                teacherThrottle,
+                () -> signedState.reserve("test"),
+                Duration.of(100, ChronoUnit.MILLIS),
+                mock(ReconnectMetrics.class),
+                reconnectController,
+                mock(SignedStateValidator.class),
+                mock(FallenBehindManager.class),
+                activeStatusGetter,
+                configuration,
+                Time.getCurrent());
+
+        assertFalse(protocol.shouldAccept());
+
+        verify(reconnectController, times(1)).blockLearnerPermit();
+        verify(reconnectController, times(0)).cancelLearnerPermit();
     }
 }
