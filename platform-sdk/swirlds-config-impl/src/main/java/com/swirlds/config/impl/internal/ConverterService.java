@@ -40,7 +40,6 @@ import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.MarkerDecision;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.File;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
@@ -99,7 +98,8 @@ class ConverterService implements ConfigLifecycle {
 
     private static final ConfigConverter<ChronoUnit> CHRONO_UNIT_CONVERTER = new ChronoUnitConverter();
     private static final ConfigConverter<ConfigLevel> CONFIG_LEVEL_CONVERTER = new ConfigLevelConverter();
-    private static final ConfigConverter<MarkerDecision> MARKER_DECISION_CONFIG_CONVERTER = new MarkerDecisionConverter();
+    private static final ConfigConverter<MarkerDecision> MARKER_DECISION_CONFIG_CONVERTER =
+            new MarkerDecisionConverter();
 
     ConverterService() {
         this.converters = new HashMap<>();

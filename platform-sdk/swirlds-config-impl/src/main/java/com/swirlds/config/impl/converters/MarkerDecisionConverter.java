@@ -25,8 +25,7 @@ public class MarkerDecisionConverter implements ConfigConverter<MarkerDecision> 
 
     @Nullable
     @Override
-    public MarkerDecision convert (@NonNull final String value)
-            throws IllegalArgumentException, NullPointerException {
+    public MarkerDecision convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }

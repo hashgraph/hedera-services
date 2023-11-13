@@ -227,7 +227,8 @@ public class TipsetWeightCalculator {
 
             if (parentTipset == null) {
                 // For some reason we are trying to use an ancient previousMarker. In theory possible that a self
-                // previousMarker may be ancient. But we shouldn't even be considering non-self parents that are ancient.
+                // previousMarker may be ancient. But we shouldn't even be considering non-self parents that are
+                // ancient.
                 if (!parent.getCreator().equals(selfId)) {
                     ancientParentLogger.error(
                             EXCEPTION.getMarker(),

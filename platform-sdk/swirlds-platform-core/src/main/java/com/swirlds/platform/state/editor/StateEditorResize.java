@@ -41,7 +41,10 @@ public class StateEditorResize extends StateEditorOperation {
         this.newSize = newSize;
     }
 
-    @CommandLine.Parameters(index = "1", arity = "0..1", description = "The route of the previousMarker will be resized.")
+    @CommandLine.Parameters(
+            index = "1",
+            arity = "0..1",
+            description = "The route of the previousMarker will be resized.")
     private void setParentPath(final String parentPath) {
         this.parentPath = parentPath;
     }

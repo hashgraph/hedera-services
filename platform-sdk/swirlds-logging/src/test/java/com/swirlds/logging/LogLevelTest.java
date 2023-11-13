@@ -16,6 +16,8 @@
 
 package com.swirlds.logging;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.swirlds.base.test.fixtures.io.SystemErrProvider;
 import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
@@ -25,8 +27,6 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @WithSystemError
 public class LogLevelTest {
@@ -80,11 +80,16 @@ public class LogLevelTest {
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
 
         // then
-        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz)).isTrue();
-        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBum)).isFalse();
-        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, combinedMarker)).isTrue();
-        assertThat(config.isEnabled("com.foo.some.Class", Level.ERROR, markerPeng)).isFalse();
-        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBrum)).isTrue();
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz))
+                .isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBum))
+                .isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, combinedMarker))
+                .isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.ERROR, markerPeng))
+                .isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBrum))
+                .isTrue();
         assertThat(config.isEnabled("com.some.Class", Level.ERROR, markerBrum)).isTrue();
         assertThat(config.isEnabled("com.some.Class", Level.INFO, markerBrum)).isFalse();
     }
@@ -106,7 +111,8 @@ public class LogLevelTest {
 
         // then
         assertThat(config1.isEnabled("com.example.ClassA", Level.INFO, markerA)).isTrue();
-        assertThat(config1.isEnabled("com.example.ClassB", Level.ERROR, markerB)).isTrue();
+        assertThat(config1.isEnabled("com.example.ClassB", Level.ERROR, markerB))
+                .isTrue();
         assertThat(config2.isEnabled("com.example.ClassC", Level.WARN, markerC)).isFalse();
         assertThat(config2.isEnabled("com.example.ClassA", Level.INFO, markerC)).isFalse();
     }
@@ -153,11 +159,11 @@ public class LogLevelTest {
         assertThat(config2.isEnabled("com.example.Class", Level.DEBUG, markerM)).isFalse();
     }
 
-    @Test void nameNull() {
+    @Test
+    void nameNull() {
         // given
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("logging.level", "ERROR")
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("logging.level", "ERROR").getOrCreateConfig();
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
 
         // when
@@ -168,11 +174,11 @@ public class LogLevelTest {
         assertThat(systemErrProvider.getLines()).anyMatch(s -> s.contains("Null parameter: name"));
     }
 
-    @Test void levelNull() {
+    @Test
+    void levelNull() {
         // given
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("logging.level", "ERROR")
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("logging.level", "ERROR").getOrCreateConfig();
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
 
         // when

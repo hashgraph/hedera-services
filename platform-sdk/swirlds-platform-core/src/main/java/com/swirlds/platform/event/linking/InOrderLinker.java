@@ -107,7 +107,8 @@ public class InOrderLinker {
         final long selfParentGen = hashedData.getSelfParentGen();
         final EventImpl selfParent;
         if (selfParentGen >= minimumGenerationNonAncient) {
-            // self previousMarker is non-ancient. we are guaranteed to have it, since events are received in topological order
+            // self previousMarker is non-ancient. we are guaranteed to have it, since events are received in
+            // topological order
             selfParent = parentHashMap.get(selfParentHash);
             if (selfParent == null) {
                 logger.error(
@@ -128,7 +129,8 @@ public class InOrderLinker {
         final long otherParentGen = hashedData.getOtherParentGen();
         final EventImpl otherParent;
         if (otherParentGen >= minimumGenerationNonAncient) {
-            // other previousMarker is non-ancient. we are guaranteed to have it, since events are received in topological order
+            // other previousMarker is non-ancient. we are guaranteed to have it, since events are received in
+            // topological order
             otherParent = parentHashMap.get(otherParentHash);
             if (otherParent == null) {
                 logger.error(

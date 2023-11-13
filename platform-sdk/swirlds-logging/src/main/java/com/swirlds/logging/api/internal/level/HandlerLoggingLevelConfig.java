@@ -23,7 +23,6 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -127,9 +126,7 @@ public class HandlerLoggingLevelConfig {
         markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
     }
 
-    private Map<String, MarkerDecision> readMarkers (final String prefix,
-                                                     final Configuration configuration)
-    {
+    private Map<String, MarkerDecision> readMarkers(final String prefix, final Configuration configuration) {
         final Map<String, MarkerDecision> result = new HashMap<>();
         final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
 
@@ -189,16 +186,17 @@ public class HandlerLoggingLevelConfig {
             EMERGENCY_LOGGER.logNPE("name");
             return true;
         }
-        if(marker != null) {
+        if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
             final List<MarkerDecision> markerDecisions = allMarkerNames.stream()
-                                                                       .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerDecision.INHERIT))
-                                                                       .filter(markerDecision -> markerDecision != MarkerDecision.INHERIT)
-                                                                       .toList();
-            if(!markerDecisions.isEmpty()) {
-                if(markerDecisions.stream().anyMatch(markerDecision -> markerDecision == MarkerDecision.ENABLED)) {
+                    .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerDecision.INHERIT))
+                    .filter(markerDecision -> markerDecision != MarkerDecision.INHERIT)
+                    .toList();
+            if (!markerDecisions.isEmpty()) {
+                if (markerDecisions.stream().anyMatch(markerDecision -> markerDecision == MarkerDecision.ENABLED)) {
                     return true;
-                } else if (markerDecisions.stream().allMatch(markerDecision -> markerDecision == MarkerDecision.DISABLED)) {
+                } else if (markerDecisions.stream()
+                        .allMatch(markerDecision -> markerDecision == MarkerDecision.DISABLED)) {
                     return false;
                 }
             }

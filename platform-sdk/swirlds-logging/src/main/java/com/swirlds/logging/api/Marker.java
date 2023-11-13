@@ -18,7 +18,6 @@ package com.swirlds.logging.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +40,7 @@ public record Marker(@NonNull String name, @Nullable Marker previousMarker) {
         this(name, null);
     }
 
-    public List<String> getAllMarkerNames () {
+    public List<String> getAllMarkerNames() {
         if (previousMarker != null) {
             final List<String> result = new ArrayList<>(previousMarker.getAllMarkerNames());
             result.add(name);

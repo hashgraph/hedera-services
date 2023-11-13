@@ -25,8 +25,7 @@ public class ConfigLevelConverter implements ConfigConverter<ConfigLevel> {
 
     @Nullable
     @Override
-    public ConfigLevel convert (@NonNull final String value)
-            throws IllegalArgumentException, NullPointerException {
+    public ConfigLevel convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }

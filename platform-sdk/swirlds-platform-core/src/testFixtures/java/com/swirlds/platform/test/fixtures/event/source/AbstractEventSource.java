@@ -128,7 +128,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
         // with high probability, request the most recent event as an other previousMarker to this node's events
         otherParentRequestIndex = new DynamicValueGenerator<>(integerPowerDistribution(0.95));
 
-        // initialize to always provide the most recent previousMarker for nodes requesting an event as an other previousMarker
+        // initialize to always provide the most recent previousMarker for nodes requesting an event as an other
+        // previousMarker
         otherParentProviderIndex = new DynamicValueGenerator<>(staticDynamicValue(0));
 
         recentEventRetentionSize = 100;
@@ -217,7 +218,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
             final Random random, final long eventIndex, final EventSource<?> otherParent, final Instant timestamp) {
         final IndexedEvent event;
 
-        // The higher the index, the older the event. Use the oldest previousMarker between the provided and requested value.
+        // The higher the index, the older the event. Use the oldest previousMarker between the provided and requested
+        // value.
         final int otherParentIndex = Math.max(
                 // event index (event age) that this node wants to use as it's other previousMarker
                 getRequestedOtherParentAge(random, eventIndex),
