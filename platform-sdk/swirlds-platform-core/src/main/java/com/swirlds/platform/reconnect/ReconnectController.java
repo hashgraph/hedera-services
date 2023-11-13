@@ -135,6 +135,16 @@ public class ReconnectController implements Runnable {
     }
 
     /**
+     * Try to block the learner permit for reconnect. The method {@link #cancelLearnerPermit()} should be called
+     * to unblock the permit.
+     *
+     * @return true if the permit has been blocked
+     */
+    public boolean blockLearnerPermit() {
+        return connectionProvider.tryBlockProvidePermit();
+    }
+
+    /**
      * Releases a previously acquired permit for reconnect
      */
     public void cancelLearnerPermit() {

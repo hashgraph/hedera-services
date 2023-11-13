@@ -28,8 +28,6 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.BooleanSupplier;
 
 /**
  * A {@link TeachingSynchronizer} with simulated latency.
@@ -46,18 +44,9 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final int latencyMilliseconds,
-            @Nullable final BooleanSupplier shouldKeepTeaching,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
-        super(
-                Time.getCurrent(),
-                getStaticThreadManager(),
-                in,
-                out,
-                root,
-                breakConnection,
-                shouldKeepTeaching,
-                reconnectConfig);
+        super(Time.getCurrent(), getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
         this.latencyMilliseconds = latencyMilliseconds;
     }
 
