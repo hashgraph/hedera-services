@@ -47,8 +47,7 @@ public class TokenUriCall extends AbstractNftViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
-            @NonNull final Token token, final Nft nft) {
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
         requireNonNull(token);
         String metadata;
         if (nft != null) {

@@ -72,13 +72,12 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
         com.esaulpaugh.headlong.abi.Address address = asHeadlongAddress(new byte[20]);
         if (nft.spenderId() != null) {
             final var spenderNum = nft.spenderId().accountNumOrThrow();
-           final var spender = nativeOperations().getAccount(spenderNum);
+            final var spender = nativeOperations().getAccount(spenderNum);
             address = headlongAddressOf(spender);
         }
         return isErcCall
                 ? successResult(
-                        ERC_GET_APPROVED.getOutputs().encodeElements(address),
-                        gasCalculator.viewGasRequirement())
+                        ERC_GET_APPROVED.getOutputs().encodeElements(address), gasCalculator.viewGasRequirement())
                 : successResult(
                         HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), address),
                         gasCalculator.viewGasRequirement());
