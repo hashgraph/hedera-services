@@ -76,7 +76,7 @@ public enum TaskSchedulerType {
      * <p>
      * In theory, it would be safe to use this task scheduler type for stateful work if the state is protected by the
      * necessary synchronization mechanisms. However, this pattern is strongly discouraged. A general design philosophy
-     * of the framework is enable the creation of simple business logic that it does not need to care about threading
+     * of the framework is to enable the creation of simple business logic that it does not need to care about threading
      * and which relies on the framework to ensure that work is scheduled in a thread safe manner.
      */
     DIRECT_STATELESS

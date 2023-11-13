@@ -92,6 +92,11 @@ public class PlatformWiring implements Startable, Stoppable {
         return cyclicalBackpressurePresent;
     }
 
+    /**
+     * Check if illegal direct scheduler usage is present in the model.
+     *
+     * @return true if illegal direct scheduler usage is present, false otherwise
+     */
     public boolean isIllegalDirectSchedulerUsagePresent() {
         return illegalDirectSchedulerUsagePresent;
     }

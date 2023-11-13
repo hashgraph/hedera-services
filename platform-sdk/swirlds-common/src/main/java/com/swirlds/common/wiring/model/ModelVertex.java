@@ -40,8 +40,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     private final boolean insertionIsBlocking;
 
     /**
-     * The task scheduler that corresponds to this vertex, or null if this vertex does not correspond to a task
-     * scheduler.
+     * The task scheduler type that corresponds to this vertex.
      */
     private final TaskSchedulerType type;
 

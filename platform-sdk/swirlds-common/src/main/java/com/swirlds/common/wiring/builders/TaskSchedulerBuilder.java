@@ -303,7 +303,7 @@ public class TaskSchedulerBuilder<O> {
             return NoOpFractionalTimer.getInstance();
         }
         if (type == TaskSchedulerType.CONCURRENT) {
-            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent wires");
+            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent schedulers");
         }
         return metricsBuilder.buildBusyTimer();
     }
