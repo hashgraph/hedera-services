@@ -22,7 +22,10 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Internal enum to define the configuration level. Includes UNDEFINED which should not be exposed to public API.
+ * Enumeration representing logging configuration levels.
+ * These levels define the granularity of logging, ranging from OFF (no logging) to TRACE (most detailed logging).
+ * <p>
+ * Note: The UNDEFINED level is intended for internal use and should not be exposed in public APIs.
  */
 public enum ConfigLevel {
     UNDEFINED,
@@ -34,10 +37,11 @@ public enum ConfigLevel {
     TRACE;
 
     /**
-     * Returns true if the logging of the given level is enabled
+     * Determines whether logging at the specified {@code level} is enabled according to the current configuration level.
      *
-     * @param level the level
-     * @return true if the logging of the given level is enabled
+     * @param level the desired logging level
+     * @return {@code true} if logging at the given level is enabled, {@code false} otherwise
+     * @throws NullPointerException if the provided {@code level} is null
      */
     public boolean enabledLoggingOfLevel(@NonNull final Level level) {
         final EmergencyLogger emergencyLogger = EmergencyLoggerProvider.getEmergencyLogger();

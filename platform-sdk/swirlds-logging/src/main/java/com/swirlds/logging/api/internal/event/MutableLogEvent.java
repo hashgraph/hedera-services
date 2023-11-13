@@ -17,9 +17,11 @@
 package com.swirlds.logging.api.internal.event;
 
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
-import com.swirlds.logging.api.extensions.event.Marker;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
@@ -30,14 +32,44 @@ import java.util.Map;
 public class MutableLogEvent implements LogEvent {
 
     /**
-     * The initial message that is used when the message is undefined.
+     * The initial values of the log event.
      */
-    private static final LogMessage INITIAL_MESSAGE = new SimpleLogMessage("");
+    private static final Level INITIAL_LEVEL = Level.TRACE;
+
+    /**
+     * The initial logger name.
+     */
+    private static final String INITIAL_LOGGER_NAME = "";
+
+    /**
+     * The initial thread name.
+     */
+    private static final String INITIAL_THREAD_NAME = "";
 
     /**
      * The initial timestamp that is used when the timestamp is undefined.
      */
-    private static final Instant INITIAL_INSTANT = Instant.MIN;
+    private static final Instant INITIAL_INSTANT = Instant.now();
+
+    /**
+     * The initial message that is used when the message is undefined.
+     */
+    private static final LogMessage INITIAL_MESSAGE = new SimpleLogMessage("UNDEFINED");
+
+    /**
+     * The initial throwable.
+     */
+    private static final Throwable INITIAL_THROWABLE = null;
+
+    /**
+     * The initial marker.
+     */
+    private static final Marker INITIAL_MARKER = null;
+
+    /**
+     * The initial context.
+     */
+    private static final Map<String, String> INITIAL_CONTEXT = Map.of();
 
     /**
      * The log level.
@@ -83,7 +115,15 @@ public class MutableLogEvent implements LogEvent {
      * Creates a new mutable log event that is filled with dummy values.
      */
     public MutableLogEvent() {
-        update(Level.TRACE, "", "", INITIAL_INSTANT, INITIAL_MESSAGE, null, null, Map.of());
+        update(
+                INITIAL_LEVEL,
+                INITIAL_LOGGER_NAME,
+                INITIAL_THREAD_NAME,
+                INITIAL_INSTANT,
+                INITIAL_MESSAGE,
+                INITIAL_THROWABLE,
+                INITIAL_MARKER,
+                INITIAL_CONTEXT);
     }
 
     /**
@@ -99,14 +139,14 @@ public class MutableLogEvent implements LogEvent {
      * @param context    The context
      */
     public void update(
-            Level level,
-            String loggerName,
-            String threadName,
-            Instant timestamp,
-            LogMessage message,
-            Throwable throwable,
-            Marker marker,
-            Map<String, String> context) {
+            @NonNull final Level level,
+            @NonNull final String loggerName,
+            @NonNull final String threadName,
+            @NonNull final Instant timestamp,
+            @NonNull final LogMessage message,
+            @Nullable final Throwable throwable,
+            @Nullable final Marker marker,
+            @NonNull final Map<String, String> context) {
         this.level = level;
         this.loggerName = loggerName;
         this.threadName = threadName;
@@ -118,41 +158,49 @@ public class MutableLogEvent implements LogEvent {
     }
 
     @Override
+    @NonNull
     public Level level() {
         return level;
     }
 
     @Override
+    @NonNull
     public String loggerName() {
         return loggerName;
     }
 
     @Override
+    @NonNull
     public String threadName() {
         return threadName;
     }
 
     @Override
+    @NonNull
     public Instant timestamp() {
         return timestamp;
     }
 
     @Override
+    @NonNull
     public LogMessage message() {
         return message;
     }
 
     @Override
+    @Nullable
     public Throwable throwable() {
         return throwable;
     }
 
     @Override
+    @Nullable
     public Marker marker() {
         return marker;
     }
 
     @Override
+    @NonNull
     public Map<String, String> context() {
         return context;
     }

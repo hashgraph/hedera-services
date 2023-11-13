@@ -17,12 +17,13 @@
 package com.swirlds.logging.api.internal.format;
 
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
-import com.swirlds.logging.api.extensions.event.Marker;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -173,11 +174,11 @@ public class LineBasedFormat {
      * @param marker The marker
      * @return The string
      */
-    private String asString(Marker marker) {
+    private String asString(@Nullable final Marker marker) {
         if (marker == null) {
             return "null";
         } else {
-            final Marker parent = marker.parent();
+            final Marker parent = marker.previous();
             if (parent == null) {
                 return "Marker{name='" + marker.name() + "'}";
             } else {

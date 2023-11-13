@@ -25,6 +25,8 @@ import java.util.Objects;
  */
 public abstract class AbstractLogProvider implements LogProvider {
 
+    private static final String PROPERTY_PROVIDER_ENABLED = "logging.provider.%s.enabled";
+
     /**
      * The configuration key of the log provider. This is used to create configuration keys for the log provider.
      */
@@ -48,6 +50,7 @@ public abstract class AbstractLogProvider implements LogProvider {
 
     @Override
     public boolean isActive() {
-        return configuration.getValue("logging.provider." + configKey + ".enabled", Boolean.class, false);
+        return Boolean.TRUE.equals(
+                configuration.getValue(PROPERTY_PROVIDER_ENABLED.formatted(configKey), Boolean.class, false));
     }
 }

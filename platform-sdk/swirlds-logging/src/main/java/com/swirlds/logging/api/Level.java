@@ -19,12 +19,13 @@ package com.swirlds.logging.api;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The level of a log message
  */
 public enum Level {
-    OFF(1),
+    OFF(0),
     ERROR(10),
     WARN(20),
     INFO(30),
@@ -46,7 +47,7 @@ public enum Level {
      *
      * @param levelOrdinal the ordinal of the level
      */
-    Level(int levelOrdinal) {
+    Level(final int levelOrdinal) {
         this.levelOrdinal = levelOrdinal;
     }
 
@@ -71,11 +72,15 @@ public enum Level {
      * @param defaultLevel the default level
      * @return the level for the given name
      */
-    public static Level valueOfOrElse(String value, Level defaultLevel) {
+    public static Level valueOfOrElse(@Nullable final String value, @NonNull final Level defaultLevel) {
+        if (defaultLevel == null) {
+            EMERGENCY_LOGGER.logNPE("defaultLevel");
+            return valueOfOrElse(value, INFO);
+        }
         try {
             return valueOf(value);
         } catch (IllegalArgumentException e) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Invalid log level: " + value, e);
+            EMERGENCY_LOGGER.log(ERROR, "Invalid log level: " + value, e);
             return defaultLevel;
         }
     }

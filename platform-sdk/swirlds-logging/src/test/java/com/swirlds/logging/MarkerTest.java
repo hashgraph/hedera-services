@@ -16,7 +16,7 @@
 
 package com.swirlds.logging;
 
-import com.swirlds.logging.api.extensions.event.Marker;
+import com.swirlds.logging.api.Marker;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ public class MarkerTest {
 
         // then
         Assertions.assertEquals("markerName", marker.name());
-        Assertions.assertNull(marker.parent());
+        Assertions.assertNull(marker.previous());
     }
 
     @Test
@@ -45,9 +45,9 @@ public class MarkerTest {
 
         // then
         Assertions.assertEquals("markerName", marker.name());
-        Assertions.assertNotNull(marker.parent());
-        Assertions.assertSame(parent, marker.parent());
-        Assertions.assertNull(parent.parent());
+        Assertions.assertNotNull(marker.previous());
+        Assertions.assertSame(parent, marker.previous());
+        Assertions.assertNull(parent.previous());
     }
 
     @Test

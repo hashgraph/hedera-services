@@ -21,8 +21,23 @@ import com.swirlds.logging.api.internal.level.MarkerDecision;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * A class that implements the {@link ConfigConverter} interface for converting configuration values to {@link MarkerDecision}.
+ * It is used to convert strings to {@link MarkerDecision} enum values based on the string representation.
+ *
+ * @see ConfigConverter
+ * @see MarkerDecision
+ */
 public class MarkerDecisionConverter implements ConfigConverter<MarkerDecision> {
 
+    /**
+     * Converts a string representation of a marker decision to a {@link MarkerDecision} enum value.
+     *
+     * @param value The string value to convert.
+     * @return The {@link MarkerDecision} enum value corresponding to the provided string.
+     * @throws IllegalArgumentException If the provided value cannot be converted to a valid {@link MarkerDecision}.
+     * @throws NullPointerException     If the provided value is {@code null}.
+     */
     @Nullable
     @Override
     public MarkerDecision convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {

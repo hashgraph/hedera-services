@@ -51,7 +51,7 @@ public record ParameterizedLogMessage(@Nullable String messagePattern, @Nullable
         int i = 0;
         int j;
         // use string builder for better multicore performance
-        StringBuilder sbuf = new StringBuilder(messagePattern.length() + 50);
+        final StringBuilder sbuf = new StringBuilder(messagePattern.length() + 50);
 
         int L;
         for (L = 0; L < args.length; L++) {
@@ -68,7 +68,7 @@ public record ParameterizedLogMessage(@Nullable String messagePattern, @Nullable
                     return sbuf.toString();
                 }
             } else {
-                if (isEscapedDelimeter(messagePattern, j)) {
+                if (isEscapedDelimiter(messagePattern, j)) {
                     if (!isDoubleEscaped(messagePattern, j)) {
                         L--; // DELIM_START was escaped, thus should not be incremented
                         sbuf.append(messagePattern, i, j - 1);
@@ -95,26 +95,26 @@ public record ParameterizedLogMessage(@Nullable String messagePattern, @Nullable
         return sbuf.toString();
     }
 
-    private static boolean isEscapedDelimeter(String messagePattern, int delimeterStartIndex) {
+    private static boolean isEscapedDelimiter(@NonNull final String messagePattern, final int delimiterStartIndex) {
 
-        if (delimeterStartIndex == 0) {
+        if (delimiterStartIndex == 0) {
             return false;
         }
-        char potentialEscape = messagePattern.charAt(delimeterStartIndex - 1);
+        char potentialEscape = messagePattern.charAt(delimiterStartIndex - 1);
         return potentialEscape == ESCAPE_CHAR;
     }
 
-    private static boolean isDoubleEscaped(String messagePattern, int delimeterStartIndex) {
-        return delimeterStartIndex >= 2 && messagePattern.charAt(delimeterStartIndex - 2) == ESCAPE_CHAR;
+    private static boolean isDoubleEscaped(@NonNull final String messagePattern, int delimiterStartIndex) {
+        return delimiterStartIndex >= 2 && messagePattern.charAt(delimiterStartIndex - 2) == ESCAPE_CHAR;
     }
 
-    private static void deeplyAppendParameter(StringBuilder sbuf, Object o) {
+    private static void deeplyAppendParameter(@NonNull final StringBuilder sbuf, @Nullable final Object o) {
         if (o == null) {
             sbuf.append("null");
             return;
         }
         try {
-            String oAsString = o.toString();
+            final String oAsString = o.toString();
             sbuf.append(oAsString);
         } catch (Throwable t) {
             sbuf.append("[FAILED toString()]");

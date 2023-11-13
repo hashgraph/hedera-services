@@ -17,6 +17,9 @@
 package com.swirlds.logging.api.internal.configuration;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.InputStream;
@@ -41,6 +44,16 @@ import java.util.stream.Stream;
 public class LogConfiguration implements Configuration {
 
     /**
+     * The name of the environment variable that can be used to overwrite the path to the logging configuration file.
+     */
+    private static final String ENV_PROPERTY_LOG_PATH = "LOG_CONFIG_PATH";
+
+    /**
+     * The emergency logger that is used to log errors that occur during the initialization process.
+     */
+    private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
+
+    /**
      * The configuration properties
      */
     private final Map<String, String> properties;
@@ -50,7 +63,7 @@ public class LogConfiguration implements Configuration {
      */
     public LogConfiguration() {
         properties = new HashMap<>();
-        final String logConfigPath = System.getenv("LOG_CONFIG_PATH");
+        final String logConfigPath = System.getenv(ENV_PROPERTY_LOG_PATH);
         final URL configProperties = Optional.ofNullable(logConfigPath)
                 .map(Path::of)
                 .map(Path::toUri)
@@ -68,8 +81,7 @@ public class LogConfiguration implements Configuration {
                 properties.load(inputStream);
                 properties.forEach((key, value) -> this.properties.put((String) key, (String) value));
             } catch (final Exception e) {
-                final System.Logger systemLogger = System.getLogger(LogConfiguration.class.getName());
-                systemLogger.log(System.Logger.Level.ERROR, "Can not load logging configuration!", e);
+                EMERGENCY_LOGGER.log(Level.ERROR, "Can not load logging configuration!", e);
             }
         }
     }
@@ -81,23 +93,23 @@ public class LogConfiguration implements Configuration {
     }
 
     @Override
-    public boolean exists(@NonNull String property) {
+    public boolean exists(@NonNull final String property) {
         return properties.containsKey(property);
     }
 
     @Override
-    public String getValue(@NonNull String property) throws NoSuchElementException {
+    public String getValue(@NonNull final String property) throws NoSuchElementException {
         return properties.get(property);
     }
 
     @Override
-    public String getValue(@NonNull String property, @Nullable String defaultValue) {
+    public String getValue(@NonNull final String property, @Nullable final String defaultValue) {
         return Optional.ofNullable(properties.get(property)).orElse(defaultValue);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T getValue(@NonNull String property, @NonNull Class<T> type)
+    public <T> T getValue(@NonNull final String property, @NonNull final Class<T> type)
             throws NoSuchElementException, IllegalArgumentException {
         if (type == Boolean.class) {
             return (T) Boolean.valueOf(properties.get(property));
@@ -106,58 +118,60 @@ public class LogConfiguration implements Configuration {
     }
 
     @Override
-    public <T> T getValue(@NonNull String property, @NonNull Class<T> type, T defaultValue)
+    public <T> T getValue(@NonNull final String property, @NonNull final Class<T> type, final T defaultValue)
             throws IllegalArgumentException {
         return Optional.ofNullable(getValue(property, type)).orElse(defaultValue);
     }
 
     @Override
-    public List<String> getValues(@NonNull String property) {
+    public List<String> getValues(@NonNull final String property) {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public List<String> getValues(@NonNull String property, List<String> defaultValue) {
+    public List<String> getValues(@NonNull final String property, final List<String> defaultValue) {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public <T> List<T> getValues(@NonNull String property, @NonNull Class<T> type)
+    public <T> List<T> getValues(@NonNull final String property, final @NonNull Class<T> type)
             throws NoSuchElementException, IllegalArgumentException {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public <T> List<T> getValues(@NonNull String property, @NonNull Class<T> type, @Nullable List<T> defaultValue)
+    public <T> List<T> getValues(
+            @NonNull final String property, final @NonNull Class<T> type, final @Nullable List<T> defaultValue)
             throws IllegalArgumentException {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public Set<String> getValueSet(@NonNull String property) {
+    public Set<String> getValueSet(@NonNull final String property) {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public Set<String> getValueSet(@NonNull String property, @Nullable Set<String> defaultValue) {
+    public Set<String> getValueSet(@NonNull final String property, @Nullable final Set<String> defaultValue) {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public <T> Set<T> getValueSet(@NonNull String property, @NonNull Class<T> type)
+    public <T> Set<T> getValueSet(@NonNull final String property, @NonNull final Class<T> type)
             throws NoSuchElementException, IllegalArgumentException {
         throw new IllegalStateException("Collections not supported");
     }
 
     @Override
-    public <T> Set<T> getValueSet(@NonNull String property, @NonNull Class<T> type, @Nullable Set<T> defaultValue)
+    public <T> Set<T> getValueSet(
+            @NonNull final String property, @NonNull final Class<T> type, @Nullable final Set<T> defaultValue)
             throws IllegalArgumentException {
         throw new IllegalStateException("Collections not supported");
     }
 
     @NonNull
     @Override
-    public <T extends Record> T getConfigData(@NonNull Class<T> configType) {
+    public <T extends Record> T getConfigData(@NonNull final Class<T> configType) {
         throw new IllegalStateException("Records not supported");
     }
 

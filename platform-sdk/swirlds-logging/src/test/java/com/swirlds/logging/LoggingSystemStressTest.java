@@ -42,7 +42,7 @@ public class LoggingSystemStressTest {
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, 100)
                 .mapToObj(i -> loggingSystem.getLogger("logger-" + i))
-                .map(l -> (Runnable) () -> LoggingUtils.logLikeHell(l))
+                .map(l -> (Runnable) () -> LoggingUtils.generateExtensiveLogMessages(l))
                 .collect(Collectors.toList());
 
         // when
@@ -67,7 +67,7 @@ public class LoggingSystemStressTest {
         final InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, 100)
-                .mapToObj(l -> (Runnable) () -> LoggingUtils.logLikeHell(logger))
+                .mapToObj(l -> (Runnable) () -> LoggingUtils.generateExtensiveLogMessages(logger))
                 .collect(Collectors.toList());
 
         // when

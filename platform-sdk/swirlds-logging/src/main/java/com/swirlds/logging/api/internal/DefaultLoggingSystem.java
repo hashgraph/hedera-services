@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The default logging system is a singleton that is used as the logging system. It acts as a wrapper around a single
- * {@link LoggingSystem} instance. In theory it is possible to have multiple logging systems, but in practice at runtime
+ * {@link LoggingSystem} instance. In theory, it is possible to have multiple logging systems, but in practice at runtime
  * this is the only one that should be used. A custom {@link LoggingSystem} instance can for example be created for
  * tests or benchmarks.
  */
@@ -79,8 +79,17 @@ public class DefaultLoggingSystem {
         // TODO:  EmergencyLogger.setInnerLogger();
 
         EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
-                .map(event ->
-                        this.internalLoggingSystem.getLogEventFactory().createLogEvent(event, "EMERGENCY-LOGGER-QUEUE"))
+                .map(event -> this.internalLoggingSystem
+                        .getLogEventFactory()
+                        .createLogEvent(
+                                event.level(),
+                                "EMERGENCY-LOGGER-QUEUE",
+                                event.threadName(),
+                                event.timestamp(),
+                                event.message(),
+                                event.throwable(),
+                                event.marker(),
+                                event.context()))
                 .forEach(internalLoggingSystem::accept);
         INITIALIZED.set(true);
     }
@@ -91,7 +100,7 @@ public class DefaultLoggingSystem {
      *
      * @param configuration The configuration.
      */
-    private void installHandlers(final Configuration configuration) {
+    private void installHandlers(@NonNull final Configuration configuration) {
         final ServiceLoader<LogHandlerFactory> serviceLoader = ServiceLoader.load(LogHandlerFactory.class);
         final List<LogHandler> handlers = serviceLoader.stream()
                 .map(Provider::get)
@@ -108,7 +117,7 @@ public class DefaultLoggingSystem {
      *
      * @param configuration The configuration.
      */
-    private void installProviders(final Configuration configuration) {
+    private void installProviders(@NonNull final Configuration configuration) {
         final ServiceLoader<LogProviderFactory> serviceLoader = ServiceLoader.load(LogProviderFactory.class);
         final List<LogProvider> providers = serviceLoader.stream()
                 .map(Provider::get)
@@ -124,6 +133,7 @@ public class DefaultLoggingSystem {
      *
      * @return The singleton instance.
      */
+    @NonNull
     public static DefaultLoggingSystem getInstance() {
         return InstanceHolder.INSTANCE;
     }
@@ -135,7 +145,7 @@ public class DefaultLoggingSystem {
      * @return The logger.
      */
     @NonNull
-    public Logger getLogger(@NonNull String loggerName) {
+    public Logger getLogger(@NonNull final String loggerName) {
         return internalLoggingSystem.getLogger(loggerName);
     }
 
@@ -144,7 +154,7 @@ public class DefaultLoggingSystem {
      *
      * @param logHandler The log handler.
      */
-    public void addHandler(LogHandler logHandler) {
+    public void addHandler(@NonNull final LogHandler logHandler) {
         internalLoggingSystem.addHandler(logHandler);
     }
 
@@ -153,7 +163,7 @@ public class DefaultLoggingSystem {
      *
      * @param logHandler
      */
-    public void removeHandler(LogHandler logHandler) {
+    public void removeHandler(@NonNull final LogHandler logHandler) {
         internalLoggingSystem.removeHandler(logHandler);
     }
 

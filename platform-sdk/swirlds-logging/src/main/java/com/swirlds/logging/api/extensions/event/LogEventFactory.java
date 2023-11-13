@@ -17,12 +17,12 @@
 package com.swirlds.logging.api.extensions.event;
 
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.event.SimpleLogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A factory that creates {@link LogEvent}s.
@@ -144,29 +144,5 @@ public interface LogEventFactory {
                 throwable,
                 null,
                 Map.of());
-    }
-
-    /**
-     * Creates a new {@link LogEvent} that has all parameters of the given logEvent but a different loggerName.
-     *
-     * @param logEvent   the logEvent that should be copied (excluding the loggerName)
-     * @param loggerName the new logger name
-     * @return the new copy of the event
-     * @deprecated since it is not compatible with reusing the events per thread. (see
-     * {@link com.swirlds.logging.api.internal.event.ReuseableLogEventFactory})
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default LogEvent createLogEvent(@NonNull LogEvent logEvent, @NonNull String loggerName) {
-        Objects.requireNonNull(logEvent);
-        return createLogEvent(
-                logEvent.level(),
-                loggerName,
-                logEvent.threadName(),
-                logEvent.timestamp(),
-                logEvent.message(),
-                logEvent.throwable(),
-                logEvent.marker(),
-                logEvent.context());
     }
 }

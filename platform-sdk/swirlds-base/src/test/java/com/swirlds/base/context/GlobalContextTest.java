@@ -17,26 +17,13 @@
 package com.swirlds.base.context;
 
 import com.swirlds.base.context.internal.GlobalContext;
-import com.swirlds.base.context.internal.ThreadLocalContext;
+import com.swirlds.base.test.fixtures.context.WithContext;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@WithContext
 public class GlobalContextTest {
-
-    @BeforeEach
-    void setUp() {
-        GlobalContext.getInstance().clear();
-        ThreadLocalContext.getInstance().clear();
-    }
-
-    @AfterEach
-    void tearDown() {
-        GlobalContext.getInstance().clear();
-        ThreadLocalContext.getInstance().clear();
-    }
 
     @Test
     void testNullKeyOrValue() {

@@ -28,9 +28,9 @@ import java.util.Objects;
  * runtime
  *
  * @param name   the name of the marker
- * @param previousMarker the previousMarker marker (if present)
+ * @param previous the previous marker (if present)
  */
-public record Marker(@NonNull String name, @Nullable Marker previousMarker) {
+public record Marker(@NonNull String name, @Nullable Marker previous) {
 
     public Marker {
         Objects.requireNonNull(name, "name must not be null");
@@ -40,9 +40,10 @@ public record Marker(@NonNull String name, @Nullable Marker previousMarker) {
         this(name, null);
     }
 
+    @NonNull
     public List<String> getAllMarkerNames() {
-        if (previousMarker != null) {
-            final List<String> result = new ArrayList<>(previousMarker.getAllMarkerNames());
+        if (previous != null) {
+            final List<String> result = new ArrayList<>(previous.getAllMarkerNames());
             result.add(name);
             return Collections.unmodifiableList(result);
         } else {

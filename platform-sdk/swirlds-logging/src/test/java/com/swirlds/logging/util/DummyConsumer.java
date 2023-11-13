@@ -19,7 +19,29 @@ package com.swirlds.logging.util;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 
+/**
+ * A dummy implementation of the {@code LogEventConsumer} interface.
+ *
+ * <p>
+ * This class serves as a placeholder for a log event consumer and provides an empty implementation
+ * of the {@code accept} method. It can be used when you need to create a consumer instance that
+ * does not perform any specific actions with log events.
+ * </p>
+ *
+ * <p>
+ * When you use an instance of {@code DummyConsumer}, the {@code accept} method does nothing
+ * upon receiving a log event. It is particularly useful when you want to avoid processing or
+ * handling log events in a specific scenario.
+ * </p>
+ */
 public class DummyConsumer implements LogEventConsumer {
+    /**
+     * Accepts a log event but performs no action.
+     *
+     * @param event the log event to be accepted
+     */
     @Override
-    public void accept(LogEvent event) {}
+    public void accept(LogEvent event) {
+        // Empty implementation; does not perform any action
+    }
 }

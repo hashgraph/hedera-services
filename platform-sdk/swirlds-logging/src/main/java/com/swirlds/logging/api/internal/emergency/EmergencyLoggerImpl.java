@@ -69,10 +69,12 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      */
     private static final EmergencyLoggerImpl INSTANCE = new EmergencyLoggerImpl();
 
+    public static final Level DEFAULT_LEVEL = Level.DEBUG;
+
     /**
      * The level that is supported by the logger.
      */
-    private final AtomicReference<Level> supportedLevel = new AtomicReference<>();
+    private final AtomicReference<Level> supportedLevel;
 
     /**
      * The queue that is used to store the log events. Once the real logging system is available the events can be taken
@@ -80,14 +82,20 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      */
     private final ArrayBlockingQueue<LogEvent> logEvents;
 
-    private final Lock logEventsAddLock = new ReentrantLock();
+    /**
+     * A lock that is used to add log events to the queue.
+     */
+    private final Lock logEventsAddLock;
 
     /**
      * A thread local that is used to prevent recursion. This can happen when the logger is used in a broken system.
      */
     private final ThreadLocal<Boolean> recursionGuard;
 
-    private final LogEventFactory logEventFactory = new SimpleLogEventFactory();
+    /**
+     * The factory that is used to create log events.
+     */
+    private final LogEventFactory logEventFactory;
 
     /**
      * Creates the singleton instance of the logger.
@@ -95,6 +103,9 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
     private EmergencyLoggerImpl() {
         this.logEvents = new ArrayBlockingQueue<>(LOG_EVENT_QUEUE_SIZE);
         recursionGuard = new ThreadLocal<>();
+        supportedLevel = new AtomicReference<>();
+        logEventsAddLock = new ReentrantLock();
+        logEventFactory = new SimpleLogEventFactory();
     }
 
     /**
@@ -106,16 +117,16 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
     private static Level getSupportedLevelFromSystemProperties() {
         final String property = System.getProperty(LEVEL_PROPERTY_NAME);
         if (property == null) {
-            return Level.DEBUG; // DEFAULT LEVEL
-        } else if (Objects.equals(property.toUpperCase(), "TRACE")) {
+            return DEFAULT_LEVEL;
+        } else if (Objects.equals(property.toUpperCase(), Level.TRACE.name())) {
             return Level.TRACE;
-        } else if (Objects.equals(property.toUpperCase(), "DEBUG")) {
+        } else if (Objects.equals(property.toUpperCase(), Level.DEBUG.name())) {
             return Level.DEBUG;
-        } else if (Objects.equals(property.toUpperCase(), "INFO")) {
+        } else if (Objects.equals(property.toUpperCase(), Level.INFO.name())) {
             return Level.INFO;
-        } else if (Objects.equals(property.toUpperCase(), "WARN")) {
+        } else if (Objects.equals(property.toUpperCase(), Level.WARN.name())) {
             return Level.WARN;
-        } else if (Objects.equals(property.toUpperCase(), "ERROR")) {
+        } else if (Objects.equals(property.toUpperCase(), Level.ERROR.name())) {
             return Level.ERROR;
         } else {
             return Level.TRACE;
@@ -123,7 +134,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
     }
 
     @Override
-    public void logNPE(@NonNull String nameOfNullParam) {
+    public void logNPE(@NonNull final String nameOfNullParam) {
         log(
                 Level.ERROR,
                 "Null parameter: " + nameOfNullParam,

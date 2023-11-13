@@ -20,9 +20,17 @@ import com.swirlds.logging.api.Logger;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-public class LoggingUtils {
+/**
+ * Utility class for logging related operations.
+ */
+public final class LoggingUtils {
 
-    public static void logLikeHell(Logger logger) {
+    /**
+     * Generates extensive log messages for testing and debugging purposes.
+     *
+     * @param logger the logger instance to use for generating log messages
+     */
+    public static void generateExtensiveLogMessages(Logger logger) {
         IntStream.range(0, 100).forEach(i -> {
             logger.info("L0, Hello world!");
             logger.info("L1, A quick brown fox jumps over the lazy dog.");

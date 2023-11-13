@@ -126,7 +126,9 @@ public class HandlerLoggingLevelConfig {
         markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
     }
 
-    private Map<String, MarkerDecision> readMarkers(final String prefix, final Configuration configuration) {
+    @NonNull
+    private Map<String, MarkerDecision> readMarkers(
+            @NonNull final String prefix, @NonNull final Configuration configuration) {
         final Map<String, MarkerDecision> result = new HashMap<>();
         final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
 
@@ -148,6 +150,7 @@ public class HandlerLoggingLevelConfig {
      *
      * @return map of levels and package names
      */
+    @NonNull
     private Map<String, ConfigLevel> readLevels(
             @NonNull final String prefix, @NonNull final Configuration configuration) {
         final Map<String, ConfigLevel> result = new HashMap<>();
@@ -165,25 +168,33 @@ public class HandlerLoggingLevelConfig {
         return Collections.unmodifiableMap(result);
     }
 
-    public boolean isEnabled(@NonNull String name, @NonNull Level level) {
-        return isEnabled(name, level, null);
+    /**
+     * Returns {code true} if the given level is enabled for the given handler.
+     *
+     * @param handler  The handler name.
+     * @param level The level.
+     *
+     * @return {code true} if the given level is enabled for the given handler.
+     */
+    public boolean isEnabled(@NonNull String handler, @NonNull Level level) {
+        return isEnabled(handler, level, null);
     }
 
     /**
-     * Returns true if the given level is enabled for the given name.
+     * Returns true if the given level is enabled for the given handler.
      *
-     * @param name  The name.
+     * @param handler  The handler name.
      * @param level The level.
      *
-     * @return True if the given level is enabled for the given name.
+     * @return True if the given level is enabled for the given handler.
      */
-    public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
+    public boolean isEnabled(@NonNull final String handler, @NonNull final Level level, @Nullable final Marker marker) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        if (name == null) {
-            EMERGENCY_LOGGER.logNPE("name");
+        if (handler == null) {
+            EMERGENCY_LOGGER.logNPE("handler");
             return true;
         }
         if (marker != null) {
@@ -202,7 +213,7 @@ public class HandlerLoggingLevelConfig {
             }
         }
 
-        final ConfigLevel enabledLevel = levelCache.computeIfAbsent(name.trim(), this::getConfiguredLevel);
+        final ConfigLevel enabledLevel = levelCache.computeIfAbsent(handler.trim(), this::getConfiguredLevel);
         return enabledLevel.enabledLoggingOfLevel(level);
     }
 

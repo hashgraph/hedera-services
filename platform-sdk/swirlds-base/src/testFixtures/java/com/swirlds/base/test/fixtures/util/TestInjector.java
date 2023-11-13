@@ -20,6 +20,7 @@ import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.inject.Inject;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -64,24 +65,45 @@ public class TestInjector {
                 });
     }
 
+    /**
+     * Checks if the given parameter context supports a parameter of the specified class type.
+     *
+     * @param parameterContext The parameter context to check for support.
+     * @param cls              The class type to check support for.
+     * @param <T>              The type of the class.
+     * @return True if the parameter context supports the specified class type, false otherwise.
+     * @throws NullPointerException If either parameterContext or cls is null.
+     */
     public static <T> boolean supportsParameter(
             final @NonNull ParameterContext parameterContext, final @NonNull Class<T> cls) {
         Objects.requireNonNull(parameterContext, "parameterContext must not be null");
         Objects.requireNonNull(cls, "cls must not be null");
-        return Optional.ofNullable(parameterContext)
-                .map(c -> c.getParameter())
-                .map(p -> p.getType())
-                .filter(t -> cls.isAssignableFrom(t))
+
+        return Optional.of(parameterContext)
+                .map(ParameterContext::getParameter)
+                .map(Parameter::getType)
+                .filter(cls::isAssignableFrom)
                 .isPresent();
     }
 
+    /**
+     * Resolves a parameter from the given parameter context using the provided instance supplier.
+     *
+     * @param parameterContext   The parameter context to resolve the parameter from.
+     * @param instanceSupplier   The supplier that provides an instance of the parameter type.
+     * @param <T>                The type of the parameter to resolve.
+     * @return The resolved parameter.
+     * @throws NullPointerException       If either parameterContext or instanceSupplier is null.
+     * @throws ParameterResolutionException If the parameter cannot be resolved.
+     */
     public static <T> T resolveParameter(
             final @NonNull ParameterContext parameterContext, final @NonNull Supplier<T> instanceSupplier) {
         Objects.requireNonNull(parameterContext, "parameterContext must not be null");
         Objects.requireNonNull(instanceSupplier, "instanceSupplier must not be null");
-        return Optional.ofNullable(parameterContext)
-                .map(c -> c.getParameter())
-                .map(p -> p.getType())
+
+        return Optional.of(parameterContext)
+                .map(ParameterContext::getParameter)
+                .map(Parameter::getType)
                 .filter(t -> t.equals(TestExecutor.class))
                 .map(t -> instanceSupplier.get())
                 .orElseThrow(() -> new ParameterResolutionException("Could not resolve parameter"));

@@ -27,6 +27,10 @@ import java.util.Objects;
  */
 public abstract class AbstractLogHandler implements LogHandler {
 
+    private static final String PROPERTY_HANDLER = "logging.handler.%s";
+    private static final String PROPERTY_HANDLER_ENABLED = PROPERTY_HANDLER + ".enabled";
+    private static final String PROPERTY_HANDLER_LEVEL = PROPERTY_HANDLER + ".level";
+
     /**
      * The configuration key of the log handler. This is used to create configuration keys for the log handler.
      */
@@ -51,12 +55,13 @@ public abstract class AbstractLogHandler implements LogHandler {
     public AbstractLogHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
         this.configKey = Objects.requireNonNull(configKey, "configKey must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.loggingLevelConfig = new LoggingLevelConfig(configuration, "logging.handler." + configKey + ".level");
+        this.loggingLevelConfig = new LoggingLevelConfig(configuration, PROPERTY_HANDLER_LEVEL.formatted(configKey));
     }
 
     @Override
     public boolean isActive() {
-        return configuration.getValue("logging.handler." + configKey + ".enabled", Boolean.class, false);
+        return Boolean.TRUE.equals(
+                configuration.getValue(PROPERTY_HANDLER_ENABLED.formatted(configKey), Boolean.class, false));
     }
 
     @Override
