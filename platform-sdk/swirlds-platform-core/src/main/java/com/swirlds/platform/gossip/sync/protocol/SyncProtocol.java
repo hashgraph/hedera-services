@@ -23,12 +23,10 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -37,7 +35,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -61,11 +58,6 @@ public class SyncProtocol implements Protocol {
      * Manager to determine whether this node has fallen behind
      */
     private final FallenBehindManager fallenBehindManager;
-
-    /**
-     * The critical quorum, which determines whether a peer is a good candidate to sync with
-     */
-    private final CriticalQuorum criticalQuorum;
 
     /**
      * Peer agnostic checks which are performed to determine whether this node should sync or not
@@ -97,8 +89,6 @@ public class SyncProtocol implements Protocol {
      */
     private final Time time;
 
-    private final boolean useCriticalQuorum;
-
     /**
      * Constructs a new sync protocol
      *
@@ -107,7 +97,6 @@ public class SyncProtocol implements Protocol {
      * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
      * @param fallenBehindManager    manager to determine whether this node has fallen behind
      * @param permitProvider         provides permits to sync
-     * @param criticalQuorum         determines whether a peer is a good candidate to sync with
      * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
@@ -119,7 +108,6 @@ public class SyncProtocol implements Protocol {
             @NonNull final ShadowGraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final SyncPermitProvider permitProvider,
-            @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
@@ -129,27 +117,10 @@ public class SyncProtocol implements Protocol {
         this.synchronizer = Objects.requireNonNull(synchronizer);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.permitProvider = Objects.requireNonNull(permitProvider);
-        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
         this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.time = Objects.requireNonNull(time);
-
-        useCriticalQuorum = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .criticalQuorumEnabled();
-    }
-
-    /**
-     * Checks whether the peer must be contacted to determine if we have fallen behind
-     *
-     * @return true if the peer is needed for fallen behind, else false
-     */
-    private boolean peerNeededForFallenBehind() {
-        final List<NodeId> neededForFallenBehind = fallenBehindManager.getNeededForFallenBehind();
-
-        return neededForFallenBehind != null && neededForFallenBehind.contains(peerId);
     }
 
     /**
@@ -173,19 +144,14 @@ public class SyncProtocol implements Protocol {
             return false;
         }
 
-        // is there a reason to initiate?
-        if (!useCriticalQuorum || peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId)) {
-            final boolean isLockAcquired = permitProvider.tryAcquire(peerId);
+        final boolean isLockAcquired = permitProvider.tryAcquire(peerId);
 
-            if (isLockAcquired) {
-                syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
-                syncMetrics.outgoingSyncRequestSent();
-            }
-
-            return isLockAcquired;
-        } else {
-            return false;
+        if (isLockAcquired) {
+            syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+            syncMetrics.outgoingSyncRequestSent();
         }
+
+        return isLockAcquired;
     }
 
     /**
