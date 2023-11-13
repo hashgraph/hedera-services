@@ -17,9 +17,9 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.Objects;
 /**
  * Basic implementation of all platform-implementations of {@link Metric}
  */
-public abstract class DefaultMetric implements Metric, LegacyMetric {
+public abstract class DefaultMetric implements Metric, PlatformMetric {
 
     private final String category;
     private final String name;
