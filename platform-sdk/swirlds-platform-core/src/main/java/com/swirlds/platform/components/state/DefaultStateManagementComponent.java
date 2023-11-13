@@ -32,6 +32,11 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -57,6 +62,7 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.state.signed.StateWriteRequest;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -113,6 +119,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * Used to track signed state leaks, if enabled
      */
     private final SignedStateSentinel signedStateSentinel;
+    private final SavedStateController savedStateController;
 
     private final StateConfig stateConfig;
 
@@ -199,8 +206,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         };
 
         signedStateFileManager = new SignedStateFileManager(
-                platformContext,
-                threadManager,
+                platformContext.getConfiguration(),
                 signedStateMetrics,
                 Time.getCurrent(),
                 mainClassName,
@@ -209,6 +215,19 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 stateToDiskEventConsumer,
                 setMinimumGenerationToStore,
                 statusActionSubmitter);
+
+        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
+        final TaskScheduler<Void> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
+                .withConcurrency(false)
+                .withUnhandledTaskCapacity(1)
+                .withExternalBackPressure(false)
+                .build()
+                .cast();
+        final InputWire<StateWriteRequest, Void> saveStateToDisk = savedStateScheduler.buildInputWire(
+                "save state to disk");
+        saveStateToDisk.bind(signedStateFileManager::saveStateTask);
+
+        savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer);
 
         signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),
@@ -228,9 +247,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the newly complete signed state
      */
     private void stateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        if (signedState.isStateToSave()) {
-            signedStateFileManager.saveSignedStateToDisk(signedState, false);
-        }
+        savedStateController.maybeSaveState(signedState);
     }
 
     /**
@@ -239,22 +256,17 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the signed state that lacks signatures
      */
     private void stateLacksSignatures(@NonNull final SignedState signedState) {
-        if (signedState.isStateToSave()) {
-            signedStateFileManager.saveSignedStateToDisk(signedState, true);
-        }
+       savedStateController.maybeSaveState(signedState);
     }
 
     private void newSignedStateBeingTracked(final SignedState signedState, final SourceOfSignedState source) {
         // When we begin tracking a new signed state, "introduce" the state to the SignedStateFileManager
         if (source == SourceOfSignedState.DISK) {
-            signedStateFileManager.registerSignedStateFromDisk(signedState);
-        } else {
-            signedStateFileManager.determineIfStateShouldBeSaved(signedState, source);
+            savedStateController.registerSignedStateFromDisk(signedState);
         }
         if (source == SourceOfSignedState.RECONNECT) {
-            // a state received from reconnect should be saved to disk, but the method stateHasEnoughSignatures will not
-            // be called for it by the signed state manager, so we need to call it here
-            stateHasEnoughSignatures(signedState);
+            // a state received from reconnect should be saved to disk
+            savedStateController.reconnectStateReceived(signedState);
         }
 
         if (signedState.getState().getHash() != null) {
@@ -355,7 +367,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public void start() {
         signedStateGarbageCollector.start();
-        signedStateFileManager.start();
         signedStateSentinel.start();
     }
 
@@ -364,7 +375,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     @Override
     public void stop() {
-        signedStateFileManager.stop();
         signedStateSentinel.stop();
         signedStateGarbageCollector.stop();
     }
@@ -378,7 +388,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             try (final ReservedSignedState reservedState =
                     signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
                 if (reservedState.isNotNull()) {
-                    signedStateFileManager.dumpState(reservedState.get(), FATAL_ERROR, true);
+                    savedStateController.dumpState(reservedState.get(), FATAL_ERROR, true);
                 }
             }
         }
@@ -419,7 +429,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             if (reservedState.isNotNull()) {
                 // We were able to find the requested round. Dump it.
-                signedStateFileManager.dumpState(reservedState.get(), reason, blocking);
+                savedStateController.dumpState(reservedState.get(), reason, blocking);
                 return;
             }
         }
@@ -443,7 +453,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             if (reservedState.isNull()) {
                 logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
             } else {
-                signedStateFileManager.dumpState(reservedState.get(), reason, blocking);
+                savedStateController.dumpState(reservedState.get(), reason, blocking);
             }
         }
     }
@@ -463,14 +473,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public long getFirstStateRound() {
         return signedStateManager.getFirstStateRound();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getLatestSavedStateRound() {
-        return signedStateFileManager.getLatestSavedStateRound();
     }
 
     /**

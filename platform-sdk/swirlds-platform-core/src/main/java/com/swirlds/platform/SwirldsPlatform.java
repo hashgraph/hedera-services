@@ -671,8 +671,8 @@ public class SwirldsPlatform implements Platform {
                 intakeQueue,
                 eventObserverDispatcher,
                 platformStatusManager::getCurrentStatus,
-                latestReconnectRound::get,
-                stateManagementComponent::getLatestSavedStateRound);
+                latestReconnectRound::get
+        );
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
