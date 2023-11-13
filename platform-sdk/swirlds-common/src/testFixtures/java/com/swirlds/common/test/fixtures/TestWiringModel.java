@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.test.framework;
+package com.swirlds.common.test.fixtures;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

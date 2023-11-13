@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.utility.Triple;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.fixtures.crypto.EcdsaSignedTxnPool;
 import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.common.test.fixtures.crypto.SerializableHashableDummy;
@@ -35,7 +36,6 @@ import com.swirlds.common.test.fixtures.crypto.SliceConsumer;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;

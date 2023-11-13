@@ -21,6 +21,7 @@ import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
@@ -31,7 +32,6 @@ import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

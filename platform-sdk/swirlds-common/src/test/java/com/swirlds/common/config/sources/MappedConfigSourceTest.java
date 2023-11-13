@@ -16,7 +16,7 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;

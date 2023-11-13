@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.fixtures.crypto.ECDSASigningProvider;
 import com.swirlds.common.test.fixtures.crypto.ED25519SigningProvider;
 import com.swirlds.common.test.fixtures.crypto.EcdsaUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.util.SplittableRandom;
 import org.junit.jupiter.api.BeforeAll;

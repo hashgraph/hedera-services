@@ -18,9 +18,9 @@ package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.platform.test.chatter.simulator.GossipSimulation;
 import com.swirlds.platform.test.chatter.simulator.GossipSimulationBuilder;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;

@@ -87,10 +87,10 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.system.status.PlatformStatusConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

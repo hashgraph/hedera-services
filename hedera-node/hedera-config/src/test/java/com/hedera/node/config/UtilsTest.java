@@ -18,7 +18,7 @@ package com.hedera.node.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

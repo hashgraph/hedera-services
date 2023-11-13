@@ -27,7 +27,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.AutoRenewConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import org.junit.jupiter.api.Test;
 
 class ExpiryValidationTest extends AppTestBase {

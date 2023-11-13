@@ -22,12 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
 

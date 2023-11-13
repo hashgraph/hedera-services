@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.test.framework.config;
+package com.swirlds.common.test.fixtures.config;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;

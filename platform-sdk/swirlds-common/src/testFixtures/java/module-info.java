@@ -1,5 +1,7 @@
 open module com.swirlds.common.test.fixtures {
     exports com.swirlds.common.test.fixtures;
+    exports com.swirlds.common.test.fixtures.config;
+    exports com.swirlds.common.test.fixtures.context;
     exports com.swirlds.common.test.fixtures.crypto;
     exports com.swirlds.common.test.fixtures.io;
     exports com.swirlds.common.test.fixtures.merkle.util;

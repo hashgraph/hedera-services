@@ -19,11 +19,11 @@ package com.swirlds.common.wiring.transformers;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
+import com.swirlds.common.test.fixtures.TestWiringModel;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.test.framework.TestWiringModel;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;

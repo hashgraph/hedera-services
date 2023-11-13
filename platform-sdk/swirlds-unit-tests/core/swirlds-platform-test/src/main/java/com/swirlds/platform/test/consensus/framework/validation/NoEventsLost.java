@@ -18,9 +18,9 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.stream.Collectors;

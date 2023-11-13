@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 
 /**
  * Builds a node for a simulated chatter test.
