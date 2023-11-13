@@ -38,18 +38,27 @@ public enum TaskSchedulerType {
      */
     CONCURRENT,
     /**
-     * Tasks are executed immediately on the callers thread. There is no queue for tasks waiting to be handled (logical
+     * Tasks are executed immediately on the caller's thread. There is no queue for tasks waiting to be handled (logical
      * or otherwise). Useful for scenarios where tasks are extremely small and not worth the scheduling overhead.
      * <p>
      * Only a single logical thread of execution is permitted to send data to a direct task scheduler.
-     * {@link #SEQUENTIAL} and {@link #SEQUENTIAL_THREAD} are permitted to send data to a direct task scheduler, but it
-     * is illegal for more than one of these schedulers to send data to the same direct task scheduler. It is legal for
-     * operations that are executed on the calling thread (e.g. filters, transformers, other direct executors) to call
-     * into a direct executor. Such calls are treated as equivalent to the parent sequential scheduler calling into the
-     * direct scheduler.
-     *
+     * {@link #SEQUENTIAL} and {@link #SEQUENTIAL_THREAD} schedulers are permitted to send data to a direct task
+     * scheduler, but it is illegal for more than one of these schedulers to send data to the same direct task
+     * scheduler. {@link #CONCURRENT} task schedulers are forbidden from sending data to a direct task scheduler. It is
+     * legal for operations that are executed on the calling thread (e.g. filters, transformers, stateless/stateful
+     * direct schedulers) to call into a direct scheduler as long as the calling thread is not in a concurrent scheduler
+     * or originating from more than one sequential scheduler.
      * <p>
-     * {@link #CONCURRENT} task schedulers are forbidden from sending data to a direct task scheduler.
+     * To decide if a direct scheduler is wired in a legal way, the following algorithm is used:
+     * <ul>
+     * <li>Create a directed graph where vertices are schedulers and edges are wires between schedulers</li>
+     * <li>Starting from each vertex, walk over the graph in depth first order. Follow edges that lead to
+     * DIRECT or DIRECT_STATELESS vertices, but do not follow edges that lead into SEQUENTIAL, SEQUENTIAL_THREAD,
+     * or CONCURRENT vertices.</li>
+     * <li>If a DIRECT vertex is reachable starting from a CONCURRENT vertex, the wiring is illegal.</li>
+     * <li>For each vertex with type DIRECT, count the number of unique SEQUENTIAL or SEQUENTIAL_THREAD vertexes that
+     * it can be reached by. If that number exceeds 1, then the wiring is illegal.</li>
+     * </ul>
      *
      * <p>
      * These constraints are enforced by the framework.
