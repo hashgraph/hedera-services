@@ -49,9 +49,7 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     }
 
     protected PricedResult externalizeSuccessfulResult(long gasRequirement) {
-        return gasOnly(resultOfViewingToken(token))
-                .withGasRequirement(gasRequirement)
-                .withResponseCode(SUCCESS);
+        return gasOnly(resultOfViewingToken(token)).withResponseCode(SUCCESS);
     }
 
     protected PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {

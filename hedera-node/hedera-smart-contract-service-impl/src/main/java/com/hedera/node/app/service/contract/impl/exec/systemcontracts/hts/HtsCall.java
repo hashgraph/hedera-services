@@ -47,10 +47,6 @@ public interface HtsCall {
         public PricedResult withResponseCode(ResponseCodeEnum responseCode) {
             return new PricedResult(fullResult(), nonGasCost(), responseCode);
         }
-
-        public PricedResult withGasRequirement(long nonGasCost) {
-            return new PricedResult(fullResult(), nonGasCost, responseCode());
-        }
     }
 
     /**

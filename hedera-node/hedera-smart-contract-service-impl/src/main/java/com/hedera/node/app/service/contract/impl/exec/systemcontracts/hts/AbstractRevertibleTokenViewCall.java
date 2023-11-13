@@ -38,11 +38,6 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractTokenViewC
         super(gasCalculator, enhancement, token);
     }
 
-    @Override
-    public @NonNull PricedResult execute() {
-        return super.execute();
-    }
-
     @NonNull
     @Override
     protected HederaSystemContract.FullResult viewCallResultWith(

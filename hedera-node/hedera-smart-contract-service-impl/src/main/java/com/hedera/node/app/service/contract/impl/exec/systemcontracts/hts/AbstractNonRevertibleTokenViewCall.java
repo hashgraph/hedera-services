@@ -33,9 +33,4 @@ public abstract class AbstractNonRevertibleTokenViewCall extends AbstractTokenVi
             @Nullable final Token token) {
         super(gasCalculator, enhancement, token);
     }
-
-    @Override
-    public @NonNull PricedResult execute() {
-        return super.execute();
-    }
 }
