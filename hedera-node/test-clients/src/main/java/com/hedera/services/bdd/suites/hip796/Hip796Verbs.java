@@ -12,6 +12,7 @@ import com.hedera.services.bdd.suites.hip796.operations.TokenDefOperation;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
@@ -80,6 +81,15 @@ public class Hip796Verbs {
             "deletePartition(address)");
     public static final Function UPDATE_PARTITION_FUNCTION = new Function(
             "deletePartition(address,bool,string,bool,string)");
+    // The lock, partition, and partition move keys are likely to have bit-masks
+    // 1 << 7, 1 << 8, and 1 << 9 respectively
+    public static final BigInteger LOCK_KEY_TYPE = BigInteger.valueOf(1 << 7);
+    public static final BigInteger PARTITION_KEY_TYPE = BigInteger.valueOf(1 << 8);
+    public static final BigInteger PARTITION_MOVE_KEY_TYPE = BigInteger.valueOf(1 << 9);
+    public static final Function ROTATE_KEY_FUNCTION = new Function(
+            "rotateKey((uint256,(bool,address,bytes,bytes,address))");
+    public static final Function REMOVE_KEY_FUNCTION = new Function(
+            "removeKey(uint256)");
 
 
     // --- Token definition factories ---

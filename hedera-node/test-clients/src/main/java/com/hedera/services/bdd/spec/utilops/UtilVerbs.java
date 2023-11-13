@@ -161,7 +161,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -483,13 +482,41 @@ public class UtilVerbs {
         return overridingAllOf(allOverrides);
     }
 
+    /**
+     * Returns an operation that computes and executes a list of {@link HapiSpecOperation}s
+     * returned by a function whose input is a map from the names of requested registry entities
+     * (accounts or tokens) to their EVM addresses.
+     *
+     * @param accountOrTokens the names of the requested registry entities
+     * @param opFn the function that computes the list of operations
+     * @return the operation that computes and executes the list of operations
+     */
     public static HapiSpecOperation withHeadlongAddressesFor(
-            @NonNull final List<String> accounts,
+            @NonNull final List<String> accountOrTokens,
             @NonNull final Function<Map<String, Address>, List<HapiSpecOperation>> opFn) {
         return withOpContext((spec, opLog) -> {
             final Map<String, Address> addresses = new HashMap<>();
             // FUTURE - populate this map
             allRunFor(spec, opFn.apply(addresses));
+        });
+    }
+
+    /**
+     * Returns an operation that computes and executes a list of {@link HapiSpecOperation}s
+     * returned by a function whose input is a map from the names of requested registry keys
+     * to their encoded {@code KeyValue} forms.
+     *
+     * @param keys the names of the requested registry keys
+     * @param opFn the function that computes the list of operations
+     * @return the operation that computes and executes the list of operations
+     */
+    public static HapiSpecOperation withKeyValuesFor(
+            @NonNull final List<String> keys,
+            @NonNull final Function<Map<String, Tuple>, List<HapiSpecOperation>> opFn) {
+        return withOpContext((spec, opLog) -> {
+            final Map<String, Tuple> keyValues = new HashMap<>();
+            // FUTURE - populate this map
+            allRunFor(spec, opFn.apply(keyValues));
         });
     }
 
