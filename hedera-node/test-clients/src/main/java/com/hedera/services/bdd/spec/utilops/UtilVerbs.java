@@ -1507,5 +1507,4 @@ public class UtilVerbs {
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
                 / 100;
     }
-
 }

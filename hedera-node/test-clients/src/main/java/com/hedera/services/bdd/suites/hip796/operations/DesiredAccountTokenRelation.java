@@ -1,17 +1,30 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip796.operations;
 
-import com.hedera.hapi.node.base.TokenType;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import static java.util.Objects.requireNonNull;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import static com.hedera.services.bdd.suites.HapiSuite.FUNGIBLE_INITIAL_BALANCE;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a desired relationship between an account and a token.
@@ -45,8 +58,7 @@ public class DesiredAccountTokenRelation {
     }
 
     public DesiredAccountTokenRelation onlyForPartition(
-            @NonNull final String partition,
-            @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
+            @NonNull final String partition, @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
         requireNonNull(partition);
         return alsoForPartition(partition, pr -> spec.accept(pr.includingOnlyPartitionRelations()));
     }
@@ -56,7 +68,8 @@ public class DesiredAccountTokenRelation {
         return alsoForPartition(partition);
     }
 
-    public DesiredAccountTokenRelation andPartition(@NonNull final String partition, @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
+    public DesiredAccountTokenRelation andPartition(
+            @NonNull final String partition, @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
         requireNonNull(partition);
         return alsoForPartition(partition, spec);
     }
@@ -67,8 +80,7 @@ public class DesiredAccountTokenRelation {
     }
 
     public DesiredAccountTokenRelation alsoForPartition(
-            @NonNull final String partition,
-            @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
+            @NonNull final String partition, @NonNull final Consumer<DesiredAccountTokenRelation> spec) {
         requireNonNull(spec);
         requireNonNull(partition);
         final var desiredPartitionRelation = new DesiredAccountTokenRelation();

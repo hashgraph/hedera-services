@@ -1,28 +1,39 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip796;
-
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.lockUnits;
-import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.nonFungibleTokenWithFeatures;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.unlockUnits;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partition;
-import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTER_PARTITION_MANAGEMENT;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCKING;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A suite for user stories Transfers-1 through Transfers-3 from HIP-796.
@@ -44,23 +55,14 @@ public class TransfersSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canTransferTokensToSamePartitionUser() {
         return defaultHapiSpec("CanTransferTokensToSamePartitionUser")
-                .given(
-                        fungibleTokenWithFeatures(PARTITIONING)
-                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
-                                .withRelation(BOB, r -> r.onlyForPartition(BLUE_PARTITION)))
-                .when(
-                        cryptoTransfer(
-                                moving(123L, partition(RED_PARTITION))
-                                        .between(ALICE, BOB)
-                        )
-                )
-                .then(
-                        getAccountBalance(BOB)
-                                .hasTokenBalance(partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE + 123L)
-                );
+                .given(fungibleTokenWithFeatures(PARTITIONING)
+                        .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                        .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
+                        .withRelation(BOB, r -> r.onlyForPartition(BLUE_PARTITION)))
+                .when(cryptoTransfer(moving(123L, partition(RED_PARTITION)).between(ALICE, BOB)))
+                .then(getAccountBalance(BOB)
+                        .hasTokenBalance(partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE + 123L));
     }
-
 
     /**
      * <b>Transfer-2</b>
@@ -72,22 +74,16 @@ public class TransfersSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canTransferTokensToUserWithAutoAssociation() {
         return defaultHapiSpec("CanTransferTokensToUserWithAutoAssociation")
-                .given(
-                        fungibleTokenWithFeatures(PARTITIONING)
-                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
-                                .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION)))
+                .given(fungibleTokenWithFeatures(PARTITIONING)
+                        .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                        .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
+                        .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION)))
                 .when(
                         // Note the higher fee to cover the auto-association
-                        cryptoTransfer(
-                                moving(123L, partition(RED_PARTITION))
-                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))
-                        ).fee(ONE_HBAR)
-                )
-                .then(
-                        getAccountBalance(BOB)
-                                .hasTokenBalance(partition(BLUE_PARTITION), 123L)
-                );
+                        cryptoTransfer(moving(123L, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION)))
+                                .fee(ONE_HBAR))
+                .then(getAccountBalance(BOB).hasTokenBalance(partition(BLUE_PARTITION), 123L));
     }
 
     /**
@@ -103,41 +99,32 @@ public class TransfersSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canTransferTokensToUserAfterUnlock() {
         return defaultHapiSpec("CanTransferTokensToUserPostUnlock")
-                .given(
-                        fungibleTokenWithFeatures(PARTITIONING, LOCKING)
-                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).locked())
-                                .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION))
-                ).when(
+                .given(fungibleTokenWithFeatures(PARTITIONING, LOCKING)
+                        .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                        .withRelation(
+                                ALICE, r -> r.onlyForPartition(RED_PARTITION).locked())
+                        .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION)))
+                .when(
                         // Nothing can be transfer when Alice's balance is locked
-                        cryptoTransfer(
-                                moving(123L, partition(RED_PARTITION))
-                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))
-                        )
+                        cryptoTransfer(moving(123L, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION)))
                                 // FUTURE - change to a lock-specific status code
                                 .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
                         unlockUnits(ALICE, partition(RED_PARTITION), 123L),
                         // But now the 123 units can be transferred
-                        cryptoTransfer(
-                                moving(123L, partition(RED_PARTITION))
-                                        .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))
-                        ),
+                        cryptoTransfer(moving(123L, partition(RED_PARTITION))
+                                .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION))),
                         // And re-locked in Bob's account
-                        lockUnits(BOB, partition(BLUE_PARTITION), 123L)
-                ).then(
+                        lockUnits(BOB, partition(BLUE_PARTITION), 123L))
+                .then(
                         // So with the help of the lock key we have repositioned these 123 units
-                        cryptoTransfer(
-                                moving(123L, partition(BLUE_PARTITION))
-                                        .between(BOB, ALICE)
-                        )
+                        cryptoTransfer(moving(123L, partition(BLUE_PARTITION)).between(BOB, ALICE))
                                 // FUTURE - change to a lock-specific status code
-                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
-                );
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
     }
 
     @Override
     protected Logger getResultsLogger() {
         return log;
     }
-
 }

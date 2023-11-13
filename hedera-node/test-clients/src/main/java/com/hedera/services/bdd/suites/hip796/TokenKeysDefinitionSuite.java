@@ -1,16 +1,20 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip796;
-
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -24,7 +28,6 @@ import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.PARTITION_MOVE_K
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.REMOVE_KEY_FUNCTION;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.ROTATE_KEY_FUNCTION;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
-import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.adminKeyOf;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.lockKeyOf;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.managementContractOf;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames.partitionKeyOf;
@@ -33,6 +36,13 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.ADMI
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.INTER_PARTITION_MANAGEMENT;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCKING;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A suite for user stories Keys-1 through Keys-4 from HIP-796.
@@ -59,20 +69,16 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
     @HapiTest
     private HapiSpec manageLockKeyCapabilities() {
         return defaultHapiSpec("ManageLockKeyCapabilities")
-                .given(
-                        fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING),
-                        newKeyNamed("newLockKey")
-                ).when(
-                        getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasLockKey(lockKeyOf(TOKEN_UNDER_TEST)),
+                .given(fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING), newKeyNamed("newLockKey"))
+                .when(
+                        getTokenInfo(TOKEN_UNDER_TEST).hasLockKey(lockKeyOf(TOKEN_UNDER_TEST)),
                         // We can rotate the lock key
                         tokenUpdate(TOKEN_UNDER_TEST).lockKey("newLockKey"),
-                        getTokenInfo(TOKEN_UNDER_TEST).hasLockKey("newLockKey")
-                ).then(
+                        getTokenInfo(TOKEN_UNDER_TEST).hasLockKey("newLockKey"))
+                .then(
                         // And remove it entirely
                         tokenUpdate(TOKEN_UNDER_TEST).removingRoles(LOCKING),
-                        getTokenInfo(TOKEN_UNDER_TEST).hasNoneOfRoles(LOCKING)
-                );
+                        getTokenInfo(TOKEN_UNDER_TEST).hasNoneOfRoles(LOCKING));
     }
 
     /**
@@ -85,20 +91,16 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
     @HapiTest
     private HapiSpec managePartitionKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionKeyCapabilities")
-                .given(
-                        fungibleTokenWithFeatures(ADMIN_CONTROL, PARTITIONING),
-                        newKeyNamed("newPartitionKey")
-                ).when(
-                        getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasPartitionKey(partitionKeyOf(TOKEN_UNDER_TEST)),
+                .given(fungibleTokenWithFeatures(ADMIN_CONTROL, PARTITIONING), newKeyNamed("newPartitionKey"))
+                .when(
+                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionKey(partitionKeyOf(TOKEN_UNDER_TEST)),
                         // We can rotate the partition key
                         tokenUpdate(TOKEN_UNDER_TEST).partitionKey("newPartitionKey"),
-                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionKey("newPartitionKey")
-                ).then(
+                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionKey("newPartitionKey"))
+                .then(
                         // And remove it entirely
                         tokenUpdate(TOKEN_UNDER_TEST).removingRoles(PARTITIONING),
-                        getTokenInfo(TOKEN_UNDER_TEST).hasNoneOfRoles(PARTITIONING)
-                );
+                        getTokenInfo(TOKEN_UNDER_TEST).hasNoneOfRoles(PARTITIONING));
     }
 
     /**
@@ -113,18 +115,16 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
         return defaultHapiSpec("ManagePartitionMoveKeyCapabilities")
                 .given(
                         fungibleTokenWithFeatures(ADMIN_CONTROL, INTER_PARTITION_MANAGEMENT),
-                        newKeyNamed("newPartitionMoveKey")
-                ).when(
-                        getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasPartitionMoveKey(partitionMoveKeyOf(TOKEN_UNDER_TEST)),
+                        newKeyNamed("newPartitionMoveKey"))
+                .when(
+                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionMoveKey(partitionMoveKeyOf(TOKEN_UNDER_TEST)),
                         // We can rotate the partition key
                         tokenUpdate(TOKEN_UNDER_TEST).partitionMoveKey("newPartitionMoveKey"),
-                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionMoveKey("newPartitionMoveKey")
-                ).then(
+                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionMoveKey("newPartitionMoveKey"))
+                .then(
                         // And remove it entirely
                         tokenUpdate(TOKEN_UNDER_TEST).removingRoles(INTER_PARTITION_MANAGEMENT),
-                        getTokenInfo(TOKEN_UNDER_TEST).hasNoneOfRoles(INTER_PARTITION_MANAGEMENT)
-                );
+                        getTokenInfo(TOKEN_UNDER_TEST).hasNoneOfRoles(INTER_PARTITION_MANAGEMENT));
     }
 
     /**
@@ -138,49 +138,38 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
     private HapiSpec manageKeysViaSmartContract() {
         return defaultHapiSpec("ManageKeysViaSmartContract")
                 .given(
-                        fungibleTokenWithFeatures(
-                                ADMIN_CONTROL,
-                                LOCKING,
-                                PARTITIONING,
-                                INTER_PARTITION_MANAGEMENT
-                        ).managedByContract(),
+                        fungibleTokenWithFeatures(ADMIN_CONTROL, LOCKING, PARTITIONING, INTER_PARTITION_MANAGEMENT)
+                                .managedByContract(),
                         newKeyNamed("newLockKey"),
                         newKeyNamed("newPartitionKey"),
-                        newKeyNamed("newPartitionMoveKey")
-                ).when(
+                        newKeyNamed("newPartitionMoveKey"))
+                .when(
                         // The contract can rotate keys
-                        withKeyValuesFor(List.of(
-                                "newLockKey",
-                                "newPartitionKey",
-                                "newPartitionMoveKey"
-                        ), keyValues -> List.of(
-                                contractCall(
-                                        managementContractOf(TOKEN_UNDER_TEST),
-                                        ROTATE_KEY_FUNCTION.getName(),
-                                        LOCK_KEY_TYPE,
-                                        keyValues.get("newLockKey")),
-                                contractCall(
-                                        managementContractOf(TOKEN_UNDER_TEST),
-                                        ROTATE_KEY_FUNCTION.getName(),
-                                        PARTITION_KEY_TYPE,
-                                        keyValues.get("newPartitionKey")),
-                                contractCall(
-                                        managementContractOf(TOKEN_UNDER_TEST),
-                                        ROTATE_KEY_FUNCTION.getName(),
-                                        PARTITION_MOVE_KEY_TYPE,
-                                        keyValues.get("newPartitionMoveKey")))),
-                        getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasLockKey("newLockKey"),
-                        getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasPartitionKey("newPartitionKey"),
-                        getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasPartitionMoveKey("newPartitionMoveKey"))
+                        withKeyValuesFor(
+                                List.of("newLockKey", "newPartitionKey", "newPartitionMoveKey"),
+                                keyValues -> List.of(
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                ROTATE_KEY_FUNCTION.getName(),
+                                                LOCK_KEY_TYPE,
+                                                keyValues.get("newLockKey")),
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                ROTATE_KEY_FUNCTION.getName(),
+                                                PARTITION_KEY_TYPE,
+                                                keyValues.get("newPartitionKey")),
+                                        contractCall(
+                                                managementContractOf(TOKEN_UNDER_TEST),
+                                                ROTATE_KEY_FUNCTION.getName(),
+                                                PARTITION_MOVE_KEY_TYPE,
+                                                keyValues.get("newPartitionMoveKey")))),
+                        getTokenInfo(TOKEN_UNDER_TEST).hasLockKey("newLockKey"),
+                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionKey("newPartitionKey"),
+                        getTokenInfo(TOKEN_UNDER_TEST).hasPartitionMoveKey("newPartitionMoveKey"))
                 .then(
                         // And the contract can remove them
                         contractCall(
-                                managementContractOf(TOKEN_UNDER_TEST),
-                                REMOVE_KEY_FUNCTION.getName(),
-                                LOCK_KEY_TYPE),
+                                managementContractOf(TOKEN_UNDER_TEST), REMOVE_KEY_FUNCTION.getName(), LOCK_KEY_TYPE),
                         contractCall(
                                 managementContractOf(TOKEN_UNDER_TEST),
                                 REMOVE_KEY_FUNCTION.getName(),
@@ -190,10 +179,8 @@ public class TokenKeysDefinitionSuite extends HapiSuite {
                                 REMOVE_KEY_FUNCTION.getName(),
                                 PARTITION_MOVE_KEY_TYPE),
                         getTokenInfo(TOKEN_UNDER_TEST)
-                                .hasNoneOfRoles(LOCKING, PARTITIONING, INTER_PARTITION_MANAGEMENT)
-                );
+                                .hasNoneOfRoles(LOCKING, PARTITIONING, INTER_PARTITION_MANAGEMENT));
     }
-
 
     @Override
     protected Logger getResultsLogger() {

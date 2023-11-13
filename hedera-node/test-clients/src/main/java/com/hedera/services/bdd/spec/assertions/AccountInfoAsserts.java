@@ -285,8 +285,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return approxChangeFromSnapshot(snapshot, expDeltaFn, 0L);
     }
 
-    public static Function<HapiSpec, Function<Long, Optional<String>>> unchangedFromSnapshot(
-            String snapshot) {
+    public static Function<HapiSpec, Function<Long, Optional<String>>> unchangedFromSnapshot(String snapshot) {
         return approxChangeFromSnapshot(snapshot, 0L, 0L);
     }
 

@@ -34,6 +34,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -45,10 +47,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,12 +65,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newFreezeKey = Optional.empty();
     private Optional<String> newFeeScheduleKey = Optional.empty();
     private Optional<String> newPauseKey = Optional.empty();
+
     @Nullable
     private String newLockKey;
+
     @Nullable
     private String newPartitionKey;
+
     @Nullable
     private String newPartitionMoveKey;
+
     private Set<TokenFeature> rolesToRemove = EnumSet.noneOf(TokenFeature.class);
     private Optional<String> newSymbol = Optional.empty();
     private Optional<String> newName = Optional.empty();

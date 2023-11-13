@@ -1,19 +1,22 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip796;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
@@ -27,6 +30,13 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.LOCK
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A suite for user stories Lock-1 through Lock-8 from HIP-796.
@@ -59,11 +69,9 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canLockSubsetOfUnlockedTokens() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
-                .given(
-                        fungibleTokenWithFeatures(LOCKING).withRelation(ALICE)
-                ).when(
-                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2)
-                ).then(
+                .given(fungibleTokenWithFeatures(LOCKING).withRelation(ALICE))
+                .when(lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2))
+                .then(
                         // Can't unlock more than the locked amount
                         unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                                 // FUTURE - replace with a lock-specific specific error code
@@ -75,8 +83,7 @@ public class LockSuite extends HapiSuite {
                         // But if we unlock just enough units
                         unlockUnits(ALICE, TOKEN_UNDER_TEST, 1),
                         // Now the above lock works
-                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
-                );
+                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1));
     }
 
     /**
@@ -91,13 +98,11 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canLockSubsetOfUnlockedTokensInPartition() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokensInPartition")
-                .given(
-                        fungibleTokenWithFeatures(LOCKING, PARTITIONING)
-                                .withPartition(RED_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
-                ).when(
-                        lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2)
-                ).then(
+                .given(fungibleTokenWithFeatures(LOCKING, PARTITIONING)
+                        .withPartition(RED_PARTITION)
+                        .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION)))
+                .when(lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2))
+                .then(
                         // Can't lock more than the unlocked amount
                         lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                                 // FUTURE - replace with a lock-specific specific error code
@@ -116,11 +121,9 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canUnlockSubsetOfLockedTokens() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
-                .given(
-                        fungibleTokenWithFeatures(LOCKING).withRelation(ALICE)
-                ).when(
-                        lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2)
-                ).then(
+                .given(fungibleTokenWithFeatures(LOCKING).withRelation(ALICE))
+                .when(lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2))
+                .then(
                         // Can't unlock more than the locked amount
                         unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                                 // FUTURE - replace with a lock-specific specific error code
@@ -128,8 +131,7 @@ public class LockSuite extends HapiSuite {
                         // But if we lock just enough additional units
                         lockUnits(ALICE, TOKEN_UNDER_TEST, 1),
                         // Now the above unlock works
-                        unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1)
-                );
+                        unlockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2 + 1));
     }
 
     /**
@@ -144,13 +146,11 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canUnlockSubsetOfLockedTokensInPartition() {
         return defaultHapiSpec("CanUnlockSubsetOfLockedTokensInPartition")
-                .given(
-                        fungibleTokenWithFeatures(LOCKING)
-                                .withPartition(RED_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
-                ).when(
-                        lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2)
-                ).then(
+                .given(fungibleTokenWithFeatures(LOCKING)
+                        .withPartition(RED_PARTITION)
+                        .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION)))
+                .when(lockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2))
+                .then(
                         // Can't unlock more than the locked amount
                         unlockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1)
                                 // FUTURE - replace with a lock-specific specific error code
@@ -160,8 +160,7 @@ public class LockSuite extends HapiSuite {
                         // But if we unlock just enough units
                         lockUnits(ALICE, partition(RED_PARTITION), 1),
                         // Now the above unlock works
-                        unlockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1)
-                );
+                        unlockUnits(ALICE, partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE / 2 + 1));
     }
 
     /**
@@ -174,22 +173,16 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canLockSpecificNFTSerials() {
         return defaultHapiSpec("CanLockSpecificNFTSerials")
-                .given(
-                        nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L))
-                ).when(
-                        lockNfts(ALICE, TOKEN_UNDER_TEST, 1L)
-                ).then(
+                .given(nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L)))
+                .when(lockNfts(ALICE, TOKEN_UNDER_TEST, 1L))
+                .then(
                         // Can't transfer the locked serial no
-                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L).between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 // FUTURE - replace with a lock-specific specific error code
                                 .hasKnownStatus(INVALID_NFT_ID),
                         // Can transfer the unlocked serial no
-                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 2L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
-                );
+                        cryptoTransfer(
+                                movingUnique(TOKEN_UNDER_TEST, 2L).between(ALICE, treasuryOf(TOKEN_UNDER_TEST))));
     }
 
     /**
@@ -202,24 +195,19 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canLockSpecificNFTSerialsInPartition() {
         return defaultHapiSpec("CanLockSpecificNFTSerialsInPartition")
-                .given(
-                        nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
-                                .withPartition(RED_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L)))
-                ).when(
-                        lockNfts(ALICE, partition(RED_PARTITION), 1L)
-                ).then(
+                .given(nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
+                        .withPartition(RED_PARTITION)
+                        .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L))))
+                .when(lockNfts(ALICE, partition(RED_PARTITION), 1L))
+                .then(
                         // Can't transfer the locked serial no
                         cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
+                                        .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 // FUTURE - replace with a lock-specific specific error code
                                 .hasKnownStatus(INVALID_NFT_ID),
                         // Can transfer the unlocked serial no
                         cryptoTransfer(movingUnique(partition(RED_PARTITION), 2L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
-                );
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))));
     }
 
     /**
@@ -232,24 +220,17 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canUnlockSpecificNFTSerials() {
         return defaultHapiSpec("CanUnlockSpecificNFTSerials")
-                .given(
-                        nonFungibleTokenWithFeatures(LOCKING)
-                                .withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L))
-                ).when(
-                        lockNfts(ALICE, TOKEN_UNDER_TEST, 1L)
-                ).then(
+                .given(nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L)))
+                .when(lockNfts(ALICE, TOKEN_UNDER_TEST, 1L))
+                .then(
                         // Can't transfer the locked serial no
-                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
+                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L).between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 // FUTURE - replace with a lock-specific specific error code
                                 .hasKnownStatus(INVALID_NFT_ID),
                         unlockUnits(ALICE, TOKEN_UNDER_TEST, 1L),
                         // Now we can transfer the serial no
-                        cryptoTransfer(movingUnique(TOKEN_UNDER_TEST, 1L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
-                );
+                        cryptoTransfer(
+                                movingUnique(TOKEN_UNDER_TEST, 1L).between(ALICE, treasuryOf(TOKEN_UNDER_TEST))));
     }
 
     /**
@@ -262,24 +243,19 @@ public class LockSuite extends HapiSuite {
     @HapiTest
     public HapiSpec canUnlockSpecificNFTSerialsInPartition() {
         return defaultHapiSpec("CanUnlockSpecificNFTSerialsInPartition")
-                .given(
-                        nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L)))
-                ).when(
-                        lockNfts(ALICE, partition(RED_PARTITION), 1L)
-                ).then(
+                .given(nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
+                        .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L))))
+                .when(lockNfts(ALICE, partition(RED_PARTITION), 1L))
+                .then(
                         // Can't transfer the locked serial no
                         cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
+                                        .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 // FUTURE - replace with a lock-specific specific error code
                                 .hasKnownStatus(INVALID_NFT_ID),
                         unlockUnits(ALICE, partition(RED_PARTITION), 1L),
                         // Now we can transfer the serial no
                         cryptoTransfer(movingUnique(partition(RED_PARTITION), 1L)
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))
-                        )
-                );
+                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST))));
     }
 
     @Override

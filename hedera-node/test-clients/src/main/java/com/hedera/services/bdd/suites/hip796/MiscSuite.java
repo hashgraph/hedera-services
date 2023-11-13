@@ -1,22 +1,23 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip796;
-
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.hip796.operations.DesiredAccountTokenRelation;
-import com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNames;
-import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.unchangedFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -50,9 +51,17 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenAttributeNam
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.CUSTOM_FEE_SCHEDULE_MANAGEMENT;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PARTITIONING;
 import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.WIPING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.hip796.operations.DesiredAccountTokenRelation;
+import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A suite for user stories Misc-1 through Misc-6 from HIP-796.
@@ -91,18 +100,17 @@ public class MiscSuite extends HapiSuite {
                         fungibleTokenWithFeatures(TokenFeature.values())
                                 .withPartition(RED_PARTITION)
                                 // Suppress automatic granting of KYC to Alice here
-                                .withRelation(ALICE, r -> r
-                                        .alsoForPartition(RED_PARTITION, DesiredAccountTokenRelation::kycRevoked)
-                                        .kycRevoked())
-                ).when(
+                                .withRelation(ALICE, r -> r.alsoForPartition(
+                                                RED_PARTITION, DesiredAccountTokenRelation::kycRevoked)
+                                        .kycRevoked()))
+                .when(
                         grantTokenKyc(TOKEN_UNDER_TEST, ALICE),
                         grantTokenKyc(partition(RED_PARTITION), ALICE),
                         cryptoTransfer(
                                 moving(FUNGIBLE_INITIAL_BALANCE, TOKEN_UNDER_TEST)
                                         .between(treasuryOf(TOKEN_UNDER_TEST), ALICE),
                                 moving(FUNGIBLE_INITIAL_BALANCE, partition(RED_PARTITION))
-                                        .between(treasuryOf(TOKEN_UNDER_TEST), ALICE)
-                        ),
+                                        .between(treasuryOf(TOKEN_UNDER_TEST), ALICE)),
                         tokenUpdate(TOKEN_UNDER_TEST).memo("New parent memo"),
                         tokenUpdate(partition(RED_PARTITION)).memo("New partition memo"),
                         tokenFreeze(TOKEN_UNDER_TEST, ALICE),
@@ -114,13 +122,12 @@ public class MiscSuite extends HapiSuite {
                         mintToken(TOKEN_UNDER_TEST, 1L),
                         mintToken(partition(RED_PARTITION), 1L),
                         burnToken(TOKEN_UNDER_TEST, 1L),
-                        burnToken(partition(RED_PARTITION), 1L)
-                ).then(
+                        burnToken(partition(RED_PARTITION), 1L))
+                .then(
                         revokeTokenKyc(TOKEN_UNDER_TEST, ALICE),
                         revokeTokenKyc(partition(RED_PARTITION), ALICE),
                         tokenDelete(partition(RED_PARTITION)),
-                        tokenDelete(TOKEN_UNDER_TEST)
-                );
+                        tokenDelete(TOKEN_UNDER_TEST));
     }
 
     /**
@@ -145,19 +152,17 @@ public class MiscSuite extends HapiSuite {
                                 .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION)
                                         .autoRenewPeriod(1)),
                         balanceSnapshot("autoRenewBalanceBeforeRenewal", autoRenewAccountOf(TOKEN_UNDER_TEST)),
-                        balanceSnapshot("aliceBalanceBeforeRenewal", ALICE)
-                ).when(
+                        balanceSnapshot("aliceBalanceBeforeRenewal", ALICE))
+                .when(
                         // Sleep for longer than the auto-renew period
                         sleepFor(2_000),
                         // Do a transfer to (theoretically) trigger an auto-renewal payment in this contrived scenario
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
-                ).then(
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
+                .then(
                         // Verify no changes from balance snapshots
                         getAccountBalance(autoRenewAccountOf(TOKEN_UNDER_TEST))
                                 .hasTinyBars(unchangedFromSnapshot("autoRenewBalanceBeforeRenewal")),
-                        getAccountBalance(ALICE)
-                                .hasTinyBars(unchangedFromSnapshot("aliceBalanceBeforeRenewal"))
-                );
+                        getAccountBalance(ALICE).hasTinyBars(unchangedFromSnapshot("aliceBalanceBeforeRenewal")));
     }
 
     /**
@@ -184,8 +189,8 @@ public class MiscSuite extends HapiSuite {
                                 .withPartitions(RED_PARTITION, BLUE_PARTITION)
                                 .withRelation(ALICE, r -> r.alsoForPartition(RED_PARTITION)
                                         .alsoForPartition(BLUE_PARTITION)),
-                        cryptoCreate(BOB)
-                ).when(
+                        cryptoCreate(BOB))
+                .when(
                         // Grant allowance to Bob at the token-definition level
                         cryptoApproveAllowance()
                                 .payingWith(ALICE)
@@ -194,25 +199,24 @@ public class MiscSuite extends HapiSuite {
                         // Bob is not approved to spend Alice's tokens from the RED partition
                         // simply because they have a token-definition level allowance
                         cryptoTransfer(movingWithAllowance(1L, partition(RED_PARTITION))
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
+                                        .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 .payingWith(BOB)
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
                         // Grant allowance to Bob for the RED partition
                         cryptoApproveAllowance()
                                 .payingWith(ALICE)
                                 .addTokenAllowance(ALICE, partition(RED_PARTITION), BOB, FUNGIBLE_INITIAL_BALANCE)
-                                .fee(2 * ONE_HBAR)
-                ).then(
+                                .fee(2 * ONE_HBAR))
+                .then(
                         // Bob is approved to spend Alice's tokens from the RED partition
                         cryptoTransfer(movingWithAllowance(1L, partition(RED_PARTITION))
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
+                                        .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 .payingWith(BOB),
                         // Bub still not approved to spend Alice's tokens from the BLUE partition
                         cryptoTransfer(movingWithAllowance(1L, partition(BLUE_PARTITION))
-                                .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
+                                        .between(ALICE, treasuryOf(TOKEN_UNDER_TEST)))
                                 .payingWith(BOB)
-                                .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
-                );
+                                .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
     /**
@@ -249,23 +253,21 @@ public class MiscSuite extends HapiSuite {
                                 // Ensure auto-renew account cannot pay for auto-renew
                                 .autoRenewAccount(BOB)
                                 .withPartitions(RED_PARTITION, BLUE_PARTITION)
-                                .withRelation(ALICE, r -> r
-                                        .autoRenewPeriod(1)
+                                .withRelation(ALICE, r -> r.autoRenewPeriod(1)
                                         // Ensure Alice cannot pay for auto-renew
                                         .balance(0L)
                                         .onlyForPartition(RED_PARTITION)
-                                        .andPartition(BLUE_PARTITION))
-                ).when(
+                                        .andPartition(BLUE_PARTITION)))
+                .when(
                         // Sleep for longer than the auto-renew period
                         sleepFor(2_000),
                         // Do a transfer to (theoretically) trigger expirations in this contrived scenario
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
-                ).then(
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
+                .then(
                         // Verify all tokens, partitions, and accounts still exist
                         getTokenInfo(TOKEN_UNDER_TEST),
                         getTokenInfo(partition(RED_PARTITION)),
-                        getTokenInfo(partition(ALICE))
-                );
+                        getTokenInfo(partition(ALICE)));
     }
 
     /**
@@ -279,19 +281,18 @@ public class MiscSuite extends HapiSuite {
     @HapiTest
     public HapiSpec accountDeletionWithTokenHoldings() {
         return defaultHapiSpec("AccountDeletionWithTokenHoldings")
-                .given(
-                        fungibleTokenWithFeatures(PARTITIONING, WIPING)
-                                .withPartitions(RED_PARTITION)
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).balance(0L))
-                ).when(
+                .given(fungibleTokenWithFeatures(PARTITIONING, WIPING)
+                        .withPartitions(RED_PARTITION)
+                        .withRelation(
+                                ALICE, r -> r.onlyForPartition(RED_PARTITION).balance(0L)))
+                .when(
                         // Cannot delete Alice due to their RED partition tokens
-                        cryptoDelete(ALICE).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
-                ).then(
+                        cryptoDelete(ALICE).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES))
+                .then(
                         // Wipe Alice's token holdings before trying to delete the account again
                         wipeTokenAccount(partition(RED_PARTITION), ALICE, FUNGIBLE_INITIAL_BALANCE),
                         // Now we can delete Alice
-                        cryptoDelete(ALICE)
-                );
+                        cryptoDelete(ALICE));
     }
 
     /**
@@ -305,29 +306,31 @@ public class MiscSuite extends HapiSuite {
     @HapiTest
     public HapiSpec customFeesAtTokenDefinitionLevel() {
         return defaultHapiSpec("CustomFeesAtTokenDefinitionLevel")
-                .given(
-                        fungibleTokenWithFeatures(PARTITIONING, CUSTOM_FEE_SCHEDULE_MANAGEMENT)
-                                .withPartitions(RED_PARTITION, BLUE_PARTITION)
-                                .withCustomFee(fixedHbarFee(ONE_HBAR, customFeeScheduleKeyOf(TOKEN_UNDER_TEST)))
-                                .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION).andPartition(BLUE_PARTITION))
-                                .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION))
-                ).when(
+                .given(fungibleTokenWithFeatures(PARTITIONING, CUSTOM_FEE_SCHEDULE_MANAGEMENT)
+                        .withPartitions(RED_PARTITION, BLUE_PARTITION)
+                        .withCustomFee(fixedHbarFee(ONE_HBAR, customFeeScheduleKeyOf(TOKEN_UNDER_TEST)))
+                        .withRelation(
+                                ALICE, r -> r.onlyForPartition(RED_PARTITION).andPartition(BLUE_PARTITION))
+                        .withRelation(BOB, r -> r.onlyForPartition(RED_PARTITION)))
+                .when(
                         // Transfer tokens between different accounts, custom fee should be applied
-                        cryptoTransfer(
-                                moving(1L, partition(RED_PARTITION))
-                                        .between(ALICE, BOB)
-                        ).payingWith(ALICE).fee(ONE_HBAR).via("interUserTransfer"),
-                        // Transfer tokens between different partitions of same account, custom fee should NOT be applied
-                        cryptoTransfer(
-                                moving(1L, partition(RED_PARTITION))
-                                        .betweenWithPartitionChange(ALICE, ALICE, BLUE_PARTITION)
-                        ).payingWith(ALICE).fee(ONE_HBAR).via("intraUserTransfer")
-                ).then(
-                        getTxnRecord("interUserTransfer").hasPriority(recordWith().assessedCustomFeeCount(1)),
-                        getTxnRecord("intraUserTransfer").hasPriority(recordWith().assessedCustomFeeCount(0))
-                );
+                        cryptoTransfer(moving(1L, partition(RED_PARTITION)).between(ALICE, BOB))
+                                .payingWith(ALICE)
+                                .fee(ONE_HBAR)
+                                .via("interUserTransfer"),
+                        // Transfer tokens between different partitions of same account, custom fee should NOT be
+                        // applied
+                        cryptoTransfer(moving(1L, partition(RED_PARTITION))
+                                        .betweenWithPartitionChange(ALICE, ALICE, BLUE_PARTITION))
+                                .payingWith(ALICE)
+                                .fee(ONE_HBAR)
+                                .via("intraUserTransfer"))
+                .then(
+                        getTxnRecord("interUserTransfer")
+                                .hasPriority(recordWith().assessedCustomFeeCount(1)),
+                        getTxnRecord("intraUserTransfer")
+                                .hasPriority(recordWith().assessedCustomFeeCount(0)));
     }
-
 
     @Override
     protected Logger getResultsLogger() {
