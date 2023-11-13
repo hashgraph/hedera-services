@@ -33,11 +33,6 @@ import java.time.Duration;
  *                                        active (milliseconds)
  * @param hashOnGossipThreads             if true, hash events on gossip threads. If false, events are hashed on the
  *                                        event intake thread.
- * @param waitForEventsInIntake           if true, then a node will not sync again with the same peer until all
- *                                        previously received events from that peer have fully traversed the intake
- *                                        pipeline
- * @param criticalQuorumEnabled           if true, use the critical quorum heuristic when deciding if we should sync
- *                                        with a peer
  * @param filterLikelyDuplicates          if true then do not send events that are likely to be duplicates when they are
  *                                        received by the peer
  * @param nonAncestorFilterThreshold      ignored if {@link #filterLikelyDuplicates} is false. For each event that is
@@ -57,7 +52,6 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
-        @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled,
         @ConfigProperty(defaultValue = "false") boolean filterLikelyDuplicates,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
