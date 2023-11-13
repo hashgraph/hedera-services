@@ -22,6 +22,7 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import java.time.Duration;
 import java.util.List;
@@ -103,7 +104,7 @@ public class SnapshotService implements Startable {
     }
 
     /**
-     * Add a platform-specific {@link com.swirlds.common.metrics.Metrics} to the {@code SnapshotService}
+     * Add a platform-specific {@link Metrics} to the {@code SnapshotService}
      *
      * @param platformMetrics
      * 		the {@link DefaultMetric} to add
@@ -121,7 +122,7 @@ public class SnapshotService implements Startable {
     }
 
     /**
-     * Remove a platform-specific {@link com.swirlds.common.metrics.Metrics} from the {@code SnapshotService}
+     * Remove a platform-specific {@link Metrics} from the {@code SnapshotService}
      *
      * @param platformMetrics
      * 		the {@link DefaultMetric} to remove

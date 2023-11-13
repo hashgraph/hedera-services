@@ -42,8 +42,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -64,7 +62,6 @@ import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
@@ -127,7 +124,6 @@ public class SyncGossip extends AbstractGossip {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
      * @param platformStatusManager         the platform status manager
@@ -151,7 +147,6 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
@@ -170,7 +165,6 @@ public class SyncGossip extends AbstractGossip {
                 swirldStateManager,
                 stateManagementComponent,
                 syncMetrics,
-                eventObserverDispatcher,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -285,7 +279,6 @@ public class SyncGossip extends AbstractGossip {
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
                                             syncPermitProvider,
-                                            criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             Duration.ZERO,
                                             syncMetrics,
@@ -317,15 +310,6 @@ public class SyncGossip extends AbstractGossip {
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**

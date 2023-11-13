@@ -39,12 +39,6 @@ public final class ByteConstants {
     public static final byte COMM_EVENT_ABORT = 0x49 /* 73 */;
     /** sent after all events have been sent for this sync */
     public static final byte COMM_EVENT_DONE = 0x4a /* 74 */;
-    /** sent if a node wants to get the latest signed state */
-    public static final byte COMM_STATE_REQUEST = 0x4c /* 76 */;
-    /** sent as a reply to COMM_STATE_REQUEST when accepting to transfer the latest state */
-    public static final byte COMM_STATE_ACK = 0x4d /* 77 */;
-    /** sent as a reply to COMM_STATE_REQUEST when NOT accepting to transfer the latest state */
-    public static final byte COMM_STATE_NACK = 0x4e /* 78 */;
     /**
      * Private constructor to never instantiate this class
      */
