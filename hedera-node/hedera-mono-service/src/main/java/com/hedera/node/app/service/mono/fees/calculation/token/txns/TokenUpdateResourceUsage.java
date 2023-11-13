@@ -104,7 +104,8 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
                             token.hasPauseKey() ? Optional.of(fromPbj(token.pauseKey())) : Optional.empty())
                     .givenCurrentName(token.name())
                     .givenCurrentMemo(token.memo())
-                    .givenCurrentSymbol(token.symbol());
+                    .givenCurrentSymbol(token.symbol())
+                    .givenCurrentExpiry(token.expirationSecond());
             if (token.hasAutoRenewAccountId()) {
                 estimate.givenCurrentlyUsingAutoRenewAccount();
             }
