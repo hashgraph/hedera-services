@@ -140,11 +140,12 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
+            final long newMax = op.maxAutomaticTokenAssociations();
+
             validateFalse(
-                    op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
+                    newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 
-            final long newMax = op.maxAutomaticTokenAssociations();
             validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
