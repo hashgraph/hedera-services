@@ -19,7 +19,7 @@ package com.swirlds.common.context;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsProvider;
+import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +39,7 @@ public final class DefaultPlatformContext implements PlatformContext {
 
     public DefaultPlatformContext(
             final NodeId nodeId,
-            @NonNull final MetricsProvider metricsProvider,
+            @NonNull final PlatformMetricsProvider metricsProvider,
             @NonNull final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         this.metrics = Objects.requireNonNull(metricsProvider, "metricsProvider must not be null")

@@ -23,6 +23,8 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -57,7 +59,7 @@ public interface StatEntry extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Object get(final ValueType valueType) {
+    default Object get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (getBuffered() == null) {
             if (valueType == VALUE) {
@@ -109,7 +111,7 @@ public interface StatEntry extends Metric {
      *
      * @param <T> the type of the value that will be contained in the {@code StatEntry}
      */
-    final class Config<T> extends MetricConfig<StatEntry, Config<T>> {
+    final class Config<T> extends PlatformMetricConfig<StatEntry, Config<T>> {
 
         private final Class<T> type;
         private final StatsBuffered buffered;
@@ -134,7 +136,10 @@ public interface StatEntry extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(
-                final String category, final String name, final Class<T> type, final Supplier<T> statsStringSupplier) {
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final Class<T> type,
+                @NonNull final Supplier<T> statsStringSupplier) {
 
             super(category, name, FloatFormats.FORMAT_11_3);
             this.type = Objects.requireNonNull(type, "type");
@@ -148,17 +153,17 @@ public interface StatEntry extends Metric {
 
         @SuppressWarnings("java:S107")
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final Class<T> type,
-                final StatsBuffered buffered,
-                final Function<Double, StatsBuffered> init,
-                final Consumer<Double> reset,
-                final Supplier<T> statsStringSupplier,
-                final Supplier<T> resetStatsStringSupplier,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
+                @NonNull final Class<T> type,
+                @Nullable final StatsBuffered buffered,
+                @Nullable final Function<Double, StatsBuffered> init,
+                @Nullable final Consumer<Double> reset,
+                @NonNull final Supplier<T> statsStringSupplier,
+                @NonNull final Supplier<T> resetStatsStringSupplier,
                 final double halfLife) {
             super(category, name, description, unit, format);
             this.type = Objects.requireNonNull(type, "type");
@@ -175,7 +180,7 @@ public interface StatEntry extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public StatEntry.Config<T> withDescription(final String description) {
+        public StatEntry.Config<T> withDescription(@NonNull final String description) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -195,7 +200,7 @@ public interface StatEntry extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public StatEntry.Config<T> withUnit(final String unit) {
+        public StatEntry.Config<T> withUnit(@NonNull final String unit) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -220,7 +225,8 @@ public interface StatEntry extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public StatEntry.Config<T> withFormat(final String format) {
+        @NonNull
+        public StatEntry.Config<T> withFormat(@NonNull final String format) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -241,6 +247,7 @@ public interface StatEntry extends Metric {
          *
          * @return the type of the returned values
          */
+        @NonNull
         public Class<T> getType() {
             return type;
         }
@@ -250,6 +257,7 @@ public interface StatEntry extends Metric {
          *
          * @return {@code buffered}
          */
+        @Nullable
         public StatsBuffered getBuffered() {
             return buffered;
         }
@@ -261,7 +269,8 @@ public interface StatEntry extends Metric {
          * 		the {@link StatsBuffered}
          * @return a reference to {@code this}
          */
-        public StatEntry.Config<T> withBuffered(final StatsBuffered buffered) {
+        @NonNull
+        public StatEntry.Config<T> withBuffered(@Nullable final StatsBuffered buffered) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -282,6 +291,7 @@ public interface StatEntry extends Metric {
          *
          * @return {@code init}
          */
+        @Nullable
         public Function<Double, StatsBuffered> getInit() {
             return init;
         }
@@ -293,7 +303,8 @@ public interface StatEntry extends Metric {
          * 		the init-function
          * @return a reference to {@code this}
          */
-        public StatEntry.Config<T> withInit(final Function<Double, StatsBuffered> init) {
+        @NonNull
+        public StatEntry.Config<T> withInit(@Nullable final Function<Double, StatsBuffered> init) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -314,6 +325,7 @@ public interface StatEntry extends Metric {
          *
          * @return {@code reset}
          */
+        @Nullable
         public Consumer<Double> getReset() {
             return reset;
         }
@@ -325,7 +337,8 @@ public interface StatEntry extends Metric {
          * 		the reset-function
          * @return a reference to {@code this}
          */
-        public StatEntry.Config<T> withReset(final Consumer<Double> reset) {
+        @NonNull
+        public StatEntry.Config<T> withReset(@Nullable final Consumer<Double> reset) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -346,6 +359,7 @@ public interface StatEntry extends Metric {
          *
          * @return {@code statsStringSupplier}
          */
+        @NonNull
         public Supplier<T> getStatsStringSupplier() {
             return statsStringSupplier;
         }
@@ -355,6 +369,7 @@ public interface StatEntry extends Metric {
          *
          * @return {@code resetStatsStringSupplier}
          */
+        @NonNull
         public Supplier<T> getResetStatsStringSupplier() {
             return resetStatsStringSupplier;
         }
@@ -366,7 +381,8 @@ public interface StatEntry extends Metric {
          * 		the reset-supplier
          * @return a reference to {@code this}
          */
-        public StatEntry.Config<T> withResetStatsStringSupplier(final Supplier<T> resetStatsStringSupplier) {
+        @NonNull
+        public StatEntry.Config<T> withResetStatsStringSupplier(@NonNull final Supplier<T> resetStatsStringSupplier) {
             return new StatEntry.Config<>(
                     getCategory(),
                     getName(),
@@ -397,6 +413,7 @@ public interface StatEntry extends Metric {
          * 		value of the half-life
          * @return a reference to {@code this}
          */
+        @NonNull
         public StatEntry.Config<T> withHalfLife(final double halfLife) {
             return new StatEntry.Config<>(
                     getCategory(),
@@ -426,7 +443,8 @@ public interface StatEntry extends Metric {
          * {@inheritDoc}
          */
         @Override
-        StatEntry create(final MetricsFactory factory) {
+        @NonNull
+        public StatEntry create(@NonNull final PlatformMetricsFactory factory) {
             return factory.createStatEntry(this);
         }
 

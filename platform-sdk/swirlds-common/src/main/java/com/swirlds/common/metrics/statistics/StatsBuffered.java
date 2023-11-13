@@ -16,13 +16,14 @@
 
 package com.swirlds.common.metrics.statistics;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 
 /**
  * A statistic such as StatsSpeedometer or StatsRunningAverage should implement this if it will
  * contain a
  * {@link StatsBuffer} for recent history and another for all of history. The user can then retrieve them from
- * {@link com.swirlds.common.metrics.Metrics}.
+ * {@link Metrics}.
  */
 public interface StatsBuffered {
     /**

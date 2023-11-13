@@ -27,7 +27,7 @@ import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
@@ -36,9 +36,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * An implementation of {@link MetricsFactory} that creates platform-internal {@link Metric}-instances
+ * An implementation of {@link PlatformMetricsFactory} that creates platform-internal {@link Metric}-instances
  */
-public class DefaultMetricsFactory implements MetricsFactory {
+public class DefaultMetricsFactory implements PlatformMetricsFactory {
     private final MetricsConfig metricsConfig;
 
     public DefaultMetricsFactory(@NonNull final MetricsConfig metricsConfig) {

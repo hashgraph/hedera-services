@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.units.UnitConstants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
@@ -58,7 +59,7 @@ public interface DurationGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Double get(final ValueType valueType) {
+    default Double get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
@@ -88,7 +89,7 @@ public interface DurationGauge extends Metric {
     /**
      * Configuration of a {@link DurationGauge}
      */
-    final class Config extends MetricConfig<DurationGauge, DurationGauge.Config> {
+    final class Config extends PlatformMetricConfig<DurationGauge, Config> {
 
         private static final String TIME_UNIT = "timeUnit";
         private static final String UNSUPPORTED_TIME_UNIT = "Unsupported time unit: ";
@@ -103,16 +104,20 @@ public interface DurationGauge extends Metric {
          * @param timeUnit the time unit in which to display this duration
          * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name, final ChronoUnit timeUnit) {
+        public Config(@NonNull final String category, @NonNull final String name, final ChronoUnit timeUnit) {
             super(category, fixName(name, timeUnit), getFormat(timeUnit));
             this.timeUnit = timeUnit;
         }
 
-        private static String fixName(final String name, final ChronoUnit timeUnit) {
+        private static String fixName(@NonNull final String name, final ChronoUnit timeUnit) {
             return ArgumentUtils.throwArgBlank(name, "name") + " " + getAppendix(timeUnit);
         }
 
-        private Config(final String category, final String name, final String description, final ChronoUnit timeUnit) {
+        private Config(
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                final ChronoUnit timeUnit) {
             super(category, name, description, getUnit(timeUnit), getFormat(timeUnit));
             // at this point, timeUnit was checked for null in getUnit() and getFormat()
             this.timeUnit = timeUnit;
@@ -122,7 +127,7 @@ public interface DurationGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public DurationGauge.Config withDescription(final String description) {
+        public DurationGauge.Config withDescription(@NonNull final String description) {
             return new DurationGauge.Config(getCategory(), getName(), description, getTimeUnit());
         }
 
@@ -131,7 +136,7 @@ public interface DurationGauge extends Metric {
          * possible to specify the unit and this method throws an {@link UnsupportedOperationException}
          */
         @Override
-        public DurationGauge.Config withUnit(final String unit) {
+        public DurationGauge.Config withUnit(@NonNull final String unit) {
             throw new UnsupportedOperationException("a String unit is not compatible with this class");
         }
 
@@ -156,11 +161,13 @@ public interface DurationGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        DurationGauge create(final MetricsFactory factory) {
+        @NonNull
+        public DurationGauge create(@NonNull final PlatformMetricsFactory factory) {
             return factory.createDurationGauge(this);
         }
 
-        private static String getFormat(final ChronoUnit timeUnit) {
+        @NonNull
+        private static String getFormat(@NonNull final ChronoUnit timeUnit) {
             Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
                 case NANOS, MICROS -> FloatFormats.FORMAT_DECIMAL_0;
@@ -169,6 +176,7 @@ public interface DurationGauge extends Metric {
             };
         }
 
+        @NonNull
         private static String getUnit(final ChronoUnit timeUnit) {
             Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
@@ -180,6 +188,7 @@ public interface DurationGauge extends Metric {
             };
         }
 
+        @NonNull
         private static String getAppendix(final ChronoUnit timeUnit) {
             Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {

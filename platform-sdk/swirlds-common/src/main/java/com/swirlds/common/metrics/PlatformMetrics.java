@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A {@link Metrics} implementation that knows about the platform. This interface has been extracted from the
@@ -34,6 +35,7 @@ public interface PlatformMetrics extends Metrics {
      *
      * @return The {@code NodeId} or {@code null}
      */
+    @Nullable
     NodeId getNodeId();
 
     /**

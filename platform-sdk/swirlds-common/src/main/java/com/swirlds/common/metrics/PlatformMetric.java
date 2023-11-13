@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.statistics.StatsBuffered;
  * @deprecated This class is only temporary and will be removed during the Metric overhaul.
  */
 @Deprecated(forRemoval = true)
-public interface LegacyMetric extends Metric {
+public interface PlatformMetric extends Metric {
 
     /**
      * This method returns the {@link StatsBuffered} of this metric, if there is one.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.state.Startable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 
 /**
@@ -47,6 +49,7 @@ public interface Metrics extends Startable {
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null}
      */
+    @Nullable
     Metric getMetric(final String category, final String name);
 
     /**
@@ -66,6 +69,7 @@ public interface Metrics extends Startable {
      * @throws IllegalArgumentException
      * 		if {@code category} is {@code null}
      */
+    @NonNull
     Collection<Metric> findMetricsByCategory(final String category);
 
     /**
@@ -78,6 +82,7 @@ public interface Metrics extends Startable {
      *
      * @return all registered metrics
      */
+    @NonNull
     Collection<Metric> getAll();
 
     /**
@@ -92,6 +97,7 @@ public interface Metrics extends Startable {
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null}
      */
+    @Nullable
     default Object getValue(final String category, final String name) {
         final Metric metric = getMetric(category, name);
         return metric != null ? metric.get(VALUE) : null;

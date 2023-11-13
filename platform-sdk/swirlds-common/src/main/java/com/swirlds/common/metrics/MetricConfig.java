@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.common.metrics;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.base.utility.ToStringBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
@@ -33,20 +34,7 @@ import java.util.Objects;
  * @param <T> the {@code Class} for which the configuration is
  */
 @SuppressWarnings("removal")
-public abstract sealed class MetricConfig<T extends Metric, C extends MetricConfig<T, C>>
-        permits Counter.Config,
-                DoubleAccumulator.Config,
-                DoubleGauge.Config,
-                DurationGauge.Config,
-                FunctionGauge.Config,
-                IntegerAccumulator.Config,
-                IntegerGauge.Config,
-                IntegerPairAccumulator.Config,
-                LongAccumulator.Config,
-                LongGauge.Config,
-                RunningAverageMetric.Config,
-                SpeedometerMetric.Config,
-                StatEntry.Config {
+public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C>> {
 
     private static final int MAX_DESCRIPTION_LENGTH = 255;
 
@@ -69,7 +57,7 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null} or consists only of whitespaces
      */
-    MetricConfig(
+    protected MetricConfig(
             final String category,
             final String name,
             final String description,
@@ -101,7 +89,7 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null} or consists only of whitespaces
      */
-    MetricConfig(final String category, final String name, final String defaultFormat) {
+    protected MetricConfig(final String category, final String name, final String defaultFormat) {
         this(category, name, name, "", defaultFormat);
     }
 
@@ -189,7 +177,8 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      * 		the {@code MetricFactory}
      * @return the new {@code Metric}-instance
      */
-    abstract T create(final MetricsFactory factory);
+    @NonNull
+    public abstract T create(final MetricsFactory factory);
 
     /**
      * {@inheritDoc}

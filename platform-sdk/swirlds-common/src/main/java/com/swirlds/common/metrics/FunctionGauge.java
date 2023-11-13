@@ -19,6 +19,7 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -75,7 +76,7 @@ public interface FunctionGauge<T> extends Metric {
      *
      * @param <T> the type of the value that will be contained in the {@code FunctionGauge}
      */
-    final class Config<T> extends MetricConfig<FunctionGauge<T>, FunctionGauge.Config<T>> {
+    final class Config<T> extends PlatformMetricConfig<FunctionGauge<T>, Config<T>> {
 
         private final Class<T> type;
         private final Supplier<T> supplier;
@@ -94,20 +95,24 @@ public interface FunctionGauge<T> extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name, final Class<T> type, final Supplier<T> supplier) {
+        public Config(
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final Class<T> type,
+                @NonNull final Supplier<T> supplier) {
             super(category, name, "%s");
             this.type = Objects.requireNonNull(type, "type");
             this.supplier = Objects.requireNonNull(supplier, "supplier");
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final Class<T> type,
-                final Supplier<T> supplier) {
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
+                @NonNull final Class<T> type,
+                @NonNull final Supplier<T> supplier) {
             super(category, name, description, unit, format);
             this.type = Objects.requireNonNull(type, "type");
             this.supplier = Objects.requireNonNull(supplier, "supplier");
@@ -117,7 +122,7 @@ public interface FunctionGauge<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public FunctionGauge.Config<T> withDescription(final String description) {
+        public FunctionGauge.Config<T> withDescription(@NonNull final String description) {
             return new FunctionGauge.Config<>(
                     getCategory(), getName(), description, getUnit(), getFormat(), getType(), getSupplier());
         }
@@ -126,7 +131,7 @@ public interface FunctionGauge<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public FunctionGauge.Config<T> withUnit(final String unit) {
+        public FunctionGauge.Config<T> withUnit(@NonNull final String unit) {
             return new FunctionGauge.Config<>(
                     getCategory(), getName(), getDescription(), unit, getFormat(), getType(), getSupplier());
         }
@@ -140,7 +145,8 @@ public interface FunctionGauge<T> extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public FunctionGauge.Config<T> withFormat(final String format) {
+        @NonNull
+        public FunctionGauge.Config<T> withFormat(@NonNull final String format) {
             return new FunctionGauge.Config<>(
                     getCategory(), getName(), getDescription(), getUnit(), format, getType(), getSupplier());
         }
@@ -150,6 +156,7 @@ public interface FunctionGauge<T> extends Metric {
          *
          * @return the type of the returned values
          */
+        @NonNull
         public Class<T> getType() {
             return type;
         }
@@ -159,6 +166,7 @@ public interface FunctionGauge<T> extends Metric {
          *
          * @return the {@code supplier}
          */
+        @NonNull
         public Supplier<T> getSupplier() {
             return supplier;
         }
@@ -176,7 +184,8 @@ public interface FunctionGauge<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
-        FunctionGauge<T> create(final MetricsFactory factory) {
+        @NonNull
+        public FunctionGauge<T> create(@NonNull final PlatformMetricsFactory factory) {
             return factory.createFunctionGauge(this);
         }
 

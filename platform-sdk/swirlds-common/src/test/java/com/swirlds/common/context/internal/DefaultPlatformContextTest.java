@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.MetricsProvider;
+import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -34,7 +34,7 @@ class DefaultPlatformContextTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final NodeId nodeId = new NodeId(3256733545L);
-        final MetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
+        final PlatformMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         metricsProvider.createGlobalMetrics();
 
         // when

@@ -19,8 +19,8 @@ package com.swirlds.gui.components;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
@@ -230,11 +230,11 @@ public class Chart extends JPanel {
         super.paintComponent(g);
         try {
             StatsBuffer buffer;
-            if (metric instanceof LegacyMetric legacyMetric) {
+            if (metric instanceof PlatformMetric platformMetric) {
                 if (allHistory) {
-                    buffer = legacyMetric.getStatsBuffered().getAllHistory();
+                    buffer = platformMetric.getStatsBuffered().getAllHistory();
                 } else {
-                    buffer = legacyMetric.getStatsBuffered().getRecentHistory();
+                    buffer = platformMetric.getStatsBuffered().getRecentHistory();
                 }
             } else {
                 buffer = new StatsBuffer(0, 0, 0);
