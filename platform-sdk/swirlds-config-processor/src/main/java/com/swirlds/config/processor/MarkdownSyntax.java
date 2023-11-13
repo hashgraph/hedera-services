@@ -17,7 +17,7 @@
 
 package com.swirlds.config.processor;
 
-public class MarkdownSyntax {
+public final class MarkdownSyntax {
 
     public static final String H2_PREFIX = "## ";
     public static final String BOLD_MARKER = "**";
