@@ -36,7 +36,7 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -70,7 +70,7 @@ class DefaultMetricsTest {
     private ScheduledExecutorService executor;
 
     @Mock
-    private MetricsFactory factory;
+    private PlatformMetricsFactory factory;
 
     @Mock
     private Consumer<MetricsEvent> subscriber;

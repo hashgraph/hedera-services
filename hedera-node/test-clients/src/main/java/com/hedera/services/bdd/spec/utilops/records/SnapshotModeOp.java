@@ -115,13 +115,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "ed25519",
             "ECDSA_secp256k1",
             // Plus some other fields that we might prefer to make deterministic
-            "symbol",
-            "alias");
+            "symbol");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
     private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
-            "hedera-node/test-clients/build/hapi-test/HAPI Tests/node%d/data/recordStreams/record0.0.%d";
+            "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
     private static final String PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC = "hedera-node/test-clients/record-snapshots";
 
@@ -160,13 +159,24 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "okToRepeatSerialNumbersInBurnList");
-        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta);
+        final var snapshotFileMeta = new SnapshotFileMeta("ContractCall", "MultipleSelfDestructsAreSafe");
+        final var maybeSnapshot = suiteSnapshotsFrom(
+                        resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
+                .flatMap(
+                        suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
+        if (maybeSnapshot.isEmpty()) {
+            throw new IllegalStateException("No such snapshot");
+        }
+        final var snapshot = maybeSnapshot.get();
         final var items = snapshot.parsedItems();
-        for (int i = 0, n = items.size(); i < n; i++) {
-            final var item = items.get(i);
-            System.out.println("Item #" + i + " body: " + item.itemBody());
-            System.out.println("Item #" + i + " record: " + item.itemRecord());
+        try (var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"))) {
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                dumpLoc.write("--- Item #" + i + " ---\n");
+                dumpLoc.write(item.itemBody() + "\n\n");
+                dumpLoc.write("➡️\n\n");
+                dumpLoc.write(item.itemRecord() + "\n\n");
+            }
         }
     }
 
@@ -245,11 +255,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
             for (final var recordLoc : recordLocs) {
                 try {
+                    log.info("Trying to read post-placeholder items from {}", recordLoc);
                     data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
                         final var fileConsTime = parseRecordFileConsensusTime(f);
                         return fileConsTime.isAfter(lowerBoundConsensusStartTime)
                                 && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;
                     });
+                    log.info("Read {} record files from {}", data.records().size(), recordLoc);
                 } catch (Exception ignore) {
                     // We will try the next location, if any
                 }
@@ -632,6 +644,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @return the suite snapshots, if any
      */
     private static Optional<SuiteSnapshots> suiteSnapshotsFrom(@NonNull final Path p) {
+        log.info("Trying to load suite snapshots from {}", p);
         final var f = p.toFile();
         if (f.exists()) {
             try {

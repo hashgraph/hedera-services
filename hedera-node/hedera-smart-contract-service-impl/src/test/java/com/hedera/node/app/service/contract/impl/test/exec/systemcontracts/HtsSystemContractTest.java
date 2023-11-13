@@ -77,7 +77,7 @@ class HtsSystemContractTest {
         givenValidCallAttempt();
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L));
-        given(call.execute()).willReturn(pricedResult);
+        given(call.execute(frame)).willReturn(pricedResult);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
     }
@@ -94,7 +94,7 @@ class HtsSystemContractTest {
     @Test
     void internalErrorAttemptHaltsAndConsumesRemainingGas() {
         givenValidCallAttempt();
-        given(call.execute()).willThrow(RuntimeException.class);
+        given(call.execute(frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
@@ -105,7 +105,7 @@ class HtsSystemContractTest {
     void callWithNonGasCostNotImplemented() {
         givenValidCallAttempt();
         final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L);
-        given(call.execute()).willReturn(pricedResult);
+        given(call.execute(frame)).willReturn(pricedResult);
 
         assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
     }
