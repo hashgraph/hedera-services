@@ -19,6 +19,7 @@ package com.swirlds.common.metrics.atomic;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.threading.atomic.AtomicIntPair;
 import org.junit.jupiter.api.Test;
 
 class AtomicIntPairTest {

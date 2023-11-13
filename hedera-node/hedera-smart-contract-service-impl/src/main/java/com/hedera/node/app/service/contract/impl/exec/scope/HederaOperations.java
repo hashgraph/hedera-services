@@ -159,10 +159,10 @@ public interface HederaOperations {
      * Updates the storage metadata for the given contract.
      *
      * @param contractNumber the number of the contract
-     * @param firstKey       the first key in the storage linked list, or null if the list is empty
+     * @param firstKey       the first key in the storage linked list, or {@link Bytes#EMPTY} if the list is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(long contractNumber, @Nullable Bytes firstKey, int netChangeInSlotsUsed);
+    void updateStorageMetadata(long contractNumber, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias

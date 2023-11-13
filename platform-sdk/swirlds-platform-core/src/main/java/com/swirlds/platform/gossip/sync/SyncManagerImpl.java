@@ -23,14 +23,9 @@ import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -45,27 +40,11 @@ public class SyncManagerImpl implements FallenBehindManager {
 
     private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
-    /**
-     * When looking for a neighbor to call, this is the maximum number of neighbors we query before just selecting one
-     * if a suitable neighbor is not found yet.
-     */
-    private static final int MAXIMUM_NEIGHBORS_TO_QUERY = 10;
-
     private final EventConfig eventConfig;
 
     /** the event intake queue */
     private final BlockingQueue<GossipEvent> intakeQueue;
     /** This object holds data on how nodes are connected to each other. */
-    private final RandomGraph connectionGraph;
-    /** The id of this node */
-    private final NodeId selfId;
-    /** Tracks recent events */
-    private final CriticalQuorum criticalQuorum;
-
-    private final boolean useCriticalQuorum;
-    /** The initial address book */
-    private final AddressBook addressBook;
-
     private final FallenBehindManager fallenBehindManager;
 
     /**
@@ -78,33 +57,17 @@ public class SyncManagerImpl implements FallenBehindManager {
      *
      * @param platformContext    the platform context
      * @param intakeQueue        the event intake queue
-     * @param connectionGraph    The platforms connection graph.
-     * @param selfId             The ID of the platform.
      */
     public SyncManagerImpl(
             @NonNull final PlatformContext platformContext,
             @NonNull final BlockingQueue<GossipEvent> intakeQueue,
-            @NonNull final RandomGraph connectionGraph,
-            @NonNull final NodeId selfId,
-            @NonNull final CriticalQuorum criticalQuorum,
-            @NonNull final AddressBook addressBook,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final EventConfig eventConfig) {
 
         this.intakeQueue = Objects.requireNonNull(intakeQueue);
-        this.connectionGraph = Objects.requireNonNull(connectionGraph);
-        this.selfId = Objects.requireNonNull(selfId);
-
-        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
-        this.addressBook = Objects.requireNonNull(addressBook);
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.eventConfig = Objects.requireNonNull(eventConfig);
-
-        useCriticalQuorum = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .criticalQuorumEnabled();
 
         platformContext
                 .getMetrics()
@@ -154,46 +117,6 @@ public class SyncManagerImpl implements FallenBehindManager {
 
         // we shouldn't sync if the event intake queue is too big
         return intakeQueue.size() <= eventConfig.eventIntakeQueueThrottleSize();
-    }
-
-    /**
-     * Retrieves a list of neighbors in order of syncing priority
-     *
-     * @return a list of neighbors
-     */
-    public List<NodeId> getNeighborsToCall() {
-        // if there is an indication we might have fallen behind, calling nodes to establish this takes priority
-        List<NodeId> list = getNeededForFallenBehind();
-        if (list != null) {
-            return list;
-        }
-        list = new LinkedList<>();
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        for (int i = 0; i < MAXIMUM_NEIGHBORS_TO_QUERY; i++) {
-            // Noncontiguous NodeId compatibility: connectionGraph is interpreted as addressbook indexes for NodeIds
-            final int neighbor = connectionGraph.randomNeighbor(selfIndex) % addressBook.getSize();
-            if (neighbor == selfIndex) {
-                continue;
-            }
-            final NodeId neighborId = addressBook.getNodeId(neighbor);
-
-            // don't add duplicated nodes here
-            if (list.contains(neighborId)) {
-                continue;
-            }
-
-            if (useCriticalQuorum) {
-                // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
-                // we fail to find one after 10 tries, we just call the last neighbor we find
-                if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
-                    list.add(neighborId);
-                }
-            } else {
-                list.add(neighborId);
-            }
-        }
-
-        return list;
     }
 
     /**
