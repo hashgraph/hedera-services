@@ -171,6 +171,7 @@ public class ReconnectTeacher {
         try {
             sendSignatures(signedState);
             reconnect(signedState);
+            ReconnectUtils.endReconnectHandshake(connection);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ReconnectException(e);
