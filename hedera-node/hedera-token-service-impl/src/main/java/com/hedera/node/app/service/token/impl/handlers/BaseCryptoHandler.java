@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.config.data.AccountsConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -55,5 +57,19 @@ public class BaseCryptoHandler {
     @NonNull
     public static AccountID asAccount(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
+    }
+
+    /**
+     * Checks that an accountId represents one of the staking accounts
+     * @param accountID    the accountID to check
+     */
+    public static boolean isStakingAccount(
+            @NonNull final Configuration configuration, @Nullable final AccountID accountID) {
+        final var accountNum = accountID != null ? accountID.accountNum() : 0;
+        final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
+        if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
+            return true;
+        }
+        return false;
     }
 }

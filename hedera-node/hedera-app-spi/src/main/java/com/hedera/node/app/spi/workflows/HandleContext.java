@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -33,6 +35,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,7 +59,6 @@ import java.util.function.Predicate;
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
-
     /**
      * Category of the current transaction.
      */
@@ -431,6 +433,37 @@ public interface HandleContext {
             AccountID syntheticPayer);
 
     /**
+     * Dispatches preceding transaction that can be removed.
+     *
+     * <p>A removable preceding transaction depends on the current transaction. That means if the user transaction
+     * fails, a removable preceding transaction is automatically removed and not exported. The state changes introduced by a
+     * removable preceding transaction are automatically committed together with the parent transaction.
+     *
+     * <p>This method can only be called by a {@link TransactionCategory#USER}-transaction and only as long as no state
+     * changes have been introduced by the user transaction (either by storing state or by calling a child
+     * transaction).
+     *
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
+     *
+     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
+     * @param recordBuilderClass the record builder class of the transaction
+     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param syntheticPayer    the payer of the transaction
+     * @return the record builder of the transaction
+     * @throws NullPointerException     if {@code txBody} is {@code null}
+     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
+     *                                  the record builder type is unknown to the app
+     * @throws IllegalStateException    if the current transaction has already introduced state changes
+     */
+    @NonNull
+    <T> T dispatchRemovablePrecedingTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> verifier,
+            AccountID syntheticPayer);
+
+    /**
      * Dispatches a reversible preceding transaction that already has an ID.
      *
      * @param txBody            the {@link TransactionBody} of the transaction to dispatch
@@ -517,21 +550,23 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayerId  the payer of the child transaction
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId the payer of the child transaction
+     * @param customizer a final transformation to apply before externalizing if the returned value is non-null
      * @return the record builder of the child transaction
-     * @throws NullPointerException     if any of the arguments is {@code null}
+     * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            @NonNull AccountID syntheticPayerId);
+            @NonNull AccountID syntheticPayerId,
+            @NonNull ExternalizedRecordCustomizer customizer);
 
     /**
      * Dispatches a removable child transaction that already has a transaction ID.
@@ -551,7 +586,8 @@ public interface HandleContext {
                 txBody,
                 recordBuilderClass,
                 callback,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
+                txBody.transactionIDOrThrow().accountIDOrThrow(),
+                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     /**
@@ -603,7 +639,7 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * Revert all child records in {@link RecordListBuilder}.
+     * Revert all child records in RecordListBuilder.
      */
     void revertChildRecords();
 

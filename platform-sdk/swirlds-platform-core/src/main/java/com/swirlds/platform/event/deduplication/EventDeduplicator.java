@@ -26,10 +26,11 @@ import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -42,17 +43,12 @@ public class EventDeduplicator {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, Set<byte[]>> NEW_HASH_SET = ignored -> new HashSet<>();
+    private static final Function<EventDescriptor, Set<ByteBuffer>> NEW_HASH_SET = ignored -> new HashSet<>();
 
     /**
      * Initial capacity of {@link #observedEvents}.
      */
     private static final int INITIAL_CAPACITY = 1024;
-
-    /**
-     * Deduplicated events are passed to this consumer.
-     */
-    private final Consumer<GossipEvent> eventConsumer;
 
     /**
      * The current minimum generation required for an event to be non-ancient.
@@ -67,7 +63,7 @@ public class EventDeduplicator {
     /**
      * A map from event descriptor to a set of signatures that have been received for that event.
      */
-    private final SequenceMap<EventDescriptor, Set<byte[]>> observedEvents =
+    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents =
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     private static final LongAccumulator.Config DUPLICATE_EVENT_CONFIG = new LongAccumulator.Config(
@@ -87,15 +83,11 @@ public class EventDeduplicator {
      * Constructor
      *
      * @param platformContext    the platform context
-     * @param eventConsumer      deduplicated events are passed to this consumer
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public EventDeduplicator(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Consumer<GossipEvent> eventConsumer,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final PlatformContext platformContext, @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.duplicateEventAccumulator = platformContext.getMetrics().getOrCreate(DUPLICATE_EVENT_CONFIG);
@@ -105,30 +97,33 @@ public class EventDeduplicator {
     /**
      * Handle a potentially duplicate event
      * <p>
-     * Ancient events are ignored. If the input event has not already been observed by this deduplicator, it is passed
-     * to the event consumer.
+     * Ancient events are ignored. If the input event has not already been observed by this deduplicator, it is returned.
      *
      * @param event the event to handle
+     * @return the event if it is not a duplicate, or null if it is a duplicate
      */
-    public void handleEvent(@NonNull final GossipEvent event) {
+    @Nullable
+    public GossipEvent handleEvent(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-            return;
+            return null;
         }
 
-        final Set<byte[]> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
-        if (signatures.add(event.getUnhashedData().getSignature())) {
+        final Set<ByteBuffer> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
+        if (signatures.add(ByteBuffer.wrap(event.getUnhashedData().getSignature()))) {
             if (signatures.size() != 1) {
                 // signature is unique, but descriptor is not
                 disparateSignatureAccumulator.update(1);
             }
 
-            eventConsumer.accept(event);
+            return event;
         } else {
             // duplicate descriptor and signature
             duplicateEventAccumulator.update(1);
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+
+            return null;
         }
     }
 

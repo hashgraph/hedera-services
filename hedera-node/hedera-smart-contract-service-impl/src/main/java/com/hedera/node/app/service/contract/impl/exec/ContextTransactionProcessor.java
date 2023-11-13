@@ -103,14 +103,18 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
             // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
             return new CallOutcome(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result.finalStatus());
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
+                    result.finalStatus(),
+                    result.gasPrice());
         } catch (HandleException abort) {
             // try to resolve the sender if it is an alias
             var sender = feesOnlyUpdater.get().getHederaAccount(hevmTransaction.senderId());
             var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
             final var result = HederaEvmTransactionResult.fromAborted(senderId, hevmTransaction, abort.getStatus());
             return new CallOutcome(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result.finalStatus());
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
+                    result.finalStatus(),
+                    result.gasPrice());
         }
     }
 

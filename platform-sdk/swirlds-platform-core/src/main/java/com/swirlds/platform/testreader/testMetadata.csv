@@ -1,7 +1,9 @@
 # Panel, Test Name, Owner, Notes URL
 
 3NReconnect, MixedOps-Interrupted-2NReconnect-6k-41m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
+3NReconnect, MixedOps-Interrupted-2NReconnect-1k-41m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
 3NReconnect, MixedOps-NI-3NReconnect-6k-30m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
+3NReconnect, MixedOps-NI-3NReconnect-2k-30m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
 
 Abbrev, Consistency-Hard-Restart-10m, platform, https://www.notion.so/swirldslabs/Abbrev-Consistency-Hard-Restart-10m-ba9b0aa74a074bc7b6da0ebe9ec13e80
 Abbrev, Consistency-NDReconnect-10m, platform, https://www.notion.so/swirldslabs/Abbrev-Consistency-NDReconnect-10m-8b83db4b23064472a5450d0cb8640e33
@@ -24,6 +26,8 @@ BalanceValid, HTS-Restart-AccountBalances-2k-20m, services, https://www.notion.s
 
 Basic, Crypto-Basic-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Crypto-Basic-50k-20m-561c84b78b3142d19081f75ddb0a2f79
 Basic, Crypto-LargeTx-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Crypto-LargeTx-50k-20m-ec9f7e26c7cb4dc3b3c23f7e129f0994
+Basic, Stress-Basic-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Stress-Basic-50k-20m-fad689adc9e042cfbc43d220c244cd82
+Basic, Stress-LargeTx-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Stress-LargeTx-50k-20m-234c0900a39c445cad2e78929f96ca0d
 
 CentOS7_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Jar-1-5k-25m-979f86b5e10c4992ac98da1692000384
 CentOS7_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Setting-1-5k-15m-caf2ab2df6dc48f0ba4a15423e84b802
@@ -45,9 +49,6 @@ Global3NReconnect, MixedOps-Global-ND-3NReconnect-6k-35m, services, https://www.
 Global3NReconnect, MixedOps-Global-NI-3NReconnect-6k-35m, services, https://www.notion.so/swirldslabs/Global3NReconnect-MixedOps-Global-NI-3NReconnect-6k-35m-2f2de40abe3c40cdbd8655a7838a6cd2
 
 ISS, ISS-catastrophic-1k-5m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-1k-5m-a893e94b654b4bfea5a36cc7764c8517
-ISS, ISS-catastrophic-recovery-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-recovery-1k-10m-d7bc7bb3a3d24d5680eee522941e8568
-ISS, ISS-catastrophic-recovery-reconnect-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-recovery-reconnect-1k-10m-92abb262856048678693b24ea2b2eb2b
-ISS, ISS-catastrophic-recovery-rollback-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-recovery-rollback-1k-10m-f8e8bb2936e1479b87e6ab0490176dd9
 ISS, ISS-emergency-recovery-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-emergency-recovery-1k-10m-c025b8539ce64ccc8db3ef48e52dcdff
 ISS, ISS-emergency-recovery-diff-hash-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-emergency-recovery-diff-hash-1k-10m-cd6e7466ac504084aab409ea63591b6e
 ISS, ISS-emergency-recovery-reconnect-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-emergency-recovery-reconnect-1k-10m-75cb5dd79efa4234bd6d783704511900
@@ -89,15 +90,6 @@ NIReconnectCorrectness, TransactionHistory-NIReconnect-1-16m, services, https://
 NetError, FCMFCQ-NetError-1k-25m, platform, https://www.notion.so/swirldslabs/NetError-FCMFCQ-NetError-1k-25m-29a9d01acb4e4660897db647bef2a886
 NetError, Misc-Basic-14-20m, services, https://www.notion.so/swirldslabs/NetError-Misc-Basic-14-20m-96752536f01343ba815d415b48c63b2c
 
-Performance, Contract-Restart-Performance-Random-35-30m, services, https://www.notion.so/swirldslabs/Performance-Contract-Restart-Performance-Random-35-30m-62d20ba7030a485f83dbb6b7b053d3e7
-Performance, Crypto-Restart-Performance-Hotspot-10k-61m, services, https://www.notion.so/swirldslabs/Performance-Crypto-Restart-Performance-Hotspot-10k-61m-dd8fc090b1c647efba7b85b65912cf22
-Performance, Crypto-Restart-Performance-Random-10k-65m, services, https://www.notion.so/swirldslabs/Performance-Crypto-Restart-Performance-Random-10k-65m-93b7a2af5dcf46919bac17047bb885cb
-Performance, File-Restart-Performance-Size1K_4K-42-30m, services, https://www.notion.so/swirldslabs/Performance-File-Restart-Performance-Size1K_4K-42-30m-96a4a593cee049f89fcea19428db0f4e
-Performance, HCS-Restart-Performance-Hotspot-10k-61m, services, https://www.notion.so/swirldslabs/Performance-HCS-Restart-Performance-Hotspot-10k-61m-ebed9abf62bf4f009cce8687e67b5d27
-Performance, HCS-Restart-Performance-Random-10k-60m, services, https://www.notion.so/swirldslabs/Performance-HCS-Restart-Performance-Random-10k-60m-c49758d5530e45aebe1ba42a607070d6
-
-QueryPerf, Query-Restart-Performance-7N-7C-10k-30m, services, https://www.notion.so/swirldslabs/QueryPerf-Query-Restart-Performance-7N-7C-10k-30m-90abe5f0ce754f4780d6cdd7cec9389d
-
 RHEL7_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Jar-1-5k-25m-11e8ce6b514047dba923612ba34f166b
 RHEL7_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Setting-1-5k-15m-1b0ea7c6bc9449d5bf8d9735b8f8a601?pvs=9
 RHEL7_Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Setting-Config-1-5k-25m-d29ef57d0dfa4b5d8fcc6cdd2a56b520
@@ -111,11 +103,15 @@ Reconnect, FileOps-NIReconnect-12-21m, services, https://www.notion.so/swirldsla
 Reconnect, MixedOps-GenesisReconnect-500-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-GenesisReconnect-500-15m-d9bfb9a925cb466db9b622ace80fa289
 Reconnect, MixedOps-GenesisReconnect-6k-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-GenesisReconnect-6k-15m-4043841860f94b629e7238e4131bc465
 Reconnect, MixedOps-NDReconnect-1.5k-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NDReconnect-1-5k-25m-df8817b8d3c2437fa61a2cc0ff5b2bfb
+Reconnect, MixedOps-NDReconnect-500-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NDReconnect-1-5k-25m-df8817b8d3c2437fa61a2cc0ff5b2bfb
 Reconnect, MixedOps-NI-MultiReconnect-10k-32m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NI-MultiReconnect-10k-32m-bd9f0ef494894310b4bae6f66ad86faa
+Reconnect, MixedOps-NI-MultiReconnect-2k-32m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NI-MultiReconnect-10k-32m-bd9f0ef494894310b4bae6f66ad86faa
 Reconnect, MixedOps-NIReconnect-1.5k-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-1-5k-25m-e7f791b62e52431b9a73539f6a5145b0
+Reconnect, MixedOps-NIReconnect-400-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-1-5k-25m-e7f791b62e52431b9a73539f6a5145b0
 Reconnect, MixedOps-NIReconnect-2k-28m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-2k-28m-a49b6253fd56491c945b962c3306aa1d
 Reconnect, MixedOps-NIReconnect-6k-28m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-6k-28m-5f652bb45a854f949ee40ddf1a2f9c58
 Reconnect, MixedOps-NIReconnectFail-1.5k-10m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnectFail-1-5k-10m-482531712c6a4a14b4b744705ba708c5
+Reconnect, MixedOps-NIReconnectFail-500-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnectFail-1-5k-10m-482531712c6a4a14b4b744705ba708c5
 Reconnect, SmartContractOps-NIReconnect-14-21m, services, https://www.notion.so/swirldslabs/Reconnect-SmartContractOps-NIReconnect-14-21m-0a33c4c3f497450d89c2c62f5d0afd1e
 Reconnect, VMerkleDual-NDReconnect-500-60m, platform, https://www.notion.so/swirldslabs/Reconnect-VMerkleDual-NDReconnect-500-60m-bed1119b943141cc986c07ff10145468
 

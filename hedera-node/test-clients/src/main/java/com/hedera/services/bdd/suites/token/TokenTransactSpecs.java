@@ -1699,6 +1699,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(DEFAULT_PAYER).hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L));
     }
 
+    @HapiTest
     public HapiSpec canTransactInTokenWithSelfDenominatedFixedFee() {
         final var protocolToken = "protocolToken";
         final var gabriella = "gabriella";
@@ -1959,6 +1960,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
                 .given(

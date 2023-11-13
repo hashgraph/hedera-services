@@ -42,6 +42,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
@@ -501,8 +502,10 @@ class ProxyWorldUpdaterTest {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
                 0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
 
-        subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS);
-        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
+        subject.externalizeSystemContractResults(
+                contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        verify(systemContractOperations)
+                .externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
     }
 
     @Test

@@ -19,10 +19,27 @@ package com.hedera.services.bdd.junit;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -35,27 +52,82 @@ import java.util.stream.Collectors;
  * The {@code stdout} and {@code stderr} files will be written into the working directory.
  */
 final class SubProcessHapiTestNode implements HapiTestNode {
+    private static final Pattern PROM_PLATFORM_STATUS_HELP_PATTERN =
+            Pattern.compile("# HELP platform_PlatformStatus (.*)");
+    private static final Pattern PROM_PLATFORM_STATUS_PATTERN =
+            Pattern.compile("platform_PlatformStatus\\{.*\\} (\\d+)\\.\\d+");
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     /** The Hedera instance we are testing */
     private ProcessHandle handle;
+    /** The name of the node, such as Alice or Bob */
+    private final String name;
     /** The ID of the node */
     private final long nodeId;
+    /** The account ID of the node, such as 0.0.3 */
+    private final AccountID accountId;
     /** The directory in which the config.txt, settings.txt, and other files live. */
     private final Path workingDir;
     /** The port on which the grpc server will be listening */
     private final int grpcPort;
+    /** The HTTP Request to use for accessing prometheus to get the current node status (ACTIVE, CHECKING, etc) */
+    private final HttpRequest prometheusRequest;
+    /** The client used to make prometheus HTTP Requests */
+    private final HttpClient httpClient;
 
     /**
      * Create a new sub-process node.
      *
-     * @param workingDir The working directory. Must already be created and setup with all the files.
+     * @param name the name of the node, like Alice, Bob
      * @param nodeId The node ID
+     * @param accountId The account ID of the node, such as 0.0.3.
+     * @param workingDir The working directory. Must already be created and setup with all the files.
      * @param grpcPort The grpc port to configure the server with.
      */
-    public SubProcessHapiTestNode(@NonNull final Path workingDir, final long nodeId, final int grpcPort) {
-        this.workingDir = requireNonNull(workingDir);
+    public SubProcessHapiTestNode(
+            @NonNull final String name,
+            final long nodeId,
+            @NonNull final AccountID accountId,
+            @NonNull final Path workingDir,
+            final int grpcPort) {
+        this.name = requireNonNull(name);
         this.nodeId = nodeId;
+        this.accountId = requireNonNull(accountId);
+        this.workingDir = requireNonNull(workingDir);
         this.grpcPort = grpcPort;
+
+        try {
+            prometheusRequest = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:" + (10000 + nodeId)))
+                    .GET()
+                    .build();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Bad URI. Should not happen", e);
+        }
+
+        httpClient = HttpClient.newHttpClient();
+    }
+
+    @Override
+    public long getId() {
+        return nodeId;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public AccountID getAccountId() {
+        return accountId;
+    }
+
+    @Override
+    public String toString() {
+        return "SubProcessHapiTestNode{" + "name='"
+                + name + '\'' + ", nodeId="
+                + nodeId + ", accountId="
+                + accountId + '}';
     }
 
     @Override
@@ -91,13 +163,17 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             environment.put("grpc.port", Integer.toString(grpcPort));
             builder.command(
                             javaCmd,
-                            "-Dfile.encoding=UTF-8",
+                            // You can attach to any node. Node 0 at 5005, node 1 at 5006, etc. But if you need the
+                            // node to stop at startup, you can change the below line so nodeId == the node you want
+                            // to suspend at startup and the first "n" to "y".
                             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (nodeId == 0 ? "n" : "n")
                                     + ",address=*:" + (5005 + nodeId),
-                            "-Dhedera.workflows.enabled=true",
                             "-Dhedera.recordStream.logDir=data/recordStreams",
                             "-classpath",
                             classPath,
+                            "-Dfile.encoding=UTF-8",
+                            "-Dhedera.workflows.enabled=true",
+                            "-Dprometheus.endpointPortNumber=" + (10000 + nodeId),
                             "com.hedera.node.app.ServicesMain",
                             "" + nodeId)
                     .directory(workingDir.toFile())
@@ -111,28 +187,27 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     }
 
     @Override
-    public void waitForActive(long seconds) {
+    public void waitForActive(long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        final var log = workingDir.resolve("output").resolve("hgcaa.log");
         while (handle != null) {
             if (System.currentTimeMillis() > waitUntil) {
-                throw new RuntimeException(
+                throw new TimeoutException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
 
-            try {
-                if (Files.exists(log)) {
-                    try (final var in = Files.newBufferedReader(log)) {
-                        String line;
-                        while ((line = in.readLine()) != null) {
-                            if (line.contains("ACTIVE")) {
-                                return;
-                            }
-                        }
-                    }
+            if ("ACTIVE".equals(getPlatformStatus())) {
+                // Actually try to open a connection with the node, to make sure it is really up and running.
+                // The platform may be active, but the node may not be listening.
+                try {
+                    final var url = new URL("http://localhost:" + grpcPort + "/");
+                    final var connection = url.openConnection();
+                    connection.connect();
+                    return;
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException("Should never happen", e);
+                } catch (IOException ignored) {
+                    // This is expected, the node is not up yet.
                 }
-            } catch (Exception e) {
-                throw new RuntimeException("node " + nodeId + ": Unable to read from the hgcaa log file " + log, e);
             }
 
             try {
@@ -145,10 +220,52 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         }
     }
 
-    public void stop() {
+    public void shutdown() {
         if (handle != null) {
             handle.destroy();
             handle = null;
+        }
+    }
+
+    @Override
+    public void waitForShutdown(long seconds) throws TimeoutException {
+        final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
+        while (handle != null && handle.isAlive()) {
+            if (System.currentTimeMillis() > waitUntil) {
+                throw new TimeoutException(
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not shut down!");
+            }
+
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(
+                        "node " + nodeId + ": Interrupted while sleeping in waitForShutdown busy loop", e);
+            }
+        }
+    }
+
+    @Override
+    public void waitForFreeze(long seconds) throws TimeoutException {
+        final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
+        while (handle != null && handle.isAlive()) {
+            if (System.currentTimeMillis() > waitUntil) {
+                throw new TimeoutException(
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
+            }
+
+            if ("FREEZE_COMPLETE".equals(getPlatformStatus())) {
+                return;
+            }
+
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(
+                        "node " + nodeId + ": Interrupted while sleeping in waitForFreeze busy loop", e);
+            }
         }
     }
 
@@ -156,6 +273,25 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         if (handle != null) {
             handle.destroyForcibly();
             handle = null;
+        }
+    }
+
+    @Override
+    public void clearState() {
+        if (handle != null) {
+            throw new IllegalStateException("Cannot clear state from a running node. At least, not yet.");
+        }
+
+        final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
+        try {
+            if (Files.exists(saved)) {
+                Files.walk(saved)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not delete saved state " + saved, e);
         }
     }
 
@@ -193,5 +329,35 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         return Arrays.stream(classpath.split(":"))
                 .filter(s -> !s.contains("test-clients"))
                 .collect(Collectors.joining(":"));
+    }
+
+    private String getPlatformStatus() {
+        Map<String, String> statusMap = new HashMap();
+        String statusKey = "";
+        try {
+            final var response = httpClient.send(prometheusRequest, HttpResponse.BodyHandlers.ofString());
+            final var reader = new BufferedReader(new StringReader(response.body()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                final var helpMatcher = PROM_PLATFORM_STATUS_HELP_PATTERN.matcher(line);
+                if (helpMatcher.matches()) {
+                    final var kvPairs = helpMatcher.group(1).split(" ");
+                    for (final var kvPair : kvPairs) {
+                        final var parts = kvPair.split("=");
+                        statusMap.put(parts[0], parts[1]);
+                    }
+                }
+
+                final var matcher = PROM_PLATFORM_STATUS_PATTERN.matcher(line);
+                if (matcher.matches()) {
+                    // This line always comes AFTER the # HELP line.
+                    statusKey = matcher.group(1);
+                    break;
+                }
+            }
+        } catch (IOException | InterruptedException ignored) {
+        }
+
+        return statusMap.get(statusKey);
     }
 }

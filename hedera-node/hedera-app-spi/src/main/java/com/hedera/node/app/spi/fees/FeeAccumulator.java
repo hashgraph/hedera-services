@@ -39,8 +39,9 @@ public interface FeeAccumulator {
      *
      * @param payer The account to charge the fees to
      * @param networkFee The network fee to charge
+     * @return true if the full fee was charged
      */
-    void chargeNetworkFee(@NonNull AccountID payer, long networkFee);
+    boolean chargeNetworkFee(@NonNull AccountID payer, long networkFee);
 
     /**
      * Refunds the given fees to the receiver account.

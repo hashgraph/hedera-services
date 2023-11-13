@@ -19,6 +19,8 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -43,9 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,12 +54,9 @@ class EventSignatureValidatorTests {
     private Random random;
     private PlatformContext platformContext;
     private FakeTime time;
-    private AtomicInteger consumedEventCount;
-    private Consumer<GossipEvent> eventConsumer;
     private AtomicLong exitedIntakePipelineCount;
     private IntakeEventCounter intakeEventCounter;
 
-    private AddressBook previousAddressBook;
     private AddressBook currentAddressBook;
 
     /**
@@ -93,7 +90,7 @@ class EventSignatureValidatorTests {
      * @param nodeId the node id to use for the address
      * @return a mock address
      */
-    private Address generateMockAddress(final @NonNull NodeId nodeId) {
+    private static Address generateMockAddress(final @NonNull NodeId nodeId) {
         final PublicKey publicKey = mock(PublicKey.class);
         final SerializablePublicKey serializablePublicKey = mock(SerializablePublicKey.class);
         when(serializablePublicKey.getPublicKey()).thenReturn(publicKey);
@@ -109,7 +106,7 @@ class EventSignatureValidatorTests {
      * @param creatorId the creator id to use for the event
      * @return a mock event
      */
-    final GossipEvent generateMockEvent(
+    private static GossipEvent generateMockEvent(
             @NonNull final SoftwareVersion version, @NonNull final Hash hash, @NonNull final NodeId creatorId) {
         final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
         when(hashedData.getSoftwareVersion()).thenReturn(version);
@@ -123,41 +120,11 @@ class EventSignatureValidatorTests {
         return event;
     }
 
-    /**
-     * Assert either a passing or failing validation for a given event
-     *
-     * @param event      the event to validate
-     * @param expectPass whether the event is expected to pass validation
-     */
-    private void assertValidationResult(
-            final boolean useTrueVerifier, @NonNull final GossipEvent event, final boolean expectPass) {
-        int expectedConsumedEventCount = consumedEventCount.get();
-        long expectedExitedIntakePipelineCount = exitedIntakePipelineCount.get();
-
-        if (expectPass) {
-            expectedConsumedEventCount++;
-        } else {
-            expectedExitedIntakePipelineCount++;
-        }
-
-        final EventSignatureValidator validator =
-                useTrueVerifier ? validatorWithTrueVerifier : validatorWithFalseVerifier;
-        validator.handleEvent(event);
-
-        assertEquals(expectedConsumedEventCount, consumedEventCount.get());
-        assertEquals(expectedExitedIntakePipelineCount, exitedIntakePipelineCount.get());
-    }
-
     @BeforeEach
     void setup() {
         random = getRandomPrintSeed();
         platformContext = TestPlatformContextBuilder.create().build();
         time = new FakeTime();
-
-        consumedEventCount = new AtomicInteger(0);
-        eventConsumer = event -> {
-            consumedEventCount.incrementAndGet();
-        };
 
         exitedIntakePipelineCount = new AtomicLong(0);
         intakeEventCounter = mock(IntakeEventCounter.class);
@@ -172,7 +139,7 @@ class EventSignatureValidatorTests {
         previousNodeAddress = generateMockAddress(new NodeId(66));
         currentNodeAddress = generateMockAddress(new NodeId(77));
 
-        previousAddressBook = new AddressBook(List.of(previousNodeAddress));
+        final AddressBook previousAddressBook = new AddressBook(List.of(previousNodeAddress));
         currentAddressBook = new AddressBook(List.of(currentNodeAddress));
 
         defaultVersion = new BasicSoftwareVersion(2);
@@ -184,7 +151,6 @@ class EventSignatureValidatorTests {
                 defaultVersion,
                 previousAddressBook,
                 currentAddressBook,
-                eventConsumer,
                 intakeEventCounter);
 
         validatorWithFalseVerifier = new EventSignatureValidator(
@@ -194,7 +160,6 @@ class EventSignatureValidatorTests {
                 defaultVersion,
                 previousAddressBook,
                 currentAddressBook,
-                eventConsumer,
                 intakeEventCounter);
     }
 
@@ -204,27 +169,20 @@ class EventSignatureValidatorTests {
         final GossipEvent event =
                 generateMockEvent(new BasicSoftwareVersion(3), randomHash(random), currentNodeAddress.getNodeId());
 
-        assertValidationResult(true, event, false);
+        assertNull(validatorWithTrueVerifier.validateSignature(event));
+        assertEquals(1, exitedIntakePipelineCount.get());
     }
 
     @Test
     @DisplayName("Lower version event with missing previous address book")
     void versionMismatchWithNullPreviousAddressBook() {
         final EventSignatureValidator signatureValidator = new EventSignatureValidator(
-                platformContext,
-                time,
-                trueVerifier,
-                defaultVersion,
-                null,
-                currentAddressBook,
-                eventConsumer,
-                intakeEventCounter);
+                platformContext, time, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
 
         final GossipEvent event =
                 generateMockEvent(new BasicSoftwareVersion(1), randomHash(random), previousNodeAddress.getNodeId());
-        signatureValidator.handleEvent(event);
 
-        assertEquals(0, consumedEventCount.get());
+        assertNull(signatureValidator.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());
     }
 
@@ -235,7 +193,8 @@ class EventSignatureValidatorTests {
         final GossipEvent event =
                 generateMockEvent(defaultVersion, randomHash(random), previousNodeAddress.getNodeId());
 
-        assertValidationResult(true, event, false);
+        assertNull(validatorWithTrueVerifier.validateSignature(event));
+        assertEquals(1, exitedIntakePipelineCount.get());
     }
 
     @Test
@@ -251,7 +210,8 @@ class EventSignatureValidatorTests {
 
         final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), nodeId);
 
-        assertValidationResult(true, event, false);
+        assertNull(validatorWithTrueVerifier.validateSignature(event));
+        assertEquals(1, exitedIntakePipelineCount.get());
     }
 
     @Test
@@ -260,12 +220,16 @@ class EventSignatureValidatorTests {
         // both the event and the app have the same version, so the currentAddressBook will be selected
         final GossipEvent event1 =
                 generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
-        assertValidationResult(true, event1, true);
+
+        assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event1));
+        assertEquals(0, exitedIntakePipelineCount.get());
 
         // event2 is from a previous version, so the previous address book will be selected
         final GossipEvent event2 =
                 generateMockEvent(new BasicSoftwareVersion(1), randomHash(random), previousNodeAddress.getNodeId());
-        assertValidationResult(true, event2, true);
+
+        assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event2));
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test
@@ -273,8 +237,11 @@ class EventSignatureValidatorTests {
     void verificationFails() {
         final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
 
-        assertValidationResult(true, event, true);
-        assertValidationResult(false, event, false);
+        assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
+        assertEquals(0, exitedIntakePipelineCount.get());
+
+        assertNull(validatorWithFalseVerifier.validateSignature(event));
+        assertEquals(1, exitedIntakePipelineCount.get());
     }
 
     @Test
@@ -282,8 +249,12 @@ class EventSignatureValidatorTests {
     void ancientEvent() {
         final GossipEvent event = generateMockEvent(defaultVersion, randomHash(random), currentNodeAddress.getNodeId());
 
-        assertValidationResult(true, event, true);
+        assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event));
+        assertEquals(0, exitedIntakePipelineCount.get());
+
         validatorWithTrueVerifier.setMinimumGenerationNonAncient(100L);
-        assertValidationResult(true, event, false);
+
+        assertNull(validatorWithTrueVerifier.validateSignature(event));
+        assertEquals(1, exitedIntakePipelineCount.get());
     }
 }

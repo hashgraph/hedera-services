@@ -55,6 +55,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
     private Map<Account, CryptoCreateTransactionBody.Builder> stakingAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> miscAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
+    private Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccounts = new HashMap<>();
 
     private Instant consensusTimeOfLastHandledTxn = null;
 
@@ -94,6 +95,11 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
             createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
             treasuryClones = Collections.emptyMap();
         }
+
+        if (!blocklistAccounts.isEmpty()) {
+            createAccountRecordBuilders(blocklistAccounts, context, null);
+            blocklistAccounts = Collections.emptyMap();
+        }
     }
 
     @Override
@@ -114,6 +120,11 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
     @Override
     public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
         treasuryClones.putAll(requireNonNull(accounts));
+    }
+
+    @Override
+    public void blocklistAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        blocklistAccounts.putAll(requireNonNull(accounts));
     }
 
     @VisibleForTesting
@@ -137,7 +148,10 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
                 .sorted(Comparator.comparingLong(acct -> acct.accountId().accountNum()))
                 .toList();
         for (final Account key : orderedAccts) {
-            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
+            // we create preceding records on genesis for each system account created.
+            // This is an exception and should not fail with MAX_CHILD_RECORDS_EXCEEDED
+            final var recordBuilder =
+                    context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
             final var accountId = requireNonNull(key.accountId());
             recordBuilder.accountID(accountId);
             if (recordMemo != null) {
