@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module;
@@ -158,6 +159,9 @@ class ContractCallTransitionLogicTest {
     @Mock
     HbarCentExchange hbarCentExchange;
 
+    @Mock
+    EntityNumbers entityNumbers;
+
     private TransactionBody contractCallTxn;
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
     private final Account relayerAccount = new Account(new Id(0, 0, 1003));
@@ -185,7 +189,8 @@ class ContractCallTransitionLogicTest {
                 entityAccess,
                 sigsVerifier,
                 worldLedgers,
-                gasCalculator);
+                gasCalculator,
+                entityNumbers);
         // reset the gas value for each test.
         gas = 21_000;
     }

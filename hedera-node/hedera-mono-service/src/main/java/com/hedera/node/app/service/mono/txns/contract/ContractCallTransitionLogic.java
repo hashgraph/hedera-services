@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
@@ -48,6 +49,7 @@ import com.hedera.node.app.service.mono.txns.PreFetchableTransition;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -83,6 +85,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private final EvmSigsVerifier sigsVerifier;
     private final WorldLedgers worldLedgers;
     private final GasCalculator gasCalculator;
+    private final EntityNumbers entityNumbers;
 
     @Inject
     public ContractCallTransitionLogic(
@@ -98,7 +101,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final EntityAccess entityAccess,
             final EvmSigsVerifier sigsVerifier,
             final WorldLedgers worldLedgers,
-            final GasCalculator gasCalculator) {
+            final GasCalculator gasCalculator,
+            final EntityNumbers entityNumbers) {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.worldState = worldState;
@@ -112,6 +116,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         this.sigsVerifier = sigsVerifier;
         this.worldLedgers = worldLedgers;
         this.gasCalculator = gasCalculator;
+        this.entityNumbers = entityNumbers;
     }
 
     @Override
@@ -149,6 +154,15 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             }
             final var evmAddress = op.getContractID().getEvmAddress();
             validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
+            // do not permit lazy create to mirror address, system accounts or zero address
+            final boolean isSystemAccount = entityNumbers.isSystemAccount(
+                    AccountID.newBuilder().setAccountNum(targetId.num()).build());
+            if (op.getAmount() > 0
+                    && aliasManager.isMirror(targetId.asEvmAddress())
+                    && !isSystemAccount
+                    && targetId.num() > 0) {
+                accountStore.loadAccountOrFailWith(targetId, INVALID_CONTRACT_ID);
+            }
             receiver = new Account(evmAddress);
         } else {
             if (entityAccess.isTokenAccount(targetId.asEvmAddress())) {
