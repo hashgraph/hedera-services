@@ -6,6 +6,7 @@ module com.swirlds.config.impl {
     exports com.swirlds.config.impl.validators;
 
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.logging;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires static com.github.spotbugs.annotations;
