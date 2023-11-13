@@ -4,12 +4,11 @@ open module com.swirlds.merkle.test {
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.swirlds.common.testing;
+    requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.merkle;
     requires com.fasterxml.jackson.core;
     requires com.swirlds.base;
-    requires com.swirlds.common.test.fixtures;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires org.apache.logging.log4j.core;
