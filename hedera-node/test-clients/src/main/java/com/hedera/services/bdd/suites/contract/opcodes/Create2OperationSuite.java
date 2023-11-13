@@ -1297,7 +1297,7 @@ public class Create2OperationSuite extends HapiSuite {
                         captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
                 .when(
                         sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
-                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
+                                .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)
                                 .payingWith(GENESIS)
                                 .exposingTypedResultsTo(results -> {
                                     LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
@@ -1313,7 +1313,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(aliasCall)),
                         sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .payingWith(GENESIS)
                                 .via(mirrorCall)))
                 .then(withOpContext((spec, opLog) -> {
