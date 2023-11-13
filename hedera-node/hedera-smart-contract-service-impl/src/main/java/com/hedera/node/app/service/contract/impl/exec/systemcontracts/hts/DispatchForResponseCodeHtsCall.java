@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -97,6 +100,15 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
+
+        if (TokenUpdateRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
+            var output = ReturnTypes.encodedRc(recordBuilder.status());
+            ((TokenUpdateRecordBuilder) recordBuilder)
+                    .contractCallResult(ContractFunctionResult.newBuilder()
+                            .contractCallResult(Bytes.wrap(output.array()))
+                            .build());
+        }
+
         return completionWith(recordBuilder.status(), gasRequirement);
     }
 }

@@ -17,13 +17,16 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
  * transaction.
  */
-public interface TokenUpdateRecordBuilder {
+public interface TokenUpdateRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Adds the token relations that are created by auto associations.
      * This information is needed while building the transfer list, to set the auto association flag.
@@ -31,4 +34,7 @@ public interface TokenUpdateRecordBuilder {
      * @return the builder
      */
     TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+
+    @NonNull
+    CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }
