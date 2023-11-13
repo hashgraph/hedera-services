@@ -87,6 +87,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn);
         final var op = txn.tokenUpdateOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+        if (op.hasFeeScheduleKey()) {
+            validateTruePreCheck(isValid(op.feeScheduleKey()), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+        }
     }
 
     @Override
@@ -111,9 +114,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasAdminKey()) {
             context.requireKey(op.adminKeyOrThrow());
-        }
-        if (op.hasFeeScheduleKey()) {
-            validateTruePreCheck(isValid(op.feeScheduleKey()), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
     }
 
