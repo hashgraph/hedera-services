@@ -12,7 +12,6 @@ The modules that belong to Platform Base must fulfill the following requirements
 - Each module must be a Java module
 - Today all features must be supported on the modulepath and the classpath (might be modulepath only in future).
 - If the project provide test fixtures, they must be provided as a module as well.
-- A goal is to have all unit tests defined as modules, too.
 - The code must be well tested
 - The code must be documented by `@NonNull`, `@Nullable` annotations
 - Define a concrete public API and hide as much implementation as possible in private (not exported) code.
