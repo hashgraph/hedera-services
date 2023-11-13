@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.map.test.benchmark;
 
-import com.swirlds.common.test.benchmark.BenchmarkMetadata;
+import com.swirlds.common.test.fixtures.benchmark.BenchmarkMetadata;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
