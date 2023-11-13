@@ -1199,6 +1199,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"));
     }
 
+    @HapiTest
     private HapiSpec transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
         final var sender = "sender";
@@ -1329,6 +1330,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
     }
 
+    @HapiTest
     private HapiSpec transferZeroHbarsToCaller() {
         final var transferTxn = TRANSFER_TXN;
         return defaultHapiSpec("transferZeroHbarsToCaller")
@@ -1371,6 +1373,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec resultSizeAffectsFees() {
         final var contract = "VerboseDeposit";
         final var TRANSFER_AMOUNT = 1_000L;
