@@ -23,11 +23,10 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.nftTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall.getOwnerAccountNum;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -93,7 +92,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         }
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
-        final var ownerAccount = getOwnerAccount(nonNullNft, token);
+        final var ownerAccount = nativeOperations().getAccount(getOwnerAccountNum(nonNullNft, token));
         if (ownerAccount == null) {
             return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
@@ -104,16 +103,5 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                                 status.protoOrdinal(),
                                 nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
                 gasRequirement);
-    }
-
-    private Account getOwnerAccount(Nft nft, Token token) {
-        final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
-        final long ownerNum;
-        if (explicitId.hasAccountNum()) {
-            ownerNum = explicitId.accountNumOrThrow();
-        } else {
-            ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
-        }
-        return nativeOperations().getAccount(ownerNum);
     }
 }
