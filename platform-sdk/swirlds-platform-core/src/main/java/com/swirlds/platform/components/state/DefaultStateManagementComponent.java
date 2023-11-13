@@ -206,7 +206,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         };
 
         signedStateFileManager = new SignedStateFileManager(
-                platformContext.getConfiguration(),
+                platformContext,
                 signedStateMetrics,
                 Time.getCurrent(),
                 mainClassName,

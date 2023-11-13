@@ -102,7 +102,7 @@ public class SignedStateFileManager {
     /**
      * Creates a new instance.
      *
-     * @param configuration                       configuration
+     * @param context                             the platform context
      * @param metrics                             metrics provider
      * @param time                                provides time
      * @param mainClassName                       the main class name of this node
@@ -113,7 +113,7 @@ public class SignedStateFileManager {
      * @param statusActionSubmitter               enables submitting platform status actions
      */
     public SignedStateFileManager(
-            @NonNull final Configuration configuration,
+            @NonNull final PlatformContext context,
             @NonNull final SignedStateMetrics metrics,
             @NonNull final Time time,
             @NonNull final String mainClassName,
@@ -196,7 +196,7 @@ public class SignedStateFileManager {
             }
 
             SignedStateFileWriter.writeSignedStateToDisk(
-                    platformContext, selfId, directory, state, reason, configuration);
+                    platformContext, selfId, directory, state, reason);
             stateWrittenToDiskInBand(state, directory, start);
 
             success = true;
