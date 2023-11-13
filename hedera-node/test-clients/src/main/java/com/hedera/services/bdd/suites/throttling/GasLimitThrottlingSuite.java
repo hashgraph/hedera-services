@@ -25,9 +25,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDefe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -57,6 +59,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
         new GasLimitThrottlingSuite().runSuiteSync();
     }
 
+    @HapiTest
     private HapiSpec txsUnderGasLimitAllowed() {
         final var NUM_CALLS = 10;
         final Map<String, String> startingProps = new HashMap<>();
@@ -75,7 +78,9 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                         UtilVerbs.inParallel(asOpArray(NUM_CALLS, i -> contractCall(
                                         CONTRACT,
                                         "twoSSTOREs",
-                                        Bytes.fromHexString("0x05").toArray())
+                                        Bytes.fromHexString(
+                                                        "0x0000000000000000000000000000000000000000000000000000000000000005")
+                                                .toArray())
                                 .gas(100_000)
                                 .payingWith(PAYER_ACCOUNT)
                                 .hasKnownStatusFrom(SUCCESS, OK))),
@@ -83,21 +88,24 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                         contractCall(
                                         CONTRACT,
                                         "twoSSTOREs",
-                                        Bytes.fromHexString("0x06").toArray())
+                                        Bytes.fromHexString(
+                                                        "0x0000000000000000000000000000000000000000000000000000000000000006")
+                                                .toArray())
                                 .gas(1_000_000L)
                                 .payingWith(PAYER_ACCOUNT)
                                 .hasKnownStatusFrom(SUCCESS, OK),
                         overridingAllOfDeferred(() -> startingProps));
     }
 
+    @HapiTest
     private HapiSpec txOverGasLimitThrottled() {
         final Map<String, String> startingProps = new HashMap<>();
+        final var MAX_GAS_PER_SECOND = 1_000_001L;
         return defaultHapiSpec("TXOverGasLimitThrottled")
                 .given(
                         remembering(startingProps, USE_GAS_THROTTLE_PROP, CONS_MAX_GAS_PROP),
                         overridingTwo(
-                                USE_GAS_THROTTLE_PROP, "true",
-                                CONS_MAX_GAS_PROP, "1000001"))
+                                USE_GAS_THROTTLE_PROP, "true", CONS_MAX_GAS_PROP, String.valueOf(MAX_GAS_PER_SECOND)))
                 .when(
                         cryptoCreate(PAYER_ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(CONTRACT),
@@ -106,10 +114,12 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                         contractCall(
                                         CONTRACT,
                                         "twoSSTOREs",
-                                        Bytes.fromHexString("0x05").toArray())
-                                .gas(1_000_001)
+                                        Bytes.fromHexString(
+                                                        "0x0000000000000000000000000000000000000000000000000000000000000005")
+                                                .toArray())
+                                .gas(MAX_GAS_PER_SECOND + 1L)
                                 .payingWith(PAYER_ACCOUNT)
-                                .hasPrecheck(BUSY),
+                                .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY),
                         overridingAllOfDeferred(() -> startingProps));
     }
 
