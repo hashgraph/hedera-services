@@ -79,7 +79,6 @@ public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
         return successResult(TOKEN_TYPE.getOutputs().encodeElements(status.protoOrdinal(), tokenType), gasRequirement);
     }
 
-
     @Override
     public @NonNull PricedResult execute() {
         PricedResult result;
