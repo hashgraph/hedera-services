@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
@@ -30,16 +30,13 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.platform.Crypto;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.metrics.SyncMetrics;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,7 +63,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the time object used to get the current time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
@@ -74,25 +71,23 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public SingleNodeSyncGossip(
-            @NonNull PlatformContext platformContext,
-            @NonNull ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
-            @NonNull AddressBook addressBook,
-            @NonNull NodeId selfId,
-            @NonNull SoftwareVersion appVersion,
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
@@ -102,7 +97,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 platformContext,
                 threadManager,
                 time,
-                crypto,
+                keysAndCerts,
                 addressBook,
                 selfId,
                 appVersion,
@@ -110,7 +105,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 swirldStateManager,
                 stateManagementComponent,
                 syncMetrics,
-                eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -126,15 +120,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     protected boolean unidirectionalConnectionsEnabled() {
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**

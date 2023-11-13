@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Objects.requireNonNull;
 
@@ -48,6 +49,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
@@ -63,6 +65,7 @@ import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
@@ -115,7 +118,9 @@ public class SingleTransactionRecordBuilderImpl
                 NodeStakeUpdateRecordBuilder,
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
-                GenesisAccountRecordBuilder {
+                GenesisAccountRecordBuilder,
+                GasFeeRecordBuilder {
+
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -151,27 +156,70 @@ public class SingleTransactionRecordBuilderImpl
     private ContractFunctionResult contractFunctionResult;
 
     // Used for some child records builders.
-    private final boolean removable;
+    private final ReversingBehavior reversingBehavior;
+
+    // Used to customize the externalized form of a dispatched child transaction, right before
+    // its record stream item is built; lets the contract service externalize certain dispatched
+    // CryptoCreate transactions as ContractCreate synthetic transactions
+    private final ExternalizedRecordCustomizer customizer;
 
     /**
-     * Creates new transaction record builder.
+     * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
+     * and it is asked to be reverted
+     */
+    public enum ReversingBehavior {
+        /**
+         * Changes are not committed. The record is kept in the record stream,
+         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
+         */
+        REVERSIBLE,
+
+        /**
+         * Changes are not committed and the record is removed from the record stream.
+         */
+        REMOVABLE,
+
+        /**
+         * Changes are committed independent of the user and parent transactions.
+         */
+        IRREVERSIBLE
+    }
+
+    /**
+     * Creates new transaction record builder where reversion will leave its record in the stream
+     * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
      *
      * @param consensusNow the consensus timestamp for the transaction
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.removable = false;
+        this(consensusNow, ReversingBehavior.REVERSIBLE);
     }
 
     /**
      * Creates new transaction record builder.
      *
      * @param consensusNow the consensus timestamp for the transaction
-     * @param removable    whether the record is removable (see {@link RecordListBuilder}
+     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
      */
-    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow, final boolean removable) {
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
+        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
+
+    /**
+     * Creates new transaction record builder with both explicit reversing behavior and
+     * transaction construction finishing.
+     *
+     * @param consensusNow the consensus timestamp for the transaction
+     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
+     */
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow,
+            @NonNull final ReversingBehavior reversingBehavior,
+            @NonNull final ExternalizedRecordCustomizer customizer) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.removable = removable;
+        this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
+        this.customizer = requireNonNull(customizer, "customizer must not be null");
     }
 
     /**
@@ -180,6 +228,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
+        transaction = customizer.apply(transaction);
         final var transactionReceipt = transactionReceiptBuilder
                 .exchangeRate(exchangeRate)
                 .serialNumbers(serialNumbers)
@@ -237,8 +286,8 @@ public class SingleTransactionRecordBuilderImpl
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
-    public boolean removable() {
-        return removable;
+    public ReversingBehavior reversingBehavior() {
+        return reversingBehavior;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
@@ -858,7 +907,7 @@ public class SingleTransactionRecordBuilderImpl
      * Adds contractStateChanges to sidecar records.
      *
      * @param contractStateChanges the contractStateChanges to add
-     * @param isMigration          flag indicating whether sidecar is from migration
+     * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
     @NonNull
@@ -887,7 +936,7 @@ public class SingleTransactionRecordBuilderImpl
      * Adds contractActions to sidecar records.
      *
      * @param contractActions the contractActions to add
-     * @param isMigration     flag indicating whether sidecar is from migration
+     * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
     @NonNull
@@ -916,7 +965,7 @@ public class SingleTransactionRecordBuilderImpl
      * Adds contractBytecodes to sidecar records.
      *
      * @param contractBytecode the contractBytecode to add
-     * @param isMigration      flag indicating whether sidecar is from migration
+     * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
     @NonNull
@@ -932,6 +981,7 @@ public class SingleTransactionRecordBuilderImpl
     /**
      * Adds a beneficiary for a deleted account into the map. This is needed while computing staking rewards.
      * If the deleted account receives staking reward, it is transferred to the beneficiary.
+     *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID
      * @return the builder
@@ -948,6 +998,7 @@ public class SingleTransactionRecordBuilderImpl
 
     /**
      * Gets number of deleted accounts in this transaction.
+     *
      * @return number of deleted accounts in this transaction
      */
     @Override
@@ -957,6 +1008,7 @@ public class SingleTransactionRecordBuilderImpl
 
     /**
      * Gets the beneficiary account ID for deleted account ID.
+     *
      * @return the beneficiary account ID of deleted account ID
      */
     @Override

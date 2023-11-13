@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLL
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
 import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -327,7 +327,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate expiration and auto-renew account if present
         final var givenExpiryMeta = getExpiryMeta(op);
-        final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta, false);
+        final var resolvedExpiryMeta = context.expiryValidator()
+                .resolveCreationAttempt(false, givenExpiryMeta, HederaFunctionality.TOKEN_CREATE);
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
@@ -361,7 +362,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             if (collectorAcct != null
                     && (collectorAcct.alias() == null || Bytes.EMPTY.equals(collectorAcct.alias()))
                     && (collectorAcct.hasKey())) {
-                verifyIsNotImmutableAccount(collectorAcct.keyOrThrow(), INVALID_CUSTOM_FEE_COLLECTOR);
+                verifyNotEmptyKey(collectorAcct.key(), INVALID_CUSTOM_FEE_COLLECTOR);
             }
 
             /* A fractional fee collector and a collector for a fixed fee denominated

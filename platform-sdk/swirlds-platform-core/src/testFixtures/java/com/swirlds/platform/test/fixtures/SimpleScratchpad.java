@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.fixtures;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.SelfSerializable;

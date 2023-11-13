@@ -19,10 +19,10 @@ package com.swirlds.logging.payloads.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.logging.payloads.AbstractLogPayload;
-import com.swirlds.logging.payloads.ApplicationDualStatePayload;
-import com.swirlds.logging.payloads.SetFreezeTimePayload;
-import com.swirlds.logging.payloads.SetLastFrozenTimePayload;
+import com.swirlds.logging.legacy.payload.AbstractLogPayload;
+import com.swirlds.logging.legacy.payload.ApplicationDualStatePayload;
+import com.swirlds.logging.legacy.payload.SetFreezeTimePayload;
+import com.swirlds.logging.legacy.payload.SetLastFrozenTimePayload;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 

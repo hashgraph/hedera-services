@@ -146,8 +146,6 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires java.management;
     requires java.scripting;
-    requires java.sql;
-    requires javafx.base;
     requires jdk.management;
     requires jdk.net;
     requires org.bouncycastle.pkix;

@@ -16,13 +16,16 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
+import com.hedera.hapi.node.base.FeeComponents;
 import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.FeeSchedule;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -30,6 +33,8 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,6 +57,16 @@ public final class FeeManager {
 
     private record Entry(HederaFunctionality function, SubType subType) {}
 
+    private static final long DEFAULT_FEE = 100_000L;
+
+    private static final FeeComponents DEFAULT_FEE_COMPONENTS =
+            FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
+    private static final FeeData DEFAULT_FEE_DATA = FeeData.newBuilder()
+            .networkdata(DEFAULT_FEE_COMPONENTS)
+            .nodedata(DEFAULT_FEE_COMPONENTS)
+            .servicedata(DEFAULT_FEE_COMPONENTS)
+            .build();
+
     /** The current fee schedule, cached for speed. */
     private Map<Entry, FeeData> currentFeeDataMap = Collections.emptyMap();
     /** The next fee schedule, cached for speed. */
@@ -71,64 +86,67 @@ public final class FeeManager {
      *
      * @param bytes The new fee schedule file content.
      */
-    public void update(@NonNull final Bytes bytes) {
+    public ResponseCodeEnum update(@NonNull final Bytes bytes) {
+        // Parse the current and next fee schedules
+        final CurrentAndNextFeeSchedule schedules;
         try {
-            // Parse the current and next fee schedules
-            final var schedules = CurrentAndNextFeeSchedule.PROTOBUF.parse(bytes.toReadableSequentialData());
-
-            // Get the current schedule
-            var currentSchedule = schedules.currentFeeSchedule();
-            if (currentSchedule == null) {
-                // If there is no current schedule, then we default to the default schedule. Since the default
-                // schedule is completely empty, this will effectively disable the handling of any transactions,
-                // since we don't know what to charge for them.
-                logger.warn("Unable to parse current fee schedule, will default to an empty schedule, effectively"
-                        + "disabling all transactions.");
-                currentSchedule = FeeSchedule.DEFAULT;
-            }
-
-            // Populate the map of HederaFunctionality -> FeeData for the current schedule
-            this.currentFeeDataMap = new HashMap<>();
-            if (currentSchedule.hasTransactionFeeSchedule()) {
-                populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeScheduleOrThrow());
-            } else {
-                logger.warn("The current fee schedule is missing transaction information, effectively disabling all"
-                        + "transactions.");
-            }
-
-            // Get the expiration time of the current schedule
-            if (currentSchedule.hasExpiryTime()) {
-                this.currentScheduleExpirationSeconds =
-                        currentSchedule.expiryTimeOrThrow().seconds();
-            } else {
-                // If we don't have an expiration time, then we default to 0, which will effectively expire the
-                // current schedule immediately. This is the safest option.
-                logger.warn("The current fee schedule has no expiry time, defaulting to 0, effectively expiring it"
-                        + "immediately");
-                this.currentScheduleExpirationSeconds = 0;
-            }
-
-            // Get the next schedule
-            var nextSchedule = schedules.nextFeeSchedule();
-            if (nextSchedule == null) {
-                // If there is no next schedule, then we default to the current schedule. If we didn't have a current
-                // schedule either, then basically we have an empty schedule with an expiration time of 0, which will
-                // still get used since we continue to use the next schedule even if the expiration time has passed.
-                logger.warn("Unable to parse next fee schedule, will default to the current fee schedule.");
-                nextFeeDataMap = new HashMap<>(currentFeeDataMap);
-            } else {
-                // Populate the map of HederaFunctionality -> FeeData for the current schedule
-                this.nextFeeDataMap = new HashMap<>();
-                if (nextSchedule.hasTransactionFeeSchedule()) {
-                    populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeScheduleOrThrow());
-                } else {
-                    logger.warn("The next fee schedule is missing transaction information, effectively disabling all"
-                            + "transactions once it becomes active.");
-                }
-            }
-        } catch (final Exception e) {
-            logger.warn("Unable to parse fee schedule file", e);
+            schedules = CurrentAndNextFeeSchedule.PROTOBUF.parse(bytes.toReadableSequentialData());
+        } catch (final BufferUnderflowException | IOException ex) {
+            return ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
         }
+
+        // Get the current schedule
+        var currentSchedule = schedules.currentFeeSchedule();
+        if (currentSchedule == null) {
+            // If there is no current schedule, then we default to the default schedule. Since the default
+            // schedule is completely empty, this will effectively disable the handling of any transactions,
+            // since we don't know what to charge for them.
+            logger.warn("Unable to parse current fee schedule, will default to an empty schedule, effectively"
+                    + "disabling all transactions.");
+            currentSchedule = FeeSchedule.DEFAULT;
+        }
+
+        // Populate the map of HederaFunctionality -> FeeData for the current schedule
+        this.currentFeeDataMap = new HashMap<>();
+        if (currentSchedule.hasTransactionFeeSchedule()) {
+            populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeScheduleOrThrow());
+        } else {
+            logger.warn("The current fee schedule is missing transaction information, effectively disabling all"
+                    + "transactions.");
+        }
+
+        // Get the expiration time of the current schedule
+        if (currentSchedule.hasExpiryTime()) {
+            this.currentScheduleExpirationSeconds =
+                    currentSchedule.expiryTimeOrThrow().seconds();
+        } else {
+            // If we don't have an expiration time, then we default to 0, which will effectively expire the
+            // current schedule immediately. This is the safest option.
+            logger.warn("The current fee schedule has no expiry time, defaulting to 0, effectively expiring it"
+                    + "immediately");
+            this.currentScheduleExpirationSeconds = 0;
+        }
+
+        // Get the next schedule
+        var nextSchedule = schedules.nextFeeSchedule();
+        if (nextSchedule == null) {
+            // If there is no next schedule, then we default to the current schedule. If we didn't have a current
+            // schedule either, then basically we have an empty schedule with an expiration time of 0, which will
+            // still get used since we continue to use the next schedule even if the expiration time has passed.
+            logger.warn("Unable to parse next fee schedule, will default to the current fee schedule.");
+            nextFeeDataMap = new HashMap<>(currentFeeDataMap);
+        } else {
+            // Populate the map of HederaFunctionality -> FeeData for the current schedule
+            this.nextFeeDataMap = new HashMap<>();
+            if (nextSchedule.hasTransactionFeeSchedule()) {
+                populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeScheduleOrThrow());
+            } else {
+                logger.warn("The next fee schedule is missing transaction information, effectively disabling all"
+                        + "transactions once it becomes active.");
+            }
+        }
+
+        return SUCCESS;
     }
 
     /**
@@ -142,7 +160,8 @@ public final class FeeManager {
             final int numVerifications,
             final int signatureMapSize,
             @NonNull final Instant consensusTime,
-            @NonNull final SubType subType) {
+            @NonNull final SubType subType,
+            final boolean isInternalDispatch) {
 
         if (txBody == null || payerKey == null || functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
@@ -163,7 +182,8 @@ public final class FeeManager {
                 numVerifications,
                 signatureMapSize,
                 feeData,
-                exchangeRateManager.activeRate(consensusTime));
+                exchangeRateManager.activeRate(consensusTime),
+                isInternalDispatch);
     }
 
     @NonNull
@@ -179,14 +199,19 @@ public final class FeeManager {
     /**
      * Looks up the fee data for the given transaction and its details.
      */
-    @Nullable
+    @NonNull
     public FeeData getFeeData(
             @NonNull HederaFunctionality functionality, @NonNull Instant consensusTime, @NonNull SubType subType) {
         final var feeDataMap =
                 consensusTime.getEpochSecond() > currentScheduleExpirationSeconds ? nextFeeDataMap : currentFeeDataMap;
 
         // Now, lookup the fee data for the transaction type.
-        return feeDataMap.get(new Entry(functionality, subType));
+        final var result = feeDataMap.get(new Entry(functionality, subType));
+        if (result == null) {
+            logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            return DEFAULT_FEE_DATA;
+        }
+        return result;
     }
 
     /**

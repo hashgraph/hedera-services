@@ -73,11 +73,6 @@ on:
         type: string
         required: false
         default: "17.0.3"
-      gradle-version:
-        description: "Gradle Version:"
-        type: string
-        required: false
-        default: "wrapper"
       node-version:
         description: "NodeJS Version:"
         type: string
@@ -92,6 +87,12 @@ on:
     secrets:
       access-token:
         description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
+        required: true
+      gradle-cache-username:
+        description: "The username used to authenticate with the Gradle Build Cache Node."
+        required: true
+      gradle-cache-password:
+        description: "The password used to authenticate with the Gradle Build Cache Node."
         required: true
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
@@ -111,13 +112,17 @@ permissions:
   checks: write
   contents: read
 
+env:
+  GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Expand Shallow Clone for SonarQube and Spotless
         if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests || inputs.enable-spotless-check) && !cancelled() }}
@@ -131,9 +136,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
-        with:
-          build-root-directory: hedera-node
-          gradle-version: ${{ inputs.gradle-version }}
 
       - name: Setup NodeJS
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
@@ -142,69 +144,51 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew assemble --scan --no-daemon
 
       - name: Spotless Check
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: spotlessCheck --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew spotlessCheck --scan --no-daemon
 
       - name: Gradle Dependency Scopes Check
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: checkAllModuleInfo --scan --continue
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew checkAllModuleInfo --scan --continue --no-daemon
 
       - name: Unit Testing
         id: gradle-test
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: check --continue --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew check --continue --scan --no-daemon
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Unit Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/test/TEST-*.xml"
 
       - name: Setup Docker BuildX
-        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           version: v0.11.0
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: createDockerImage
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew createDockerImage --scan --no-daemon
 
       - name: Integration Testing
         id: gradle-itest
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: itest --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew itest --scan --no-daemon
 
       - name: Publish Integration Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Integration Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/itest/TEST-*.xml"
 
@@ -218,21 +202,18 @@ jobs:
 
       - name: HAPI Testing
         id: gradle-hapiTest
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: hapiTest -Dfile.encoding=UTF-8 --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew hapiTest -Dfile.encoding=UTF-8 --scan --no-daemon
 
       - name: Publish HAPI Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/hapiTest/TEST-*.xml"
 
@@ -246,18 +227,15 @@ jobs:
 
       - name: E2E Testing
         id: gradle-eet
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: eet --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew eet --scan --no-daemon
 
       - name: Publish E2E Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: E2E Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/eet/TEST-*.xml"
 
@@ -355,7 +333,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+        run: ionice -c 2 -n 2 nice -n 19 snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
 
       - name: Snyk Code
         id: snyk-code
@@ -372,7 +350,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: snyk code test --severity-threshold=high --json-file-output=snyk-code.json
+        run: ionice -c 2 -n 2 nice -n 19 snyk code test --severity-threshold=high --json-file-output=snyk-code.json
 
       - name: Publish Snyk Results
         if: >-

@@ -69,13 +69,13 @@ class EnsureAliasesStepTest extends StepsBase {
     @Test
     void autoCreatesAccounts() {
         ensureAliasesInternalSetup(false);
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -91,7 +91,7 @@ class EnsureAliasesStepTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
-        assertThat(writableAliases.get(ecEvmAlias)).isNull();
+        assertThat(writableAliases.get(ecKeyAlias)).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
         ensureAliasesStep.doIn(transferContext);
@@ -101,7 +101,7 @@ class EnsureAliasesStepTest extends StepsBase {
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecEvmAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
@@ -131,7 +131,7 @@ class EnsureAliasesStepTest extends StepsBase {
                 .build();
         givenTxn(body, payerId);
 
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
@@ -230,13 +230,13 @@ class EnsureAliasesStepTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
