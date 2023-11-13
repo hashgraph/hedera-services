@@ -2316,14 +2316,21 @@ class SequentialTaskSchedulerTests {
         }
 
         // Wait until A has handled all of its tasks.
-        assertEventuallyEquals(expectedCountA, countA::get, Duration.ofSeconds(1), "A should have processed task");
+        assertEventuallyEquals(
+                0L, schedulerA::getUnprocessedTaskCount, Duration.ofSeconds(1), "A should have processed tasks");
+        assertEquals(expectedCountA, countA.get());
 
         // B should not have processed any tasks.
         assertEquals(0, countB.get());
 
         // Release the latch and allow B to process tasks.
         latch.countDown();
-        assertEventuallyEquals(expectedCountB, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(
+                0L,
+                schedulerB::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "B should have processed all awaiting tasks");
+        assertEquals(expectedCountB, countB.get());
 
         // Now, add some more data to A. That data should flow to B as well.
         for (int i = 30, j = 0; i < 40; i++, j++) {
@@ -2332,8 +2339,19 @@ class SequentialTaskSchedulerTests {
             expectedCountB = hash32(expectedCountB, i);
         }
 
-        assertEventuallyEquals(expectedCountA, countA::get, Duration.ofSeconds(1), "A should have processed task");
-        assertEventuallyEquals(expectedCountB, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(
+                0L,
+                schedulerA::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "A should have processed all awaiting tasks");
+        assertEventuallyEquals(
+                0L,
+                schedulerB::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "B should have processed all awaiting tasks");
+
+        assertEquals(expectedCountA, countA.get());
+        assertEquals(expectedCountB, countB.get());
 
         model.stop();
     }

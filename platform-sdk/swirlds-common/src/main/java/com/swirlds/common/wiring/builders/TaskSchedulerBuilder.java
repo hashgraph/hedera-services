@@ -30,7 +30,7 @@ import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.schedulers.ConcurrentTaskScheduler;
 import com.swirlds.common.wiring.schedulers.DirectTaskScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialTaskScheduler;
-import com.swirlds.common.wiring.schedulers.SequentialThreadScheduler;
+import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -345,7 +345,7 @@ public class TaskSchedulerBuilder<O> {
                             busyFractionTimer,
                             flushingEnabled,
                             insertionIsBlocking);
-                    case SEQUENTIAL_THREAD -> new SequentialThreadScheduler<>(
+                    case SEQUENTIAL_THREAD -> new SequentialThreadTaskScheduler<>(
                             model,
                             name,
                             buildUncaughtExceptionHandler(),

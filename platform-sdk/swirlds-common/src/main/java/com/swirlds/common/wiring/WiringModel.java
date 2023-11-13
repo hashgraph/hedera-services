@@ -29,7 +29,7 @@ import com.swirlds.common.wiring.model.ModelEdge;
 import com.swirlds.common.wiring.model.ModelVertex;
 import com.swirlds.common.wiring.model.WiringFlowchart;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
-import com.swirlds.common.wiring.schedulers.SequentialThreadScheduler;
+import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -69,7 +69,7 @@ public class WiringModel implements Startable, Stoppable {
     /**
      * Thread schedulers need to have their threads started/stopped.
      */
-    private final List<SequentialThreadScheduler<?>> threadSchedulers = new ArrayList<>();
+    private final List<SequentialThreadTaskScheduler<?>> threadSchedulers = new ArrayList<>();
 
     /**
      * Constructor.
@@ -196,7 +196,7 @@ public class WiringModel implements Startable, Stoppable {
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
         if (scheduler.getType() == TaskSchedulerType.SEQUENTIAL_THREAD) {
-            threadSchedulers.add((SequentialThreadScheduler<?>) scheduler);
+            threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
         }
     }
 
@@ -262,7 +262,7 @@ public class WiringModel implements Startable, Stoppable {
             heartbeatScheduler.start();
         }
 
-        for (final SequentialThreadScheduler<?> threadScheduler : threadSchedulers) {
+        for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.start();
         }
     }
@@ -276,7 +276,7 @@ public class WiringModel implements Startable, Stoppable {
             heartbeatScheduler.stop();
         }
 
-        for (final SequentialThreadScheduler<?> threadScheduler : threadSchedulers) {
+        for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.stop();
         }
     }

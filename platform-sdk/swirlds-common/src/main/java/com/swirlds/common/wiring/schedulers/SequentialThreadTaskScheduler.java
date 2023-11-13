@@ -43,7 +43,7 @@ import java.util.function.Consumer;
  *
  * @param <OUT>
  */
-public class SequentialThreadScheduler<OUT> extends TaskScheduler<OUT> implements Startable, Stoppable {
+public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> implements Startable, Stoppable {
 
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ObjectCounter onRamp;
@@ -72,7 +72,7 @@ public class SequentialThreadScheduler<OUT> extends TaskScheduler<OUT> implement
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
      */
-    public SequentialThreadScheduler(
+    public SequentialThreadTaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
@@ -171,15 +171,20 @@ public class SequentialThreadScheduler<OUT> extends TaskScheduler<OUT> implement
         while (alive.get()) {
             tasks.drainTo(buffer, BUFFER_SIZE);
             if (buffer.isEmpty()) {
-                if (sleepDuration.toNanos() > 0) {
-                    try {
-                        NANOSECONDS.sleep(sleepDuration.toNanos());
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
+                if (sleepDuration.toNanos() <= 0) {
+                    continue;
                 }
-                continue;
+
+                try {
+                    final SequentialThreadTask task = tasks.poll(sleepDuration.toNanos(), NANOSECONDS);
+                    if (task == null) {
+                        continue;
+                    }
+                    buffer.add(task);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
 
             busyTimer.activate();
