@@ -115,8 +115,6 @@ public class MerkleDbTest {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> sourceDs =
                 sourceDb.createDataSource("table" + sourceUsePbj, tableConfig, false);
-        // Close the data source to make sure its metadata is flushed to disk
-        sourceDs.close();
 
         for (final boolean snapshotUsePbj : new boolean[] {true, false}) {
             final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadataSnapshot");
@@ -134,8 +132,10 @@ public class MerkleDbTest {
             final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> snapshotDs =
                     snapshotDb.getDataSource("table" + sourceUsePbj, false);
             Assertions.assertNotNull(snapshotDs);
-            snapshotDs.closeAndDelete();
+            snapshotDs.close();
         }
+
+        sourceDs.close();
     }
 
     @Test
@@ -232,8 +232,8 @@ public class MerkleDbTest {
         Assertions.assertEquals(tableConfig, dataSource.getTableConfig());
         Assertions.assertEquals(tableConfig, instance.getTableConfig(tableId));
         dataSource.close();
-        // Table config is preserved across data source close/reopen
-        Assertions.assertNotNull(instance.getTableConfig(tableId));
+        // Table config deleted on data source close
+        Assertions.assertNull(instance.getTableConfig(tableId));
     }
 
     @Test
@@ -265,12 +265,7 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
         dataSource.close();
-        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
-                instance.getDataSource(tableName, false);
-        Assertions.assertNotNull(dataSource2);
-        Assertions.assertEquals(dataSource2, dataSource);
-        Assertions.assertNotSame(dataSource2, dataSource);
-        dataSource2.close();
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
     }
 
     @Test
@@ -323,7 +318,6 @@ public class MerkleDbTest {
                 instance2.getDataSource(tableName1, false);
         Assertions.assertEquals(tableConfig, restored1.getTableConfig());
         restored1.close();
-        Assertions.assertEquals(tableConfig, instance2.getTableConfig(restored1.getTableId()));
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> restored2 =
                 instance2.getDataSource(tableName2, false);
         Assertions.assertEquals(tableConfig, restored2.getTableConfig());
@@ -509,10 +503,10 @@ public class MerkleDbTest {
         inactiveCopy1.close();
         activeCopy2.close();
 
-        Assertions.assertTrue(Files.exists(instance.getTableDir(tableName1, dataSource1.getTableId())));
+        Assertions.assertFalse(Files.exists(instance.getTableDir(tableName1, dataSource1.getTableId())));
         Assertions.assertFalse(Files.exists(instance.getTableDir(tableName1, inactiveCopy1.getTableId())));
         Assertions.assertFalse(Files.exists(instance.getTableDir(tableName2, dataSource2.getTableId())));
-        Assertions.assertTrue(Files.exists(instance.getTableDir(tableName2, activeCopy2.getTableId())));
+        Assertions.assertFalse(Files.exists(instance.getTableDir(tableName2, activeCopy2.getTableId())));
     }
 
     @Test

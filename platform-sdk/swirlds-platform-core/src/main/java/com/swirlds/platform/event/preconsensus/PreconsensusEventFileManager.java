@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
@@ -162,7 +162,7 @@ public class PreconsensusEventFileManager {
      * @return the directory where event files are stored
      */
     @NonNull
-    private static Path getDatabaseDirectory(
+    public static Path getDatabaseDirectory(
             @NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) throws IOException {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);

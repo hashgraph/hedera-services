@@ -18,7 +18,7 @@ package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.tryToSleep;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
@@ -118,6 +118,8 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     private final QueueThread<ReceivedNode<K>> workQueue;
 
     private final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
+
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
      * Create an object responsible for removing virtual map nodes during a reconnect.
@@ -224,12 +226,16 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * 		are populated, all other data is uninitialized.
      */
     public Stream<VirtualLeafRecord<K, V>> getRecordsToDelete(final long requiredPath) {
-        while (handledPath.get() < requiredPath && !exceptionEncountered.get()) {
+        while (handledPath.get() < requiredPath && !exceptionEncountered.get() && !closed.get()) {
             tryToSleep(Duration.ofMillis(1));
         }
 
         if (exceptionEncountered.get()) {
             throw new RuntimeException("VirtualMap reconnect node removal thread has crashed");
+        }
+
+        if (handledPath.get() < requiredPath) {
+            throw new RuntimeException("VirtualMap reconnect node removal couldn't process all paths");
         }
 
         workQueue.pause();
@@ -369,6 +375,7 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * Stop the work thread.
      */
     public void close() {
+        closed.set(true);
         workQueue.stop();
     }
 }

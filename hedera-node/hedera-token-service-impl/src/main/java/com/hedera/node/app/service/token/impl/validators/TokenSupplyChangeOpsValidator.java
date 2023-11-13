@@ -106,9 +106,6 @@ public class TokenSupplyChangeOpsValidator {
         // The fungible amount must not be negative, regardless of use case
         validateFalsePreCheck(fungibleAmount < 0, invalidAmountResponseCode);
 
-        // If no fungible fungibleAmount is present, at least one NFT serial number must be present
-        validateFalsePreCheck(fungibleAmount == 0 && serialNums.isEmpty(), invalidAmountResponseCode);
-
         // Validate the NFT serial numbers
         if (fungibleAmount < 1 && !serialNums.isEmpty()) {
             for (final var serialNumber : serialNums) {

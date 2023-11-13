@@ -128,6 +128,12 @@ on:
       access-token:
         description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
         required: true
+      gradle-cache-username:
+        description: "The username used to authenticate with the Gradle Build Cache Node."
+        required: true
+      gradle-cache-password:
+        description: "The password used to authenticate with the Gradle Build Cache Node."
+        required: true
       jrs-ssh-user-name:
         description: ""
         required: true
@@ -148,6 +154,8 @@ on:
 env:
   MAVEN_OPTS: -Xmx16g -XX:ActiveProcessorCount=16
   JAVA_OPTS: -Xmx28g -XX:ActiveProcessorCount=16
+  GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
 
 defaults:
   run:
@@ -165,7 +173,7 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Checkout Platform Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ inputs.ref || inputs.branch-name || '' }}
           fetch-depth: 0
@@ -182,7 +190,7 @@ jobs:
           echo "branch-name=${BRANCH_NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout Regression Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           path: platform-sdk/regression
           repository: swirlds/swirlds-platform-regression
@@ -225,7 +233,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-strict-match: false
           gradle-home-cache-includes: |
@@ -256,7 +263,7 @@ jobs:
           fi
 
       - name: Install SSH key
-        uses: shimataro/ssh-key-action@685d0f20da72e4b53cc81d373a2ed0a867770e46 # v2.5.1
+        uses: shimataro/ssh-key-action@38b53cb2f445ea2e0eb8872407e366677c41dbc6 # v2.6.1
         with:
           name: jrs-ssh-keyfile
           key: ${{ secrets.jrs-ssh-key-file }}

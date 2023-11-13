@@ -25,6 +25,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
@@ -196,6 +197,52 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         final Hash newHash = new Hash(DigestType.SHA_384);
         buffer.get(newHash.getValue());
         return new VirtualHashRecord(path, newHash);
+    }
+
+    public void extractAndWriteHashBytes(final ReadableSequentialData in, final SerializableDataOutputStream out)
+            throws IOException {
+        // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
+        out.writeInt(DigestType.SHA_384.id());
+        // hashBytes is in protobuf format
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+            if (fieldNum == FIELD_HASHRECORD_PATH.number()) {
+                in.skip(Long.BYTES);
+            } else if (fieldNum == FIELD_HASHRECORD_HASH.number()) {
+                final int hashSize = in.readVarInt(false);
+                assert hashSize == DigestType.SHA_384.digestLength();
+                // It would be helpful to have BufferedData.readBytes(OutputStream) method, similar to
+                // readBytes(ByteBuffer) or readBytes(BufferedData). Since there is no such method,
+                // use a workaround to allocate a byte array
+                final byte[] arr = new byte[hashSize];
+                in.readBytes(arr);
+                out.writeInt(hashSize);
+                out.write(arr);
+                break;
+            } else {
+                throw new IllegalArgumentException("Unknown virtual hash record field: " + fieldNum);
+            }
+        }
+    }
+
+    public void extractAndWriteHashBytes(final ByteBuffer buffer, final SerializableDataOutputStream out)
+            throws IOException {
+        // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
+        out.writeInt(DigestType.SHA_384.id());
+        // buffer here is path (8 bytes) + hash (48 bytes)
+        final byte[] bytes;
+        if (buffer.hasArray()) {
+            bytes = buffer.array();
+        } else {
+            bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+        }
+        final int off = Long.BYTES; // skip the path
+        final int len = bytes.length - off;
+        // Simulate SerializableDataOutputStream.writeByteArray(), which writes size, then array
+        out.writeInt(len);
+        out.write(bytes, off, len);
     }
 
     /** {@inheritDoc} */

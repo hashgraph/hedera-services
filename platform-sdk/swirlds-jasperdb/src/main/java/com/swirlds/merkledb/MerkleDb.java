@@ -18,7 +18,7 @@ package com.swirlds.merkledb;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -494,25 +494,10 @@ public final class MerkleDb {
         final int tableId = dataSource.getTableId();
         assert dataSources.get(tableId) != null;
         dataSources.set(tableId, null);
-        if (!primaryTables.contains(tableId)) {
-            // Delete data, if the table is secondary
-            removeTable(tableId);
-        }
-    }
-
-    /**
-     * For testing purpose only.
-     *
-     * Removes the table. Table config and table data files are deleted.
-     *
-     * @param tableId ID of the table to remove
-     */
-    void removeTable(final int tableId) {
         final TableMetadata metadata = tableConfigs.get(tableId);
         if (metadata == null) {
             throw new IllegalArgumentException("Unknown table ID: " + tableId);
         }
-        assert dataSources.get(tableId) == null; // data source must have been already closed
         final String label = metadata.getTableName();
         tableConfigs.set(tableId, null);
         DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));

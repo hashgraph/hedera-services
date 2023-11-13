@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;
@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
  */
 @SuppressWarnings({"DuplicatedCode"})
 public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, FileStatisticAware {
+
     private static final Logger logger = LogManager.getLogger(MemoryIndexDiskKeyValueStore.class);
 
     /**
@@ -157,14 +158,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         return dataFileReader;
     }
 
-    /**
-     * Get a value by reading it from disk.
-     *
-     * @param key The key to find and read value for
-     * @return Array of serialization version for data if the value was read or null if not found
-     * @throws IOException If there was a problem reading the value from file
-     */
-    public D get(final long key) throws IOException {
+    private boolean checkKeyInRange(final long key) {
         // Check if out of range
         final KeyRange keyRange = fileCollection.getValidKeyRange();
         if (!keyRange.withinRange(key)) {
@@ -174,10 +168,44 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             if (key != 0) {
                 logger.trace(MERKLE_DB.getMarker(), "Key [{}] is outside valid key range of {}", key, keyRange);
             }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get a value by reading it from disk.
+     *
+     * @param key The key to find and read value for
+     * @return Array of serialization version for data if the value was read or null if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
+    public D get(final long key) throws IOException {
+        if (!checkKeyInRange(key)) {
             return null;
         }
         // read from files via index lookup
         return fileCollection.readDataItemUsingIndex(index, key);
+    }
+
+    /**
+     * Get raw value bytes by reading it from disk.
+     *
+     * <p>NOTE: this method may not be used for data types, which can be of multiple different
+     * versions. This is because there is no way for a caller to know the version of the returned
+     * bytes.
+     *
+     * @param key The key to find and read value for
+     * @return Array of serialization version for data if the value was read or null if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
+    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
+    public Object getBytes(final long key) throws IOException {
+        if (!checkKeyInRange(key)) {
+            return null;
+        }
+        // read from files via index lookup
+        return fileCollection.readDataItemBytesUsingIndex(index, key);
     }
 
     /**

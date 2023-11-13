@@ -47,6 +47,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -281,7 +282,7 @@ public class HevmTransactionFactory {
         if (!isEmpty(effectiveKey)) {
             try {
                 attributeValidator.validateKey(body.adminKeyOrElse(Key.DEFAULT));
-            } catch (Exception ignore) {
+            } catch (HandleException | NullPointerException ignore) {
                 throw new HandleException(SERIALIZATION_FAILED);
             }
         }
@@ -289,7 +290,7 @@ public class HevmTransactionFactory {
                 true,
                 new ExpiryMeta(
                         NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null),
-                false);
+                HederaFunctionality.CONTRACT_CREATE);
     }
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {
@@ -303,7 +304,7 @@ public class HevmTransactionFactory {
             try {
                 return Bytes.fromHex(new String(initcode.contents().toByteArray())
                         + body.constructorParameters().toHex());
-            } catch (Exception ignore) {
+            } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
         }

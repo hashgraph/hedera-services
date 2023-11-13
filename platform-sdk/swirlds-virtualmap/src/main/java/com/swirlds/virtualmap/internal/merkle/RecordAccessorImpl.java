@@ -20,6 +20,7 @@ import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -104,6 +105,23 @@ public class RecordAccessorImpl<K extends VirtualKey, V extends VirtualValue> im
         } catch (final IOException e) {
             throw new UncheckedIOException("Failed to read node hash from data source by path", e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean findAndWriteHash(long path, SerializableDataOutputStream out) throws IOException {
+        assert path >= 0;
+        final Hash hash = cache.lookupHashByPath(path, false);
+        if (hash == VirtualNodeCache.DELETED_HASH) {
+            return false;
+        }
+        if (hash != null) {
+            hash.serialize(out);
+            return true;
+        }
+        return dataSource.loadAndWriteHash(path, out);
     }
 
     /**

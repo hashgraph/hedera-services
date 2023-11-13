@@ -47,9 +47,9 @@ public class FeeAccumulatorImpl implements FeeAccumulator {
      * {@inheritDoc}
      */
     @Override
-    public void chargeNetworkFee(@NonNull final AccountID payer, final long networkFee) {
+    public boolean chargeNetworkFee(@NonNull final AccountID payer, final long networkFee) {
         requireNonNull(payer);
-        tokenApi.chargeNetworkFee(payer, networkFee, recordBuilder);
+        return tokenApi.chargeNetworkFee(payer, networkFee, recordBuilder);
     }
 
     /**

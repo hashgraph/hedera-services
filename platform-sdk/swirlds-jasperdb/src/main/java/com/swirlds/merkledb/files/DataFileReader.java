@@ -72,29 +72,26 @@ public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileRea
     DataFileIterator<D> createIterator() throws IOException;
 
     /**
-     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
-     * requested.
+     * Read data item bytes from file at dataLocation.
      *
      * @param dataLocation The file index combined with the offset for the starting block of the
      *     data in the file
-     * @return Deserialized data item, or {@code null} if deserialization is not requested
+     * @return Data item bytes
+     * @throws IOException If there was a problem reading from data file
+     * @throws ClosedChannelException if the data file was closed
+     */
+    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
+    Object readDataItemBytes(final long dataLocation) throws IOException;
+
+    /**
+     * Read data item from file at dataLocation and deserialize it to a Java object.
+     *
+     * @param dataLocation Data item location, which combines data file index and offset in the file
+     * @return Deserialized data item
      * @throws IOException If there was a problem reading from data file
      * @throws ClosedChannelException if the data file was closed
      */
     D readDataItem(final long dataLocation) throws IOException;
-
-    /**
-     * Reads raw data item bytes for the item at the given location. This raw data can be used
-     * to fast copy item contents from a file reader to a compatible file writer.
-     *
-     * <p>This method may return null. In this case, to copy the item, it must be read and deserialized
-     * using {@link #readDataItem(long)} and then written using {@link DataFileWriter#storeDataItem(Object)}.
-     *
-     * @param dataLocation data item location (file index + offset)
-     * @return data item bytes, or null if this reader doesn't support reading raw bytes
-     * @throws IOException if an I/O error occurred
-     */
-    Object readDataItemBytes(final long dataLocation) throws IOException;
 
     /**
      * Get the size of this file in bytes. This method should only be called for files available to

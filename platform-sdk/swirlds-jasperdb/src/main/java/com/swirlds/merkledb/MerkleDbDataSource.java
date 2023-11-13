@@ -19,9 +19,9 @@ package com.swirlds.merkledb;
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.logging.LogMarker.ERROR;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static java.util.Objects.requireNonNull;
@@ -30,11 +30,13 @@ import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
@@ -70,6 +72,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -119,6 +122,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * Table config, includes key and value serializers as well as a few other non-global params.
      */
     private final MerkleDbTableConfig<K, V> tableConfig;
+
+    /** data item serializer for hashStoreDisk store */
+    private final VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
 
     /** We have an optimized mode when the keys can be represented by a single long */
     private final boolean isLongKeyMode;
@@ -260,9 +266,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         } else {
             Files.createDirectories(storageDir);
         }
+        saveMetadata(dbPaths);
 
-        // data item serializers for internal/leaf file collections
-        final VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
+        // data item serializer for pathToKeyValue store
         final VirtualLeafRecordSerializer<K, V> leafRecordSerializer = new VirtualLeafRecordSerializer<>(tableConfig);
 
         // create path to disk location index
@@ -702,11 +708,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Load hash for a leaf node with given path
-     *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
+     * {@inheritDoc}
      */
     @Override
     public Hash loadHash(final long path) throws IOException {
@@ -737,16 +739,42 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Wait for any merges to finish and then close all data stores.
-     * <p>
-     * <b>After closing delete the database directory and all data!</b> For testing purpose only.
+     * {@inheritDoc}
      */
-    public void closeAndDelete() throws IOException {
-        try {
-            close();
-        } finally {
-            database.removeTable(tableId);
+    @Override
+    public boolean loadAndWriteHash(final long path, final SerializableDataOutputStream out) throws IOException {
+        if (path < 0) {
+            throw new IllegalArgumentException("path is less than 0");
         }
+        long lastLeaf = validLeafPathRange.getMaxValidKey();
+        if (path > lastLeaf) {
+            return false;
+        }
+        // This method must write hashes in the same binary format as Hash.(de)serialize(). If a
+        // hash comes from hashStoreRam, it's enough to just serialize it to the output stream.
+        // However, if a hash is stored in the files as a VirtualHashRecord, its bytes are
+        // slightly different, so additional processing is required
+        if (path < tableConfig.getHashesRamToDiskThreshold()) {
+            final Hash hash = hashStoreRam.get(path);
+            if (hash == null) {
+                return false;
+            }
+            hash.serialize(out);
+        } else {
+            final Object hashBytes = hashStoreDisk.getBytes(path);
+            if (hashBytes == null) {
+                return false;
+            }
+            // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
+            if (hashBytes instanceof ByteBuffer byteBufferBytes) {
+                virtualHashRecordSerializer.extractAndWriteHashBytes(byteBufferBytes, out);
+            } else if (hashBytes instanceof BufferedData bufferedDataBytes) {
+                virtualHashRecordSerializer.extractAndWriteHashBytes(bufferedDataBytes, out);
+            } else {
+                throw new RuntimeException("Unknown data item bytes format");
+            }
+        }
+        return true;
     }
 
     /** Wait for any merges to finish, then close all data stores and free all resources. */
@@ -759,29 +787,35 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 // shut down all executors
                 shutdownThreadsAndWait(storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
             } finally {
-                // close all closable data stores
-                logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
-                if (hashStoreRam != null) {
-                    hashStoreRam.close();
+                try {
+                    // close all closable data stores
+                    logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
+                    if (hashStoreRam != null) {
+                        hashStoreRam.close();
+                    }
+                    if (hashStoreDisk != null) {
+                        hashStoreDisk.close();
+                    }
+                    pathToDiskLocationInternalNodes.close();
+                    pathToDiskLocationLeafNodes.close();
+                    if (longKeyToPath != null) {
+                        longKeyToPath.close();
+                    }
+                    if (objectKeyToPath != null) {
+                        objectKeyToPath.close();
+                    }
+                    pathToKeyValue.close();
+                } catch (final Exception e) {
+                    logger.warn(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
+                } catch (final Error t) {
+                    logger.error(EXCEPTION.getMarker(), "Error while closing Data Source [{}]", tableName);
+                    throw t;
+                } finally {
+                    // updated count of open databases
+                    COUNT_OF_OPEN_DATABASES.decrement();
+                    // Notify the database
+                    database.closeDataSource(this);
                 }
-                if (hashStoreDisk != null) {
-                    hashStoreDisk.close();
-                }
-                pathToDiskLocationInternalNodes.close();
-                pathToDiskLocationLeafNodes.close();
-                if (longKeyToPath != null) {
-                    longKeyToPath.close();
-                }
-                if (objectKeyToPath != null) {
-                    objectKeyToPath.close();
-                }
-                pathToKeyValue.close();
-                // updated count of open databases
-                COUNT_OF_OPEN_DATABASES.decrement();
-                // Store metadata
-                saveMetadata(dbPaths);
-                // Notify the database
-                database.closeDataSource(this);
             }
         }
     }
@@ -1019,6 +1053,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 }
                 validLeafPathRange = new KeyRange(minValidKey, maxValidKey);
             }
+            Files.delete(sourceFile);
             return true;
         } else if (Files.exists(sourceDir.metadataFileOld)) {
             final Path sourceFile = sourceDir.metadataFileOld;
@@ -1032,6 +1067,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 }
                 validLeafPathRange = new KeyRange(metaIn.readLong(), metaIn.readLong());
             }
+            Files.delete(sourceFile);
             return true;
         }
         return false;

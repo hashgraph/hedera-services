@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
@@ -266,9 +266,8 @@ public class DataFileCompactor<D> {
                     if (newFileWriter.getFileType() == reader.getFileType()) {
                         // Check if reader supports reading raw data item bytes
                         final Object itemBytes = reader.readDataItemBytes(fileOffset);
-                        if (itemBytes != null) {
-                            newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
-                        }
+                        assert itemBytes != null;
+                        newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
                     }
                     if (newLocation == -1) {
                         final D item = reader.readDataItem(fileOffset);

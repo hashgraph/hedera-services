@@ -377,7 +377,11 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         for (int retries = 3; retries > 0; retries--) {
             final int fcIndex = leaseFileChannel();
             final FileChannel fileChannel = fileChannels.get(fcIndex);
-            assert fileChannel != null;
+            if (fileChannel == null) {
+                // On rare occasions, if we have a race condition with compaction, the file channel
+                // may be closed. We need to return null, so that the caller can retry with a new reader
+                return null;
+            }
             try {
                 // Fill the byte buffer from the channel
                 readBB.clear();

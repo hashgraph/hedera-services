@@ -18,8 +18,8 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.common.system.UptimeData.NO_ROUND;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
@@ -41,7 +41,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
+import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.config.ThreadConfig;
@@ -103,6 +103,7 @@ public class SignedStateFileManager implements Startable {
     private final SignedStateMetrics metrics;
 
     private final Configuration configuration;
+    private final PlatformContext platformContext;
 
     /**
      * Provides system time
@@ -162,6 +163,7 @@ public class SignedStateFileManager implements Startable {
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
+        this.platformContext = Objects.requireNonNull(context);
         this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
@@ -288,7 +290,7 @@ public class SignedStateFileManager implements Startable {
                 if (outOfBand) {
                     // states requested to be written out-of-band are always written to disk
                     SignedStateFileWriter.writeSignedStateToDisk(
-                            selfId, directory, reservedSignedState.get(), reason, configuration);
+                            platformContext, selfId, directory, reservedSignedState.get(), reason);
 
                     success = true;
                 } else {
@@ -303,7 +305,7 @@ public class SignedStateFileManager implements Startable {
                         }
 
                         SignedStateFileWriter.writeSignedStateToDisk(
-                                selfId, directory, reservedSignedState.get(), reason, configuration);
+                                platformContext, selfId, directory, reservedSignedState.get(), reason);
                         stateWrittenToDiskInBand(reservedSignedState.get(), directory, start);
 
                         success = true;
@@ -408,8 +410,8 @@ public class SignedStateFileManager implements Startable {
      * Dump a state to disk out-of-band.
      * <p>
      * Writing a state "out-of-band" means the state is being written for the sake of a human, whether for debug
-     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform,
-     * and will not be used as an initial state at boot time.
+     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform, and
+     * will not be used as an initial state at boot time.
      * <p>
      * A dumped state will be saved in a subdirectory of the signed states base directory, with the subdirectory being
      * named after the reason the state is being written out-of-band.

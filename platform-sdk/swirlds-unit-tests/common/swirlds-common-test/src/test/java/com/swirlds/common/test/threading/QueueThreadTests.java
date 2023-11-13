@@ -39,7 +39,7 @@ import com.swirlds.base.state.MutabilityException;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultIntegerAccumulator;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -117,7 +117,7 @@ class QueueThreadTests {
         executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final MetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
+        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
     }
 
@@ -559,7 +559,8 @@ class QueueThreadTests {
                 .setStopBehavior(Stoppable.StopBehavior.INTERRUPTABLE)
                 .setHandler((final Integer next) -> {
                     count.set(next);
-                    if (enableLongSleep.get()) {
+                    // Disable long sleep for subsequent calls
+                    if (enableLongSleep.getAndSet(false)) {
                         longSleepStarted.countDown();
                         SECONDS.sleep(999999999);
                     }
@@ -705,7 +706,7 @@ class QueueThreadTests {
 
     @Test
     @DisplayName("Queue Max/Min Size Metrics Test - With Thread Start")
-    void testQueueMaxMinSizeMetricsWithThreadStart() throws InterruptedException {
+    void testQueueMaxMinSizeMetricsWithThreadStart() {
         // given
         final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(List.of(0, 1, 2, 3, 4));
         final Queue<Integer> handler = new LinkedList<>();
@@ -735,7 +736,7 @@ class QueueThreadTests {
         // when
         queueThread.start();
         IntStream.range(0, 100).boxed().forEach(queueThread::add);
-        MILLISECONDS.sleep(50);
+        assertEventuallyTrue(queue::isEmpty, Duration.ofSeconds(1), "queue should have been emptied");
 
         // then
         assertThat(maxSizeMetric.get()).isPositive().isLessThanOrEqualTo(105);
@@ -743,8 +744,10 @@ class QueueThreadTests {
         assertThat(handler).hasSize(105);
 
         // when
+        maxSizeMetric.reset();
+        minSizeMetric.reset();
         IntStream.range(0, 100).boxed().forEach(queueThread::add);
-        MILLISECONDS.sleep(50);
+        assertEventuallyTrue(queue::isEmpty, Duration.ofSeconds(1), "queue should have been emptied");
         queueThread.stop();
 
         // then

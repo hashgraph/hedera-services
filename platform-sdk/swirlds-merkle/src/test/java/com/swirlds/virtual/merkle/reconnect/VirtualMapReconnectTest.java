@@ -41,7 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -245,23 +244,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
         learnerMap.put(A_KEY, APPLE);
         assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
-    }
-
-    @Test
-    @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
-    @DisplayName("Teacher is requested to stop teaching after a few attempts")
-    void simulateTeacherFallenBehind() {
-        teacherMap.put(A_KEY, APPLE);
-        teacherMap.put(B_KEY, BANANA);
-        teacherMap.put(C_KEY, CHERRY);
-        teacherMap.put(D_KEY, DATE);
-        teacherMap.put(E_KEY, EGGPLANT);
-        teacherMap.put(F_KEY, FIG);
-
-        final AtomicInteger counter = new AtomicInteger(0);
-        requestTeacherToStop = () -> counter.incrementAndGet() == 4;
-
-        reconnectMultipleTimes(2);
     }
 
     /**

@@ -16,9 +16,13 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -64,7 +68,10 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -83,6 +90,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -110,13 +118,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final ServiceApiFactory serviceApiFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final BlockRecordInfo blockRecordInfo;
-    private final RecordCache recordCache;
+    private final HederaRecordCache recordCache;
     private final FeeAccumulator feeAccumulator;
     private final Function<SubType, FeeCalculator> feeCalculatorCreator;
     private final FeeManager feeManager;
     private final Instant userTransactionConsensusTime;
     private final ExchangeRateManager exchangeRateManager;
     private final Authorizer authorizer;
+    private final SolvencyPreCheck solvencyPreCheck;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -145,6 +154,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param exchangeRateManager   The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      * @param authorizer            The {@link Authorizer} used to authorize the transaction
+     * @param solvencyPreCheck      The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -163,11 +173,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final RecordCache recordCache,
+            @NonNull final HederaRecordCache recordCache,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final Instant userTransactionConsensusTime,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -204,12 +215,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     verifier.numSignaturesVerified(),
                     signatureMapSize,
                     userTransactionConsensusTime,
-                    subType);
+                    subType,
+                    false);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
     }
 
     private WrappedHederaState current() {
@@ -242,7 +255,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public FeeCalculator feeCalculator(@NonNull SubType subType) {
+    public FeeCalculator feeCalculator(@NonNull final SubType subType) {
         return feeCalculatorCreator.apply(subType);
     }
 
@@ -334,7 +347,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+    public TransactionKeys allKeysForTransaction(
+            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
         dispatcher.dispatchPureChecks(nestedTxn);
         final var nestedContext = new PreHandleContextImpl(
@@ -368,7 +382,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public boolean isSuperUser() {
-        return authorizer.isSuperUser(payer);
+        return authorizer.isSuperUser(payer());
     }
 
     @Override
@@ -431,47 +445,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    @NonNull
-    public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayer) {
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(callback, "callback must not be null");
-
-        if (category != TransactionCategory.USER) {
-            throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
-        }
-        if (stack.depth() > 1) {
-            throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        }
-
-        if (current().isModified()) {
-            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
-        }
-
-        // run the transaction
-        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
-
-        return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
-    }
-
-    @NonNull
-    @Override
-    public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
-        final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
-    }
-
-    @Override
     public @NonNull Fees dispatchComputeFees(
             @NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
         var bodyToDispatch = txBody;
@@ -489,22 +462,116 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }
 
+    @Override
+    @NonNull
+    public <T> T dispatchPrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
+        final var result = doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+
+        // a preceding transaction must be committed immediately
+        stack.commitFullStack();
+        stack.createSavepoint();
+
+        return result;
+    }
+
+    @Override
+    @NonNull
+    public <T> T dispatchReversiblePrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addReversiblePreceding(configuration());
+        return doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
+    @Override
+    @NonNull
+    public <T> T dispatchRemovablePrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addRemovablePreceding(configuration());
+        return doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
+    @NonNull
+    public <T> T doDispatchPrecedingTransaction(
+            @NonNull final AccountID syntheticPayer,
+            @NonNull final TransactionBody txBody,
+            @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(callback, "callback must not be null");
+
+        if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
+            throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
+        }
+
+        if (stack.depth() > 1) {
+            throw new IllegalStateException(
+                    "Cannot dispatch a preceding transaction when a savepoint has been created");
+        }
+
+        // This condition fails, because for auto-account creation we charge fees, before dispatching the transaction,
+        // and the state will be modified.
+
+        //         if (current().isModified()) {
+        //                    throw new IllegalStateException("Cannot dispatch a preceding transaction when the state
+        // has been modified");
+        //         }
+
+        // run the transaction
+        final var precedingRecordBuilder = recordBuilderFactory.get();
+        dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
+
+        return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addChild(configuration());
+        return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
     @NonNull
     @Override
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
-        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final ExternalizedRecordCustomizer customizer) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(configuration(), customizer);
+        return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 
     @NonNull
     private <T> T doDispatchChildTransaction(
             @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
-            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
+            @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback) {
         requireNonNull(txBody, "txBody must not be null");
@@ -516,6 +583,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // run the child-transaction
+        final var childRecordBuilder = recordBuilderFactory.get();
         dispatchSyntheticTxn(syntheticPayer, txBody, CHILD, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
@@ -550,16 +618,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // Synthetic transaction bodies do not have transaction ids, node account
             // ids, and so on; hence we don't need to validate them with the checker
             dispatcher.dispatchPureChecks(txBody);
-        } catch (PreCheckException e) {
+        } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
             return;
         }
 
         final var childStack = new SavepointStackImpl(current());
-        HederaFunctionality function;
+        final HederaFunctionality function;
         try {
             function = functionOf(txBody);
-        } catch (UnknownHederaFunctionality e) {
+        } catch (final UnknownHederaFunctionality e) {
             logger.error("Possible bug: unknown function in transaction body", e);
             childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
             return;
@@ -573,11 +641,26 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             try {
                 childPayerKey =
                         accountStore.getAccountById(transactionID.accountID()).key();
-            } catch (NullPointerException ex) {
+            } catch (final NullPointerException ex) {
                 childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_ID);
                 return;
             }
         }
+
+        try {
+            validate(
+                    verifier,
+                    function,
+                    body(),
+                    payer(),
+                    payerKey,
+                    childCategory,
+                    networkInfo().selfNodeInfo().nodeId());
+        } catch (final PreCheckException e) {
+            childRecordBuilder.status(e.responseCode());
+            return;
+        }
+
         final var childContext = new HandleContextImpl(
                 txBody,
                 function,
@@ -599,15 +682,92 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 feeManager,
                 exchangeRateManager,
                 userTransactionConsensusTime,
-                authorizer);
+                authorizer,
+                solvencyPreCheck);
 
         try {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
-        } catch (HandleException e) {
+        } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(childRecordBuilder);
+            recordListBuilder.revertChildrenOf(recordBuilder);
+        }
+    }
+
+    private void validate(
+            @NonNull final KeyVerifier keyVerifier,
+            final HederaFunctionality function,
+            final TransactionBody transactionBody,
+            final AccountID payer,
+            final Key payerKey,
+            final TransactionCategory txCategory,
+            final long nodeID)
+            throws PreCheckException {
+
+        final PreHandleContextImpl preHandleContext;
+
+        preHandleContext =
+                new PreHandleContextImpl(readableStoreFactory(), transactionBody, payer, configuration(), dispatcher);
+        dispatcher.dispatchPreHandle(preHandleContext);
+
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var duplicateCheckResult = recordCache.hasDuplicate(transactionBody.transactionID(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE) {
+            throw new PreCheckException(DUPLICATE_TRANSACTION);
+        }
+
+        // Check the status and solvency of the payer
+        final var fee = dispatchComputeFees(body(), payer);
+        final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), payer);
+        solvencyPreCheck.checkSolvency(body(), payer, functionality, payerAccount, fee, true);
+
+        // Check the time box of the transaction
+        checker.checkTimeBox(transactionBody, userTransactionConsensusTime);
+
+        // Check if the payer has the required permissions
+        if (!authorizer.isAuthorized(payer, function)) {
+            if (function == HederaFunctionality.SYSTEM_DELETE) {
+                throw new PreCheckException(ResponseCodeEnum.NOT_SUPPORTED);
+            }
+            throw new PreCheckException(ResponseCodeEnum.UNAUTHORIZED);
+        }
+
+        // Check if the transaction is privileged and if the payer has the required privileges
+        final var privileges = authorizer.hasPrivilegedAuthorization(payer, functionality, transactionBody);
+        if (privileges == SystemPrivilege.UNAUTHORIZED) {
+            throw new PreCheckException(ResponseCodeEnum.AUTHORIZATION_FAILED);
+        }
+        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
+            throw new PreCheckException(ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
+        }
+
+        // Skip payer verification when dispatching any child transaction
+        if (!(txCategory.equals(CHILD) || txCategory.equals(PRECEDING))) {
+            // Check all signature verifications. This will also wait, if validation is still ongoing.
+            final var payerKeyVerification = keyVerifier.verificationFor(payerKey);
+            if (payerKeyVerification.failed()) {
+                throw new PreCheckException(INVALID_SIGNATURE);
+            }
+        }
+
+        // verify all the keys
+        for (final var key : preHandleContext.requiredNonPayerKeys()) {
+            final var verification = keyVerifier.verificationFor(key);
+            if (verification.failed()) {
+                throw new PreCheckException(INVALID_SIGNATURE);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleContext.requiredHollowAccounts()) {
+            final var verification = keyVerifier.verificationFor(hollowAccount.alias());
+            if (verification.failed()) {
+                throw new PreCheckException(INVALID_SIGNATURE);
+            }
         }
     }
 
@@ -621,7 +781,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration());
+        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -636,5 +796,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @NonNull
     public SavepointStack savepointStack() {
         return stack;
+    }
+
+    @Override
+    public void revertChildRecords() {
+        recordListBuilder.revertChildrenOf(recordBuilder);
+    }
+
+    public enum PrecedingTransactionCategory {
+        UNLIMITED_CHILD_RECORDS,
+        LIMITED_CHILD_RECORDS
     }
 }
