@@ -156,6 +156,7 @@ public class ReconnectLearner {
             receiveSignatures();
             final ReservedSignedState reservedSignedState = reconnect();
             validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
+            ReconnectUtils.endReconnectHandshake(connection);
             return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
             throw new ReconnectException(e);
