@@ -80,7 +80,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             if (proxyWorldUpdater != null) {
                 final var enhancement = proxyWorldUpdater.enhancement();
 
-
                 final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
 
                 if (responseCode == SUCCESS) {
@@ -88,14 +87,17 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                     enhancement
                             .systemOperations()
                             .externalizeResult(
-                                    contractFunctionResultSuccessFor(pricedResult.fullResult().gasRequirement(), output, contractID),
+                                    contractFunctionResultSuccessFor(
+                                            pricedResult.fullResult().gasRequirement(), output, contractID),
                                     responseCode);
                 } else {
                     enhancement
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultFailedFor(
-                                            pricedResult.fullResult().gasRequirement(), responseCode.toString(), contractID),
+                                            pricedResult.fullResult().gasRequirement(),
+                                            responseCode.toString(),
+                                            contractID),
                                     responseCode);
                 }
             }
