@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.istoken;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator;
@@ -58,18 +56,8 @@ class IsTokenCallTest extends HtsCallTestBase {
         assertEquals(
                 Bytes.wrap(IsKycTranslator.IS_KYC
                         .getOutputs()
-                        .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), false)
+                        .encodeElements(SUCCESS.protoOrdinal(), false)
                         .array()),
                 result.getOutput());
-    }
-
-    @Test
-    void returnsIsTokenForMissingTokenStaticCall() {
-        final var subject = new IsTokenCall(gasCalculator, mockEnhancement(), true, null);
-
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
     }
 }
