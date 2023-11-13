@@ -103,6 +103,7 @@ public class SignedStateFileManager implements Startable {
     private final SignedStateMetrics metrics;
 
     private final Configuration configuration;
+    private final PlatformContext platformContext;
 
     /**
      * Provides system time
@@ -162,6 +163,7 @@ public class SignedStateFileManager implements Startable {
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
+        this.platformContext = Objects.requireNonNull(context);
         this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
@@ -288,7 +290,7 @@ public class SignedStateFileManager implements Startable {
                 if (outOfBand) {
                     // states requested to be written out-of-band are always written to disk
                     SignedStateFileWriter.writeSignedStateToDisk(
-                            selfId, directory, reservedSignedState.get(), reason, configuration);
+                            platformContext, selfId, directory, reservedSignedState.get(), reason);
 
                     success = true;
                 } else {
@@ -303,7 +305,7 @@ public class SignedStateFileManager implements Startable {
                         }
 
                         SignedStateFileWriter.writeSignedStateToDisk(
-                                selfId, directory, reservedSignedState.get(), reason, configuration);
+                                platformContext, selfId, directory, reservedSignedState.get(), reason);
                         stateWrittenToDiskInBand(reservedSignedState.get(), directory, start);
 
                         success = true;
@@ -408,8 +410,8 @@ public class SignedStateFileManager implements Startable {
      * Dump a state to disk out-of-band.
      * <p>
      * Writing a state "out-of-band" means the state is being written for the sake of a human, whether for debug
-     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform,
-     * and will not be used as an initial state at boot time.
+     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform, and
+     * will not be used as an initial state at boot time.
      * <p>
      * A dumped state will be saved in a subdirectory of the signed states base directory, with the subdirectory being
      * named after the reason the state is being written out-of-band.

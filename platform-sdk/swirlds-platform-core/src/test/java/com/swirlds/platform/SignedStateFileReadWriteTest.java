@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
@@ -148,8 +149,13 @@ class SignedStateFileReadWriteTest {
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
         final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         writeSignedStateToDisk(
-                new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT, configuration);
+                platformContext, new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
