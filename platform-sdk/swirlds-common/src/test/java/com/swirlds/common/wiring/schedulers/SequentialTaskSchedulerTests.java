@@ -435,8 +435,11 @@ class SequentialTaskSchedulerTests {
         latch98.countDown();
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
-
-        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEventuallyEquals(
+                0L,
+                taskScheduler::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
 
         model.stop();
     }
