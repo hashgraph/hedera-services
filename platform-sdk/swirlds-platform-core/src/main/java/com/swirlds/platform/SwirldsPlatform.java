@@ -91,6 +91,7 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -780,7 +781,12 @@ public class SwirldsPlatform implements Platform {
             if (eventConfig.useLegacyIntake()) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
-                platformWiring.forceUpdateMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
+                platformWiring.forceUpdateMinimumGenerationNonAncient(RoundCalculationUtils.getMinGenNonAncient(
+                        platformContext
+                                .getConfiguration()
+                                .getConfigData(ConsensusConfig.class)
+                                .roundsNonAncient(),
+                        initialState));
             }
 
             // We don't want to invoke these callbacks until after we are starting up.
