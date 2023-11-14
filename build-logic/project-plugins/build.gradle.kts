@@ -29,7 +29,7 @@ dependencies {
     implementation(
         "gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.1"
     )
-    implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.1")
+    implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.2")
     implementation("net.swiftzer.semver:semver:1.3.0")
     implementation("org.gradlex:extra-java-module-info:1.5")
     implementation("org.gradlex:java-ecosystem-capabilities:1.3.1")
