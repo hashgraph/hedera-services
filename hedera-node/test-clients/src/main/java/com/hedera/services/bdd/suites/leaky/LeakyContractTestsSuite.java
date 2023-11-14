@@ -1307,6 +1307,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
+    @HapiTest
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
@@ -1321,6 +1322,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
+    @HapiTest
     private HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck")
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -1426,6 +1428,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
+    @HapiTest
     private HapiSpec autoAssociationSlotsAppearsInInfo() {
         final int maxAutoAssociations = 100;
         final int ADVENTUROUS_NETWORK = 1_000;
