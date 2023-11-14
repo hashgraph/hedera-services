@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
@@ -46,6 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -113,6 +115,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             @NonNull final HandleContext context,
             @NonNull final ContractUpdateTransactionBody op) {
         final var builder = contract.copyBuilder();
+
         if (op.hasAdminKey()) {
             if (EMPTY_KEY_LIST.equals(op.adminKey())) {
                 builder.key(contract.key());
@@ -150,39 +153,47 @@ public class ContractUpdateHandler implements TransactionHandler {
             builder.autoRenewAccountId(op.autoRenewAccountId());
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
+            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
             final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
+            final int maxAutomaticTokenAssociations = op.maxAutomaticTokenAssociationsOrThrow();
+
             validateFalse(
-                    op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
+                    op.maxAutomaticTokenAssociationsOrThrow() > 0 && !contractsConfig.allowAutoAssociations(),
+                    NOT_SUPPORTED);
+            validateFalse(
+                    maxAutomaticTokenAssociations > ledgerConfig.maxAutoAssociations(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            validateFalse(
+                    maxAutomaticTokenAssociations < contract.maxAutoAssociations(),
+                    EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+            validateFalse(
+                    entitiesConfig.limitTokenAssociations()
+                            && maxAutomaticTokenAssociations > tokensConfig.maxPerAccount(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 
-            final long newMax = op.maxAutomaticTokenAssociations();
-            validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
-            validateFalse(
-                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
-            builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
+            builder.maxAutoAssociations(maxAutomaticTokenAssociations);
         }
         return builder.build();
     }
 
-    private void validateSemantics(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
+    private void validateSemantics(
+            final Account contract, final HandleContext context, final ContractUpdateTransactionBody op) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey()) {
-            boolean keyNotSentinel = !EMPTY_KEY_LIST.equals(op.adminKey());
-            boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
-            boolean keyIsNotValid = !KeyUtils.isValid(op.adminKey());
+            final boolean keyNotSentinel = !EMPTY_KEY_LIST.equals(op.adminKey());
+            final boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
+            final boolean keyIsNotValid = !KeyUtils.isValid(op.adminKey());
             validateFalse(keyNotSentinel && (keyIsUnset || keyIsNotValid), INVALID_ADMIN_KEY);
         }
 
         if (op.hasExpirationTime()) {
             try {
                 context.attributeValidator().validateExpiry(op.expirationTime().seconds());
-            } catch (HandleException e) {
+            } catch (final HandleException e) {
                 validateFalse(contract.expiredAndPendingRemoval(), CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
                 throw e;
             }
@@ -201,7 +212,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
     }
 
-    boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
+    boolean onlyAffectsExpiry(final ContractUpdateTransactionBody op) {
         return !(op.hasProxyAccountID()
                 || op.hasFileID()
                 || affectsMemo(op)
@@ -209,7 +220,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasAdminKey());
     }
 
-    boolean affectsMemo(ContractUpdateTransactionBody op) {
+    boolean affectsMemo(final ContractUpdateTransactionBody op) {
         return op.hasMemoWrapper() || (op.memo() != null && op.memo().length() > 0);
     }
 
@@ -219,7 +230,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                 .orElse(false);
     }
 
-    private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
+    private boolean reducesExpiry(final ContractUpdateTransactionBody op, final long curExpiry) {
         return op.hasExpirationTime() && op.expirationTime().seconds() < curExpiry;
     }
 }

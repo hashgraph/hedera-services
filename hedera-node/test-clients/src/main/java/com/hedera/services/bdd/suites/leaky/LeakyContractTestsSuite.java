@@ -1970,6 +1970,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(lazyCreationProperty, contractsEvmVersionProperty, maxPrecedingRecords));
     }
 
+    @HapiTest
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
