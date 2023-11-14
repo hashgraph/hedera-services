@@ -895,6 +895,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
             when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            given(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID())))
+                    .willReturn(ALICE.account());
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -943,12 +945,14 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) {
+        void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
             when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            given(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID())))
+                    .willReturn(ALICE.account());
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -1028,13 +1032,15 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testDispatchPrecedingWithChangedDataDoesntFail() {
+        void testDispatchPrecedingWithChangedDataDoesntFail() throws PreCheckException {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
             when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            given(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID())))
+                    .willReturn(ALICE.account());
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             // then
@@ -1099,7 +1105,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testDispatchPrecedingIsCommitted() {
+        void testDispatchPrecedingIsCommitted() throws PreCheckException {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             doAnswer(answer -> {
@@ -1112,6 +1118,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .dispatchHandle(any());
             given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
             given(selfNodeInfo.nodeId()).willReturn(0L);
+            given(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID())))
+                    .willReturn(ALICE.account());
             when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
