@@ -56,7 +56,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -208,8 +207,8 @@ public final class IngestChecker {
         return txInfo;
     }
 
-    public void validateMaxGasForContractOperations(@NonNull final TransactionBody body,
-            @NonNull final Configuration configuration) throws PreCheckException {
+    public void validateMaxGasForContractOperations(
+            @NonNull final TransactionBody body, @NonNull final Configuration configuration) throws PreCheckException {
 
         final var bodyDataType = body.data().kind();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
