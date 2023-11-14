@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.wires;
 
+import com.swirlds.common.wiring.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -39,7 +40,7 @@ public class InputWire<IN, OUT> {
      * @param taskScheduler the scheduler to insert data into
      * @param name          the name of the input wire
      */
-    InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
+    public InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
         this.taskScheduler = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
     }

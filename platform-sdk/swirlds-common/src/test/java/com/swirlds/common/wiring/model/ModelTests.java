@@ -19,12 +19,12 @@ package com.swirlds.common.wiring.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
-import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
+import com.swirlds.common.wiring.wires.InputWire;
+import com.swirlds.common.wiring.wires.OutputWire;
+import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

@@ -19,10 +19,10 @@ package com.swirlds.common.wiring.transformers;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.InputWire;
+import com.swirlds.common.wiring.wires.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.time.Duration;
 import java.util.List;

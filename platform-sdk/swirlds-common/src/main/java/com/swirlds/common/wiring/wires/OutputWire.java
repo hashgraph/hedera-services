@@ -14,35 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.wires;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireListSplitter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Describes the output of a task scheduler. Can be soldered to wire inputs or lambdas.
  *
  * @param <OUT> the output type of the object
  */
-public final class OutputWire<OUT> {
-
-    private static final Logger logger = LogManager.getLogger(OutputWire.class);
+public abstract class OutputWire<OUT> {
 
     private final WiringModel model;
     private final String name;
-    private final List<Consumer<OUT>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
@@ -65,29 +57,6 @@ public final class OutputWire<OUT> {
     @NonNull
     public String getName() {
         return name;
-    }
-
-    /**
-     * Forward output data to any wires/consumers that are listening for it.
-     * <p>
-     * Although it will technically work, it is a violation of convention to directly put data into this output wire
-     * except from within code being executed by the task scheduler that owns this output wire. Don't do it.
-     *
-     * @param data the output data to forward
-     */
-    public void forward(@NonNull final OUT data) {
-        for (final Consumer<OUT> destination : forwardingDestinations) {
-            try {
-                destination.accept(data);
-            } catch (final Exception e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Exception thrown on output wire {} while forwarding data {}",
-                        name,
-                        data,
-                        e);
-            }
-        }
     }
 
     /**
@@ -126,9 +95,9 @@ public final class OutputWire<OUT> {
         model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
 
         switch (solderType) {
-            case PUT -> forwardingDestinations.add(inputWire::put);
-            case INJECT -> forwardingDestinations.add(inputWire::inject);
-            case OFFER -> forwardingDestinations.add(inputWire::offer);
+            case PUT -> addForwardingDestination(inputWire::put);
+            case INJECT -> addForwardingDestination(inputWire::inject);
+            case OFFER -> addForwardingDestination(inputWire::offer);
             default -> throw new IllegalArgumentException("Unknown solder type: " + solderType);
         }
     }
@@ -149,7 +118,7 @@ public final class OutputWire<OUT> {
      */
     public void solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
         model.registerEdge(name, handlerName, "", SolderType.PUT);
-        forwardingDestinations.add(Objects.requireNonNull(handler));
+        addForwardingDestination(Objects.requireNonNull(handler));
     }
 
     /**
@@ -218,4 +187,6 @@ public final class OutputWire<OUT> {
         solderTo(name, transformer);
         return transformer.getOutputWire();
     }
+
+    protected abstract void addForwardingDestination(@NonNull final Consumer<OUT> destination);
 }

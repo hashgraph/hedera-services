@@ -53,8 +53,8 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
     public ConcurrentTaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
-            @NonNull ForkJoinPool pool,
-            @NonNull UncaughtExceptionHandler uncaughtExceptionHandler,
+            @NonNull final ForkJoinPool pool,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled,
@@ -72,7 +72,8 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    // TODO can this hidden?
+    public void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
@@ -81,7 +82,8 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    // TODO can this hidden?
+    public boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
             new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
@@ -93,7 +95,8 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    // TODO can this hidden?
+    public void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }

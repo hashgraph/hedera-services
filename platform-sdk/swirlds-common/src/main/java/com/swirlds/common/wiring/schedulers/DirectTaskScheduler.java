@@ -85,7 +85,8 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    // TODO can this hidden?
+    public void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         handleAndOffRamp(handler, data);
     }
@@ -94,7 +95,8 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    // TODO can this hidden?
+    public boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
@@ -107,7 +109,8 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    // TODO can this hidden?
+    public void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         handleAndOffRamp(handler, data);
     }

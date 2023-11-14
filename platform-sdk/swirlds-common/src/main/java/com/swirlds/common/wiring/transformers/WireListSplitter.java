@@ -16,9 +16,10 @@
 
 package com.swirlds.common.wiring.transformers;
 
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.OutputWire;
+import com.swirlds.common.wiring.wires.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
@@ -29,7 +30,7 @@ import java.util.function.Consumer;
  */
 public class WireListSplitter<T> implements Consumer<List<T>> {
 
-    private final OutputWire<T> outputWire;
+    private final StandardOutputWire<T> outputWire;
 
     /**
      * Constructor.
@@ -39,7 +40,7 @@ public class WireListSplitter<T> implements Consumer<List<T>> {
      */
     public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
-        outputWire = new OutputWire<>(model, name);
+        outputWire = new StandardOutputWire<>(model, name);
     }
 
     /**
