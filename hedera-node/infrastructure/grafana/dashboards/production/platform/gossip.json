@@ -1,15 +1,134 @@
 {
   "__inputs": [
     {
-      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM",
-      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM",
+      "label": "grafanacloud-swirldslabsproduction-prom",
       "description": "",
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM-FOR-LIBRARY-PANEL",
+      "label": "grafanacloud-swirldslabsproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus",
+      "usage": {
+        "libraryPanels": [
+          {
+            "name": "conns Changes",
+            "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d"
+          }
+        ]
+      }
     }
   ],
-  "__elements": {},
+  "__elements": {
+    "ef64b104-def4-4374-ba11-df4fb2a8ec2d": {
+      "name": "conns Changes",
+      "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+        },
+        "description": "The increase in the number of TLS connections established by a node per second.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "libraryPanel": {
+          "name": "conns Changes",
+          "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d"
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "increase(platform_conns{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__rate_interval])",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "conns Changes",
+        "type": "timeseries"
+      }
+    }
+  },
   "__requires": [
     {
       "type": "panel",
@@ -75,65 +194,6 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
-      },
-      "description": "The increase in the number of TLS connections established by a node per second.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
       "gridPos": {
         "h": 8,
         "w": 16,
@@ -141,43 +201,15 @@
         "y": 0
       },
       "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "increase(platform_conns{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[1m])",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "node {{node_id}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "conns Changes",
-      "type": "timeseries"
+      "libraryPanel": {
+        "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d",
+        "name": "conns Changes"
+      }
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -258,7 +290,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of events received per second that are already known.",
       "fieldConfig": {
@@ -342,7 +374,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -362,7 +394,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of events received per second that are already known.",
       "fieldConfig": {
@@ -417,7 +449,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -434,7 +466,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -450,7 +482,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -471,7 +503,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of events received per second that are already known.",
       "fieldConfig": {
@@ -555,7 +587,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -575,7 +607,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of events received per second that are already known.",
       "fieldConfig": {
@@ -630,7 +662,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -647,7 +679,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -663,7 +695,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -684,7 +716,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of sync permits available.",
       "fieldConfig": {
@@ -729,7 +761,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -763,7 +796,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -783,7 +816,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of events received per successful sync.",
       "fieldConfig": {
@@ -828,7 +861,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -862,7 +896,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -882,7 +916,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of events received per successful sync.",
       "fieldConfig": {
@@ -927,7 +961,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -961,7 +996,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -981,7 +1016,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of generation ahead (positive) or behind (negative) when syncing.",
       "fieldConfig": {
@@ -1026,7 +1061,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1060,7 +1096,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1080,7 +1116,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The total number of syncs completed per second by each node.",
       "fieldConfig": {
@@ -1125,7 +1161,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1159,7 +1196,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1179,7 +1216,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The duration of average successful sync.",
       "fieldConfig": {
@@ -1224,7 +1261,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1258,7 +1296,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1278,7 +1316,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
       },
       "description": "The number of times a TLS connections was created.",
       "fieldConfig": {
@@ -1323,7 +1361,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1357,7 +1396,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -1386,7 +1425,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
         },
         "definition": "label_values(platform_trans_per_sec{environment!~\"nmt.*\"},environment)",
         "description": "The network to pull data from (i.e. mainnet, testnet, etc).",
@@ -1411,7 +1450,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPRODUCTION-PROM}"
         },
         "definition": "label_values(node_id)",
         "hide": 0,
@@ -1433,7 +1472,7 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
