@@ -68,7 +68,7 @@ public class NoOpObjectCounter extends ObjectCounter {
      */
     @Override
     public long getCount() {
-        return -1;
+        return COUNT_UNDEFINED;
     }
 
     /**

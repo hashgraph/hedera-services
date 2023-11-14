@@ -16,7 +16,9 @@
 
 package com.swirlds.common.wiring.model;
 
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,19 +29,37 @@ import java.util.Objects;
  */
 public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex> {
 
+    /**
+     * The name of the vertex.
+     */
     private final String name;
+
+    /**
+     * When tasks are inserted into this vertex, is this component capable of applying back pressure?
+     */
     private final boolean insertionIsBlocking;
 
+    /**
+     * The task scheduler type that corresponds to this vertex.
+     */
+    private final TaskSchedulerType type;
+
+    /**
+     * The outgoing edges of this vertex.
+     */
     private final List<ModelEdge> outgoingEdges = new ArrayList<>();
 
     /**
      * Constructor.
      *
      * @param name                the name of the vertex
+     * @param type                the type of task scheduler that corresponds to this vertex
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
      */
-    public ModelVertex(@NonNull final String name, final boolean insertionIsBlocking) {
-        this.name = name;
+    public ModelVertex(
+            @NonNull final String name, @NonNull final TaskSchedulerType type, final boolean insertionIsBlocking) {
+        this.name = Objects.requireNonNull(name);
+        this.type = Objects.requireNonNull(type);
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -51,6 +71,18 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     @NonNull
     public String getName() {
         return name;
+    }
+
+    /**
+     * Get the type of task scheduler that corresponds to this vertex, or null if this vertex does not correspond to a
+     * task scheduler.
+     *
+     * @return the type of task scheduler that corresponds to this vertex, or null if this vertex does not correspond to
+     * a task scheduler
+     */
+    @Nullable
+    public TaskSchedulerType getType() {
+        return type;
     }
 
     /**
@@ -83,16 +115,6 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     }
 
     /**
-     * Get the outgoing edges of this vertex.
-     *
-     * @return the outgoing edges of this vertex
-     */
-    @NonNull
-    public List<ModelEdge> getOutgoingEdges() {
-        return outgoingEdges;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -104,7 +126,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable final Object obj) {
         if (obj instanceof final ModelVertex that) {
             return name.equals(that.name);
         }

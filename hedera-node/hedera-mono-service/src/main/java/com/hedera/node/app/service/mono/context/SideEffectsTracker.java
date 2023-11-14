@@ -313,7 +313,7 @@ public class SideEffectsTracker {
             newAssociations.sort(FC_TOKEN_ASSOCIATION_COMPARATOR);
             return newAssociations;
         }
-        return autoAssociations;
+        return Collections.emptyList();
     }
 
     /**
