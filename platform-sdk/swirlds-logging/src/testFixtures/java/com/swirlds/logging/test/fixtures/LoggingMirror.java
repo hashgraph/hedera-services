@@ -18,6 +18,7 @@ package com.swirlds.logging.test.fixtures;
 
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
@@ -52,7 +53,7 @@ public interface LoggingMirror extends AutoCloseable {
      * @param level the level to filter by
      * @return a mirror that only contains log events with the given level
      */
-    LoggingMirror filterByLevel(Level level);
+    LoggingMirror filterByLevel(@NonNull final Level level);
 
     /**
      * Returns a mirror that only contains log events with the given context.
@@ -61,7 +62,7 @@ public interface LoggingMirror extends AutoCloseable {
      * @param value the value of the context
      * @return a mirror that only contains log events with the given context
      */
-    LoggingMirror filterByContext(String key, String value);
+    LoggingMirror filterByContext(@NonNull final String key, @NonNull final String value);
 
     /**
      * Returns a mirror that only contains log events with the current thread.
@@ -78,7 +79,7 @@ public interface LoggingMirror extends AutoCloseable {
      * @param threadName the name of the thread
      * @return a mirror that only contains log events with the given thread
      */
-    LoggingMirror filterByThread(String threadName);
+    LoggingMirror filterByThread(@NonNull final String threadName);
 
     /**
      * Returns a mirror that only contains log events with the given logger name (based on the class name).
@@ -86,7 +87,7 @@ public interface LoggingMirror extends AutoCloseable {
      * @param clazz the class to filter by
      * @return a mirror that only contains log events with the given logger name
      */
-    default LoggingMirror filterByLogger(Class<?> clazz) {
+    default LoggingMirror filterByLogger(@NonNull final Class<?> clazz) {
         return filterByLogger(clazz.getName());
     }
 
@@ -96,7 +97,7 @@ public interface LoggingMirror extends AutoCloseable {
      * @param loggerName the logger name to filter by
      * @return a mirror that only contains log events with the given logger name
      */
-    LoggingMirror filterByLogger(String loggerName);
+    LoggingMirror filterByLogger(@NonNull final String loggerName);
 
     /**
      * Returns a list of all log events that were generated during a test.

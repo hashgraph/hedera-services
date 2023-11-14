@@ -19,7 +19,7 @@ package com.swirlds.logging;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.level.LoggingLevelConfig;
-import com.swirlds.logging.util.SimpleConfiguration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,26 +28,24 @@ public class LoggingLevelConfigTest {
 
     @Test
     void testConstructorExceptions() {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(null));
         Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(null, (String) null));
         Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(null, (Level) null));
-        Assertions.assertThrows(
-                NullPointerException.class, () -> new LoggingLevelConfig(new SimpleConfiguration(), (String) null));
-        Assertions.assertThrows(
-                NullPointerException.class, () -> new LoggingLevelConfig(new SimpleConfiguration(), (Level) null));
+        Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(configuration, (String) null));
+        Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(configuration, (Level) null));
         Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(null, "foo"));
         Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(null, null, null));
         Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(null, "foo", Level.INFO));
         Assertions.assertThrows(
-                NullPointerException.class, () -> new LoggingLevelConfig(new SimpleConfiguration(), null, Level.INFO));
-        Assertions.assertThrows(
-                NullPointerException.class, () -> new LoggingLevelConfig(new SimpleConfiguration(), "foo", null));
+                NullPointerException.class, () -> new LoggingLevelConfig(configuration, null, Level.INFO));
+        Assertions.assertThrows(NullPointerException.class, () -> new LoggingLevelConfig(configuration, "foo", null));
     }
 
     @Test
     void testConstructor() {
         // given
-        final LoggingLevelConfig config = new LoggingLevelConfig(new SimpleConfiguration());
+        final LoggingLevelConfig config = new LoggingLevelConfig(new TestConfigBuilder().getOrCreateConfig());
 
         // then
         checkDefaultBehavior(config);
@@ -56,7 +54,8 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithDifferentPrefix() {
         // given
-        final LoggingLevelConfig config = new LoggingLevelConfig(new SimpleConfiguration(), "test.prefix");
+        final LoggingLevelConfig config =
+                new LoggingLevelConfig(new TestConfigBuilder().getOrCreateConfig(), "test.prefix");
 
         // then
         checkDefaultBehavior(config);
@@ -65,7 +64,8 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithDifferentPrefixAndLevel() {
         // given
-        final LoggingLevelConfig config = new LoggingLevelConfig(new SimpleConfiguration(), "test.prefix", Level.ERROR);
+        final LoggingLevelConfig config =
+                new LoggingLevelConfig(new TestConfigBuilder().getOrCreateConfig(), "test.prefix", Level.ERROR);
 
         // then
         checkEnabledForLevel(config, "", Level.ERROR);
@@ -81,12 +81,13 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithConfig() {
         // given
-        final Configuration configuration = new SimpleConfiguration()
-                .withProperty("logging.level", "INFO")
-                .withProperty("logging.level.com.sample", "DEBUG")
-                .withProperty("logging.level.com.sample.package", "ERROR")
-                .withProperty("logging.level.com.sample.package.ClassB", "INFO")
-                .withProperty("logging.level.com.sample.package.ClassC", "TRACE");
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "INFO")
+                .withValue("logging.level.com.sample", "DEBUG")
+                .withValue("logging.level.com.sample.package", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassB", "INFO")
+                .withValue("logging.level.com.sample.package.ClassC", "TRACE")
+                .getOrCreateConfig();
         final LoggingLevelConfig config = new LoggingLevelConfig(configuration);
 
         // then
@@ -103,7 +104,8 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithBadConfig() {
         // given
-        final Configuration configuration = new SimpleConfiguration().withProperty("logging.level", "UNKNOWN");
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("logging.level", "UNKNOWN").getOrCreateConfig();
         final LoggingLevelConfig config = new LoggingLevelConfig(configuration);
 
         // then
@@ -124,18 +126,20 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithConfigUpdate() {
         // given
-        final Configuration configuration = new SimpleConfiguration()
-                .withProperty("logging.level", "INFO")
-                .withProperty("logging.level.com.sample", "DEBUG")
-                .withProperty("logging.level.com.sample.package", "ERROR")
-                .withProperty("logging.level.com.sample.package.ClassB", "ERROR")
-                .withProperty("logging.level.com.sample.package.ClassC", "TRACE");
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "INFO")
+                .withValue("logging.level.com.sample", "DEBUG")
+                .withValue("logging.level.com.sample.package", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassB", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassC", "TRACE")
+                .getOrCreateConfig();
         final LoggingLevelConfig config = new LoggingLevelConfig(configuration);
 
         // when
-        final Configuration newConfiguration = new SimpleConfiguration()
-                .withProperty("logging.level", "ERROR")
-                .withProperty("logging.level.com.sample.package", "WARN");
+        final Configuration newConfiguration = new TestConfigBuilder()
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.com.sample.package", "WARN")
+                .getOrCreateConfig();
         config.update(newConfiguration);
 
         // then
@@ -152,16 +156,17 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithConfigUpdateWitEmptyConfig() {
         // given
-        final Configuration configuration = new SimpleConfiguration()
-                .withProperty("logging.level", "INFO")
-                .withProperty("logging.level.com.sample", "DEBUG")
-                .withProperty("logging.level.com.sample.package", "ERROR")
-                .withProperty("logging.level.com.sample.package.ClassB", "ERROR")
-                .withProperty("logging.level.com.sample.package.ClassC", "TRACE");
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "INFO")
+                .withValue("logging.level.com.sample", "DEBUG")
+                .withValue("logging.level.com.sample.package", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassB", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassC", "TRACE")
+                .getOrCreateConfig();
         final LoggingLevelConfig config = new LoggingLevelConfig(configuration);
 
         // when
-        final Configuration newConfiguration = new SimpleConfiguration();
+        final Configuration newConfiguration = new TestConfigBuilder().getOrCreateConfig();
         config.update(newConfiguration);
 
         // then
@@ -178,7 +183,9 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithConfigAndDefaultLevel() {
         // given
-        final Configuration configuration = new SimpleConfiguration().withProperty("logging.level.com.sample", "DEBUG");
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level.com.sample", "DEBUG")
+                .getOrCreateConfig();
         final LoggingLevelConfig config = new LoggingLevelConfig(configuration, Level.WARN);
 
         // then
@@ -195,8 +202,9 @@ public class LoggingLevelConfigTest {
     @Test
     void testWithConfigAndDefaultLevelAndPrefix() {
         // given
-        final Configuration configuration =
-                new SimpleConfiguration().withProperty("test.logging.level.com.sample", "DEBUG");
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("test.logging.level.com.sample", "DEBUG")
+                .getOrCreateConfig();
         final LoggingLevelConfig config = new LoggingLevelConfig(configuration, "test.logging.level");
 
         // then

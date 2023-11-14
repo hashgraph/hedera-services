@@ -21,7 +21,7 @@ import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.level.LoggingLevelConfig;
-import com.swirlds.logging.util.SimpleConfiguration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -42,16 +42,16 @@ public class LoggingLevelConfigStressTest {
         return () -> {
             for (int i = 0; i < 20; i++) {
                 // update config
-                final Configuration configuration = new SimpleConfiguration()
-                        .withProperty("logging.level", getRandomLevel().name())
-                        .withProperty(
-                                "logging.level.com.sample", getRandomLevel().name())
-                        .withProperty(
+                final Configuration configuration = new TestConfigBuilder()
+                        .withValue("logging.level", getRandomLevel().name())
+                        .withValue("logging.level.com.sample", getRandomLevel().name())
+                        .withValue(
                                 "logging.level.com.sample.package",
                                 getRandomLevel().name())
-                        .withProperty(
+                        .withValue(
                                 "logging.level.com.sample.package.Class",
-                                getRandomLevel().name());
+                                getRandomLevel().name())
+                        .getOrCreateConfig();
                 config.update(configuration);
 
                 // do some checks
@@ -96,7 +96,7 @@ public class LoggingLevelConfigStressTest {
     @Test
     void testWithConfig() {
         // given
-        final LoggingLevelConfig config = new LoggingLevelConfig(new SimpleConfiguration());
+        final LoggingLevelConfig config = new LoggingLevelConfig(new TestConfigBuilder().getOrCreateConfig());
         final List<Runnable> runnables =
                 IntStream.range(0, 20).mapToObj(i -> createRunnable(config)).toList();
         testExecutor.executeAndWait(runnables);

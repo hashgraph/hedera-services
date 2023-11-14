@@ -18,6 +18,7 @@ package com.swirlds.logging;
 
 import com.swirlds.base.context.Context;
 import com.swirlds.base.test.fixtures.context.WithContext;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
@@ -26,32 +27,27 @@ import com.swirlds.logging.api.internal.LoggerImpl;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
+import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.util.InMemoryHandler;
-import com.swirlds.logging.util.SimpleConfiguration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @WithContext
+@WithLoggingMirror
 public class LoggingSystemTest {
-
-    @BeforeEach
-    void setUp() {
-        // Once we are on gradle we can use the @WithLoggerMirror testfixture here...
-        EmergencyLoggerImpl.getInstance().publishLoggedEvents();
-    }
 
     @Test
     @DisplayName("Test that a logger name is always created correctly")
     void testLoggerName() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -73,7 +69,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that creating loggers with same name ends in same logger instance")
     void testSameLoggerByName() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -95,7 +91,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that INFO is default level for a non configured logging system")
     void testDefaultLevel() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -165,7 +161,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that logging system can handle null params for isEnabled")
     void testNullLevel() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -187,7 +183,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that isEnabled logs errors to emergency logger")
     void testErrorsForEnabled() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -205,7 +201,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that accept logs errors to emergency logger")
     void testErrorsForAccept() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -226,9 +222,11 @@ public class LoggingSystemTest {
     @DisplayName("Test that log level can be configured")
     void testCustomLevel() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
-        configuration.setProperty("logging.level", "ERROR");
-        configuration.setProperty("logging.level.test", "TRACE");
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.test", "TRACE")
+                .getOrCreateConfig();
+
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -298,7 +296,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that addHandler logs errors to emergency logger")
     void testNullHandler() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -313,7 +311,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that getLogger logs errors to emergency logger")
     void testNullLogger() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
@@ -335,7 +333,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that all logging is forwarded to emergency logger if no handler is defined")
     void testEmergencyLoggerIsUsedIfNoAppender() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final LoggerImpl logger = loggingSystem.getLogger("");
         EmergencyLoggerImpl.getInstance().publishLoggedEvents(); // reset Emergency logger to remove the init logging
@@ -363,8 +361,8 @@ public class LoggingSystemTest {
             "Test that all logging for a configured level is forwarded to emergency logger if no handler is defined")
     void testEmergencyLoggerIsUsedForConfiguredLevelIfNoAppender() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
-        configuration.setProperty("logging.level.test", "ERROR");
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("logging.level.test", "ERROR").getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final LoggerImpl logger = loggingSystem.getLogger("test");
         EmergencyLoggerImpl.getInstance().publishLoggedEvents(); // reset Emergency logger to remove the init logging
@@ -388,7 +386,7 @@ public class LoggingSystemTest {
             "That that checks if simple log calls are forwarded correctly will all informations to the configured handler")
     void testSimpleLoggingHandling() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);
@@ -447,7 +445,7 @@ public class LoggingSystemTest {
     @DisplayName("That that accept passes events to the configured handler")
     void testAcceptHandling() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);
@@ -482,7 +480,7 @@ public class LoggingSystemTest {
             "That that checks if complex log calls are forwarded correctly with all informations to the configured handler")
     void testComplexLoggingHandling() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);
@@ -563,7 +561,7 @@ public class LoggingSystemTest {
     @DisplayName("That that accept passes complex log calls correctly with all informations to the configured handler")
     void testAcceptComnplexHandling() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);
@@ -640,7 +638,7 @@ public class LoggingSystemTest {
     @DisplayName("Test that any exception in a handler will not be thrown but logged instead")
     void testExceptionInHandler() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(new LogHandler() {
             @Override
@@ -670,7 +668,7 @@ public class LoggingSystemTest {
     @Test
     void testSpecWithLoggingSystemWithoutHandler() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // then
@@ -680,7 +678,7 @@ public class LoggingSystemTest {
     @Test
     void testSpecWithLoggingSystemWithHandler() {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);

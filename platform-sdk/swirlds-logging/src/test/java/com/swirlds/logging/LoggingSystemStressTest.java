@@ -18,11 +18,12 @@ package com.swirlds.logging;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingUtils;
-import com.swirlds.logging.util.SimpleConfiguration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public class LoggingSystemStressTest {
     @Test
     void testMultipleLoggersInParallel(TestExecutor testExecutor) {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler();
         loggingSystem.addHandler(handler);
@@ -61,7 +62,7 @@ public class LoggingSystemStressTest {
     @Test
     void testOneLoggerInParallel(TestExecutor testExecutor) {
         // given
-        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final Logger logger = loggingSystem.getLogger("logger");
         final InMemoryHandler handler = new InMemoryHandler();
