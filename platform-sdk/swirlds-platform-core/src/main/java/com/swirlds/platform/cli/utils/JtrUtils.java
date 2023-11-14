@@ -81,6 +81,9 @@ public class JtrUtils {
                 new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
         final Instant now = Instant.now();
 
+        // make sure that gsutil is installed. This will throw if it isn't
+        terminal.run("gsutil");
+
         final boolean hasSlash = bucketPrefix.endsWith("/") || testDirectory.startsWith("/");
         final String rootDirectory = bucketPrefix + (hasSlash ? "" : "/") + testDirectory;
 
