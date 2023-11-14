@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
 /**
- * A task that needs to be performed.
+ * A task that is performed by a {@link SequentialThreadTaskScheduler}.
  *
  * @param handler the handler to call
  * @param data    the data to pass to the handler

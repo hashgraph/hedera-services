@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  * A scheduler that performs work sequentially on a dedicated thread. This class has very similar semantics to
  * {@link DirectTaskScheduler}, except that work is done on a thread instead of on a fork join pool.
  *
- * @param <OUT>
+ * @param <OUT> the type of the primary output wire
  */
 public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> implements Startable, Stoppable {
 
@@ -55,7 +55,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
 
     private static final int BUFFER_SIZE = 1024;
 
-    final AtomicBoolean alive = new AtomicBoolean(true);
+    private final AtomicBoolean alive = new AtomicBoolean(true);
     private final Thread thread;
 
     /**
