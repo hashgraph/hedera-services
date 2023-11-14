@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
-
-// TODO can this be non-public?
+package com.swirlds.common.wiring.wires.output;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

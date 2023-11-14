@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring.wires.output.internal;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -50,21 +52,21 @@ public class MutatingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OUT> {
     /**
      * Constructor.
      *
-     * @param model     the wiring model containing this output wire
-     * @param name      the name of the output wire
-     * @param transform the function to transform the data from the input tye to the output type. Is called once per
-     *                  output per data item. If this method returns null then the data is not forwarded.
-     * @param cleanup   an optional method that is called after the data is forwarded to all destinations. The original
-     *                  data is passed to this method. Ignored if null.
+     * @param model       the wiring model containing this output wire
+     * @param name        the name of the output wire
+     * @param transformer the function to transform the data from the input tye to the output type. Is called once per
+     *                    output per data item. If this method returns null then the data is not forwarded.
+     * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
+     *                    original data is passed to this method. Ignored if null.
      */
-    protected MutatingOutputWire(
+    public MutatingOutputWire(
             @NonNull final WiringModel model,
             @NonNull final String name,
-            @NonNull final Function<IN, OUT> transform,
+            @NonNull final Function<IN, OUT> transformer,
             @Nullable final Consumer<IN> cleanup) {
         super(model, name);
 
-        this.transform = Objects.requireNonNull(transform);
+        this.transform = Objects.requireNonNull(transformer);
         this.cleanup = cleanup == null ? (data) -> {} : cleanup;
     }
 

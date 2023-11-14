@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring.wires.input;
 
 import com.swirlds.common.wiring.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;

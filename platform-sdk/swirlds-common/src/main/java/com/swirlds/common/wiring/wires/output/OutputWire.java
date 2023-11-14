@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring.wires.output;
 
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.transformers.AdvancedWireTransformer;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireListSplitter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
+import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -43,7 +47,6 @@ public abstract class OutputWire<OUT> {
      * @param name  the name of the output wire
      */
     public OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
-
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
     }
@@ -144,30 +147,16 @@ public abstract class OutputWire<OUT> {
      * comes out of the wire will be inserted into the splitter). The output wire of the splitter is returned by this
      * method.
      *
-     * @param <E> the type of the list elements
+     * @param <ELEMENT> the type of the list elements
      * @return output wire of the splitter
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public <E> OutputWire<E> buildSplitter() {
+    public <ELEMENT> OutputWire<ELEMENT> buildSplitter() {
         final String splitterName = name + "_splitter";
-        final WireListSplitter<E> splitter = new WireListSplitter<>(model, splitterName);
+        final WireListSplitter<ELEMENT> splitter = new WireListSplitter<>(model, splitterName);
         solderTo(splitterName, (Consumer<OUT>) splitter);
         return splitter.getOutputWire();
-    }
-
-    /**
-     * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
-     * without a list output type will cause runtime exceptions. The input wire to the splitter is automatically
-     * soldered to this output wire (i.e. all data that comes out of the wire will be inserted into the splitter). The
-     * output wire of the splitter is returned by this method.
-     *
-     * @param clazz the class of the list elements, convince parameter for hinting generic type to the compiler
-     * @param <T>   the type of the list elements
-     */
-    @NonNull
-    public <T> OutputWire<T> buildSplitter(@NonNull final Class<T> clazz) {
-        return buildSplitter();
     }
 
     /**
@@ -175,18 +164,53 @@ public abstract class OutputWire<OUT> {
      * (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of the
      * transformer is returned by this method.
      *
-     * @param name      the name of the transformer
-     * @param transform the function that transforms the output of this wire into the output of the transformer
-     * @param <T>       the output type of the transformer
+     * @param name        the name of the transformer
+     * @param transformer the function that transforms the output of this wire into the output of the transformer.
+     *                    Called once per data item. Null data returned by this method his not forwarded.
+     * @param <NEW_OUT>   the output type of the transformer
      * @return the output wire of the transformer
      */
     @NonNull
-    public <T> OutputWire<T> buildTransformer(@NonNull final String name, @NonNull final Function<OUT, T> transform) {
-        final WireTransformer<OUT, T> transformer =
-                new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transform));
-        solderTo(name, transformer);
-        return transformer.getOutputWire();
+    public <NEW_OUT> OutputWire<NEW_OUT> buildTransformer(
+            @NonNull final String name, @NonNull final Function<OUT, NEW_OUT> transformer) {
+        final WireTransformer<OUT, NEW_OUT> wireTransformer =
+                new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transformer));
+        solderTo(name, wireTransformer);
+        return wireTransformer.getOutputWire();
     }
 
+    /**
+     * Build a {@link AdvancedWireTransformer}. The input wire to the transformer is automatically soldered to this
+     * output wire (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of
+     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, Function)}, but instead
+     * of the transformer method being called once per data item, it is called once per output per data item.
+     *
+     * @param name      the name of the transformer
+     * @param transform the function that transforms the output of this wire into the output of the transformer, called
+     *                  once per output per data item. Null data returned by this method his not forwarded.
+     * @param cleanup   an optional method that is called after the data is forwarded to all destinations. The original
+     *                  data is passed to this method. Ignored if null.
+     * @param <NEW_OUT> the output type of the transformer
+     * @return the output wire of the transformer
+     */
+    @NonNull
+    public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
+            @NonNull final String name,
+            @NonNull final Function<OUT, NEW_OUT> transform,
+            @Nullable final Consumer<OUT> cleanup) {
+
+        final AdvancedWireTransformer<OUT, NEW_OUT> wireTransformer =
+                new AdvancedWireTransformer<>(model, Objects.requireNonNull(name), transform, cleanup);
+
+        solderTo(name, wireTransformer);
+
+        return wireTransformer.getOutputWire();
+    }
+
+    /**
+     * Creates a new forwarding destination.
+     *
+     * @param destination the destination to forward data to
+     */
     protected abstract void addForwardingDestination(@NonNull final Consumer<OUT> destination);
 }

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring.wires.output.internal;
 
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

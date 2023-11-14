@@ -18,8 +18,8 @@ package com.swirlds.common.wiring.transformers;
 
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.OutputWire;
-import com.swirlds.common.wiring.wires.StandardOutputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;

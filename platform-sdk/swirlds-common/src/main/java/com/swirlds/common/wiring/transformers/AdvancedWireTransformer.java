@@ -19,38 +19,43 @@ package com.swirlds.common.wiring.transformers;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
+import com.swirlds.common.wiring.wires.output.internal.MutatingOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Transforms data on a wire from one type to another.
+ * Similar to a {@link WireTransformer} but for more advanced use cases. Unlike a {@link WireTransformer}, the
+ * transforming function is called once per output per data item, and a special method can be called after the data is
+ * forwarded to all destinations.
  *
  * @param <A> the input type
  * @param <B> the output type
  */
-public class WireTransformer<A, B> implements Consumer<A> {
+public class AdvancedWireTransformer<A, B> implements Consumer<A> {
 
-    private final Function<A, B> transformer;
-    private final StandardOutputWire<B> outputWire;
+    private final ForwardingOutputWire<A, B> outputWire;
 
     /**
      * Constructor.
      *
-     * @param model       the wiring model containing this output channel
+     * @param model       the wiring model containing this output wire
      * @param name        the name of the output wire
-     * @param transformer an object that transforms from type A to type B. If this method returns null then no data is
-     *                    forwarded. This method must be very fast. Putting large amounts of work into this transformer
-     *                    violates the intended usage pattern of the wiring framework and may result in very poor system
-     *                    performance.
+     * @param transformer the function to transform the data from the input tye to the output type. Is called once per
+     *                    output per data item. If this method returns null then the data is not forwarded.
+     * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
+     *                    original data is passed to this method. Ignored if null.
      */
-    public WireTransformer(
-            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
+    public AdvancedWireTransformer(
+            @NonNull final WiringModel model,
+            @NonNull final String name,
+            @NonNull final Function<A, B> transformer,
+            @Nullable final Consumer<A> cleanup) {
+
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
-        this.transformer = Objects.requireNonNull(transformer);
-        outputWire = new StandardOutputWire<>(model, name);
+        outputWire = new MutatingOutputWire<>(model, name, transformer, cleanup);
     }
 
     /**
@@ -58,10 +63,7 @@ public class WireTransformer<A, B> implements Consumer<A> {
      */
     @Override
     public void accept(@NonNull final A a) {
-        final B b = transformer.apply(a);
-        if (b != null) {
-            outputWire.forward(b);
-        }
+        outputWire.forward(a);
     }
 
     /**
