@@ -620,6 +620,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         childRecordsCheck(TRANSFER_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenReceiverContract() {
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
@@ -1315,6 +1316,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec directCallsWorkForErc20() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
