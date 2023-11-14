@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
-import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
@@ -29,23 +28,17 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -90,11 +83,6 @@ public class SignedStateFileManager {
     private final Time time;
 
     /**
-     * Enables submitting platform status actions
-     */
-    private final StatusActionSubmitter statusActionSubmitter;
-
-    /**
      * This method must be called when the minimum generation non-ancient of the oldest state snapshot on disk changes.
      */
     private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
@@ -110,7 +98,6 @@ public class SignedStateFileManager {
      * @param swirldName                          the name of the swirld
      * @param stateToDiskAttemptConsumer          a consumer of data when a state is written to disk
      * @param minimumGenerationNonAncientConsumer this method must be called when the minimum generation non-ancient
-     * @param statusActionSubmitter               enables submitting platform status actions
      */
     public SignedStateFileManager(
             @NonNull final PlatformContext context,
@@ -120,8 +107,7 @@ public class SignedStateFileManager {
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
             @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
-            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
@@ -133,8 +119,6 @@ public class SignedStateFileManager {
         this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
-        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-
 //TODO use for wire
 
 //        this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
@@ -161,7 +145,7 @@ public class SignedStateFileManager {
      * A save state task
      *
      */
-    public void saveStateTask(@NonNull final StateWriteRequest request) {
+    public StateSavingResult saveStateTask(@NonNull final StateWriteRequest request) {
 
         final long start = time.nanoTime();
         boolean success = false;
@@ -182,14 +166,14 @@ public class SignedStateFileManager {
                         platformContext, selfId, directory, state, reason);
 
                 success = true;
-                return;
+                return null;
             }
             if (state.hasStateBeenSavedToDisk()) {
                 logger.info(
                         STATE_TO_DISK.getMarker(),
                         "Not saving signed state for round {} to disk because it has already been saved.",
                         state.getRound());
-                return;
+                return new StateSavingResult(state.getRound(), true);
             }
             if (!state.isComplete()) {
                 stateLacksSignatures(state);
@@ -219,6 +203,7 @@ public class SignedStateFileManager {
             metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
         }
 
+        return new StateSavingResult(state.getRound(), false);
     }
 
     /**
@@ -234,10 +219,7 @@ public class SignedStateFileManager {
     private void stateWrittenToDiskInBand(
             @NonNull final SignedState reservedState, @NonNull final Path directory, final long start) {
 
-        final long round = reservedState.getRound();
-
         metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
         stateToDiskAttemptConsumer.stateToDiskAttempt(reservedState, directory, true);
 
         reservedState.stateSavedToDisk();

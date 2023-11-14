@@ -31,11 +31,11 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
@@ -61,6 +61,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.state.signed.StateWriteRequest;
 import com.swirlds.platform.util.HashLogger;
@@ -213,19 +214,24 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 selfId,
                 swirldName,
                 stateToDiskEventConsumer,
-                setMinimumGenerationToStore,
-                statusActionSubmitter);
+                setMinimumGenerationToStore
+        );
 
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
-        final TaskScheduler<Void> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
+        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(1)
                 .withExternalBackPressure(false)
                 .build()
                 .cast();
-        final InputWire<StateWriteRequest, Void> saveStateToDisk = savedStateScheduler.buildInputWire(
+        final InputWire<StateWriteRequest, StateSavingResult> saveStateToDisk = savedStateScheduler.buildInputWire(
                 "save state to disk");
         saveStateToDisk.bind(signedStateFileManager::saveStateTask);
+        savedStateScheduler
+                .getOutputWire()
+                .buildFilter("filter out of band", StateSavingResult::inBand)
+                .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
+                .solderTo("status manager", statusActionSubmitter::submitStatusAction);
 
         savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer);
 
