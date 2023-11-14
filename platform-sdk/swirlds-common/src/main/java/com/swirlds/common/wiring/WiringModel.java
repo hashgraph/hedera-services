@@ -16,10 +16,18 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.StandardWiringModel;
+import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 
@@ -27,7 +35,7 @@ import java.util.Set;
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
  * of a system and to generate diagrams.
  */
-public abstract class WiringModel {
+public abstract class WiringModel implements Startable, Stoppable {
 
     private final PlatformContext platformContext;
     private final Time time;
@@ -80,6 +88,31 @@ public abstract class WiringModel {
     }
 
     /**
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
+     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
+     *               are not supported.
+     * @return the output wire
+     * @throws IllegalStateException if the heartbeat has already started
+     */
+    @NonNull
+    public abstract OutputWire<Instant> buildHeartbeatWire(@NonNull Duration period);
+
+    /**
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
+     *                  and so frequencies greater than 1000hz are not supported.
+     * @return the output wire
+     */
+    public abstract OutputWire<Instant> buildHeartbeatWire(double frequency);
+
+    /**
      * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,
      * and so it should be avoided at all costs.
      *
@@ -91,25 +124,39 @@ public abstract class WiringModel {
     public abstract boolean checkForCyclicalBackpressure();
 
     /**
+     * Task schedulers using the {@link TaskSchedulerType#DIRECT} strategy have very strict rules about how data can be
+     * added to input wires. This method checks to see if these rules are being followed.
+     *
+     * <p>
+     * If this method finds illegal direct scheduler usage, it will log a message that will fail standard platform
+     * tests.
+     *
+     * @return true if there is illegal direct scheduler usage, false otherwise
+     */
+    public abstract boolean checkForIllegalDirectSchedulerUsage();
+
+    /**
      * Generate a mermaid style wiring diagram.
      *
      * @param groups optional groupings of vertices
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    public abstract String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
+    public abstract String generateWiringDiagram(@NonNull Set<ModelGroup> groups);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.
      * <p>
-     * Register a vertex in the wiring model. These are either task schedulers or wire transformers. Vertices
-     * always have a single Java object output type, although there may be many consumers of that output. Vertices may
-     * have many input types.
+     * Register a vertex in the wiring model. These are either task schedulers or wire transformers. Vertices always
+     * have a single Java object output type, although there may be many consumers of that output. Vertices may have
+     * many input types.
      *
      * @param vertexName          the name of the vertex
+     * @param type                the type of task scheduler that corresponds to this vertex.
      * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
-    public abstract void registerVertex(@NonNull String vertexName, final boolean insertionIsBlocking);
+    public abstract void registerVertex(
+            @NonNull String vertexName, @NonNull TaskSchedulerType type, boolean insertionIsBlocking);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.
@@ -119,11 +166,11 @@ public abstract class WiringModel {
      * @param originVertex      the origin vertex
      * @param destinationVertex the destination vertex
      * @param label             the label of the edge
-     * @param injection         true if this edge is an injection edge, false otherwise
+     * @param solderType        the type of solder connection
      */
     public abstract void registerEdge(
             @NonNull String originVertex,
             @NonNull String destinationVertex,
             @NonNull String label,
-            final boolean injection);
+            @NonNull SolderType solderType);
 }

@@ -181,7 +181,7 @@ class MerkleDbDataSourceMetricsTest {
 
     @AfterEach
     public void afterEach() throws IOException {
-        dataSource.closeAndDelete();
+        dataSource.close();
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
         // check the database was deleted

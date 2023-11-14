@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.WiringModel;
@@ -30,7 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
-public class PlatformWiring {
+public class PlatformWiring implements Startable, Stoppable {
+
     private final WiringModel model;
 
     private final InternalEventValidatorScheduler internalEventValidatorScheduler;
@@ -41,6 +44,7 @@ public class PlatformWiring {
     private final LinkedEventIntakeScheduler linkedEventIntakeScheduler;
 
     private final boolean cyclicalBackpressurePresent;
+    private final boolean illegalDirectSchedulerUsagePresent;
 
     /**
      * Constructor.
@@ -63,6 +67,10 @@ public class PlatformWiring {
         // Logs if there is cyclical back pressure.
         // Do not throw -- in theory we might survive this, so no need to crash.
         cyclicalBackpressurePresent = model.checkForCyclicalBackpressure();
+
+        // Logs if there is illegal direct scheduler usage.
+        // Do not throw -- in theory we might survive this, so no need to crash.
+        illegalDirectSchedulerUsagePresent = model.checkForIllegalDirectSchedulerUsage();
     }
 
     /**
@@ -82,6 +90,15 @@ public class PlatformWiring {
      */
     public boolean isCyclicalBackpressurePresent() {
         return cyclicalBackpressurePresent;
+    }
+
+    /**
+     * Check if illegal direct scheduler usage is present in the model.
+     *
+     * @return true if illegal direct scheduler usage is present, false otherwise
+     */
+    public boolean isIllegalDirectSchedulerUsagePresent() {
+        return illegalDirectSchedulerUsagePresent;
     }
 
     /**
@@ -123,5 +140,21 @@ public class PlatformWiring {
         linkedEventIntakeScheduler.bind(linkedEventIntake);
 
         // FUTURE WORK: bind all the things!
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        model.start();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {
+        model.stop();
     }
 }

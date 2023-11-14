@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.test.framework.TestWiringModel;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -56,8 +57,10 @@ class ConcurrentTaskSchedulerTests {
             }
         };
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(true).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.CONCURRENT)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -103,8 +106,10 @@ class ConcurrentTaskSchedulerTests {
             count.addAndGet(x.value);
         };
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(true).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.CONCURRENT)
+                .build()
+                .cast();
         final InputWire<Operation, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Operation.class)

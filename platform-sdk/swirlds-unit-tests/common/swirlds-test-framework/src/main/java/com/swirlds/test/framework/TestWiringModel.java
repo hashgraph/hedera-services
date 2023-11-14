@@ -17,10 +17,15 @@
 package com.swirlds.test.framework;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.ModelGroup;
+import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.utility.ModelGroup;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -48,10 +53,35 @@ public class TestWiringModel extends WiringModel {
     }
 
     /**
+     * Unsupported.
+     */
+    @NonNull
+    @Override
+    public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
+        throw new UnsupportedOperationException("TestWiringModel does not support heartbeats");
+    }
+
+    /**
+     * Unsupported.
+     */
+    @Override
+    public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
+        throw new UnsupportedOperationException("TestWiringModel does not support heartbeats");
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public boolean checkForCyclicalBackpressure() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean checkForIllegalDirectSchedulerUsage() {
         return false;
     }
 
@@ -68,7 +98,10 @@ public class TestWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {}
+    public void registerVertex(
+            @NonNull final String vertexName,
+            @NonNull final TaskSchedulerType type,
+            final boolean insertionIsBlocking) {}
 
     /**
      * {@inheritDoc}
@@ -78,5 +111,17 @@ public class TestWiringModel extends WiringModel {
             @NonNull final String originVertex,
             @NonNull final String destinationVertex,
             @NonNull final String label,
-            final boolean injection) {}
+            @NonNull final SolderType solderType) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {}
 }

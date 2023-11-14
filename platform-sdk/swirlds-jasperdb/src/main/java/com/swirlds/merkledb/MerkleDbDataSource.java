@@ -757,19 +757,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         return true;
     }
 
-    /**
-     * Wait for any merges to finish and then close all data stores.
-     * <p>
-     * <b>After closing delete the database directory and all data!</b> For testing purpose only.
-     */
-    public void closeAndDelete() throws IOException {
-        try {
-            close();
-        } finally {
-            database.removeTable(tableId);
-        }
-    }
-
     /** Wait for any merges to finish, then close all data stores and free all resources. */
     @Override
     public void close() throws IOException {

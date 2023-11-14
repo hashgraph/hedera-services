@@ -16,6 +16,9 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,6 +51,7 @@ public abstract class TaskScheduler<OUT> {
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
+     * @param type                the type of task scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
@@ -55,6 +59,7 @@ public abstract class TaskScheduler<OUT> {
     protected TaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
+            @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
 
@@ -62,7 +67,51 @@ public abstract class TaskScheduler<OUT> {
         this.name = Objects.requireNonNull(name);
         this.flushEnabled = flushEnabled;
         primaryOutputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, insertionIsBlocking);
+        model.registerVertex(name, type, insertionIsBlocking);
+    }
+
+    /**
+     * Build an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound
+     * via {@link InputWire#bind(Consumer)}.
+     *
+     * @param name the name of the input wire
+     * @param <I>  the type of data that is inserted via this input wire
+     * @return the input wire
+     */
+    @NonNull
+    public final <I> InputWire<I, OUT> buildInputWire(@NonNull final String name) {
+        return new InputWire<>(this, name);
+    }
+
+    /**
+     * Get the default output wire for this task scheduler. Sometimes referred to as the "primary" output wire. All data
+     * returned by handlers is passed ot this output wire. Calling this method more than once will always return the
+     * same object.
+     *
+     * @return the primary output wire
+     */
+    @NonNull
+    public OutputWire<OUT> getOutputWire() {
+        return primaryOutputWire;
+    }
+
+    /**
+     * By default a component has a single output wire (i.e. the primary output wire). This method allows additional
+     * output wires to be created.
+     *
+     * <p>
+     * Unlike primary wires, secondary output wires need to be passed to a component's constructor. It is considered a
+     * violation of convention to push data into a secondary output wire from any code that is not executing within this
+     * task scheduler.
+     *
+     * @param <T> the type of data that is transmitted over this output wire
+     * @return the secondary output wire
+     */
+    @NonNull
+    public <T> OutputWire<T> buildSecondaryOutputWire() {
+        // Intentionally do not register this with the model. Connections using this output wire will be represented
+        // in the model in the same way as connections to the primary output wire.
+        return new OutputWire<>(model, name);
     }
 
     /**
@@ -93,24 +142,12 @@ public abstract class TaskScheduler<OUT> {
     }
 
     /**
-     * Build an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound
-     * via {@link InputWire#bind(Consumer)}.
-     *
-     * @param name the name of the input wire
-     * @param <I>  the type of data that is inserted via this input wire
-     * @return the input wire
-     */
-    @NonNull
-    public final <I> InputWire<I, OUT> buildInputWire(@NonNull final String name) {
-        return new InputWire<>(this, name);
-    }
-
-    /**
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
      * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
      * <p>
-     * Returns -1 if this task scheduler is not monitoring the number of unprocessed tasks. Schedulers do not track the
-     * number of unprocessed tasks by default. This method will always return -1 unless one of the following is true:
+     * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed
+     * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return
+     * {@link ObjectCounter#COUNT_UNDEFINED} unless one of the following is true:
      * <ul>
      * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>
@@ -135,37 +172,6 @@ public abstract class TaskScheduler<OUT> {
      *                                       false (or was unset, default is false)
      */
     public abstract void flush();
-
-    /**
-     * Get the default output wire for this task scheduler. Sometimes referred to as the "primary" output wire.All data
-     * returned by handlers is passed ot this output wire. Calling this method more than once will always return the
-     * same object.
-     *
-     * @return the primary output wire
-     */
-    @NonNull
-    public OutputWire<OUT> getOutputWire() {
-        return primaryOutputWire;
-    }
-
-    /**
-     * By default a component has a single output wire (i.e. the primary output wire). This method allows additional
-     * output wires to be created.
-     *
-     * <p>
-     * Unlike primary wires, secondary output wires need to be passed to a component's constructor. It is considered a
-     * violation of convention to push data into a secondary output wire from any code that is not executing within this
-     * task scheduler.
-     *
-     * @param <T> the type of data that is transmitted over this output wire
-     * @return the secondary output wire
-     */
-    @NonNull
-    public <T> OutputWire<T> buildSecondaryOutputWire() {
-        // Intentionally do not register this with the model. Connections using this output wire will be represented
-        // in the model in the same way as connections to the primary output wire.
-        return new OutputWire<>(model, name);
-    }
 
     /**
      * Add a task to the scheduler. May block if back pressure is enabled.

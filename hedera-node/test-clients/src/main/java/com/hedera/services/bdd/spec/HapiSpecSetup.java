@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.*;
 import java.security.SecureRandom;
 import java.util.*;
@@ -306,6 +307,35 @@ public class HapiSpecSetup {
 
     public RealmID defaultRealm() {
         return props.getRealm("default.realm");
+    }
+
+    /**
+     * Returns whether a {@link HapiSpec} should automatically take and fuzzy-match snapshots of the record stream.
+     *
+     * @return whether a {@link HapiSpec} should automatically take and fuzzy-match snapshots of the record stream
+     */
+    public boolean autoSnapshotManagement() {
+        return props.getBoolean("recordStream.autoSnapshotManagement");
+    }
+
+    /**
+     * Returns the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
+     * with {@code recordStream.autoSnapshotManagement=true}.
+     *
+     * @return the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
+     */
+    public AutoSnapshotRecordSource autoSnapshotTarget() {
+        return props.getAutoSnapshotRecordSource("recordStream.autoSnapshotTarget");
+    }
+
+    /**
+     * Returns the record stream source for the {@link HapiSpec} to use when automatically matching snapshots
+     * with {@code recordStream.autoMatchTarget=true}.
+     *
+     * @return the record stream source for the {@link HapiSpec} to use when automatically matching snapshots
+     */
+    public AutoSnapshotRecordSource autoMatchTarget() {
+        return props.getAutoSnapshotRecordSource("recordStream.autoMatchTarget");
     }
 
     public boolean defaultReceiverSigRequired() {

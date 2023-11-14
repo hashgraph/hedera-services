@@ -18,9 +18,15 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.ModelGroup;
+import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
+import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,6 +37,8 @@ import java.util.Set;
  * A standard implementation of a wiring model.
  */
 public class StandardWiringModel extends WiringModel {
+
+    private final Time time;
 
     /**
      * A map of vertex names to vertices.
@@ -43,6 +51,11 @@ public class StandardWiringModel extends WiringModel {
     private final Set<ModelEdge> edges = new HashSet<>();
 
     /**
+     * Schedules heartbeats. Not created unless needed.
+     */
+    private HeartbeatScheduler heartbeatScheduler = null;
+
+    /**
      * Constructor.
      *
      * @param platformContext the platform context
@@ -50,6 +63,37 @@ public class StandardWiringModel extends WiringModel {
      */
     public StandardWiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         super(platformContext, time);
+        this.time = Objects.requireNonNull(time);
+    }
+
+    /**
+     * Get the heartbeat scheduler, creating it if necessary.
+     *
+     * @return the heartbeat scheduler
+     */
+    @NonNull
+    private HeartbeatScheduler getHeartbeatScheduler() {
+        if (heartbeatScheduler == null) {
+            heartbeatScheduler = new HeartbeatScheduler(this, time, "heartbeat");
+        }
+        return heartbeatScheduler;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
+        return getHeartbeatScheduler().buildHeartbeatWire(period);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
+        return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
 
     /**
@@ -58,6 +102,14 @@ public class StandardWiringModel extends WiringModel {
     @Override
     public boolean checkForCyclicalBackpressure() {
         return CycleFinder.checkForCyclicalBackPressure(vertices.values());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean checkForIllegalDirectSchedulerUsage() {
+        return DirectSchedulerChecks.checkForIllegalDirectSchedulerUse(vertices.values());
     }
 
     /**
@@ -73,9 +125,13 @@ public class StandardWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {
+    public void registerVertex(
+            @NonNull final String vertexName,
+            @NonNull final TaskSchedulerType type,
+            final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
-        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, insertionIsBlocking)) == null;
+        Objects.requireNonNull(type);
+        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -90,10 +146,15 @@ public class StandardWiringModel extends WiringModel {
     @NonNull
     private ModelVertex getVertex(@NonNull final String vertexName) {
         final ModelVertex vertex = vertices.get(vertexName);
-        if (vertex == null) {
-            throw new IllegalArgumentException("Unknown vertex name: " + vertexName);
+        if (vertex != null) {
+            return vertex;
         }
-        return vertex;
+
+        // Create an ad hoc vertex.
+        final ModelVertex adHocVertex = new ModelVertex(vertexName, TaskSchedulerType.DIRECT, true);
+
+        vertices.put(vertexName, adHocVertex);
+        return adHocVertex;
     }
 
     /**
@@ -104,11 +165,13 @@ public class StandardWiringModel extends WiringModel {
             @NonNull final String originVertex,
             @NonNull final String destinationVertex,
             @NonNull final String label,
-            final boolean injection) {
+            @NonNull final SolderType solderType) {
+
+        final boolean blockingEdge = solderType == SolderType.PUT;
 
         final ModelVertex origin = getVertex(originVertex);
         final ModelVertex destination = getVertex(destinationVertex);
-        final boolean blocking = !injection && destination.isInsertionIsBlocking();
+        final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
 
         final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
         origin.connectToEdge(edge);
@@ -117,6 +180,26 @@ public class StandardWiringModel extends WiringModel {
         if (!unique) {
             throw new IllegalArgumentException(
                     "Duplicate edge: " + originVertex + " -> " + destinationVertex + ", label = " + label);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.start();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.stop();
         }
     }
 }

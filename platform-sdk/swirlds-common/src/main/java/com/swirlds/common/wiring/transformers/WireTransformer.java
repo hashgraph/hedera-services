@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.transformers;
 
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -46,7 +47,7 @@ public class WireTransformer<A, B> implements Consumer<A> {
      */
     public WireTransformer(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
-        model.registerVertex(name, true);
+        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
         this.transformer = Objects.requireNonNull(transformer);
         outputWire = new OutputWire<>(model, name);
     }
