@@ -1,4 +1,4 @@
-package com.swirlds.sample.bar;
+package com.swirlds.sample.foo;
 
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;

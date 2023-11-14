@@ -24,6 +24,7 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -84,8 +85,9 @@ public class LineBasedFormat {
 
         Marker marker = event.marker();
         if (marker != null) {
-            printWriter.print(" - M:");
+            printWriter.print(" - [M:");
             printWriter.print(asString(marker));
+            printWriter.print("]");
         }
 
         final Map<String, String> context = event.context();
@@ -126,7 +128,7 @@ public class LineBasedFormat {
         if (level == null) {
             return "UNDEFINED";
         } else {
-            return level.name();
+            return "%-5s".formatted(level.name());
         }
     }
 
@@ -160,7 +162,7 @@ public class LineBasedFormat {
             return "UNDEFINED-TIMESTAMP       ";
         } else {
             try {
-                return formatter.format(instant);
+                return "%-26s".formatted(formatter.format(instant));
             } catch (final Throwable e) {
                 EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
                 return "BROKEN-TIMESTAMP          ";
@@ -178,12 +180,8 @@ public class LineBasedFormat {
         if (marker == null) {
             return "null";
         } else {
-            final Marker parent = marker.previous();
-            if (parent == null) {
-                return "Marker{name='" + marker.name() + "'}";
-            } else {
-                return "Marker{name='" + marker.name() + "', parent='" + asString(parent) + "'}";
-            }
+            return String.join(", ", marker.getAllMarkerNames());
+
         }
     }
 }

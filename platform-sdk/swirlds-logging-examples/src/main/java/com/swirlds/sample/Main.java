@@ -2,8 +2,8 @@ package com.swirlds.sample;
 
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;
-import com.swirlds.sample.bar.FooClass;
-import com.swirlds.sample.foo.BarClass;
+import com.swirlds.sample.bar.BarClass;
+import com.swirlds.sample.foo.FooClass;
 
 public class Main {
     private static final Logger LOGGER = Loggers.getLogger(Main.class);
