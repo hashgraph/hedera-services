@@ -122,6 +122,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];

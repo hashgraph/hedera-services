@@ -21,8 +21,8 @@ import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.components.Chart;
@@ -198,9 +198,9 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
                 c.gridwidth = GridBagConstraints.REMAINDER; // end of row
                 boxesPanel.add(spacer2, c);
             }
-            if (metric instanceof LegacyMetric legacyMetric
-                    && (legacyMetric.getStatsBuffered() == null
-                            || legacyMetric.getStatsBuffered().getAllHistory() == null)) {
+            if (metric instanceof PlatformMetric platformMetric
+                    && (platformMetric.getStatsBuffered() == null
+                            || platformMetric.getStatsBuffered().getAllHistory() == null)) {
                 // if no history, then box is gray, and not clickable
                 statBoxes[i].setBackground(LIGHT_GRAY);
                 statBoxes[i].setOpaque(true);
