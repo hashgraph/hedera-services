@@ -25,8 +25,9 @@ import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.api.internal.level.LoggingLevelConfig;
+import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,7 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * The level configuration of the logging system that checks if a specific logger is enabled for a specific level.
      */
-    private final LoggingLevelConfig levelConfig;
+    private final HandlerLoggingLevelConfig levelConfig;
 
     /**
      * The factory that is used to create log events.
@@ -77,7 +78,7 @@ public class LoggingSystem implements LogEventConsumer {
      */
     public LoggingSystem(@NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
-        this.levelConfig = new LoggingLevelConfig(configuration);
+        this.levelConfig = new HandlerLoggingLevelConfig(configuration);
         this.loggers = new ConcurrentHashMap<>();
         this.handlers = new CopyOnWriteArrayList<>();
     }

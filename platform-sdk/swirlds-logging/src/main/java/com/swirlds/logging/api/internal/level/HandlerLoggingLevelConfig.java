@@ -23,6 +23,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -94,6 +95,14 @@ public class HandlerLoggingLevelConfig {
     }
 
     /**
+     * Creates a new root configuration based on the given configuration.
+     * @param configuration The configuration.
+     */
+    public HandlerLoggingLevelConfig(@NonNull Configuration configuration) {
+        this(configuration, "");
+    }
+
+    /**
      * Updates the configuration based on the given configuration. That method can be used to change the logging level
      * dynamically at runtime.
      *
@@ -102,13 +111,23 @@ public class HandlerLoggingLevelConfig {
     public void update(final @NonNull Configuration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
-        final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(name);
         final ConfigLevel defaultLevel =
                 configuration.getValue(PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
-        final ConfigLevel defaultHandlerLevel =
-                configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
+        final ConfigLevel defaultHandlerLevel;
 
         levelConfigProperties.clear();
+        markerCache.clear();
+
+        if (!name.isBlank()) {
+            final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(name);
+            defaultHandlerLevel =
+                    configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
+            levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
+            markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
+        } else {
+             defaultHandlerLevel = ConfigLevel.UNDEFINED;
+        }
+
         if (defaultLevel == ConfigLevel.UNDEFINED && defaultHandlerLevel == ConfigLevel.UNDEFINED) {
             levelConfigProperties.put("", ConfigLevel.INFO);
         } else if (defaultHandlerLevel != ConfigLevel.UNDEFINED) {
@@ -118,12 +137,9 @@ public class HandlerLoggingLevelConfig {
         }
 
         levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
-        levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
         levelCache.clear();
 
-        markerCache.clear();
         markerCache.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
-        markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
     }
 
     @NonNull

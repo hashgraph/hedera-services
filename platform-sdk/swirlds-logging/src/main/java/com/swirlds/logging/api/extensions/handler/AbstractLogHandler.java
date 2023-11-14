@@ -18,8 +18,9 @@ package com.swirlds.logging.api.extensions.handler;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.internal.level.LoggingLevelConfig;
+import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
 
 /**
@@ -44,7 +45,7 @@ public abstract class AbstractLogHandler implements LogHandler {
     /**
      * The logging level configuration. This is used to define specific logging levels for logger names.
      */
-    private final LoggingLevelConfig loggingLevelConfig;
+    private final HandlerLoggingLevelConfig loggingLevelConfig;
 
     /**
      * Creates a new log handler.
@@ -55,7 +56,7 @@ public abstract class AbstractLogHandler implements LogHandler {
     public AbstractLogHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
         this.configKey = Objects.requireNonNull(configKey, "configKey must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.loggingLevelConfig = new LoggingLevelConfig(configuration, PROPERTY_HANDLER_LEVEL.formatted(configKey));
+        this.loggingLevelConfig = new HandlerLoggingLevelConfig(configuration, configKey);
     }
 
     @Override
@@ -65,7 +66,7 @@ public abstract class AbstractLogHandler implements LogHandler {
     }
 
     @Override
-    public boolean isEnabled(String name, Level level) {
+    public boolean isEnabled(@NonNull final String name, @NonNull final Level level) {
         return loggingLevelConfig.isEnabled(name, level);
     }
 

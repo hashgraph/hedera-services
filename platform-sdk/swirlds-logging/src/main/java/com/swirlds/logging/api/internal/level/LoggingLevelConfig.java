@@ -21,6 +21,7 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * In that case all packages and classes under the package {@code com.swirlds.logging.api} will be configured to use the
  * level INFO.
+ * TODO: Timo: Remove this class
  */
+@Deprecated(forRemoval = true)
 public class LoggingLevelConfig {
 
     /**
