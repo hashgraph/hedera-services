@@ -121,11 +121,11 @@ public final class DataFileCommon {
     static final FieldDefinition FIELD_DATAFILE_INDEX =
             new FieldDefinition("index", FieldType.UINT32, false, true, false, 1);
     static final FieldDefinition FIELD_DATAFILE_CREATION_SECONDS =
-            new FieldDefinition("creationDateSeconds", FieldType.UINT64, false, true, false, 2);
+            new FieldDefinition("creationDateSeconds", FieldType.UINT64, false, false, false, 2);
     static final FieldDefinition FIELD_DATAFILE_CREATION_NANOS =
-            new FieldDefinition("creationDateNanos", FieldType.UINT32, false, true, false, 3);
+            new FieldDefinition("creationDateNanos", FieldType.UINT32, false, false, false, 3);
     static final FieldDefinition FIELD_DATAFILE_ITEMS_COUNT =
-            new FieldDefinition("itemsCount", FieldType.FIXED64, false, true, false, 4);
+            new FieldDefinition("itemsCount", FieldType.FIXED64, false, false, false, 4);
     static final FieldDefinition FIELD_DATAFILE_ITEM_VERSION =
             new FieldDefinition("itemsVersion", FieldType.UINT64, false, true, false, 5);
     static final FieldDefinition FIELD_DATAFILE_COMPACTION_LEVEL =
@@ -231,6 +231,7 @@ public final class DataFileCommon {
         }
         final String fileName = path.getFileName().toString();
         return fileName.startsWith(filePrefix)
+                && !fileName.contains("metadata")
                 && (fileName.endsWith(FILE_EXTENSION) || fileName.endsWith(FILE_EXTENSION_JDB));
     }
 

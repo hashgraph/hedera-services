@@ -349,11 +349,11 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private class BucketEntry {
 
         /** Key hash code */
-        private int hashCode;
-        /** Long value */
+        private final int hashCode;
+        /** Long value. May be updated */
         private long value;
         /** Key */
-        private K key;
+        private final K key;
 
         /** Creates new bucket entry from hash code, value, and serialized key bytes */
         public BucketEntry(final int hashCode, final long value, @NonNull final K key) {
@@ -365,9 +365,9 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         /** Creates new bucket entry by reading its fields from the given protobuf buffer */
         public BucketEntry(final ReadableSequentialData entryData) {
             // defaults
-            hashCode = 0;
-            value = 0;
-            key = null;
+            int hashCode = 0;
+            long value = 0;
+            K key = null;
 
             // read fields
             while (entryData.hasRemaining()) {
@@ -392,6 +392,10 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             if (key == null) {
                 throw new IllegalArgumentException("Null key for bucket entry");
             }
+
+            this.hashCode = hashCode;
+            this.value = value;
+            this.key = key;
         }
 
         /** Creates new bucket entry by reading its fields from the given binary buffer */

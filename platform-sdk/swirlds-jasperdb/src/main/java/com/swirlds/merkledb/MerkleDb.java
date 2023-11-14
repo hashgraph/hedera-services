@@ -886,8 +886,8 @@ public final class MerkleDb {
                 size += ProtoUtils.sizeOfTag(FIELD_TABLEMETADATA_TABLEID, ProtoUtils.WIRE_TYPE_VARINT);
                 size += ProtoUtils.sizeOfVarInt32(tableId);
             }
-            size += ProtoUtils.sizeOfTag(FIELD_TABLEMETADATA_TABLENAME, ProtoUtils.WIRE_TYPE_DELIMITED);
-            size += tableName.getBytes(StandardCharsets.UTF_8).length;
+            size += ProtoUtils.sizeOfDelimited(
+                    FIELD_TABLEMETADATA_TABLENAME, tableName.getBytes(StandardCharsets.UTF_8).length);
             size += ProtoUtils.sizeOfDelimited(FIELD_TABLEMETADATA_TABLECONFIG, tableConfig.pbjSizeInBytes());
             return size;
         }

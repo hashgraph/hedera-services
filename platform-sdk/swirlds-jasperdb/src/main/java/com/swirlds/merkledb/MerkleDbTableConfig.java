@@ -66,7 +66,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     private static final FieldDefinition FIELD_TABLECONFIG_HASHVERSION =
             new FieldDefinition("hashVersion", FieldType.UINT32, false, true, false, 1);
     private static final FieldDefinition FIELD_TABLECONFIG_DIGESTTYPEID =
-            new FieldDefinition("digestTypeId", FieldType.UINT32, false, true, false, 2);
+            new FieldDefinition("digestTypeId", FieldType.UINT32, false, false, false, 2);
     private static final FieldDefinition FIELD_TABLECONFIG_KEYVERSION =
             new FieldDefinition("keyVersion", FieldType.UINT32, false, true, false, 3);
     private static final FieldDefinition FIELD_TABLECONFIG_KEYSERIALIZERCLSID =
@@ -440,27 +440,6 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
         out.writeSerializable(keySerializer, true);
         out.writeShort(valueVersion);
         out.writeSerializable(valueSerializer, true);
-    }
-
-    public void serializePbj(final WritableSequentialData out) throws IOException {
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_PREFERDISKINDICES);
-        out.writeVarInt(preferDiskBasedIndices ? 1 : 0, false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_MAXNUMBEROFKEYS);
-        out.writeVarLong(maxNumberOfKeys, false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD);
-        out.writeVarLong(hashesRamToDiskThreshold, false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_HASHVERSION);
-        out.writeVarInt(hashVersion, false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_DIGESTTYPEID);
-        out.writeVarInt(hashType.id(), false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_KEYVERSION);
-        out.writeVarInt(keyVersion, false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_KEYSERIALIZERCLSID);
-        out.writeVarLong(keySerializer.getClassId(), false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_VALUEVERSION);
-        out.writeVarInt(valueVersion, false);
-        ProtoUtils.writeTag(out, FIELD_TABLECONFIG_VALUESERIALIZERCLSID);
-        out.writeVarLong(valueSerializer.getClassId(), false);
     }
 
     /**

@@ -8,7 +8,7 @@ option java_multiple_files = true;
 message DataFile {
 
     // File index in its file collection
-    uint32 index = 1;
+    optional uint32 index = 1;
 
     // Creation timestamp, seconds
     uint64 creationDateSeconds = 2;
@@ -17,10 +17,13 @@ message DataFile {
     uint32 creationDateNanos = 3;
 
     // Items count
-    uint64 itemsCount = 4;
+    fixed64 itemsCount = 4;
 
     // Data item version. May not be needed
-    uint64 itemVersion = 5;
+    optional uint64 itemVersion = 5;
+
+    // Compaction level. Always less or equal to 127
+    optional uint32 compactionLevel = 6;
 
     // Data items
     repeated bytes items = 11;

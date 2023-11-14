@@ -34,7 +34,6 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -124,6 +123,7 @@ public class DataFileMetadata {
         int creationNanos = 0;
         long itemsCount = 0;
         long serializationVersion = 0;
+        byte compactionLevel = 0;
 
         // Track which fields are read, so we don't have to scan through the whole file
         final Set<String> fieldsToRead = new HashSet<>(Set.of(
@@ -146,7 +146,7 @@ public class DataFileMetadata {
                     creationNanos = in.readVarInt(false);
                     fieldsToRead.remove("creationNanos");
                 } else if (fieldNum == FIELD_DATAFILE_ITEMS_COUNT.number()) {
-                    itemsCount = in.readLong(ByteOrder.LITTLE_ENDIAN);
+                    itemsCount = in.readLong();
                     fieldsToRead.remove("itemsCount");
                 } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
                     serializationVersion = in.readVarLong(false);
@@ -171,11 +171,14 @@ public class DataFileMetadata {
         this.creationDate = Instant.ofEpochSecond(creationSeconds, creationNanos);
         this.itemsCount = itemsCount;
         this.serializationVersion = serializationVersion;
+        this.compactionLevel = compactionLevel;
     }
 
     void writeTo(final BufferedData out) {
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_INDEX);
-        out.writeVarInt(getIndex(), false);
+        if (getIndex() != 0) {
+            ProtoUtils.writeTag(out, FIELD_DATAFILE_INDEX);
+            out.writeVarInt(getIndex(), false);
+        }
         final Instant creationInstant = getCreationDate();
         ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_SECONDS);
         out.writeVarLong(creationInstant.getEpochSecond(), false);
@@ -183,11 +186,15 @@ public class DataFileMetadata {
         out.writeVarInt(creationInstant.getNano(), false);
         dataItemCountHeaderOffset = out.position();
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
-        out.writeLong(0, ByteOrder.LITTLE_ENDIAN); // will be updated later
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
-        out.writeVarLong(getSerializationVersion(), false);
-        ProtoUtils.writeTag(out, FIELD_DATAFILE_COMPACTION_LEVEL);
-        out.writeVarInt(compactionLevel, false);
+        out.writeLong(0); // will be updated later
+        if (getSerializationVersion() != 0) {
+            ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
+            out.writeVarLong(getSerializationVersion(), false);
+        }
+        if (getCompactionLevel() != 0) {
+            ProtoUtils.writeTag(out, FIELD_DATAFILE_COMPACTION_LEVEL);
+            out.writeVarInt(compactionLevel, false);
+        }
     }
 
     /**
@@ -208,9 +215,8 @@ public class DataFileMetadata {
         this.itemsCount = count;
         assert dataItemCountHeaderOffset != 0;
         out.position(dataItemCountHeaderOffset);
-        //        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, count);
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
-        out.writeLong(count, ByteOrder.LITTLE_ENDIAN);
+        out.writeLong(count);
     }
 
     /** Get the files index, out of a set of data files */

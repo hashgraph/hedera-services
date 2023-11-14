@@ -76,7 +76,7 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
             this.itemsCount = buf.getLong();
             this.index = buf.getInt();
             this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            this.compactionLevel = buf.get(); // backwards compatibility: used to be a byte for isMergeFile
+            this.compactionLevel = buf.get();
             this.serializationVersion = buf.getLong();
         }
     }
