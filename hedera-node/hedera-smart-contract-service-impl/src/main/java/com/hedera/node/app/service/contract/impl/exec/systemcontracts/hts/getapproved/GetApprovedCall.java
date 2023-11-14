@@ -77,7 +77,8 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
         }
         return isErcCall
                 ? successResult(
-                        ERC_GET_APPROVED.getOutputs().encodeElements(spenderAddress), gasCalculator.viewGasRequirement())
+                        ERC_GET_APPROVED.getOutputs().encodeElements(spenderAddress),
+                        gasCalculator.viewGasRequirement())
                 : successResult(
                         HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), spenderAddress),
                         gasCalculator.viewGasRequirement());
