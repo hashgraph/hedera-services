@@ -47,8 +47,14 @@ public enum SnapshotMatchMode {
      */
     EXPECT_STREAMLINED_INGEST_RECORDS,
     /**
-     * When involving custom fees, the fee charged for a transaction is not deterministic, because
+     * When a transaction involving custom fees transfer fails, the fee charged for a transaction is not deterministic, because
      * of the way mono-service charges fees.This mode allows for fuzzy-matching of records that have different fees.
      */
-    HIGHLY_NON_DETERMINISTIC_FEES
+    HIGHLY_NON_DETERMINISTIC_FEES,
+    /**
+     * In mono-service when a CryptoTransfer with auto-creation fails, we are re-claiming pendingAliases but not reclaiming ids.
+     * So when we compare the snapshot records, we will have different ids in the transaction receipt. This mode allows for
+     * fuzzy-matching of records that have different ids.
+     */
+    ALLOW_SKIPPED_ENTITY_IDS
 }
