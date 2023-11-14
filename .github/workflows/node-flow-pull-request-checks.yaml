@@ -108,7 +108,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
-  hapi-tests:
+  hapi-tests-1:
     name: HAPI Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
@@ -117,6 +117,27 @@ jobs:
       enable-e2e-tests: false
       enable-integration-tests: false
       enable-hapi-tests: true
+      enable-hapi-tests-1: true
+      enable-hapi-tests-2: false
+      enable-sonar-analysis: false
+      enable-network-log-capture: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  hapi-tests-2:
+    name: HAPI Tests (time consuming)
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: Standard
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-hapi-tests: true
+      enable-hapi-tests-1: false
+      enable-hapi-tests-2: true
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
