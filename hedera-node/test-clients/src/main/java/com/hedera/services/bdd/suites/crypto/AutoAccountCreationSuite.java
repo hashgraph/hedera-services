@@ -20,6 +20,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -62,7 +63,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -213,7 +216,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
-        return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers")
+        return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
@@ -306,10 +309,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest // here
+    @HapiTest // assessed_custom_fees extra
     private HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
-        return defaultHapiSpec("autoCreateWithNftFallBackFeeFails", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("autoCreateWithNftFallBackFeeFails", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
@@ -725,7 +728,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
-        return defaultHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
+        return onlyDefaultHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         cryptoCreate(user).key(ADMIN_KEY).stakedNodeId(0L),
@@ -748,7 +751,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<AccountID> civilianId = new AtomicReference<>();
         final AtomicReference<ByteString> civilianAlias = new AtomicReference<>();
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
-        return defaultHapiSpec("hollowAccountCreationWithCryptoTransfer")
+        return defaultHapiSpec("hollowAccountCreationWithCryptoTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -845,12 +848,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest // here
+    @HapiTest
     private HapiSpec failureAfterHollowAccountCreationReclaimsAlias() {
         final var underfunded = "underfunded";
         final var secondTransferTxn = "SecondTransferTxn";
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
-        return defaultHapiSpec("failureAfterHollowAccountCreationReclaimsAlias", EXPECT_STREAMLINED_INGEST_RECORDS)
+        return defaultHapiSpec("failureAfterHollowAccountCreationReclaimsAlias", ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))

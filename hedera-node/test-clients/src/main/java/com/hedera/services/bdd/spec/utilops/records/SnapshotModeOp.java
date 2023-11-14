@@ -164,7 +164,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("AutoAccountCreation", "failureAfterHollowAccountCreationReclaimsAlias");
+        final var snapshotFileMeta =
+                new SnapshotFileMeta("AutoAccountCreation", "failureAfterHollowAccountCreationReclaimsAlias");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -553,7 +554,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         } else {
             // Transaction fees can vary by based on the size of the sig map
             final var maxVariation = feeVariation(matchModes);
-            if ("transactionFee".equals(fieldName)) {;
+            if ("transactionFee".equals(fieldName)) {
+                ;
                 Assertions.assertTrue(
                         Math.abs((long) expected - (long) actual) <= maxVariation,
                         "Transaction fees '" + expected + "' and '" + actual
@@ -565,12 +567,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Amount '" + expected + "' and '" + actual
                                 + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
-            } else if("accountNum".equals(fieldName) && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)){
+            } else if ("accountNum".equals(fieldName) && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
-                        "AccountNum '" + expected + "' was not greater than '" + actual
-                                + mismatchContext.get());
-            }else {
+                        "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
+            } else {
                 Assertions.assertEquals(
                         expected,
                         actual,
@@ -580,10 +581,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         }
     }
 
-    private long feeVariation(Set<SnapshotMatchMode> matchModes){
-        if(matchModes.contains(HIGHLY_NON_DETERMINISTIC_FEES)){
+    private long feeVariation(Set<SnapshotMatchMode> matchModes) {
+        if (matchModes.contains(HIGHLY_NON_DETERMINISTIC_FEES)) {
             return CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR;
-        }else if (matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES)) {
+        } else if (matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES)) {
             return MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR;
         }
         return MAX_NORMAL_FEE_VARIATION_IN_TINYBARS;

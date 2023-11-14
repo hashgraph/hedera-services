@@ -2033,8 +2033,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
         return defaultHapiSpec(
-                        "hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance",
-                        HIGHLY_NON_DETERMINISTIC_FEES)
+                        "hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
