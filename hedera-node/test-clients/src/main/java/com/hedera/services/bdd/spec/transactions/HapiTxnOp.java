@@ -579,7 +579,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     public T signedByPayerAnd(String... keys) {
-        return signedBy(Stream.concat(Stream.of(DEFAULT_PAYER), Stream.of(keys)).toArray(String[]::new));
+        final String[] copy = new String[keys.length + 1];
+        copy[0] = DEFAULT_PAYER;
+        System.arraycopy(keys, 0, copy, 1, keys.length);
+        return signedBy(copy);
     }
 
     public T signedBy(String... keys) {
