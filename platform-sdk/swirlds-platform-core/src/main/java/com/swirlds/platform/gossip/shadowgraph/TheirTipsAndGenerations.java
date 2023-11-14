@@ -20,24 +20,28 @@ import com.swirlds.common.crypto.Hash;
 import java.util.List;
 import java.util.Objects;
 
-public final class Phase1Response {
-    private static final Phase1Response SYNC_REJECTED_RESPONSE = new Phase1Response(null, null);
+/**
+ * The tips and generations of the sync peer. This is the first thing sent/received during a sync (after protocol
+ * negotiation).
+ */
+public final class TheirTipsAndGenerations {
+    private static final TheirTipsAndGenerations SYNC_REJECTED_RESPONSE = new TheirTipsAndGenerations(null, null);
 
     private final Generations generations;
     private final List<Hash> tips;
 
-    private Phase1Response(final Generations generations, final List<Hash> tips) {
+    private TheirTipsAndGenerations(final Generations generations, final List<Hash> tips) {
         this.generations = generations;
         this.tips = tips;
     }
 
-    public static Phase1Response create(final Generations generations, final List<Hash> tips) {
+    public static TheirTipsAndGenerations create(final Generations generations, final List<Hash> tips) {
         Objects.requireNonNull(generations, "generations cannot be null");
         Objects.requireNonNull(tips, "tips cannot be null");
-        return new Phase1Response(generations, tips);
+        return new TheirTipsAndGenerations(generations, tips);
     }
 
-    public static Phase1Response syncRejected() {
+    public static TheirTipsAndGenerations syncRejected() {
         return SYNC_REJECTED_RESPONSE;
     }
 

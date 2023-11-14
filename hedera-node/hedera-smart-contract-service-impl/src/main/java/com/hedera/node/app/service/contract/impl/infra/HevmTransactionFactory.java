@@ -282,7 +282,7 @@ public class HevmTransactionFactory {
         if (!isEmpty(effectiveKey)) {
             try {
                 attributeValidator.validateKey(body.adminKeyOrElse(Key.DEFAULT));
-            } catch (Exception ignore) {
+            } catch (HandleException | NullPointerException ignore) {
                 throw new HandleException(SERIALIZATION_FAILED);
             }
         }
@@ -304,7 +304,7 @@ public class HevmTransactionFactory {
             try {
                 return Bytes.fromHex(new String(initcode.contents().toByteArray())
                         + body.constructorParameters().toHex());
-            } catch (Exception ignore) {
+            } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
         }

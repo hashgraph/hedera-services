@@ -370,7 +370,14 @@ public class HapiSpec implements Runnable {
                     Stream.of(given, when, then).flatMap(Arrays::stream).toList());
         }
 
-        exec(ops);
+        try {
+            exec(ops);
+        } catch (Throwable t) {
+            log.error("Uncaught exception in HapiSpec::exec", t);
+            status = FAILED;
+            failure = new Failure(t, "Unhandled exception executing '" + name + "' - " + t.getMessage());
+            tearDown();
+        }
 
         if (hapiSetup.costSnapshotMode() == TAKE) {
             takeCostSnapshot();
