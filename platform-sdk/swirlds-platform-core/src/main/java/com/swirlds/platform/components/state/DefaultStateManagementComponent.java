@@ -62,7 +62,7 @@ import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
-import com.swirlds.platform.state.signed.StateWriteRequest;
+import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -223,18 +223,20 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 .withExternalBackPressure(false)
                 .build()
                 .cast();
-        final InputWire<StateWriteRequest, StateSavingResult> saveStateToDisk = savedStateScheduler.buildInputWire(
+        final InputWire<ReservedSignedState, StateSavingResult> saveStateToDisk = savedStateScheduler.buildInputWire(
                 "save state to disk");
         saveStateToDisk.bind(signedStateFileManager::saveStateTask);
+        final InputWire<StateDumpRequest, Void> dumpStateToDisk = savedStateScheduler.buildInputWire(
+                "dump state to disk").cast();
+        dumpStateToDisk.bind(signedStateFileManager::dumpStateTask);
         savedStateScheduler
                 .getOutputWire()
-                .buildFilter("filter out of band", StateSavingResult::inBand)
                 .buildFilter("filter success", StateSavingResult::success)
                 .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
                 .solderTo("status manager", statusActionSubmitter::submitStatusAction);
         savedStateScheduler.getOutputWire().solderTo("app comm", stateToDiskEventConsumer);
 
-        savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer);
+        savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer, dumpStateToDisk::offer);
 
         signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),

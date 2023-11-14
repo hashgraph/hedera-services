@@ -11,16 +11,13 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StateToDiskReason;
-import com.swirlds.platform.state.signed.StateWriteRequest;
+import com.swirlds.platform.state.signed.StateDumpRequest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,11 +29,16 @@ public class SavedStateController {
      */
     private Instant previousSavedStateTimestamp;
     private final StateConfig stateConfig;
-    private final BooleanFunction<StateWriteRequest> stateWriter;
+    private final BooleanFunction<ReservedSignedState> stateWrite;
+    private final BooleanFunction<StateDumpRequest> stateDump;
 
-    public SavedStateController(final StateConfig stateConfig, final BooleanFunction<StateWriteRequest> stateWriter) {
+    public SavedStateController(
+            final StateConfig stateConfig,
+            final BooleanFunction<ReservedSignedState> stateWrite,
+            final BooleanFunction<StateDumpRequest> stateDump) {
         this.stateConfig = stateConfig;
-        this.stateWriter = stateWriter;
+        this.stateWrite = stateWrite;
+        this.stateDump = stateDump;
     }
 
     /**
@@ -50,19 +52,13 @@ public class SavedStateController {
         final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
 
         if (reason != null) {
-            saveToDisk(new StateWriteRequest(
-                    signedState.reserve("saving to disk"),
-                    null,
-                    false), reason);
+            saveToDisk(signedState.reserve("saving to disk"), reason);
         }
         // if a null reason is returned, then there isn't anything to do, since the state shouldn't be saved
     }
 
     public synchronized void reconnectStateReceived(@NonNull final SignedState signedState) {
-        saveToDisk(new StateWriteRequest(
-                signedState.reserve("saving to disk"),
-                null,
-                false), RECONNECT);
+        saveToDisk(signedState.reserve("saving to disk after reconnect"), RECONNECT);
     }
 
     /**
@@ -83,33 +79,15 @@ public class SavedStateController {
             @NonNull final SignedState signedState, @NonNull final StateToDiskReason reason, final boolean blocking) {
         Objects.requireNonNull(signedState);
         Objects.requireNonNull(reason);
+        signedState.markAsStateToSave(reason);
 
         final CountDownLatch latch = new CountDownLatch(1);
-
-        saveToDisk(new StateWriteRequest(
-                signedState.reserve("saving to disk"),
+        final StateDumpRequest request = new StateDumpRequest(
+                signedState.reserve("dumping to disk"),
                 success -> latch.countDown(),
-                true), reason);
+                true);
 
-        if (blocking) {
-            Uninterruptable.abortAndLogIfInterrupted(
-                    latch::await,
-                    "interrupted while waiting for state dump to complete, state dump may not be completed");
-        }
-    }
-
-    private void saveToDisk(@NonNull final StateWriteRequest request, final StateToDiskReason reason) {
-        final SignedState signedState = request.reservedSignedState().get();
-        logger.info(
-                STATE_TO_DISK.getMarker(),
-                "Signed state from round {} created, "
-                        + "will eventually be written to disk once sufficient signatures are collected, for reason: {}",
-                signedState.getRound(),
-                reason);
-
-        previousSavedStateTimestamp = signedState.getConsensusTimestamp();
-        signedState.markAsStateToSave(reason);
-        final boolean accepted = stateWriter.apply(request);
+        final boolean accepted = stateDump.apply(request);
 
         if (!accepted) {
             if (request.finishedCallback() != null) {
@@ -123,6 +101,36 @@ public class SavedStateController {
                     signedState.getRound());
 
             request.reservedSignedState().close();
+        }
+
+        if (blocking) {
+            Uninterruptable.abortAndLogIfInterrupted(
+                    latch::await,
+                    "interrupted while waiting for state dump to complete, state dump may not be completed");
+        }
+    }
+
+    private void saveToDisk(@NonNull final ReservedSignedState state, final StateToDiskReason reason) {
+        final SignedState signedState = state.get();
+        logger.info(
+                STATE_TO_DISK.getMarker(),
+                "Signed state from round {} created, "
+                        + "will eventually be written to disk once sufficient signatures are collected, for reason: {}",
+                signedState.getRound(),
+                reason);
+
+        previousSavedStateTimestamp = signedState.getConsensusTimestamp();
+        signedState.markAsStateToSave(reason);
+        final boolean accepted = stateWrite.apply(state);
+
+        if (!accepted) {
+            logger.error(
+                    STATE_TO_DISK.getMarker(),
+                    "Unable to save signed state to disk for round {} due to backlog of "
+                            + "operations in the SignedStateManager task queue.",
+                    signedState.getRound());
+
+            state.close();
         }
     }
 

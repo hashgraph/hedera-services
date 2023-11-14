@@ -128,33 +128,39 @@ public class SignedStateFileManager {
      * <p>
      * This method shouldn't be called if the state was written out-of-band.
      */
-    public StateSavingResult saveStateTask(@NonNull final StateWriteRequest request) {
+    public StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
         final long start = time.nanoTime();
         final StateSavingResult stateSavingResult;
         final boolean success;
 
         // the state is reserved before it is handed to this method, and it is released when we are done
-        try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
+        try (reservedSignedState) {
             final SignedState signedState = reservedSignedState.get();
-            success = saveStateTask(signedState, request.outOfBand());
-            final long minGen = success && !request.outOfBand() ? deleteOldStates() : EventConstants.GENERATION_UNDEFINED;
+            success = saveStateTask(signedState, false);
+            final long minGen = success ? deleteOldStates() : EventConstants.GENERATION_UNDEFINED;
             stateSavingResult = new StateSavingResult(
                     signedState.getRound(),
                     success,
-                    request.outOfBand(),
                     signedState.isFreezeState(),
                     signedState.getConsensusTimestamp()
             );
+        }
+        metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
+        return stateSavingResult;
+    }
+
+    public void dumpStateTask(@NonNull final StateDumpRequest request) {
+        final boolean success;
+
+        // the state is reserved before it is handed to this method, and it is released when we are done
+        try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
+            success = saveStateTask(reservedSignedState.get(), true);
         }
         if (request.finishedCallback() != null) {
             request.finishedCallback().accept(success);
         }
-        metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-        if (!request.outOfBand()) {
-            metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-        }
-        return stateSavingResult;
     }
 
     /**
