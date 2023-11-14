@@ -31,6 +31,7 @@ public class FakeCryptoCreateRecordBuilder {
             private AccountID accountID;
             private Bytes evmAddress;
             private long transactionFee;
+            private String memo;
 
             @NotNull
             @Override
@@ -56,6 +57,13 @@ public class FakeCryptoCreateRecordBuilder {
             @Override
             public CryptoCreateRecordBuilder transactionFee(@NotNull final long transactionFee) {
                 this.transactionFee = transactionFee;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public CryptoCreateRecordBuilder memo(@NotNull final String memo) {
+                this.memo = memo;
                 return this;
             }
         };

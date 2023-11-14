@@ -185,18 +185,24 @@ public class RecordFinalizerBase {
 
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
             // will be explicitly set as 0.0.0
+            AccountID receiverAccountId = null;
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
                 if (modifiedNft.hasOwnerId()) {
-                    builder.receiverAccountID(modifiedNft.ownerId());
+                    receiverAccountId = modifiedNft.ownerId();
                 } else {
-                    builder.receiverAccountID(token.treasuryAccountId());
+                    receiverAccountId = token.treasuryAccountId();
                 }
             } else {
-                builder.receiverAccountID(ZERO_ACCOUNT_ID);
+                receiverAccountId = ZERO_ACCOUNT_ID;
+            }
+            // If both sender and receiver are same it is not a transfer
+            if (receiverAccountId.equals(senderAccountId)) {
+                continue;
             }
             final var nftTransfer = builder.serialNumber(nftId.serialNumber())
                     .senderAccountID(senderAccountId)
+                    .receiverAccountID(receiverAccountId)
                     .build();
 
             if (!nftChanges.containsKey(nftId.tokenId())) {

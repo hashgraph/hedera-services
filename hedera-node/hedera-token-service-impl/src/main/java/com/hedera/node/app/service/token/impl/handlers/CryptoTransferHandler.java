@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -24,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -473,9 +476,15 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var involvedTokens = new ArrayList<TokenID>();
         final var customFeeAssessor = new CustomFeeAssessmentStep(op);
         List<AssessedCustomFee> assessedCustomFees;
+        boolean triedAndFailedToUseCustomFees = false;
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
         } catch (HandleException ignore) {
+            final var status = ignore.getStatus();
+            // If the transaction tried and failed to use custom fees, enable this flag.
+            // This is used to charge a different canonical fees.
+            triedAndFailedToUseCustomFees = (status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
+                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             assessedCustomFees = new ArrayList<>();
         }
         totalXfers += assessedCustomFees.size();
@@ -495,19 +504,41 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         /* Get subType based on the above information */
         final var subType = getSubType(
-                numNftOwnershipChanges, totalTokenTransfers, customFeeHbarTransfers, customFeeTokenTransfers);
-        return feeContext
+                numNftOwnershipChanges,
+                totalTokenTransfers,
+                customFeeHbarTransfers,
+                customFeeTokenTransfers,
+                triedAndFailedToUseCustomFees);
+        final var ans = feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
+        return ans;
     }
 
+    /**
+     * Get the subType based on the number of NFT ownership changes, number of fungible token transfers,
+     * number of custom fee hbar transfers, number of custom fee token transfers and whether the transaction
+     * tried and failed to use custom fees.
+     * @param numNftOwnershipChanges number of NFT ownership changes
+     * @param numFungibleTokenTransfers number of fungible token transfers
+     * @param customFeeHbarTransfers number of custom fee hbar transfers
+     * @param customFeeTokenTransfers number of custom fee token transfers
+     * @param triedAndFailedToUseCustomFees whether the transaction tried and failed while validating custom fees.
+     *                                      If the failure includes custom fee error codes, the fee charged should not
+     *                                      use SubType.DEFAULT.
+     * @return the subType
+     */
     private SubType getSubType(
             final int numNftOwnershipChanges,
             final int numFungibleTokenTransfers,
             final int customFeeHbarTransfers,
-            final int customFeeTokenTransfers) {
+            final int customFeeTokenTransfers,
+            final boolean triedAndFailedToUseCustomFees) {
+        if (triedAndFailedToUseCustomFees) {
+            return TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+        }
         if (numNftOwnershipChanges != 0) {
             if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
                 return TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
@@ -516,7 +547,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
         if (numFungibleTokenTransfers != 0) {
             if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
-                return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+                return TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
             }
             return TOKEN_FUNGIBLE_COMMON;
         }

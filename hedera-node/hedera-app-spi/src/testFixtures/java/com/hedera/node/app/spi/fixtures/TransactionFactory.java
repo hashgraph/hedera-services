@@ -43,6 +43,14 @@ public interface TransactionFactory {
         return simpleCryptoTransfer(TransactionID.newBuilder().build());
     }
 
+    default Transaction simpleCryptoTransferWithNonce(final TransactionID txnId, final int nonce) {
+        return simpleCryptoTransfer(TransactionID.newBuilder()
+                .accountID(txnId.accountID())
+                .transactionValidStart(txnId.transactionValidStart())
+                .nonce(nonce)
+                .build());
+    }
+
     default Transaction simpleCryptoTransfer(@NonNull final TransactionID transactionID) {
         final var cryptoTransferTx = CryptoTransferTransactionBody.newBuilder().build();
 

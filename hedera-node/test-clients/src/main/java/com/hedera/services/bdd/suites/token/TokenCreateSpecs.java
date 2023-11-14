@@ -210,10 +210,10 @@ public class TokenCreateSpecs extends HapiSuite {
                         getTxnRecord(creationTxn)
                                 .hasPriority(recordWith()
                                         .autoAssociated(accountTokenPairs(List.of(
-                                                Pair.of(treasury, A_TOKEN),
                                                 Pair.of(fractionalCollector, A_TOKEN),
                                                 Pair.of(selfDenominatedFixedCollector, A_TOKEN),
-                                                Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN))))),
+                                                Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN),
+                                                Pair.of(treasury, A_TOKEN))))),
                         getTxnRecord(failedCreationTxn)
                                 .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
                         /* Validate state */

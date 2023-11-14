@@ -567,7 +567,7 @@ public class HapiSpec implements Runnable {
             if (snapshotOp != null && snapshotOp.hasWorkToDo()) {
                 triggerAndCloseAtLeastOneFileIfNotInterrupted(this);
                 try {
-                    snapshotOp.finishLifecycle();
+                    snapshotOp.finishLifecycle(this);
                 } catch (Throwable t) {
                     log.error("Record snapshot fuzzy-match failed", t);
                     status = FAILED;

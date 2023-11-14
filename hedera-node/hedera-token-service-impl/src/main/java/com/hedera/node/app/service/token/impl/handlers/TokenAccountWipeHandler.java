@@ -51,6 +51,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -194,6 +195,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 .build());
         // Note: record(s) for this operation will be built in a token finalization method so that we keep track of all
         // changes for records
+        final var record = context.recordBuilder(TokenAccountWipeRecordBuilder.class);
+        // Set newTotalSupply in record
+        record.newTotalSupply(newTotalSupply);
     }
 
     @NonNull

@@ -458,6 +458,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                                     .nanos(consensusNow().getNano())))
                     .build();
         }
+        try {
+            // If the payer is authorized to waive fees, then we can skip the fee calculation.
+            if (authorizer.hasWaivedFees(syntheticPayerId, functionOf(txBody), bodyToDispatch)) {
+                return Fees.FREE;
+            }
+        } catch (UnknownHederaFunctionality ex) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+
         return dispatcher.dispatchComputeFees(
                 new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }

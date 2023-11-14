@@ -33,5 +33,5 @@ public interface SnapshotOp {
      * The special snapshot operation entrypoint, called by the {@link HapiSpec} when it is time to read all
      * generated record files and either snapshot or fuzzy-match their contents.
      */
-    void finishLifecycle();
+    void finishLifecycle(HapiSpec spec);
 }

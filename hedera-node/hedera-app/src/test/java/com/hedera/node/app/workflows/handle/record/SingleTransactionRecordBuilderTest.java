@@ -237,7 +237,7 @@ public class SingleTransactionRecordBuilderTest {
         assertEquals(accountID, receipt.accountID());
         assertEquals(fileID, receipt.fileID());
         assertEquals(contractID, receipt.contractID());
-        assertEquals(exchangeRate, receipt.exchangeRate());
+        assertNull(receipt.exchangeRate());
         assertEquals(topicID, receipt.topicID());
         assertEquals(TOPIC_SEQUENCE_NUMBER, receipt.topicSequenceNumber());
         assertEquals(topicRunningHash, receipt.topicRunningHash());

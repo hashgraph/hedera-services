@@ -95,12 +95,13 @@ public class AutoAccountCreator {
                 key -> handleContext.verificationFor(key).passed();
         // dispatch the auto-creation record as a preceding record
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
+                syntheticCreation.build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         var fee = autoCreationFeeFor(syntheticCreation);
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
+        childRecord.memo(memo);
         childRecord.transactionFee(fee);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.

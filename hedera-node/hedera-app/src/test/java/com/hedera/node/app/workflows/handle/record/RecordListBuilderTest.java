@@ -33,6 +33,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,9 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecordListBuilderTest extends AppTestBase {
-
-    private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
-
     private static final long MAX_PRECEDING = 3;
     private static final long MAX_CHILDREN = 10;
 
@@ -466,17 +464,17 @@ class RecordListBuilderTest extends AppTestBase {
     }
 
     @Test
-    void testAddPrecedingAndChildRecords() {
+    void testAddPrecedingAndChildRecords() throws IOException {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
-        addUserTransaction(recordListBuilder);
-
+        final var builder = addUserTransaction(recordListBuilder);
+        final var txnId = builder.transactionID();
         // when
-        final var first = simpleCryptoTransfer();
-        final var second = simpleCryptoTransfer();
-        final var fourth = simpleCryptoTransfer();
-        final var fifth = simpleCryptoTransfer();
+        final var first = simpleCryptoTransferWithNonce(txnId, 2);
+        final var second = simpleCryptoTransferWithNonce(txnId, 1);
+        final var fourth = simpleCryptoTransferWithNonce(txnId, 3);
+        final var fifth = simpleCryptoTransferWithNonce(txnId, 4);
         // mixing up preceding vs. following, but within which, in order
         recordListBuilder.addChild(CONFIGURATION).transaction(fourth);
         recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(first);
@@ -700,12 +698,13 @@ class RecordListBuilderTest extends AppTestBase {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var base = addUserTransaction(recordListBuilder);
-        final var revertedTx = simpleCryptoTransfer();
+        final var baseTxnId = base.transactionID();
+        final var revertedTx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(revertedTx);
 
         // when
         recordListBuilder.revertChildrenOf(base);
-        final var remainingTx = simpleCryptoTransfer();
+        final var remainingTx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(remainingTx);
         final var result = recordListBuilder.build();
         final var records = result.records();
@@ -730,10 +729,13 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
-        addUserTransaction(recordListBuilder);
-        final var child1Tx = simpleCryptoTransfer();
+        final var base = addUserTransaction(recordListBuilder);
+        final var baseTxnId = base.transactionID();
+        final var child1Tx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         final var child1 = recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child1Tx);
-        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
+        recordListBuilder
+                .addRemovableChild(CONFIGURATION)
+                .transaction(simpleCryptoTransferWithNonce(baseTxnId, 1)); // will be removed
         recordListBuilder
                 .addRemovableChild(CONFIGURATION)
                 .transaction(simpleCryptoTransfer()) // will be removed
@@ -741,7 +743,7 @@ class RecordListBuilderTest extends AppTestBase {
 
         // when
         recordListBuilder.revertChildrenOf(child1);
-        final var remainingTx = simpleCryptoTransfer();
+        final var remainingTx = simpleCryptoTransferWithNonce(baseTxnId, 2);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(remainingTx);
         final var result = recordListBuilder.build();
         final var records = result.records();
@@ -772,26 +774,27 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
-        addUserTransaction(recordListBuilder);
+        final var base = addUserTransaction(recordListBuilder);
+        final var baseTxnId = base.transactionID();
 
-        final var child1Tx = simpleCryptoTransfer();
+        final var child1Tx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child1Tx);
-        final var child2Tx = simpleCryptoTransfer();
+        final var child2Tx = simpleCryptoTransferWithNonce(baseTxnId, 2);
         recordListBuilder.addChild(CONFIGURATION).transaction(child2Tx);
-        final var child3Tx = simpleCryptoTransfer();
+        final var child3Tx = simpleCryptoTransferWithNonce(baseTxnId, 3);
         final var child3 = recordListBuilder.addChild(CONFIGURATION).transaction(child3Tx);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
-        final var child5Tx = simpleCryptoTransfer();
+        final var child5Tx = simpleCryptoTransferWithNonce(baseTxnId, 4);
         recordListBuilder.addChild(CONFIGURATION).transaction(child5Tx); // will revert
-        final var child6Tx = simpleCryptoTransfer();
+        final var child6Tx = simpleCryptoTransferWithNonce(baseTxnId, 5);
         recordListBuilder.addChild(CONFIGURATION).transaction(child6Tx); // will revert
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
 
         // when
         recordListBuilder.revertChildrenOf(child3);
-        final var child8Tx = simpleCryptoTransfer();
+        final var child8Tx = simpleCryptoTransferWithNonce(baseTxnId, 6);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child8Tx);
-        final var child9Tx = simpleCryptoTransfer();
+        final var child9Tx = simpleCryptoTransferWithNonce(baseTxnId, 7);
         recordListBuilder.addChild(CONFIGURATION).transaction(child9Tx);
         final var result = recordListBuilder.build();
         final var records = result.records();
@@ -851,12 +854,13 @@ class RecordListBuilderTest extends AppTestBase {
 
     private SingleTransactionRecordBuilderImpl addUserTransaction(RecordListBuilder builder) {
         final var start = Instant.now().minusSeconds(60);
+        final var txnId = TransactionID.newBuilder()
+                .accountID(ALICE.accountID())
+                .transactionValidStart(asTimestamp(start))
+                .build();
         return builder.userTransactionRecordBuilder()
                 .transaction(simpleCryptoTransfer())
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(ALICE.accountID())
-                        .transactionValidStart(asTimestamp(start))
-                        .build());
+                .transactionID(txnId);
     }
 
     private TransactionRecordAssertions assertCreatedRecord(SingleTransactionRecord record) {
