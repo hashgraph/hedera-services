@@ -98,13 +98,14 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                         verificationStrategy,
                         senderId,
                         CryptoTransferRecordBuilder.class);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(status, gasRequirement), status);
         } else {
             final var encodedOutput = (from == null)
                     ? Erc20TransfersTranslator.ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
-            return gasOnly(successResult(encodedOutput, gasRequirement));
+            return gasOnly(successResult(encodedOutput, gasRequirement), status);
         }
     }
 

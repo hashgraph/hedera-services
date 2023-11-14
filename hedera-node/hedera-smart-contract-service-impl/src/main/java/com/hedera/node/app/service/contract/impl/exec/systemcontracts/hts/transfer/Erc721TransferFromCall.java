@@ -88,14 +88,17 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticTransfer, verificationStrategy, senderId, CryptoTransferRecordBuilder.class);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(status, gasRequirement), status);
         } else {
-            return gasOnly(successResult(
-                    Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
-                            .getOutputs()
-                            .encodeElements(),
-                    gasRequirement));
+            return gasOnly(
+                    successResult(
+                            Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
+                                    .getOutputs()
+                                    .encodeElements(),
+                            gasRequirement),
+                    status);
         }
     }
 

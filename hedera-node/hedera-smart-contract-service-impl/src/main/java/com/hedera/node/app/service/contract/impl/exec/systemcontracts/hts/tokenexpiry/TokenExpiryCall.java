@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenexpiry;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
@@ -68,14 +67,5 @@ public class TokenExpiryCall extends AbstractNonRevertibleTokenViewCall {
         }
         return successResult(
                 TOKEN_EXPIRY.getOutputs().encodeElements(status.protoOrdinal(), expiryTupleFor(token)), gasRequirement);
-    }
-
-    @Override
-    public @NonNull PricedResult execute() {
-        if (token == null) {
-            return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
-        } else {
-            return externalizeSuccessfulResult(gasCalculator.viewGasRequirement());
-        }
     }
 }

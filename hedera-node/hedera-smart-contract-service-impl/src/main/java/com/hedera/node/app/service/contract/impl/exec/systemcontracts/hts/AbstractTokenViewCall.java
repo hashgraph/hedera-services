@@ -44,16 +44,16 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
         if (token == null) {
             return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         } else {
-            return externalizeSuccessfulResult(gasCalculator.viewGasRequirement());
+            return externalizeSuccessfulResult();
         }
     }
 
-    protected PricedResult externalizeSuccessfulResult(long gasRequirement) {
-        return gasOnly(resultOfViewingToken(token)).withResponseCode(SUCCESS);
+    protected PricedResult externalizeSuccessfulResult() {
+        return gasOnly(resultOfViewingToken(token), SUCCESS);
     }
 
     protected PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        return gasOnly(viewCallResultWith(responseCode, gasRequirement)).withResponseCode(responseCode);
+        return gasOnly(viewCallResultWith(responseCode, gasRequirement), responseCode);
     }
 
     /**

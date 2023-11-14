@@ -40,12 +40,8 @@ public interface HtsCall {
      */
     record PricedResult(
             HederaSystemContract.FullResult fullResult, long nonGasCost, @Nullable ResponseCodeEnum responseCode) {
-        public static PricedResult gasOnly(HederaSystemContract.FullResult result) {
-            return new PricedResult(result, 0L, null);
-        }
-
-        public PricedResult withResponseCode(ResponseCodeEnum responseCode) {
-            return new PricedResult(fullResult(), nonGasCost(), responseCode);
+        public static PricedResult gasOnly(HederaSystemContract.FullResult result, ResponseCodeEnum responseCode) {
+            return new PricedResult(result, 0L, responseCode);
         }
     }
 

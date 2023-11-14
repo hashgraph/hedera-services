@@ -77,7 +77,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
 
-            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement));
+            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement), status);
         }
     }
 

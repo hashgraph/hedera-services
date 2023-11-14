@@ -57,15 +57,16 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(status, gasRequirement), status);
         } else {
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
                     : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                             .getOutputs()
                             .encodeElements();
-            return gasOnly(successResult(encodedOutput, gasRequirement));
+            return gasOnly(successResult(encodedOutput, gasRequirement), status);
         }
     }
 }

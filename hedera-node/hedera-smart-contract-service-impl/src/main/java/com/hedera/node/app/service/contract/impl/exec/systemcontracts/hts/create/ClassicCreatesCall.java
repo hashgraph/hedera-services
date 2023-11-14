@@ -112,8 +112,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
         final var tokenType =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), MINIMUM_TINYBAR_PRICE));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(status, MINIMUM_TINYBAR_PRICE), status);
         } else {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
@@ -135,13 +136,13 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
-            return gasOnly(successResult(encodedOutput, gasRequirement));
+            return gasOnly(successResult(encodedOutput, gasRequirement), status);
         }
     }
 
     // @TODO extract externalizeResult() calls into a single location on a higher level
     private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        final var result = gasOnly(revertResult(responseCode, gasRequirement));
+        final var result = gasOnly(revertResult(responseCode, gasRequirement), responseCode);
         final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
 
         enhancement

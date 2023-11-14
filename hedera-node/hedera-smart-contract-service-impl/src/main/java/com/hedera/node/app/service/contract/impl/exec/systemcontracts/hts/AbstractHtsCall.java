@@ -54,11 +54,11 @@ public abstract class AbstractHtsCall implements HtsCall {
     }
 
     protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement));
+        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement), status);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(revertResult(standardized(status), gasRequirement));
+        return gasOnly(revertResult(standardized(status), gasRequirement), status);
     }
 
     private ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {

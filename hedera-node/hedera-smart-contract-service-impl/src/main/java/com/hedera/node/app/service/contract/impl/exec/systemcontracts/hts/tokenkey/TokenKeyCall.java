@@ -86,7 +86,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
         } else if (key == null) {
             return externalizeUnsuccessfulResult(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement());
         } else {
-            return externalizeSuccessfulResult(gasCalculator.viewGasRequirement());
+            return externalizeSuccessfulResult();
         }
     }
 }
