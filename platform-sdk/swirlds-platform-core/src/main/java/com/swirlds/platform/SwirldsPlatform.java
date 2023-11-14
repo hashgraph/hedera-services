@@ -470,7 +470,7 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 swirldName,
                 txn -> this.createSystemTransaction(txn, true),
-                appCommunicationComponent,
+                appCommunicationComponent::stateToDiskAttempt,
                 appCommunicationComponent,
                 appCommunicationComponent,
                 this::haltRequested,

@@ -50,7 +50,6 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;

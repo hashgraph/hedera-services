@@ -31,7 +31,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,11 +47,6 @@ import org.apache.logging.log4j.Logger;
 public class SignedStateFileManager {
 
     private static final Logger logger = LogManager.getLogger(SignedStateFileManager.class);
-
-    /**
-     * A consumer of data when a state is written to disk
-     */
-    private final StateToDiskAttemptConsumer stateToDiskAttemptConsumer;
 
     /**
      * The ID of this node.
@@ -96,7 +90,6 @@ public class SignedStateFileManager {
      * @param mainClassName                       the main class name of this node
      * @param selfId                              the ID of this node
      * @param swirldName                          the name of the swirld
-     * @param stateToDiskAttemptConsumer          a consumer of data when a state is written to disk
      * @param minimumGenerationNonAncientConsumer this method must be called when the minimum generation non-ancient
      */
     public SignedStateFileManager(
@@ -106,7 +99,6 @@ public class SignedStateFileManager {
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
-            @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
             @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
@@ -114,7 +106,6 @@ public class SignedStateFileManager {
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
-        this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.platformContext = Objects.requireNonNull(context);
         this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
@@ -166,14 +157,20 @@ public class SignedStateFileManager {
                         platformContext, selfId, directory, state, reason);
 
                 success = true;
-                return null;
+                return new StateSavingResult(
+                        state.getRound(),
+                        true,
+                        true,
+                        state.isFreezeState(),
+                        state.getConsensusTimestamp()
+                );
             }
             if (state.hasStateBeenSavedToDisk()) {
                 logger.info(
                         STATE_TO_DISK.getMarker(),
                         "Not saving signed state for round {} to disk because it has already been saved.",
                         state.getRound());
-                return new StateSavingResult(state.getRound(), true);
+                return null;
             }
             if (!state.isComplete()) {
                 stateLacksSignatures(state);
@@ -186,13 +183,19 @@ public class SignedStateFileManager {
             success = true;
 
         } catch (final Throwable e) {
-            stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
             logger.error(
                     EXCEPTION.getMarker(),
                     "Unable to write signed state to disk for round {} to {}.",
                     reservedSignedState.get().getRound(),
                     directory,
                     e);
+            return new StateSavingResult(
+                    state.getRound(),
+                    false,
+                    request.outOfBand(),
+                    state.isFreezeState(),
+                    state.getConsensusTimestamp()
+            );
         } finally {
             if (success) {
                 deleteOldStates();
@@ -203,7 +206,13 @@ public class SignedStateFileManager {
             metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
         }
 
-        return new StateSavingResult(state.getRound(), false);
+        return new StateSavingResult(
+                state.getRound(),
+                success,
+                false,
+                state.isFreezeState(),
+                state.getConsensusTimestamp()
+        );
     }
 
     /**
@@ -220,7 +229,6 @@ public class SignedStateFileManager {
             @NonNull final SignedState reservedState, @NonNull final Path directory, final long start) {
 
         metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-        stateToDiskAttemptConsumer.stateToDiskAttempt(reservedState, directory, true);
 
         reservedState.stateSavedToDisk();
     }

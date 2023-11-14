@@ -36,14 +36,13 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * This component responsible for notifying the application of various platform events
  */
 public class AppCommunicationComponent
-        implements PlatformComponent, StateToDiskAttemptConsumer, NewLatestCompleteStateConsumer, IssConsumer {
+        implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
@@ -88,19 +87,15 @@ public class AppCommunicationComponent
                 .build();
     }
 
-    @Override
-    public void stateToDiskAttempt(
-            @NonNull final SignedState signedState, @NonNull final Path directory, final boolean success) {
-        if (success) {
+    public void stateToDiskAttempt(@NonNull final StateSavingResult stateSavingResult) {
+        if (stateSavingResult.success()) {
             // Synchronous notification, no need to take an extra reservation
             notificationEngine.dispatch(
                     StateWriteToDiskCompleteListener.class,
                     new StateWriteToDiskCompleteNotification(
-                            signedState.getRound(),
-                            signedState.getConsensusTimestamp(),
-                            signedState.getSwirldState(),
-                            directory,
-                            signedState.isFreezeState()));
+                            stateSavingResult.round(),
+                            stateSavingResult.consensusTimestamp(),
+                            stateSavingResult.freezeState()));
         }
     }
 

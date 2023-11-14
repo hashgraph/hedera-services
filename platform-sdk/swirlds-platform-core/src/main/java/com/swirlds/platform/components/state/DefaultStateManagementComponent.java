@@ -42,7 +42,6 @@ import com.swirlds.platform.components.common.query.PrioritySystemTransactionSub
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
@@ -70,6 +69,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -157,7 +157,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
-            @NonNull final StateToDiskAttemptConsumer stateToDiskEventConsumer,
+            @NonNull final Consumer<StateSavingResult> stateToDiskEventConsumer,
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
@@ -213,7 +213,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 mainClassName,
                 selfId,
                 swirldName,
-                stateToDiskEventConsumer,
                 setMinimumGenerationToStore
         );
 
@@ -230,8 +229,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         savedStateScheduler
                 .getOutputWire()
                 .buildFilter("filter out of band", StateSavingResult::inBand)
+                .buildFilter("filter success", StateSavingResult::success)
                 .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
                 .solderTo("status manager", statusActionSubmitter::submitStatusAction);
+        savedStateScheduler.getOutputWire().solderTo("app comm", stateToDiskEventConsumer);
 
         savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer);
 

@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -33,8 +34,10 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.ResettableRandom;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
@@ -51,10 +54,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Basic sanity check tests for the {@link AppCommunicationComponent} class
  */
 public class AppCommComponentTests {
-
-    @TempDir
-    private Path tmpDir;
-
     private final PlatformContext context;
 
     public AppCommComponentTests() {
@@ -67,22 +66,28 @@ public class AppCommComponentTests {
     @DisplayName("StateWriteToDiskCompleteNotification")
     void testStateWriteToDiskCompleteNotification(final boolean success) {
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final SignedState signedState = new RandomSignedStateGenerator().build();
+        final ResettableRandom random = RandomUtils.getRandomPrintSeed();
+        final StateSavingResult result = new StateSavingResult(
+                random.nextLong(1, Long.MAX_VALUE),
+                true,
+                random.nextBoolean(),
+                random.nextBoolean(),
+                RandomUtils.randomInstant(random)
+        );
 
         final AtomicInteger numInvocations = new AtomicInteger();
         notificationEngine.register(StateWriteToDiskCompleteListener.class, n -> {
             numInvocations.getAndIncrement();
-            assertFalse(n.getState().isDestroyed(), "Notification state should not be destroyed");
-            assertEquals(signedState.getSwirldState(), n.getState(), "Unexpected notification state");
             assertEquals(
-                    signedState.getConsensusTimestamp(), n.getConsensusTimestamp(), "Unexpected consensus timestamp");
-            assertEquals(signedState.getRound(), n.getRoundNumber(), "Unexpected notification round number");
-            assertEquals(signedState.isFreezeState(), n.isFreezeState(), "Unexpected notification freeze state");
-            assertEquals(tmpDir, n.getFolder(), "Unexpected notification folder");
+                    result.consensusTimestamp(), n.getConsensusTimestamp(), "Unexpected consensus timestamp");
+            assertEquals(result.round(), n.getRoundNumber(), "Unexpected notification round number");
+            assertEquals(result.freezeState(), n.isFreezeState(), "Unexpected notification freeze state");
+            assertNull(n.getState(), "Deprecated field should be null");
+            assertNull(n.getFolder(), "Deprecated field should be null");
         });
 
         final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
-        component.stateToDiskAttempt(signedState, tmpDir, success);
+        component.stateToDiskAttempt(result);
 
         if (success) {
             assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
