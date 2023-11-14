@@ -285,6 +285,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return approxChangeFromSnapshot(snapshot, expDeltaFn, 0L);
     }
 
+    /**
+     * Returns a factory that creates a matcher that will return an appropriate error message when an account's
+     * balance has changed from the balance captured by the given snapshot.
+     *
+     * @param snapshot the name of the snapshot
+     * @return the factory
+     */
     public static Function<HapiSpec, Function<Long, Optional<String>>> unchangedFromSnapshot(String snapshot) {
         return approxChangeFromSnapshot(snapshot, 0L, 0L);
     }

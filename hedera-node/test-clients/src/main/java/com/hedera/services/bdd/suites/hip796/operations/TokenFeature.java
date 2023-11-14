@@ -16,15 +16,48 @@
 
 package com.hedera.services.bdd.suites.hip796.operations;
 
+/**
+ * Enumerates the features (or "roles") that a token can possess.
+ */
 public enum TokenFeature {
+    /**
+     * The token can be updated or deleted.
+     */
     ADMIN_CONTROL,
+    /**
+     * The token's custom fees can be updated.
+     */
     CUSTOM_FEE_SCHEDULE_MANAGEMENT,
+    /**
+     * Account balances of the token can be frozen or unfrozen.
+     */
     FREEZING,
+    /**
+     * Account balances of the token can redistributed between partitions without the account's signature.
+     */
     INTER_PARTITION_MANAGEMENT,
+    /**
+     * Account KYC status of the token can be changed.
+     */
     KYC_MANAGEMENT,
+    /**
+     * Account balances of the token can be locked and unlocked.
+     */
     LOCKING,
+    /**
+     * The token can be partitioned.
+     */
     PARTITIONING,
+    /**
+     * The token can be paused and unpaused.
+     */
     PAUSING,
+    /**
+     * The token's supply can be minted and burned.
+     */
     SUPPLY_MANAGEMENT,
+    /**
+     * Account balances of the token can be wiped (set to zero) without the account's signature.
+     */
     WIPING,
 }
