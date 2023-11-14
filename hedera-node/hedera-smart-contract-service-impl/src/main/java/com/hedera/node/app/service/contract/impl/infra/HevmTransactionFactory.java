@@ -242,7 +242,7 @@ public class HevmTransactionFactory {
         final var minGasLimit =
                 Math.max(INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
         validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
-        validateTrue(body.amount() > 0, CONTRACT_NEGATIVE_VALUE);
+        validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() < contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
 
         final var contract = accountStore.getContractById(body.contractIDOrThrow());
@@ -258,8 +258,8 @@ public class HevmTransactionFactory {
         final var autoRenewPeriod = body.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         validateTrue(autoRenewPeriod >= 1, INVALID_RENEWAL_PERIOD);
         attributeValidator.validateAutoRenewPeriod(autoRenewPeriod);
-        validateTrue(body.gas() > 0, CONTRACT_NEGATIVE_GAS);
-        validateTrue(body.initialBalance() > 0, CONTRACT_NEGATIVE_VALUE);
+        validateTrue(body.gas() >= 0, CONTRACT_NEGATIVE_GAS);
+        validateTrue(body.initialBalance() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() < contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
         final var usesUnsupportedAutoAssociations =
                 body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
