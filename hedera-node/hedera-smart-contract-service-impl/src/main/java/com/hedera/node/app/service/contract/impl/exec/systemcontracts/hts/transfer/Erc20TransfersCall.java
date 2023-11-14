@@ -111,14 +111,13 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
         } else {
-            var output = ReturnTypes.encodeBool(true);
-            recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
-                    .contractCallResult(Bytes.wrap(output.array()))
-                    .build());
-
             final var encodedOutput = (from == null)
                     ? Erc20TransfersTranslator.ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
+
+            recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
+                    .contractCallResult(Bytes.wrap(encodedOutput.array()))
+                    .build());
             return gasOnly(successResult(encodedOutput, gasRequirement));
         }
     }
