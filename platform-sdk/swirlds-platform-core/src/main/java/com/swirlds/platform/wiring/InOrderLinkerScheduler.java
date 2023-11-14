@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
@@ -41,7 +42,7 @@ public class InOrderLinkerScheduler {
      */
     public InOrderLinkerScheduler(@NonNull final WiringModel model) {
         taskScheduler = model.schedulerBuilder("inOrderLinker")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))

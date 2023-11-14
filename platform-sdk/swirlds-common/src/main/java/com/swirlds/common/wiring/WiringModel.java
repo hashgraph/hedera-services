@@ -22,6 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.StandardWiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,7 +99,7 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @throws IllegalStateException if the heartbeat has already started
      */
     @NonNull
-    public abstract OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period);
+    public abstract OutputWire<Instant> buildHeartbeatWire(@NonNull Duration period);
 
     /**
      * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
@@ -109,7 +110,7 @@ public abstract class WiringModel implements Startable, Stoppable {
      *                  and so frequencies greater than 1000hz are not supported.
      * @return the output wire
      */
-    public abstract OutputWire<Instant> buildHeartbeatWire(final double frequency);
+    public abstract OutputWire<Instant> buildHeartbeatWire(double frequency);
 
     /**
      * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,
@@ -123,13 +124,25 @@ public abstract class WiringModel implements Startable, Stoppable {
     public abstract boolean checkForCyclicalBackpressure();
 
     /**
+     * Task schedulers using the {@link TaskSchedulerType#DIRECT} strategy have very strict rules about how data can be
+     * added to input wires. This method checks to see if these rules are being followed.
+     *
+     * <p>
+     * If this method finds illegal direct scheduler usage, it will log a message that will fail standard platform
+     * tests.
+     *
+     * @return true if there is illegal direct scheduler usage, false otherwise
+     */
+    public abstract boolean checkForIllegalDirectSchedulerUsage();
+
+    /**
      * Generate a mermaid style wiring diagram.
      *
      * @param groups optional groupings of vertices
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    public abstract String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
+    public abstract String generateWiringDiagram(@NonNull Set<ModelGroup> groups);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.
@@ -139,9 +152,11 @@ public abstract class WiringModel implements Startable, Stoppable {
      * many input types.
      *
      * @param vertexName          the name of the vertex
+     * @param type                the type of task scheduler that corresponds to this vertex.
      * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
-    public abstract void registerVertex(@NonNull String vertexName, final boolean insertionIsBlocking);
+    public abstract void registerVertex(
+            @NonNull String vertexName, @NonNull TaskSchedulerType type, boolean insertionIsBlocking);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.

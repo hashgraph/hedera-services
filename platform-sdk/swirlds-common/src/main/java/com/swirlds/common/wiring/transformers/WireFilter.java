@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.transformers;
 
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -44,7 +45,7 @@ public class WireFilter<T> implements Consumer<T> {
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
         this.predicate = Objects.requireNonNull(predicate);
         this.outputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, true);
+        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
     }
 
     /**

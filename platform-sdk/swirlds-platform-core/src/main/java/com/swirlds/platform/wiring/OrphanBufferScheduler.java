@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +43,7 @@ public class OrphanBufferScheduler {
      */
     public OrphanBufferScheduler(@NonNull final WiringModel model) {
         final TaskScheduler<List<GossipEvent>> taskScheduler = model.schedulerBuilder("orphanBuffer")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))

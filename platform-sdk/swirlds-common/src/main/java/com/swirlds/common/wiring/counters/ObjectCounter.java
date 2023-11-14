@@ -22,6 +22,11 @@ package com.swirlds.common.wiring.counters;
 public abstract class ObjectCounter {
 
     /**
+     * The value returned by {@link #getCount()} if this object counter does not support counting.
+     */
+    public static final long COUNT_UNDEFINED = -1L;
+
+    /**
      * Signal that an object is entering the part of the system that this object is being used to monitor.
      */
     public abstract void onRamp();
@@ -46,14 +51,15 @@ public abstract class ObjectCounter {
     public abstract void offRamp();
 
     /**
-     * Get the number of objects in the part of the system that this object is being used to monitor.
+     * Get the number of objects in the part of the system that this object is being used to monitor. If this object
+     * counter does not support counting, then {@link #COUNT_UNDEFINED} is returned.
      */
     public abstract long getCount();
 
     /**
-     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped. Does not prevent
-     * new objects from being on-ramped. If new objects are continuously on-ramped, it is possible that this method
-     * may block indefinitely.
+     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped. Does not prevent new
+     * objects from being on-ramped. If new objects are continuously on-ramped, it is possible that this method may
+     * block indefinitely.
      */
     public abstract void waitUntilEmpty();
 }

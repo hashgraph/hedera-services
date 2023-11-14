@@ -19,6 +19,7 @@ package com.swirlds.common.wiring.schedulers;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -74,7 +75,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
 
-        super(model, name, flushEnabled, insertionIsBlocking);
+        super(model, name, TaskSchedulerType.SEQUENTIAL, flushEnabled, insertionIsBlocking);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);

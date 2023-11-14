@@ -32,4 +32,12 @@ class WiringTests {
 
         assertFalse(wiring.isCyclicalBackpressurePresent(), "cyclical back pressure detected");
     }
+
+    @Test
+    void illegalDirectSchedulerAccessTest() {
+        final PlatformContext context = TestPlatformContextBuilder.create().build();
+        final PlatformWiring wiring = new PlatformWiring(context, Time.getCurrent());
+
+        assertFalse(wiring.isIllegalDirectSchedulerUsagePresent(), "illegal direct scheduler usage detected");
+    }
 }

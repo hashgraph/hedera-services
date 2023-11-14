@@ -35,6 +35,7 @@ import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.test.framework.TestWiringModel;
@@ -86,8 +87,10 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -125,8 +128,10 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -158,8 +163,10 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -221,8 +228,10 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -291,8 +300,10 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -345,7 +356,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
@@ -412,7 +423,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
                 .build()
@@ -502,7 +513,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
@@ -570,8 +581,10 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -717,8 +730,10 @@ class SequentialTaskSchedulerTests {
         final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
-        final TaskScheduler<Void> taskScheduler =
-                model.schedulerBuilder("test").withConcurrency(false).build().cast();
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.SEQUENTIAL)
+                .build()
+                .cast();
 
         final InputWire<Integer, Void> integerChannel = taskScheduler
                 .buildInputWire("integerChannel")
@@ -776,7 +791,7 @@ class SequentialTaskSchedulerTests {
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
@@ -863,13 +878,13 @@ class SequentialTaskSchedulerTests {
         final ObjectCounter backpressure = new BackpressureObjectCounter("test", 11, Duration.ofMillis(1));
 
         final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withOnRamp(backpressure)
                 .build()
                 .cast();
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("testB")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withOffRamp(backpressure)
                 .build()
                 .cast();
@@ -985,7 +1000,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build()
@@ -1073,7 +1088,7 @@ class SequentialTaskSchedulerTests {
     @Test
     void flushDisabledTest() {
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
@@ -1094,7 +1109,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger exceptionCount = new AtomicInteger();
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .build()
                 .cast();
@@ -1129,21 +1144,21 @@ class SequentialTaskSchedulerTests {
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
         final TaskScheduler<Void> a = model.schedulerBuilder("a")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
         final TaskScheduler<Void> b = model.schedulerBuilder("b")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
         final TaskScheduler<Void> c = model.schedulerBuilder("c")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
@@ -1962,9 +1977,9 @@ class SequentialTaskSchedulerTests {
         latchC.countDown();
         assertEventuallyTrue(allWorkInserted::get, Duration.ofSeconds(1), "All work should have been inserted");
         assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
-        assertEquals(expectedCount, countA.get());
-        assertEquals(expectedCount, countB.get());
-        assertEquals(expectedCount, countC.get());
+        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
+        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(1), "C should have processed task");
     }
 
     @Test
