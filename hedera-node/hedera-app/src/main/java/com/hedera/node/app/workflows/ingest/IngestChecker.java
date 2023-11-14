@@ -20,13 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.hapi.node.transaction.TransactionBody.DataOneOfType.CONTRACT_CALL;
-import static com.hedera.hapi.node.transaction.TransactionBody.DataOneOfType.CONTRACT_CREATE_INSTANCE;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -34,7 +30,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -54,7 +49,6 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -177,12 +171,7 @@ public final class IngestChecker {
             throw new PreCheckException(BUSY);
         }
 
-        // 5. Check max gas for contract call & contract create operations
-        // This step is added in order to match mono behavior and make HAPI tests pass
-        // We have this validation in HevmTransactionFactory, but it is not a pre-check as in mono.
-        validateMaxGasForContractOperations(txBody, configuration);
-
-        // 6. Get payer account
+        // 5. Get payer account
         final var storeFactory = new ReadableStoreFactory(state);
         final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID());
         final var payerKey = payer.key();
@@ -195,31 +184,16 @@ public final class IngestChecker {
             throw new PreCheckException(UNAUTHORIZED);
         }
 
-        // 7. Verify payer's signatures
+        // 6. Verify payer's signatures
         verifyPayerSignature(txInfo, payer, configuration);
 
-        // 8. Check payer solvency
+        // 7. Check payer solvency
         final FeeContext feeContext = new FeeContextImpl(
                 consensusTime, txInfo, payerKey, txInfo.payerID(), feeManager, storeFactory, configuration, authorizer);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
 
         return txInfo;
-    }
-
-    public void validateMaxGasForContractOperations(
-            @NonNull final TransactionBody body, @NonNull final Configuration configuration) throws PreCheckException {
-
-        final var bodyDataType = body.data().kind();
-        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
-        final var maxGasLimit = contractsConfig.maxGasPerSec();
-
-        if (bodyDataType == CONTRACT_CREATE_INSTANCE) {
-            final var contractCreateBody = body.contractCreateInstanceOrThrow();
-            validateTruePreCheck(contractCreateBody.gas() <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
-        } else if (bodyDataType == CONTRACT_CALL) {
-            validateTruePreCheck(body.contractCallOrThrow().gas() < maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
-        }
     }
 
     private void verifyPayerSignature(

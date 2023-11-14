@@ -243,7 +243,7 @@ public class HevmTransactionFactory {
                 Math.max(INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
         validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
         validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
-        validateTrue(body.gas() < contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
+        validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
 
         final var contract = accountStore.getContractById(body.contractIDOrThrow());
         if (contract != null) {
