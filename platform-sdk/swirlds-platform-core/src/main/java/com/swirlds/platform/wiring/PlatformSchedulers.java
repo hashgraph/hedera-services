@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.builders.TaskSchedulerType.SEQUENTIAL;
+
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
@@ -51,42 +53,42 @@ public record PlatformSchedulers(
     public static PlatformSchedulers create(@NonNull final WiringModel model) {
         return new PlatformSchedulers(
                 model.schedulerBuilder("internalEventValidator")
-                        .withConcurrency(false)
+                        .withType(SEQUENTIAL)
                         .withUnhandledTaskCapacity(500)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")
-                        .withConcurrency(false)
+                        .withType(SEQUENTIAL)
                         .withUnhandledTaskCapacity(500)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventSignatureValidator")
-                        .withConcurrency(false)
+                        .withType(SEQUENTIAL)
                         .withUnhandledTaskCapacity(500)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("orphanBuffer")
-                        .withConcurrency(false)
+                        .withType(SEQUENTIAL)
                         .withUnhandledTaskCapacity(500)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
-                        .withConcurrency(false)
+                        .withType(SEQUENTIAL)
                         .withUnhandledTaskCapacity(500)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("linkedEventIntake")
-                        .withConcurrency(false)
+                        .withType(SEQUENTIAL)
                         .withUnhandledTaskCapacity(500)
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
