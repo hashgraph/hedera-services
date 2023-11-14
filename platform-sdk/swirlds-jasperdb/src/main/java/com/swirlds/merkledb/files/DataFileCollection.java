@@ -489,6 +489,9 @@ public class DataFileCollection<D> implements Snapshotable {
             return null;
         }
         final ByteBuffer dataItemBytes = file.readDataItemBytes(dataLocation);
+        if (dataItemBytes == null) {
+            return null;
+        }
         return dataItemSerializer.deserialize(dataItemBytes, file.getMetadata().getSerializationVersion());
     }
 
