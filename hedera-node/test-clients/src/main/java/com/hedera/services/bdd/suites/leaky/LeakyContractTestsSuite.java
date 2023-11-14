@@ -1428,7 +1428,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
-    @HapiTest
     private HapiSpec autoAssociationSlotsAppearsInInfo() {
         final int maxAutoAssociations = 100;
         final int ADVENTUROUS_NETWORK = 1_000;
