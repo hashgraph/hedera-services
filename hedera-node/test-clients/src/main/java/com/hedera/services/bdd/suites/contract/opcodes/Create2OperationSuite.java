@@ -367,6 +367,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -769,6 +770,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
         final var ercContract = "ERC721Contract";
         final var pc2User = "Create2PrecompileUser";
