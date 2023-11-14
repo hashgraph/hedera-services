@@ -293,7 +293,7 @@ jobs:
         with:
           name: HAPI Test (time consuming) Network Logs
           path: |
-            hedera-node/test-clients/build/hapi-testTimeConsuming/**/output/**
+            hedera-node/test-clients/build/hapi-test/**/output/**
 
       - name: E2E Testing
         id: gradle-eet
