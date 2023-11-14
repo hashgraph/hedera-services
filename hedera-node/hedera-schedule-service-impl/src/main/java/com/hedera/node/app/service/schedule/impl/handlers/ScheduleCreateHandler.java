@@ -175,7 +175,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 }
                 scheduleStore.put(finalSchedule);
                 final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
-                scheduleRecords.scheduleID(finalSchedule.scheduleId());
+                scheduleRecords.scheduleID(finalSchedule.scheduleId()).scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
             } else {
                 throw new HandleException(validationResult);
             }
