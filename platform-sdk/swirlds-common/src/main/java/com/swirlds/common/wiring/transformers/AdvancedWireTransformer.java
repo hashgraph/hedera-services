@@ -20,7 +20,7 @@ import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
-import com.swirlds.common.wiring.wires.output.internal.MutatingOutputWire;
+import com.swirlds.common.wiring.wires.output.internal.TransformingOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
@@ -55,7 +55,7 @@ public class AdvancedWireTransformer<A, B> implements Consumer<A> {
             @Nullable final Consumer<A> cleanup) {
 
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
-        outputWire = new MutatingOutputWire<>(model, name, transformer, cleanup);
+        outputWire = new TransformingOutputWire<>(model, name, transformer, cleanup);
     }
 
     /**

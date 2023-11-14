@@ -31,17 +31,14 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO test
-
 /**
- * An output wire that mutates data that flows across it. For advanced use cases where
+ * An output wire that transforms data that flows across it. For advanced use cases where
  * {@link OutputWire#buildTransformer(String, Function)} semantics are insufficient.
  *
  * @param <IN>  the type of data passed to the forwarding method
  * @param <OUT> the type of data forwarded to things soldered to this wire
  */
-// TODO naming
-public class MutatingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OUT> {
+public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OUT> {
 
     private static final Logger logger = LogManager.getLogger(StandardOutputWire.class);
     private final List<Consumer<OUT>> forwardingDestinations = new ArrayList<>();
@@ -59,7 +56,7 @@ public class MutatingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OUT> {
      * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
      *                    original data is passed to this method. Ignored if null.
      */
-    public MutatingOutputWire(
+    public TransformingOutputWire(
             @NonNull final WiringModel model,
             @NonNull final String name,
             @NonNull final Function<IN, OUT> transformer,
