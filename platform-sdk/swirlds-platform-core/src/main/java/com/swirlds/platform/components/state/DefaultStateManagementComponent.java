@@ -19,7 +19,6 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;
@@ -28,33 +27,20 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
-import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.SignatureTransmitter;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.SignedStateInfo;
@@ -62,16 +48,13 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
-import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,11 +92,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignedStateManager signedStateManager;
 
     /**
-     * Manages the pipeline of signed states to be written to disk
-     */
-    private final SignedStateFileManager signedStateFileManager;
-
-    /**
      * A logger for hash stream data
      */
     private final HashLogger hashLogger;
@@ -136,54 +114,31 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param threadManager                      manages platform thread resources
      * @param dispatchBuilder                    builds dispatchers. This is deprecated, do not wire new things together
      *                                           with this.
-     * @param addressBook                        the initial address book
      * @param signer                             an object capable of signing with the platform's private key
-     * @param mainClassName                      the name of the app class inheriting from SwirldMain
-     * @param selfId                             this node's id
-     * @param swirldName                         the name of the swirld being run
      * @param prioritySystemTransactionSubmitter submits priority system transactions
-     * @param stateToDiskEventConsumer           consumer to invoke when a state is attempted to be written to disk
      * @param newLatestCompleteStateConsumer     consumer to invoke when there is a new latest complete signed state
-     * @param issConsumer                        consumer to invoke when an ISS is detected
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      * @param platformStatusGetter               gets the current platform status
-     * @param statusActionSubmitter              enables submitting platform status actions
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final DispatchBuilder dispatchBuilder,
-            @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
-            @NonNull final String mainClassName,
-            @NonNull final NodeId selfId,
-            @NonNull final String swirldName,
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
-            @NonNull final Consumer<StateSavingResult> stateToDiskEventConsumer,
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
-            @NonNull final IssConsumer issConsumer,
-            @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final SavedStateController savedStateController) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(addressBook);
         Objects.requireNonNull(signer);
-        Objects.requireNonNull(mainClassName);
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(swirldName);
         Objects.requireNonNull(prioritySystemTransactionSubmitter);
-        Objects.requireNonNull(stateToDiskEventConsumer);
         Objects.requireNonNull(newLatestCompleteStateConsumer);
-        Objects.requireNonNull(issConsumer);
-        Objects.requireNonNull(haltRequestedConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
-        Objects.requireNonNull(preconsensusEventWriter);
         Objects.requireNonNull(platformStatusGetter);
-        Objects.requireNonNull(statusActionSubmitter);
+        Objects.requireNonNull(savedStateController);
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
@@ -192,65 +147,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
+        this.savedStateController = savedStateController;
 
         hashLogger = new HashLogger(threadManager, stateConfig);
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
-
-        final MinimumGenerationNonAncientConsumer setMinimumGenerationToStore = generation -> {
-            try {
-                preconsensusEventWriter.setMinimumGenerationToStore(generation);
-            } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation non-ancient");
-            }
-        };
-
-        signedStateFileManager = new SignedStateFileManager(
-                platformContext,
-                signedStateMetrics,
-                Time.getCurrent(),
-                mainClassName,
-                selfId,
-                swirldName
-        );
-        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
-        if (!savedStates.isEmpty()) {
-            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
-            final long minimumGenerationNonAncientForOldestState = savedStates.get(savedStates.size() - 1).metadata()
-                    .minimumGenerationNonAncient();
-            setMinimumGenerationToStore.newMinimumGenerationNonAncient(
-                    minimumGenerationNonAncientForOldestState);
-        }
-
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
-        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
-                .withConcurrency(false)
-                .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
-                .withExternalBackPressure(false)
-                .build()
-                .cast();
-        final InputWire<ReservedSignedState, StateSavingResult> saveStateToDisk = savedStateScheduler.buildInputWire(
-                "save state to disk");
-        saveStateToDisk.bind(signedStateFileManager::saveStateTask);
-        final InputWire<StateDumpRequest, Void> dumpStateToDisk = savedStateScheduler.buildInputWire(
-                "dump state to disk").cast();
-        dumpStateToDisk.bind(signedStateFileManager::dumpStateTask);
-        savedStateScheduler
-                .getOutputWire()
-                .buildFilter("filter success", StateSavingResult::success)
-                .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
-                .solderTo("status manager", statusActionSubmitter::submitStatusAction);
-        savedStateScheduler.getOutputWire().solderTo("app comm", stateToDiskEventConsumer);
-        savedStateScheduler
-                .getOutputWire()
-                .buildFilter("filter success", StateSavingResult::success)
-                .buildTransformer("to mingen", StateSavingResult::minGen)
-                .solderTo("PCES mingen", setMinimumGenerationToStore::newMinimumGenerationNonAncient);
-
-        savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer, dumpStateToDisk::offer);
 
         signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),

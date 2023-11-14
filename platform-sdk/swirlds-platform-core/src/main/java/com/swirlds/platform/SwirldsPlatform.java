@@ -28,6 +28,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
@@ -70,6 +71,7 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
+import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
@@ -81,12 +83,16 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
+import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
@@ -155,15 +161,19 @@ import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
+import com.swirlds.platform.wiring.SignedStateFileManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -460,24 +470,73 @@ public class SwirldsPlatform implements Platform {
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
+        final MinimumGenerationNonAncientConsumer setMinimumGenerationToStore = generation -> {
+            try {
+                preconsensusEventWriter.setMinimumGenerationToStore(generation);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation non-ancient");
+            }
+        };
+        /*
+         * Manages the pipeline of signed states to be written to disk
+         */
+        final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
+                platformContext,
+                null,//TODO metrics
+                Time.getCurrent(),
+                actualMainClassName,
+                selfId,
+                swirldName
+        );
+        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
+        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
+                .withConcurrency(false)
+                .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
+                .withExternalBackPressure(false)
+                .build()
+                .cast();
+        final SignedStateFileManagerWiring signedStateFileManagerWiring = new SignedStateFileManagerWiring(
+                savedStateScheduler);
+        signedStateFileManagerWiring.bind(signedStateFileManager);
+        signedStateFileManagerWiring
+                .outputWire()
+                .buildFilter("filter success", StateSavingResult::success)
+                .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
+                .solderTo("status manager", platformStatusManager::submitStatusAction);
+        signedStateFileManagerWiring
+                .outputWire()
+                .solderTo("app comm", appCommunicationComponent::stateToDiskAttempt);
+        signedStateFileManagerWiring
+                .outputWire()
+                .buildFilter("filter success", StateSavingResult::success)
+                .buildTransformer("to mingen", StateSavingResult::minGen)
+                .solderTo("PCES mingen", setMinimumGenerationToStore::newMinimumGenerationNonAncient);
+
+        //TODO find a place for this
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
+            final long minimumGenerationNonAncientForOldestState = savedStates.get(savedStates.size() - 1).metadata()
+                    .minimumGenerationNonAncient();
+            setMinimumGenerationToStore.newMinimumGenerationNonAncient(
+                    minimumGenerationNonAncientForOldestState);
+        }
+        final SavedStateController savedStateController = new SavedStateController(
+                stateConfig,
+                signedStateFileManagerWiring.saveStateToDisk()::offer,
+                signedStateFileManagerWiring.dumpStateToDisk()::offer);
+
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 threadManager,
                 dispatchBuilder,
-                getAddressBook(),
                 new PlatformSigner(keysAndCerts),
-                actualMainClassName,
-                selfId,
-                swirldName,
                 txn -> this.createSystemTransaction(txn, true),
-                appCommunicationComponent::stateToDiskAttempt,
                 appCommunicationComponent,
-                appCommunicationComponent,
-                this::haltRequested,
                 this::handleFatalError,
-                preconsensusEventWriter,
                 platformStatusManager,
-                platformStatusManager);
+                savedStateController);
 
         components.add(stateManagementComponent);
 
