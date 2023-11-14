@@ -60,7 +60,19 @@ tasks.register<Test>("hapiTest") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform()
+    useJUnitPlatform { excludeTags("TIME_CONSUMING") }
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
+// IntelliJ picks up this task when running tests through in the IDE.
+tasks.register<Test>("hapiTestTimeConsuming") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("TIME_CONSUMING") }
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
