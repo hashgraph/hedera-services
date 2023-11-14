@@ -77,7 +77,7 @@ class HtsSystemContractTest {
     void returnsResultFromImpliedCall() {
         givenValidCallAttempt();
 
-        final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L));
+        final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS);
         given(call.execute(frame)).willReturn(pricedResult);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
