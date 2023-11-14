@@ -92,13 +92,8 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(type)
-                .withUncaughtExceptionHandler((t, e) -> {
-                    e.printStackTrace(); // TODO
-                })
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
