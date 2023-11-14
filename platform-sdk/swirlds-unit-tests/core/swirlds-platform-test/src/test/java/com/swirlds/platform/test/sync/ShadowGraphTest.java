@@ -413,7 +413,7 @@ class ShadowGraphTest {
     void testExpireWithReservation(final int numEvents, final int numNodes) throws Exception {
         Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
-        SyncUtils.printEvents("generated events", generatedEvents);
+        SyncTestUtils.printEvents("generated events", generatedEvents);
 
         GenerationReservation r0 = shadowGraph.reserve();
         shadowGraph.expireBelow(FIRST_GENERATION + 1);

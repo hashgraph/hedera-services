@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public class SyncUtils {
+public class SyncTestUtils {
 
     public static void printEvents(final String heading, final Collection<? extends EventImpl> events) {
         System.out.println("\n--- " + heading + " ---");

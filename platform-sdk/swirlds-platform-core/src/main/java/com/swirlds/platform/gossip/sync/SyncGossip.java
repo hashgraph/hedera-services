@@ -180,6 +180,7 @@ public class SyncGossip extends AbstractGossip {
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 platformContext,
+                time,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
@@ -209,7 +210,14 @@ public class SyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount(), intakeEventCounter);
+        final int permitCount;
+        if (syncConfig.onePermitPerPeer()) {
+            permitCount = addressBook.getSize() - 1;
+        } else {
+            permitCount = syncConfig.syncProtocolPermitCount();
+        }
+
+        syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.

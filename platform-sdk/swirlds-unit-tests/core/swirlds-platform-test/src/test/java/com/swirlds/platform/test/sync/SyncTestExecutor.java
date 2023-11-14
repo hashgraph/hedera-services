@@ -196,10 +196,10 @@ public class SyncTestExecutor {
             List<ShadowEvent> listenerTips = listener.getShadowGraph().getTips();
 
             long listenerMinGen =
-                    SyncUtils.getMinGen(listener.getShadowGraph().findAncestors(listenerTips, (e) -> true));
-            long listenerMaxGen = SyncUtils.getMaxGen(listenerTips);
-            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph().findAncestors(callerTips, (e) -> true));
-            long callerMaxGen = SyncUtils.getMaxGen(callerTips);
+                    SyncTestUtils.getMinGen(listener.getShadowGraph().findAncestors(listenerTips, (e) -> true));
+            long listenerMaxGen = SyncTestUtils.getMaxGen(listenerTips);
+            long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph().findAncestors(callerTips, (e) -> true));
+            long callerMaxGen = SyncTestUtils.getMaxGen(callerTips);
 
             long listenerMinNonAncientGen = listenerMinGen;
             double listenerDif = listenerMaxGen - listenerMinGen;

@@ -131,8 +131,8 @@ public class SyncTests {
     }
 
     /**
-     * Supplies test values for {@link #testCallerExceptionDuringSyncPhase(SyncTestParams, int, int)} and {@link
-     * #testListenerExceptionDuringSyncPhase(SyncTestParams, int, int)}
+     * Supplies test values for {@link #testCallerExceptionDuringSyncPhase(SyncTestParams, int, int)} and
+     * {@link #testListenerExceptionDuringSyncPhase(SyncTestParams, int, int)}
      */
     private static Stream<Arguments> exceptionParams() {
         return Stream.of(
@@ -611,20 +611,21 @@ public class SyncTests {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
 
         executor.setGenerationDefinitions((caller, listener) -> {
-            long listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
+            long listenerMaxGen =
+                    SyncTestUtils.getMaxGen(listener.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
             long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen / 10);
-            long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
+            long listenerMinGen = SyncTestUtils.getMinGen(listener.getShadowGraph()
                     .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
 
             // Expire everything below the listener's min non-ancient gen on the caller
             // so that the listener's maxGen == caller's min non-ancient gen
             caller.expireBelow(listenerMinNonAncient);
 
-            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
+            long callerMaxGen = SyncTestUtils.getMaxGen(caller.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
             long callerMinNonAncient = callerMaxGen - (callerMaxGen / 10);
-            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
+            long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 
             assertEquals(listenerMinNonAncient, callerMinGen, "listener max gen and caller min gen should be equal.");
@@ -671,7 +672,7 @@ public class SyncTests {
 
         // we save the max generation of node 0, so we know what we need to expire to remove a tip
         executor.setCustomPreSyncConfiguration((caller, listener) ->
-                genToExpire.set(SyncUtils.getMaxGen(caller.getShadowGraph().getTips())));
+                genToExpire.set(SyncTestUtils.getMaxGen(caller.getShadowGraph().getTips())));
 
         executor.execute();
 
@@ -816,10 +817,8 @@ public class SyncTests {
      * Tests scenarios in which events that need to be sent to the peer are requested to be expired before they are
      * sent. Because generations are reserved in a sync, the events should not be expired while a sync is in progress.
      *
-     * @param expireAfterPhase
-     * 		the phase after which events that need to be sent should be requested to be expired
-     * @param params
-     * 		Sync parameters
+     * @param expireAfterPhase the phase after which events that need to be sent should be requested to be expired
+     * @param params           Sync parameters
      */
     @ParameterizedTest
     @MethodSource("requiredEventsExpire")
@@ -1036,8 +1035,8 @@ public class SyncTests {
             listener.setSaveGeneratedEvents(true);
         });
         executor.setGenerationDefinitions((caller, listener) -> {
-            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
-            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
+            long callerMaxGen = SyncTestUtils.getMaxGen(caller.getShadowGraph().getTips());
+            long callerMinGen = SyncTestUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 
             when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.sync;
 
-import static com.swirlds.platform.test.sync.SyncUtils.printEvents;
-import static com.swirlds.platform.test.sync.SyncUtils.printTasks;
-import static com.swirlds.platform.test.sync.SyncUtils.printTipSet;
+import static com.swirlds.platform.test.sync.SyncTestUtils.printEvents;
+import static com.swirlds.platform.test.sync.SyncTestUtils.printTasks;
+import static com.swirlds.platform.test.sync.SyncTestUtils.printTipSet;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

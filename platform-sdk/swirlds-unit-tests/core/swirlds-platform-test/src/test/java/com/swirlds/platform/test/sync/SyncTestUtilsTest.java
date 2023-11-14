@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
-class SyncUtilsTest {
+class SyncTestUtilsTest {
 
     @Test
     void testUnknownNonAncient() {

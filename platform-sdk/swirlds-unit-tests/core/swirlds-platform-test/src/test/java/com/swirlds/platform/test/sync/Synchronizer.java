@@ -18,10 +18,12 @@ package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 
 /**
  * This class initiates a sync between a caller and listener node.
@@ -38,7 +40,7 @@ public class Synchronizer {
     /**
      * Performs synchronization between the caller and listener nodes.
      *
-     * The {@link ShadowGraphSynchronizer#synchronize(Connection)} method is
+     * The {@link ShadowGraphSynchronizer#synchronize(PlatformContext, Connection)} method is
      * invoked on each node in parallel using the {@link ParallelExecutor}.
      *
      * @throws Exception
@@ -46,10 +48,14 @@ public class Synchronizer {
      */
     public void synchronize(final SyncNode caller, final SyncNode listener) throws Exception {
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         parallelExecutor.doParallel(
                 () -> {
                     try {
-                        final boolean synchronize = caller.getSynchronizer().synchronize(caller.getConnection());
+                        final boolean synchronize =
+                                caller.getSynchronizer().synchronize(platformContext, caller.getConnection());
                         caller.setSynchronizerReturn(synchronize);
                     } catch (final Exception e) {
                         caller.setSynchronizerReturn(null);
@@ -69,7 +75,7 @@ public class Synchronizer {
                     try {
                         if (listener.isCanAcceptSync()) {
                             final boolean synchronize =
-                                    listener.getSynchronizer().synchronize(listener.getConnection());
+                                    listener.getSynchronizer().synchronize(platformContext, listener.getConnection());
                             listener.setSynchronizerReturn(synchronize);
                         } else {
                             listener.getSynchronizer().rejectSync(listener.getConnection());
