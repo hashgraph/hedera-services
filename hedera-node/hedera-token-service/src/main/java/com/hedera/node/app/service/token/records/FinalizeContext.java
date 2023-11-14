@@ -90,4 +90,15 @@ public interface FinalizeContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer);
+
+    /**
+     * This method can be used to get last child record.
+     *
+     * @param recordBuilderClass the record type
+     * @param consumer the consumer to be called for each record
+     * @param <T> the record type
+     * @throws NullPointerException if any parameter is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    <T> void forLastChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer);
 }

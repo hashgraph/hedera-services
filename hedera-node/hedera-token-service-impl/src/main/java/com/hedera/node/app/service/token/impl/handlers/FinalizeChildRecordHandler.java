@@ -61,9 +61,11 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
-            recordBuilder.transferList(TransferList.newBuilder()
-                    .accountAmounts(asAccountAmounts(hbarChanges))
-                    .build());
+            context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+                childRecord.transferList(TransferList.newBuilder()
+                        .accountAmounts(asAccountAmounts(hbarChanges))
+                        .build());
+            });
         }
 
         // Declare the top-level token transfer list, which list will include BOTH fungible and non-fungible token
@@ -83,7 +85,9 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         // Record the modified fungible and non-fungible changes so records can be written
         if (!tokenTransferLists.isEmpty()) {
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
-            recordBuilder.tokenTransferLists(tokenTransferLists);
+            context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+                childRecord.tokenTransferLists(tokenTransferLists);
+            });
         }
     }
 }

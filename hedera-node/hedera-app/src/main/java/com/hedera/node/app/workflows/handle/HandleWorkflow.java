@@ -57,6 +57,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -138,7 +139,8 @@ public class HandleWorkflow {
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
-    private final ParentRecordFinalizer transactionFinalizer;
+    private final ParentRecordFinalizer parentRecordFinalizer;
+    private final ChildRecordFinalizer childRecordFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final DualStateUpdateFacility dualStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
@@ -161,7 +163,8 @@ public class HandleWorkflow {
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final ParentRecordFinalizer transactionFinalizer,
+            @NonNull final ParentRecordFinalizer parentRecordFinalizer,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
             @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
@@ -181,7 +184,8 @@ public class HandleWorkflow {
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
-        this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
+        this.parentRecordFinalizer = requireNonNull(parentRecordFinalizer, "parentRecordFinalizer must not be null");
+        this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
         this.dualStateUpdateFacility =
@@ -364,6 +368,7 @@ public class HandleWorkflow {
                     configuration,
                     verifier,
                     recordListBuilder,
+                    childRecordFinalizer,
                     checker,
                     dispatcher,
                     serviceScopeLookup,
@@ -498,7 +503,7 @@ public class HandleWorkflow {
         }
 
         networkUtilizationManager.saveTo(stack);
-        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
+        parentRecordFinalizer.finalizeParentRecord(payer, tokenServiceContext);
 
         // Commit all state changes
         stack.commitFullStack();

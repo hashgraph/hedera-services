@@ -58,6 +58,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -140,6 +141,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private RecordListBuilder recordListBuilder;
 
     @Mock
+    private ChildRecordFinalizer childRecordFinalizer;
+
+    @Mock
     private NetworkInfo networkInfo;
 
     @Mock
@@ -208,6 +212,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 DEFAULT_CONFIGURATION,
                 verifier,
                 recordListBuilder,
+                childRecordFinalizer,
                 checker,
                 dispatcher,
                 serviceScopeLookup,
@@ -236,6 +241,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             DEFAULT_CONFIGURATION,
             verifier,
             recordListBuilder,
+            childRecordFinalizer,
             checker,
             dispatcher,
             serviceScopeLookup,
@@ -301,6 +307,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     DEFAULT_CONFIGURATION,
                     verifier,
                     recordListBuilder,
+                    childRecordFinalizer,
                     checker,
                     dispatcher,
                     serviceScopeLookup,
@@ -818,6 +825,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     DEFAULT_CONFIGURATION,
                     verifier,
                     recordListBuilder,
+                    childRecordFinalizer,
                     checker,
                     dispatcher,
                     serviceScopeLookup,

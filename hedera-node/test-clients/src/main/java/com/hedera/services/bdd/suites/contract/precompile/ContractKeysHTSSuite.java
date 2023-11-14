@@ -794,6 +794,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TYPE_OF_TOKEN, amount));
     }
 
+    @HapiTest
     private HapiSpec callForTransferWithContractKey() {
         return defaultHapiSpec("callForTransferWithContractKey")
                 .given(
@@ -852,6 +853,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 .including(NFT, ACCOUNT, RECEIVER, 1L))));
     }
 
+    @HapiTest
     private HapiSpec callForTransferWithDelegateContractKey() {
         return defaultHapiSpec("callForTransferWithDelegateContractKey")
                 .given(

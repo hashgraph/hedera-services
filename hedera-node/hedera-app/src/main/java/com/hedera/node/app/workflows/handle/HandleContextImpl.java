@@ -45,6 +45,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -112,6 +113,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Configuration configuration;
     private final KeyVerifier verifier;
     private final RecordListBuilder recordListBuilder;
+    private final ChildRecordFinalizer childRecordFinalizer;
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
     private final ServiceScopeLookup serviceScopeLookup;
@@ -169,6 +171,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Configuration configuration,
             @NonNull final KeyVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
@@ -190,6 +193,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.verifier = requireNonNull(verifier, "verifier must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
+        this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
         this.checker = requireNonNull(checker, "checker must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
@@ -674,6 +678,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 configuration,
                 childVerifier,
                 recordListBuilder,
+                childRecordFinalizer,
                 checker,
                 dispatcher,
                 serviceScopeLookup,
@@ -685,9 +690,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 authorizer,
                 solvencyPreCheck);
 
+        final var tokenServiceContext = new TokenContextImpl(configuration, childStack, recordListBuilder);
+
         try {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
+            childRecordFinalizer.finalizeChildRecord(tokenServiceContext);
             childStack.commitFullStack();
         } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());
