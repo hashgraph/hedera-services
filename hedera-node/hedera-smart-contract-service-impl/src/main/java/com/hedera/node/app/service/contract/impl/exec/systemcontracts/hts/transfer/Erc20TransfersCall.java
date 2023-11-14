@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -131,8 +130,8 @@ public class Erc20TransfersCall extends AbstractHtsCall {
 
         if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
             final var tokenAddress = asLongZeroAddress(tokenId.tokenNum());
-            List<TokenTransferList> tokenTransferLists = syntheticTransferOrTransferFrom(senderId).cryptoTransfer()
-                    .tokenTransfers();
+            List<TokenTransferList> tokenTransferLists =
+                    syntheticTransferOrTransferFrom(senderId).cryptoTransfer().tokenTransfers();
             for (final var fungibleTransfers : tokenTransferLists) {
                 frame.addLog(getLogForFungibleTransfer(tokenAddress, fungibleTransfers.transfers()));
             }
@@ -140,12 +139,13 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         return result;
     }
 
-    private Log getLogForFungibleTransfer(final org.hyperledger.besu.datatypes.Address logger, List<AccountAmount> transfer ) {
+    private Log getLogForFungibleTransfer(
+            final org.hyperledger.besu.datatypes.Address logger, List<AccountAmount> transfers) {
         long sender = 0;
         long receiver = 0;
-        BigInteger amount = BigInteger.ZERO;;
+        BigInteger amount = BigInteger.ZERO;
 
-        for (final var accountAmount : transfer) {
+        for (final var accountAmount : transfers) {
             if (accountAmount.amount() > 0) {
                 receiver = accountAmount.accountID().accountNum();
                 amount = BigInteger.valueOf(accountAmount.amount());
