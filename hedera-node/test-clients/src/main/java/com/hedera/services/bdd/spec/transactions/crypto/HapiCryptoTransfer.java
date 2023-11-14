@@ -102,7 +102,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         }
     };
     private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR =
-            Comparator.comparing(AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
+            Comparator.comparing(AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
+                    .thenComparingLong(AccountAmount::getAmount);
     private static final Comparator<NftTransfer> NFT_TRANSFER_COMPARATOR = Comparator.comparing(
                     NftTransfer::getSenderAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
             .thenComparing(NftTransfer::getReceiverAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
