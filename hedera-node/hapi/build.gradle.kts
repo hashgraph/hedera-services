@@ -23,6 +23,32 @@ plugins {
 
 description = "Hedera API"
 
+val hapiProtoBranchOrTag = "add-pbj-types-for-state"
+val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
+
+@Suppress("UnstableApiUsage")
+providers
+    .exec {
+        if (!hederaProtoDir.dir(".git").asFile.exists()) {
+            workingDir = layout.projectDirectory.asFile
+            commandLine("git", "clone", "https://github.com/hashgraph/hedera-protobufs.git", "-q")
+        } else {
+            workingDir = hederaProtoDir.asFile
+            commandLine("git", "fetch", "-q")
+        }
+    }
+    .result
+    .get()
+
+@Suppress("UnstableApiUsage")
+providers
+    .exec {
+        workingDir = hederaProtoDir.asFile
+        commandLine("git", "checkout", hapiProtoBranchOrTag, "-q")
+    }
+    .result
+    .get()
+
 testModuleInfo {
     requires("com.hedera.node.hapi")
     // we depend on the protoc compiled hapi during test as we test our pbj generated code
