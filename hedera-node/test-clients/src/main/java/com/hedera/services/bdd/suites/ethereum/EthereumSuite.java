@@ -982,7 +982,7 @@ public class EthereumSuite extends HapiSuite {
 
         return defaultHapiSpec("callToNonExistingContractFailsGracefully")
                 .given(
-                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5644"))),
+                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
