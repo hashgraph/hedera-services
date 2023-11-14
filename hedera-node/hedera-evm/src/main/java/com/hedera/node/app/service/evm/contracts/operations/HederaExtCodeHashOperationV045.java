@@ -64,7 +64,7 @@ public class HederaExtCodeHashOperationV045 extends ExtCodeHashOperation {
             if (frame.getRemainingGas() < localCost) {
                 return new OperationResult(localCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             } else {
-                if (!account.isEmpty()) {
+                if (account != null && !account.isEmpty()) {
                     frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
                 } else {
                     frame.pushStackItem(UInt256.ZERO);
