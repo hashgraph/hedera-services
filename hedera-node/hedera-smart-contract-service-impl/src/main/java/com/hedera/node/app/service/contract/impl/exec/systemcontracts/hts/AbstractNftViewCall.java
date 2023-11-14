@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Implementation support for view calls that require an extant token and NFT to succeed.
  */
 public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCall {
-    private final long serialNo;
+    protected final long serialNo;
 
     protected AbstractNftViewCall(
             @NonNull final SystemContractGasCalculator gasCalculator,

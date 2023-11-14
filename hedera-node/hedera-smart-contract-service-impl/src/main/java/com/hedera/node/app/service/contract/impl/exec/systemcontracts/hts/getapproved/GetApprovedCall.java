@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.ERC_GET_APPROVED;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.HAPI_GET_APPROVED;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
@@ -68,14 +69,18 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
         if (nft == null || !nft.hasNftId()) {
             return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasCalculator.viewGasRequirement());
         }
-        final var spenderNum = nft.spenderId().accountNumOrThrow();
-        final var spender = nativeOperations().getAccount(spenderNum);
+        var spenderAddress = asHeadlongAddress(new byte[20]);
+        if (nft.spenderId() != null) {
+            final var spenderNum = nft.spenderId().accountNumOrThrow();
+            final var spender = nativeOperations().getAccount(spenderNum);
+            spenderAddress = headlongAddressOf(spender);
+        }
         return isErcCall
                 ? successResult(
-                        ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)),
+                        ERC_GET_APPROVED.getOutputs().encodeElements(spenderAddress),
                         gasCalculator.viewGasRequirement())
                 : successResult(
-                        HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), headlongAddressOf(spender)),
+                        HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), spenderAddress),
                         gasCalculator.viewGasRequirement());
     }
 }

@@ -1024,6 +1024,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .withSymbol(tokenSymbol)))));
     }
 
+    @HapiTest
     private HapiSpec getErc721TokenURI() {
         final var tokenURITxn = "tokenURITxn";
         final var nonExistingTokenURITxn = "nonExistingTokenURITxn";
@@ -2240,6 +2241,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(ACCOUNT)))))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2521,6 +2523,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(A_CIVILIAN)))))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721IsApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();

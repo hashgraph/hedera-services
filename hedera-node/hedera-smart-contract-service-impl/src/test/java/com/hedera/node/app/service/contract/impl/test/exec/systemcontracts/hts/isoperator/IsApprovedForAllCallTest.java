@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.isoperator;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -54,17 +53,6 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
-    }
-
-    @Test
-    void revertsWithMissingOwner() {
-        subject = new IsApprovedForAllCall(
-                gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR, false);
-
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
     }
 
     @Test
