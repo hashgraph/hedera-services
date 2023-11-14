@@ -20,8 +20,8 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.retryIfInte
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.StackTrace.getStackTrace;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.THREADS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.THREADS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -575,11 +575,11 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
      */
     private void interruptClose() throws InterruptedException {
         join(joinWaitMs);
-
         if (isAlive()) {
             interrupt();
             joinInternal();
         }
+        doFinalCycleWork();
     }
 
     /**

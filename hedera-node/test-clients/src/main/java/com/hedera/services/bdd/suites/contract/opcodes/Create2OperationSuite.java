@@ -350,6 +350,8 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("PayableCreate2WorksAsExpected")
                 .given(
+                        // FUTURE - enable this; current failure is missing transactionFee field
+                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS).gas(1_000_000))
                 .when(
@@ -365,6 +367,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -518,6 +521,17 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("CanMergeCreate2ChildWithHollowAccount")
                 .given(
+                        //                        // FUTURE - enable this; current failure is missing transactionFee
+                        // field
+                        //                        snapshotMode(
+                        //                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
+                        //                                // This contract uses entity addresses in its function
+                        // parameters and
+                        //                                // call results, which makes it excessively difficult to
+                        // fuzzy-match
+                        //                                // the "contractCallResult" and "functionParameters" fields
+                        //                                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        //                                NONDETERMINISTIC_FUNCTION_PARAMETERS),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -756,6 +770,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
         final var ercContract = "ERC721Contract";
         final var pc2User = "Create2PrecompileUser";

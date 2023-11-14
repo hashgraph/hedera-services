@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
@@ -42,10 +42,8 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.Crypto;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
@@ -64,7 +62,6 @@ import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
@@ -115,7 +112,7 @@ public class SyncGossip extends AbstractGossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the wall clock time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -127,7 +124,6 @@ public class SyncGossip extends AbstractGossip {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
      * @param platformStatusManager         the platform status manager
@@ -139,7 +135,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -151,7 +147,6 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
@@ -162,7 +157,7 @@ public class SyncGossip extends AbstractGossip {
                 platformContext,
                 threadManager,
                 time,
-                crypto,
+                keysAndCerts,
                 addressBook,
                 selfId,
                 appVersion,
@@ -170,7 +165,6 @@ public class SyncGossip extends AbstractGossip {
                 swirldStateManager,
                 stateManagementComponent,
                 syncMetrics,
-                eventObserverDispatcher,
                 platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -186,6 +180,7 @@ public class SyncGossip extends AbstractGossip {
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 platformContext,
+                time,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
@@ -215,7 +210,14 @@ public class SyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount(), intakeEventCounter);
+        final int permitCount;
+        if (syncConfig.onePermitPerPeer()) {
+            permitCount = addressBook.getSize() - 1;
+        } else {
+            permitCount = syncConfig.syncProtocolPermitCount();
+        }
+
+        syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -285,7 +287,6 @@ public class SyncGossip extends AbstractGossip {
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
                                             syncPermitProvider,
-                                            criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             Duration.ZERO,
                                             syncMetrics,
@@ -317,15 +318,6 @@ public class SyncGossip extends AbstractGossip {
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**

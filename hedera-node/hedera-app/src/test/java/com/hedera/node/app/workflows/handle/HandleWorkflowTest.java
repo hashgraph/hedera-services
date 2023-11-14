@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static java.lang.Boolean.FALSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -188,7 +189,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private ParentRecordFinalizer finalizer;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Mock
@@ -257,6 +258,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
         when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
                 .thenReturn(SystemPrivilege.UNNECESSARY);
+        when(systemFileUpdateFacility.handleTxBody(any(), any())).thenReturn(SUCCESS);
 
         workflow = new HandleWorkflow(
                 networkInfo,
@@ -1477,7 +1479,7 @@ class HandleWorkflowTest extends AppTestBase {
                 names = {
                     "INSUFFICIENT_TX_FEE",
                     "INVALID_TRANSACTION_BODY",
-                    "INSUFFICIENT_PAYER_BALANCE",
+                    "INSUFFICIENT_ACCOUNT_BALANCE",
                     "ACCOUNT_EXPIRED_AND_PENDING_REMOVAL"
                 })
         @DisplayName("Reject transaction, if the payer cannot pay the fees")
@@ -1485,7 +1487,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(solvencyPreCheck)
-                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES));
+                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(FALSE));
 
             // when
             workflow.handleRound(state, dualState, round);

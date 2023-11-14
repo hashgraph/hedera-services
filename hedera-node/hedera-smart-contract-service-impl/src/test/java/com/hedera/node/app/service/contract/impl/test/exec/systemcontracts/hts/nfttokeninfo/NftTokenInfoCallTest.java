@@ -59,7 +59,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
     @Test
     void returnsNftTokenInfoStatusForPresentToken() {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
+        final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID);
+        when(ledgerConfig.id()).thenReturn(expectedLedgerId);
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
 
@@ -93,7 +94,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
                                                 EXPECTED_FIXED_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 EXPECTED_FRACTIONAL_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
-                                                LEDGER_ID),
+                                                Bytes.wrap(expectedLedgerId.toByteArray())
+                                                        .toString()),
                                         2L,
                                         headlongAddressOf(CIVILIAN_OWNED_NFT.ownerId()),
                                         1000000L,
@@ -107,7 +109,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
     @Test
     void returnsNftTokenInfoStatusForMissingToken() {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
+        final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01");
+        when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
         final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, null, 0L, config);
 
@@ -138,7 +141,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
                                                 Collections.emptyList().toArray(new Tuple[0]),
                                                 Collections.emptyList().toArray(new Tuple[0]),
                                                 Collections.emptyList().toArray(new Tuple[0]),
-                                                LEDGER_ID),
+                                                Bytes.wrap(expectedLedgerId.toByteArray())
+                                                        .toString()),
                                         0L,
                                         headlongAddressOf(ZERO_ACCOUNT_ID),
                                         new Timestamp(0, 0).seconds(),

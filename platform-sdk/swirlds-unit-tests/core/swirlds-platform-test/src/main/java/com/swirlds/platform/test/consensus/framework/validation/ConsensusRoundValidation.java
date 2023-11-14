@@ -133,7 +133,6 @@ public class ConsensusRoundValidation {
      */
     public static void printGranularEventListComparison(
             final List<IndexedEvent> events1, final List<IndexedEvent> events2) {
-        // TODO add this as a debug tool
 
         final int maxIndex = Math.min(events1.size(), events2.size());
 

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
@@ -172,13 +172,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try {
             new EmergencyReconnectTeacher(
-                            time,
-                            threadManager,
-                            stateFinder,
-                            reconnectSocketTimeout,
-                            fallenBehindManager::hasFallenBehind,
-                            reconnectMetrics,
-                            configuration)
+                            time, threadManager, stateFinder, reconnectSocketTimeout, reconnectMetrics, configuration)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();
