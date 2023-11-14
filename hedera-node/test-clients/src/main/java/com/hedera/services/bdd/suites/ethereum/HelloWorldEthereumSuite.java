@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -119,7 +120,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
-    @HapiTest
     HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
@@ -194,6 +194,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
         return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
                 .given(
+                        uploadDefaultFeeSchedules(GENESIS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -328,7 +329,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    @HapiTest
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";

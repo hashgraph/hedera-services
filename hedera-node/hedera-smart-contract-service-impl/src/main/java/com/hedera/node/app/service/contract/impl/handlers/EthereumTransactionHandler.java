@@ -17,22 +17,32 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedAccountId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
-import com.hedera.hapi.node.base.SubType;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -40,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -81,12 +92,22 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        // Run its in-scope transaction and get the outcome
-        final var outcome = component.contextTransactionProcessor().call();
-
         // Assemble the appropriate top-level record for the result
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+
+        // Do not allow sending a transaction to a non-existing long-zero address
+        // An empty 20 byte address is considered a Burn address and should not result in INVALID_CONTRACT_ID
+        if (ethTxData.hasToAddress() && isLongZeroAddress(ethTxData.to()) && numberOfLongZero(ethTxData.to()) != 0) {
+            final var accountStore = context.readableStore(ReadableAccountStore.class);
+            final Address address = pbjToBesuAddress(Bytes.wrap(ethTxData.to()));
+            final var contract = accountStore.getContractById(requireNonNull(asNumberedContractId(address)));
+            final var account = accountStore.getAccountById(requireNonNull(asNumberedAccountId(address)));
+            validateFalse(account == null && contract == null, INVALID_CONTRACT_ID);
+        }
+
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()))
                 .status(outcome.status());
@@ -103,6 +124,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        return feeContext.feeCalculator(SubType.DEFAULT).calculate();
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
+                        .usageGiven(fromPbj(body), sigValueObj, null));
     }
 }

@@ -432,6 +432,19 @@ public class ConversionUtils {
     }
 
     /**
+     * Converts a long-zero address to a PBJ {@link AccountID} with id number instead of alias.
+     *
+     * @param address the EVM address
+     * @return the PBJ {@link AccountID}
+     */
+    public static AccountID asNumberedAccountId(@NonNull final Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
+        return AccountID.newBuilder().accountNum(numberOfLongZero(address)).build();
+    }
+
+    /**
      * Throws a {@link HandleException} if the given status is not {@link ResponseCodeEnum#SUCCESS}.
      *
      * @param status the status
