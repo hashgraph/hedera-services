@@ -219,7 +219,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
                 .withConcurrency(false)
-                .withUnhandledTaskCapacity(1)
+                .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
                 .withExternalBackPressure(false)
                 .build()
                 .cast();

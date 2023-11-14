@@ -31,6 +31,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
+import com.swirlds.platform.event.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -110,17 +111,6 @@ public class SignedStateFileManager {
         this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
-//TODO use for wire
-
-//        this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
-//                .setCapacity(stateConfig.stateSavingQueueSize())
-//                .setMaxBufferSize(1)
-//                .setPriority(threadConfig.threadPriorityNonSync())
-//                .setNodeId(selfId)
-//                .setComponent(PLATFORM_THREAD_POOL_NAME)
-//                .setThreadName("signed-state-file-manager")
-//                .setHandler(Runnable::run)
-//                .build();
 
         final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
         if (!savedStates.isEmpty()) {
@@ -133,44 +123,63 @@ public class SignedStateFileManager {
     }
 
     /**
-     * A save state task
-     *
+     * Method to be called when a state has been successfully written to disk in-band. An "in-band" write is part of
+     * normal platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
+     * <p>
+     * This method shouldn't be called if the state was written out-of-band.
      */
     public StateSavingResult saveStateTask(@NonNull final StateWriteRequest request) {
-
         final long start = time.nanoTime();
-        boolean success = false;
+        final StateSavingResult stateSavingResult;
+        final boolean success;
 
-        final ReservedSignedState reservedSignedState = request.reservedSignedState();
-        final SignedState state = reservedSignedState.get();
+        // the state is reserved before it is handed to this method, and it is released when we are done
+        try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
+            final SignedState signedState = reservedSignedState.get();
+            success = saveStateTask(signedState, request.outOfBand());
+            final long minGen = success && !request.outOfBand() ? deleteOldStates() : EventConstants.GENERATION_UNDEFINED;
+            stateSavingResult = new StateSavingResult(
+                    signedState.getRound(),
+                    success,
+                    request.outOfBand(),
+                    signedState.isFreezeState(),
+                    signedState.getConsensusTimestamp()
+            );
+
+        }
+        if (request.finishedCallback() != null) {
+            request.finishedCallback().accept(success);
+        }
+        metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        if (!request.outOfBand()) {
+            metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        }
+        return stateSavingResult;
+    }
+
+    /**
+     * A save state task
+     */
+    private boolean saveStateTask(@NonNull final SignedState state, final boolean outOfBand) {
         final StateToDiskReason reason = Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
-        final Path directory = request.outOfBand()
+        final Path directory = outOfBand
                 ? getSignedStatesBaseDirectory()
                 .resolve(reason.getDescription())
                 .resolve(String.format("node%d_round%d", selfId.id(), state.getRound()))
                 : getSignedStateDir(state.getRound());
-
-        try (reservedSignedState) {
-            if (request.outOfBand()) {
+        try {
+            if (outOfBand) {
                 // states requested to be written out-of-band are always written to disk
                 SignedStateFileWriter.writeSignedStateToDisk(
                         platformContext, selfId, directory, state, reason);
-
-                success = true;
-                return new StateSavingResult(
-                        state.getRound(),
-                        true,
-                        true,
-                        state.isFreezeState(),
-                        state.getConsensusTimestamp()
-                );
+                return true;
             }
             if (state.hasStateBeenSavedToDisk()) {
                 logger.info(
                         STATE_TO_DISK.getMarker(),
                         "Not saving signed state for round {} to disk because it has already been saved.",
                         state.getRound());
-                return null;
+                return false;
             }
             if (!state.isComplete()) {
                 stateLacksSignatures(state);
@@ -178,59 +187,19 @@ public class SignedStateFileManager {
 
             SignedStateFileWriter.writeSignedStateToDisk(
                     platformContext, selfId, directory, state, reason);
-            stateWrittenToDiskInBand(state, directory, start);
 
-            success = true;
+            state.stateSavedToDisk();
 
+            return true;
         } catch (final Throwable e) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Unable to write signed state to disk for round {} to {}.",
-                    reservedSignedState.get().getRound(),
+                    state.getRound(),
                     directory,
                     e);
-            return new StateSavingResult(
-                    state.getRound(),
-                    false,
-                    request.outOfBand(),
-                    state.isFreezeState(),
-                    state.getConsensusTimestamp()
-            );
-        } finally {
-            if (success) {
-                deleteOldStates();
-            }
-            if (request.finishedCallback() != null) {
-                request.finishedCallback().accept(success);
-            }
-            metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+            return false;
         }
-
-        return new StateSavingResult(
-                state.getRound(),
-                success,
-                false,
-                state.isFreezeState(),
-                state.getConsensusTimestamp()
-        );
-    }
-
-    /**
-     * Method to be called when a state has been successfully written to disk in-band. An "in-band" write is part of
-     * normal platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
-     * <p>
-     * This method shouldn't be called if the state was written out-of-band.
-     *
-     * @param reservedState the state that was written to disk
-     * @param directory     the directory where the state was written
-     * @param start         the nano start time of the state writing process
-     */
-    private void stateWrittenToDiskInBand(
-            @NonNull final SignedState reservedState, @NonNull final Path directory, final long start) {
-
-        metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-
-        reservedState.stateSavedToDisk();
     }
 
     /**
@@ -269,7 +238,7 @@ public class SignedStateFileManager {
     /**
      * Purge old states on the disk.
      */
-    private synchronized void deleteOldStates() {
+    private long deleteOldStates() {
         final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
@@ -286,12 +255,13 @@ public class SignedStateFileManager {
         }
 
         // Keep the minimum generation non-ancient for the oldest state up to date
-        if (index >= 0) {
-            final SavedStateMetadata oldestStateMetadata =
-                    savedStates.get(index).metadata();
-            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient();
-            minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);
-
+        if (index < 0) {
+            return EventConstants.GENERATION_UNDEFINED;
         }
+        final SavedStateMetadata oldestStateMetadata = savedStates.get(index).metadata();
+        final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient();
+        minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);
+        return oldestStateMinimumGeneration;
+
     }
 }
