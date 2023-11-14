@@ -518,8 +518,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(callback, "callback must not be null");
 
-        if (category != TransactionCategory.USER) {
-            throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
+        if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
+            throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
         }
 
         if (stack.depth() > 1) {
