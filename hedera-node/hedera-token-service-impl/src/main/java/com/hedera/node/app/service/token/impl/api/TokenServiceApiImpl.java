@@ -106,7 +106,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void assertValidStakingElection(
+    public void assertValidStakingElectionForCreation(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
@@ -115,6 +115,25 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
         stakingValidator.validateStakedIdForCreation(
+                isStakingEnabled,
+                hasDeclineRewardChange,
+                stakedIdKind,
+                stakedAccountIdInOp,
+                stakedNodeIdInOp,
+                accountStore,
+                networkInfo);
+    }
+
+    @Override
+    public void assertValidStakingElectionForUpdate(
+            final boolean isStakingEnabled,
+            final boolean hasDeclineRewardChange,
+            @NonNull final String stakedIdKind,
+            @Nullable final AccountID stakedAccountIdInOp,
+            @Nullable final Long stakedNodeIdInOp,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkInfo networkInfo) {
+        stakingValidator.validateStakedIdForUpdate(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
