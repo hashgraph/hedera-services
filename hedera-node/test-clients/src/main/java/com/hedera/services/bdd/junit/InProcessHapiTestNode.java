@@ -135,9 +135,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
     @Override
     public void waitForActive(long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        final var workThreadAndHederaExists = th != null && th.hedera != null;
         while (System.currentTimeMillis() < waitUntil) {
-            if (workThreadAndHederaExists && th.hedera.isActive()) {
+            if (th != null && th.hedera != null && th.hedera.isActive()) {
                 // Actually try to open a connection with the node, to make sure it is really up and running.
                 // The platform may be active, but the node may not be listening.
                 try {
@@ -221,8 +220,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
     @Override
     public void waitForShutdown(long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        final var workThreadAndHederaExists = th != null && th.hedera != null;
-        while (workThreadAndHederaExists && th.hedera.isActive()) {
+        while (th != null && th.hedera != null && th.hedera.isActive()) {
             if (System.currentTimeMillis() > waitUntil) {
                 throw new TimeoutException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not shut down!");
