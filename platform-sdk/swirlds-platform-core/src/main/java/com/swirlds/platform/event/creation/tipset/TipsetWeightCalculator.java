@@ -227,8 +227,7 @@ public class TipsetWeightCalculator {
 
             if (parentTipset == null) {
                 // For some reason we are trying to use an ancient parent. In theory possible that a self
-                // parent may be ancient. But we shouldn't even be considering non-self parents that are
-                // ancient.
+                // parent may be ancient. But we shouldn't even be considering non-self parents that are ancient.
                 if (!parent.getCreator().equals(selfId)) {
                     ancientParentLogger.error(
                             EXCEPTION.getMarker(),

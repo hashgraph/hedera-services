@@ -147,8 +147,7 @@ public class ShadowGraph implements Clearable {
             throw new IllegalArgumentException("events must not be null or empty");
         }
 
-        // Set this to the oldest generation in the event list, so we can determine if parent events are
-        // expired,
+        // Set this to the oldest generation in the event list, so we can determine if parent events are expired,
         // therefore allowing the event to be inserted.
         oldestGeneration = events.get(0).getGeneration();
         expireBelow = events.get(0).getGeneration();
@@ -697,8 +696,7 @@ public class ShadowGraph implements Clearable {
         final boolean hasOP = e.getOtherParent() != null;
         final boolean hasSP = e.getSelfParent() != null;
 
-        // If e has an unexpired parent that is not already referenced by the shadow graph, then we log an
-        // error. This
+        // If e has an unexpired parent that is not already referenced by the shadow graph, then we log an error. This
         // is only a sanity check, so there is no need to prevent insertion
         if (hasOP) {
             final boolean knownOP = shadow(e.getOtherParent()) != null;
