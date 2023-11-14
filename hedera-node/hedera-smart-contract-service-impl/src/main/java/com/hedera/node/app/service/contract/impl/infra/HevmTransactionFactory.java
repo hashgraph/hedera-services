@@ -260,7 +260,7 @@ public class HevmTransactionFactory {
         attributeValidator.validateAutoRenewPeriod(autoRenewPeriod);
         validateTrue(body.gas() >= 0, CONTRACT_NEGATIVE_GAS);
         validateTrue(body.initialBalance() >= 0, CONTRACT_NEGATIVE_VALUE);
-        validateTrue(body.gas() < contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
+        validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
         final var usesUnsupportedAutoAssociations =
                 body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
         validateFalse(usesUnsupportedAutoAssociations, NOT_SUPPORTED);
