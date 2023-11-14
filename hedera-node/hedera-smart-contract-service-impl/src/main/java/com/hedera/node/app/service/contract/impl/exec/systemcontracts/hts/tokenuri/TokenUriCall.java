@@ -17,14 +17,18 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -49,6 +53,7 @@ public class TokenUriCall extends AbstractNftViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
         requireNonNull(token);
+        validateFalse(token.tokenType() == TokenType.FUNGIBLE_COMMON, FAIL_INVALID);
         String metadata;
         if (nft != null) {
             metadata = new String(nft.metadata().toByteArray());
