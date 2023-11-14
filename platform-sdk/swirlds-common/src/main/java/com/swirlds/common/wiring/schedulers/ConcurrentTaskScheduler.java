@@ -48,7 +48,8 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param onRamp                   an object counter that is incremented when data is added to the scheduler
      * @param offRamp                  an object counter that is decremented when data is removed from the scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
-     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is available?
+     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is
+     *                                 available?
      */
     public ConcurrentTaskScheduler(
             @NonNull final WiringModel model,
@@ -72,8 +73,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    // TODO can this hidden?
-    public void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
@@ -82,8 +82,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    // TODO can this hidden?
-    public boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
             new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
@@ -95,8 +94,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    // TODO can this hidden?
-    public void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }

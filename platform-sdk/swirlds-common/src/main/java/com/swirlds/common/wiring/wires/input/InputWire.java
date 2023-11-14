@@ -30,9 +30,10 @@ import java.util.function.Function;
  */
 public class InputWire<IN, OUT> {
 
-    private final TaskScheduler<OUT> taskScheduler;
+    private final TaskSchedulerInput<OUT> taskScheduler;
     private Consumer<Object> handler;
     private final String name;
+    private final String taskSchedulerName;
 
     /**
      * Constructor.
@@ -43,6 +44,7 @@ public class InputWire<IN, OUT> {
     public InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
         this.taskScheduler = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
+        this.taskSchedulerName = taskScheduler.getName();
     }
 
     /**
@@ -62,7 +64,7 @@ public class InputWire<IN, OUT> {
      */
     @NonNull
     public String getTaskSchedulerName() {
-        return taskScheduler.getName();
+        return taskSchedulerName;
     }
 
     /**

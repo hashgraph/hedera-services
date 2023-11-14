@@ -21,6 +21,7 @@ import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.TaskSchedulerInput;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,7 +42,7 @@ import java.util.function.Consumer;
  *
  * @param <OUT> the output type of the primary output wire (use {@link Void} if no output is needed)
  */
-public abstract class TaskScheduler<OUT> {
+public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     private final boolean flushEnabled;
     private final WiringModel model;
@@ -198,37 +199,6 @@ public abstract class TaskScheduler<OUT> {
     public abstract void flush();
 
     /**
-     * Add a task to the scheduler. May block if back pressure is enabled.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the task scheduler
-     */
-    // TODO can this hidden?
-    public abstract void put(@NonNull Consumer<Object> handler, @NonNull Object data);
-
-    /**
-     * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this
-     * method will not accept the data.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the scheduler
-     * @return true if the data was accepted, false otherwise
-     */
-    // TODO can this hidden?
-    public abstract boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data);
-
-    /**
-     * Inject data into the scheduler, doing so even if it causes the number of unprocessed tasks to exceed the capacity
-     * specified by configured back pressure. If backpressure is disabled, this operation is logically equivalent to
-     * {@link #put(Consumer, Object)}.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the scheduler
-     */
-    // TODO can this hidden?
-    public abstract void inject(@NonNull Consumer<Object> handler, @NonNull Object data);
-
-    /**
      * Throw an {@link UnsupportedOperationException} if flushing is not enabled.
      */
     protected final void throwIfFlushDisabled() {
@@ -238,13 +208,10 @@ public abstract class TaskScheduler<OUT> {
     }
 
     /**
-     * Pass data to this scheduler's primary output wire.
-     * <p>
-     * This method is implemented here to allow classes in this package to call forward(), which otherwise would not be
-     * visible.
+     * {@inheritDoc}
      */
-    // TODO can this hidden?
-    public void forward(@NonNull final OUT data) {
+    @Override
+    protected void forward(@NonNull final OUT data) {
         primaryOutputWire.forward(data);
     }
 }
