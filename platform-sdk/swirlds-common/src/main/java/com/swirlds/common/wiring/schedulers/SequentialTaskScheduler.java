@@ -160,8 +160,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @NonNull
     private Semaphore flushWithSemaphore() {
         onRamp.forceOnRamp();
-        final Semaphore semaphore = new Semaphore(1);
-        semaphore.acquireUninterruptibly();
+        final Semaphore semaphore = new Semaphore(0);
 
         final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
         SequentialTask currentTask;

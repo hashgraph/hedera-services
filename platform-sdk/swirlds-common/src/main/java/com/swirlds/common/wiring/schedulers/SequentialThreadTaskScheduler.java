@@ -108,8 +108,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     public void flush() {
         throwIfFlushDisabled();
         onRamp.forceOnRamp();
-        final Semaphore semaphore = new Semaphore(1);
-        semaphore.acquireUninterruptibly();
+        final Semaphore semaphore = new Semaphore(0);
         tasks.add(new SequentialThreadTask(x -> semaphore.release(), semaphore));
         semaphore.acquireUninterruptibly();
     }
