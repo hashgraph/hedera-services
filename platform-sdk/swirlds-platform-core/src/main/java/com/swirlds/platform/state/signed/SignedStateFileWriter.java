@@ -191,17 +191,20 @@ public final class SignedStateFileWriter {
             throws IOException {
 
         int triesRemaining = COPY_PCES_MAX_RETRIES;
-        while (triesRemaining-- > 0) {
+        while (triesRemaining > 0) {
+            triesRemaining--;
             try {
                 copyPreconsensusEventStreamFiles(
                         platformContext, selfId, destinationDirectory, minimumGenerationNonAncient);
                 return;
             } catch (final PreconsensusEventFileRenamed e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Unable to copy the last PCES file after {} retries. "
-                                + "PCES files will not be written into the state.",
-                        COPY_PCES_MAX_RETRIES);
+                if (triesRemaining == 0) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "Unable to copy the last PCES file after {} retries. "
+                                    + "PCES files will not be written into the state.",
+                            COPY_PCES_MAX_RETRIES);
+                }
             }
         }
     }
@@ -381,7 +384,7 @@ public final class SignedStateFileWriter {
         // Unlike the other files we are going to copy which have a long lifespan and are expected to
         // be stable, the last file is actively in flux. It's possible that the last file will be
         // renamed by the time we get to it, which may cause this copy operation to fail. Attempt
-        // to copy this file first, so that if se wail we can abort and retry without other side
+        // to copy this file first, so that if we fail we can abort and retry without other side
         // effects.
         deepCopyPreconsensusFile(filesToCopy.get(filesToCopy.size() - 1), pcesDestination);
 
