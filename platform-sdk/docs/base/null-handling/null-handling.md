@@ -17,15 +17,6 @@ In IntelliJ IDEA you can enable the null annotations support by activating the `
 Next to this the `Configure Annotations` button in the `compiler` section of the settings let you define exactly the 2
 given annotations.
 
-### Gradle dependency
-
-The annotations should not be available in the runtime classpath. This is why the dependency must be defined
-as `compileOnly`:
-
-```
-compileOnly(libs.spotbugs.annotations)
-```
-
 ### Java Module
 
 The `module-info.java` file should contain the following line:

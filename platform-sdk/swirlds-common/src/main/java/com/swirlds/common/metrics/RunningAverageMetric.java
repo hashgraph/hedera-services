@@ -23,6 +23,7 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 
 /**
@@ -95,7 +96,7 @@ public interface RunningAverageMetric extends Metric {
     /**
      * Configuration of a {@link RunningAverageMetric}
      */
-    final class Config extends MetricConfig<RunningAverageMetric, RunningAverageMetric.Config> {
+    final class Config extends PlatformMetricConfig<RunningAverageMetric, Config> {
 
         private final double halfLife;
         private final boolean useDefaultHalfLife;
@@ -115,18 +116,18 @@ public interface RunningAverageMetric extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
             this.halfLife = -1;
             this.useDefaultHalfLife = true;
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
                 final double halfLife,
                 final boolean useDefaultHalfLife) {
 
@@ -139,7 +140,7 @@ public interface RunningAverageMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public RunningAverageMetric.Config withDescription(final String description) {
+        public RunningAverageMetric.Config withDescription(@NonNull final String description) {
             return new RunningAverageMetric.Config(
                     getCategory(),
                     getName(),
@@ -154,7 +155,7 @@ public interface RunningAverageMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public RunningAverageMetric.Config withUnit(final String unit) {
+        public RunningAverageMetric.Config withUnit(@NonNull final String unit) {
             return new RunningAverageMetric.Config(
                     getCategory(),
                     getName(),
@@ -174,7 +175,8 @@ public interface RunningAverageMetric extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public RunningAverageMetric.Config withFormat(final String format) {
+        @NonNull
+        public RunningAverageMetric.Config withFormat(@NonNull final String format) {
             return new RunningAverageMetric.Config(
                     getCategory(),
                     getName(),
@@ -210,6 +212,7 @@ public interface RunningAverageMetric extends Metric {
          * 		the {@code halfLife}
          * @return a new configuration-object with updated {@code halfLife}
          */
+        @NonNull
         public RunningAverageMetric.Config withHalfLife(final double halfLife) {
             return new RunningAverageMetric.Config(
                     getCategory(), getName(), getDescription(), getUnit(), getFormat(), halfLife, false);
@@ -227,7 +230,8 @@ public interface RunningAverageMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        RunningAverageMetric create(final MetricsFactory factory) {
+        @NonNull
+        public RunningAverageMetric create(@NonNull final PlatformMetricsFactory factory) {
             return factory.createRunningAverageMetric(this);
         }
 

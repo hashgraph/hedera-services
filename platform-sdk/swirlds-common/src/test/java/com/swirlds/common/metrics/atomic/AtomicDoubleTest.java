@@ -19,6 +19,7 @@ package com.swirlds.common.metrics.atomic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import com.swirlds.common.threading.atomic.AtomicDouble;
 import org.junit.jupiter.api.Test;
 
 class AtomicDoubleTest {

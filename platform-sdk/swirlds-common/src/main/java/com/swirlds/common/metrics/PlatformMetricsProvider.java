@@ -24,7 +24,7 @@ import com.swirlds.common.system.NodeId;
  * The platform provides (at least) one default implementation, but if application developers want to use their
  * own implementations of {@code Metrics}, they have to set up their own provider.
  */
-public interface MetricsProvider {
+public interface PlatformMetricsProvider {
 
     /**
      * Creates the global {@link Metrics}-instance, that keeps global metrics.
