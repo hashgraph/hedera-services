@@ -309,7 +309,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest // assessed_custom_fees extra
+    @HapiTest
     private HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return defaultHapiSpec("autoCreateWithNftFallBackFeeFails", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -724,7 +724,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
 
-    @HapiTest // here paid staking rewards?
+    @HapiTest
     private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
@@ -1310,7 +1310,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 
-    @HapiTest // here - in different order
+    @HapiTest
     private HapiSpec multipleAutoAccountCreations() {
         return defaultHapiSpec("multipleAutoAccountCreations")
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
