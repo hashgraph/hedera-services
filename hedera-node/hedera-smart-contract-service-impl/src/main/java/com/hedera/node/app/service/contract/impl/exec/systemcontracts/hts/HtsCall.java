@@ -37,6 +37,7 @@ public interface HtsCall {
      *
      * @param fullResult the full result of the call
      * @param nonGasCost any additional cost beyond the gas requirement
+     * @param responseCode the response code after the execution
      */
     record PricedResult(
             HederaSystemContract.FullResult fullResult, long nonGasCost, @Nullable ResponseCodeEnum responseCode) {
