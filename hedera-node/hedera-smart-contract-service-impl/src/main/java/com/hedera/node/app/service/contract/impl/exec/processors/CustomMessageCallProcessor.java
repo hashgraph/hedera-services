@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
@@ -210,7 +210,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                     frame.getSenderAddress(),
                     frame.getRecipientAddress(),
                     frame.getValue().toLong(),
-                    isDelegateCall(frame));
+                    acquiredSenderAuthorizationViaDelegateCall(frame));
             maybeReasonToHalt.ifPresent(reason -> doHalt(frame, reason, operationTracer));
         }
     }

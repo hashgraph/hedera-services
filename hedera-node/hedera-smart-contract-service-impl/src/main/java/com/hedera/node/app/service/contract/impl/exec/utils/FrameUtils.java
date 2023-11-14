@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
@@ -77,6 +78,46 @@ public class FrameUtils {
     public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(
             @NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE);
+    }
+
+    /**
+     * Returns true if the given frame achieved its sender authorization via a delegate call.
+     *
+     * <p>That is, returns true if the frame's <i>parent</i> was executing code via a
+     * {@code DELEGATECALL} (or chain of {@code DELEGATECALL}'s); and the delegated code
+     * contained a {@code CALL}, {@code CALLCODE}, or {@code DELEGATECALL} instruction. In
+     * this case, the frame's sender is the recipient of the parent frame; the same as if the
+     * parent frame directly initiated a call. But our {@link com.hedera.hapi.node.base.Key}
+     * types are designed to enforce stricter permissions here, even though the sender address
+     * is the same.
+     *
+     * <p>In particular, if a contract {@code 0xabcd} initiates a call directly, then it
+     * can "activate" the signature of any {@link com.hedera.hapi.node.base.Key.KeyOneOfType#CONTRACT_ID}
+     * or {@link com.hedera.hapi.node.base.Key.KeyOneOfType#DELEGATABLE_CONTRACT_ID} key needed
+     * to authorize the call. But if its delegated code initiates a call, then it should activate
+     * <b>only</b> signatures of keys of type {@link com.hedera.hapi.node.base.Key.KeyOneOfType#DELEGATABLE_CONTRACT_ID}.
+     *
+     * <p>We thus use this helper in the {@link CustomMessageCallProcessor} to detect when an
+     * initiated call is being initiated by delegated code; and enforce the stricter permissions.
+     *
+     * @param frame the frame to check
+     * @return true if the frame achieved its sender authorization via a delegate call
+     */
+    public static boolean acquiredSenderAuthorizationViaDelegateCall(@NonNull final MessageFrame frame) {
+        final var iter = frame.getMessageFrameStack().iterator();
+        // Always skip the current frame
+        final var executingFrame = iter.next();
+        if (frame != executingFrame) {
+            // This should be impossible
+            throw new IllegalArgumentException(
+                    "Only the executing frame should be tested for delegate sender authorization");
+        }
+        if (!iter.hasNext()) {
+            // The current frame is the initial frame, and thus not initiated from delegated code
+            return false;
+        }
+        final var parent = iter.next();
+        return isDelegateCall(parent);
     }
 
     public static boolean isDelegateCall(@NonNull final MessageFrame frame) {

@@ -321,11 +321,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         requireNonNull(payerId);
 
         final var payerAccount = lookupAccount("Payer", payerId);
-        logger.info(
-                "Charging network fee of {} tinybars to {} ({} balance)",
-                amount,
-                payerId,
-                payerAccount.tinybarBalance());
         final var amountToCharge = Math.min(amount, payerAccount.tinybarBalance());
         chargePayer(payerAccount, amountToCharge);
         // We may be charging for preceding child record fees, which are additive to the base fee
@@ -412,11 +407,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .copyBuilder()
                 .tinybarBalance(currentBalance - amount)
                 .build());
-        logger.info(
-                "Payer {} balance changing from {} to {}",
-                payerAccount.accountIdOrThrow(),
-                currentBalance,
-                currentBalance - amount);
     }
 
     /**
@@ -572,24 +562,20 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // We may have a rounding error, so we will first remove the node and staking rewards from the total, and then
         // whatever is left over goes to the funding account.
         long balance = amount;
-        logger.info("Distributing {} to funding accounts", balance);
 
         // We only pay node and staking rewards if the feature is enabled
         if (stakingConfig.isEnabled()) {
             final long nodeReward = (stakingConfig.feesNodeRewardPercentage() * amount) / 100;
             balance -= nodeReward;
-            logger.info("Distributing {} to node reward account {}", nodeReward, nodeRewardAccountID);
             payNodeRewardAccount(nodeReward);
 
             final long stakingReward = (stakingConfig.feesStakingRewardPercentage() * amount) / 100;
             balance -= stakingReward;
-            logger.info("Distributing {} to staking reward account {}", stakingReward, stakingRewardAccountID);
             payStakingRewardAccount(stakingReward);
         }
 
         // Whatever is left over goes to the funding account
         final var fundingAccount = lookupAccount("Funding", fundingAccountID);
-        logger.info("Distributing {} to funding account {}", balance, fundingAccountID);
         accountStore.put(fundingAccount
                 .copyBuilder()
                 .tinybarBalance(fundingAccount.tinybarBalance() + balance)

@@ -21,8 +21,13 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TR
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
@@ -61,13 +66,49 @@ class FrameUtilsTest {
     @Mock
     private MessageFrame initialFrame;
 
-    private Deque<MessageFrame> stack = new ArrayDeque<>();
+    private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
     @Test
     void throwsInConstructor() {
         for (final var clazz : toBeTested) {
             assertFor(clazz);
         }
+    }
+
+    @Test
+    void initialFrameIsNotDelegated() {
+        stack.push(initialFrame);
+        given(initialFrame.getMessageFrameStack()).willReturn(stack);
+        assertFalse(FrameUtils.acquiredSenderAuthorizationViaDelegateCall(initialFrame));
+    }
+
+    @Test
+    void onlyExecutingFrameCanBeEvaluatedForDelegateSenderAuthorization() {
+        stack.push(frame);
+        stack.push(initialFrame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertThrows(
+                IllegalArgumentException.class, () -> FrameUtils.acquiredSenderAuthorizationViaDelegateCall(frame));
+    }
+
+    @Test
+    void childOfParentExecutingItsOwnCodeDoesNotAcquireSenderAuthorizationViaDelegateCall() {
+        given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertFalse(FrameUtils.acquiredSenderAuthorizationViaDelegateCall(frame));
+    }
+
+    @Test
+    void childOfParentExecutingDelegateCodeDoesAcquireSenderAuthorizationViaDelegateCall() {
+        given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(initialFrame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        assertTrue(FrameUtils.acquiredSenderAuthorizationViaDelegateCall(frame));
     }
 
     @Test
@@ -117,8 +158,7 @@ class FrameUtilsTest {
             constructor.newInstance();
         } catch (final InvocationTargetException expected) {
             final var cause = expected.getCause();
-            Assertions.assertTrue(
-                    cause instanceof UnsupportedOperationException, String.format(UNEXPECTED_THROW, cause, clazz));
+            assertTrue(cause instanceof UnsupportedOperationException, String.format(UNEXPECTED_THROW, cause, clazz));
             return;
         } catch (final Exception e) {
             Assertions.fail(String.format(UNEXPECTED_THROW, e, clazz));
