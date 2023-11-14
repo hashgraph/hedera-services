@@ -46,4 +46,9 @@ public enum SnapshotMatchMode {
      * receipt's status would be rejected in pre-check by mono-service.
      */
     EXPECT_STREAMLINED_INGEST_RECORDS,
+    /**
+     * When involving custom fees, the fee charged for a transaction is not deterministic, because
+     * of the way mono-service charges fees.This mode allows for fuzzy-matching of records that have different fees.
+     */
+    HIGHLY_NON_DETERMINISTIC_FEES
 }
