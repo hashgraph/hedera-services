@@ -509,19 +509,18 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeHbarTransfers,
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
-        System.out.println("subType: " + subType);
         final var ans = feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
-        System.out.println("  -> " + ans.totalFee());
         return ans;
     }
 
     /**
      * Get the subType based on the number of NFT ownership changes, number of fungible token transfers,
      * number of custom fee hbar transfers, number of custom fee token transfers and whether the transaction
+     * tried and failed to use custom fees.
      * @param numNftOwnershipChanges number of NFT ownership changes
      * @param numFungibleTokenTransfers number of fungible token transfers
      * @param customFeeHbarTransfers number of custom fee hbar transfers
