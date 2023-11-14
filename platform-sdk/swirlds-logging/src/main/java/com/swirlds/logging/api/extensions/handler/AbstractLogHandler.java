@@ -18,8 +18,10 @@ package com.swirlds.logging.api.extensions.handler;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -66,8 +68,8 @@ public abstract class AbstractLogHandler implements LogHandler {
     }
 
     @Override
-    public boolean isEnabled(@NonNull final String name, @NonNull final Level level) {
-        return loggingLevelConfig.isEnabled(name, level);
+    public boolean isEnabled (@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
+        return loggingLevelConfig.isEnabled(name, level, marker);
     }
 
     /**

@@ -17,6 +17,8 @@
 package com.swirlds.logging.api.internal;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
@@ -25,10 +27,16 @@ import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
 import com.swirlds.logging.api.extensions.provider.LogProvider;
 import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
-import com.swirlds.logging.api.internal.configuration.LogConfiguration;
+import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
+import com.swirlds.logging.api.internal.configuration.MarkerDecisionConverter;
+import com.swirlds.logging.api.internal.configuration.PropertyFileConfigSource;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * tests or benchmarks.
  */
 public class DefaultLoggingSystem {
+    private static final String ENV_PROPERTY_LOG_PATH = "LOG_CONFIG_PATH";
 
     /**
      * The emergency logger.
@@ -71,7 +80,7 @@ public class DefaultLoggingSystem {
      * The default constructor.
      */
     private DefaultLoggingSystem() {
-        final Configuration configuration = new LogConfiguration();
+        final Configuration configuration = createConfiguration();
         this.internalLoggingSystem = new LoggingSystem(configuration);
         installHandlers(configuration);
         installProviders(configuration);
@@ -92,6 +101,25 @@ public class DefaultLoggingSystem {
                                 event.context()))
                 .forEach(internalLoggingSystem::accept);
         INITIALIZED.set(true);
+    }
+
+    private static Configuration createConfiguration() {
+        final String logConfigPath = System.getenv(ENV_PROPERTY_LOG_PATH);
+        final Path configFilePath = Optional.ofNullable(logConfigPath)
+                                            .map(Path::of)
+                                            .orElseGet(() -> Path.of("log.properties"));
+        try {
+            final ConfigSource configSource = new PropertyFileConfigSource(configFilePath);
+            return ConfigurationBuilder.create()
+                                       .withSource(configSource)
+                                       .withConverter(new MarkerDecisionConverter())
+                                       .withConverter(new ConfigLevelConverter())
+                                       .build();
+        } catch (IOException e) {
+            final var message = "Unable to load logging configuration from path: " + configFilePath;
+            EMERGENCY_LOGGER.log(Level.ERROR, message);
+            throw new IllegalStateException(message, e);
+        }
     }
 
     /**

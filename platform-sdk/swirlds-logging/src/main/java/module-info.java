@@ -1,5 +1,6 @@
 import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
 import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
+import com.swirlds.logging.console.ConsoleHandlerFactory;
 
 module com.swirlds.logging {
     exports com.swirlds.logging.legacy;
@@ -18,6 +19,7 @@ module com.swirlds.logging {
     exports com.swirlds.logging.api.internal.format;
     exports com.swirlds.logging.api.internal;
     exports com.swirlds.logging.api.internal.event;
+    exports com.swirlds.logging.api.internal.configuration;
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
@@ -30,4 +32,6 @@ module com.swirlds.logging {
 
     uses LogHandlerFactory;
     uses LogProviderFactory;
+
+    provides LogHandlerFactory with ConsoleHandlerFactory;
 }

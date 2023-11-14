@@ -49,11 +49,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HandlerLoggingLevelConfig {
 
-    public static final String PROPERTY_LOGGING_LEVEL = "logging.level";
-    public static final String PROPERTY_LOGGING_HANDLER_LEVEL = "logging.handler.%s.level";
-    public static final String PROPERTY_PACKAGE_LEVEL = "%s.";
-    public static final String PROPERTY_LOGGING_MARKER = "logging.marker";
-    public static final String PROPERTY_LOGGING_HANDLER_MARKER = "logging.handler.%s.marker";
+    private static final String PROPERTY_LOGGING_LEVEL = "logging.level";
+    private static final String PROPERTY_LOGGING_HANDLER_LEVEL = "logging.handler.%s.level";
+    private static final String PROPERTY_PACKAGE_LEVEL = "%s.";
+    private static final String PROPERTY_LOGGING_MARKER = "logging.marker";
+    private static final String PROPERTY_LOGGING_HANDLER_MARKER = "logging.handler.%s.marker";
+    private static final String PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS = "logging.handler.%s.inheritLevels";
+    private static final ConfigLevel DEFAULT_LEVEL = ConfigLevel.INFO;
 
     /**
      * The emergency logger.
@@ -114,32 +116,43 @@ public class HandlerLoggingLevelConfig {
         final ConfigLevel defaultLevel =
                 configuration.getValue(PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
         final ConfigLevel defaultHandlerLevel;
+        final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(name);
+        final Boolean inheritLevels = configuration.getValue(PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(name),
+                Boolean.class, Boolean.TRUE);
 
         levelConfigProperties.clear();
         markerCache.clear();
 
         if (!name.isBlank()) {
-            final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(name);
             defaultHandlerLevel =
                     configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
-            levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
-            markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
         } else {
-             defaultHandlerLevel = ConfigLevel.UNDEFINED;
+            defaultHandlerLevel = ConfigLevel.UNDEFINED;
         }
 
         if (defaultLevel == ConfigLevel.UNDEFINED && defaultHandlerLevel == ConfigLevel.UNDEFINED) {
-            levelConfigProperties.put("", ConfigLevel.INFO);
+            levelConfigProperties.put("", DEFAULT_LEVEL);
         } else if (defaultHandlerLevel != ConfigLevel.UNDEFINED) {
             levelConfigProperties.put("", defaultHandlerLevel);
         } else {
-            levelConfigProperties.put("", defaultLevel);
+            if (Boolean.TRUE.equals(inheritLevels)) {
+                levelConfigProperties.put("", defaultLevel);
+            } else {
+                levelConfigProperties.put("", DEFAULT_LEVEL);
+            }
         }
 
-        levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
+        if (Boolean.TRUE.equals(inheritLevels)) {
+            levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
+            markerCache.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
+        }
+
         levelCache.clear();
 
-        markerCache.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
+        if (!name.isBlank()) {
+            levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
+            markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
+        }
     }
 
     @NonNull
@@ -182,18 +195,6 @@ public class HandlerLoggingLevelConfig {
         });
 
         return Collections.unmodifiableMap(result);
-    }
-
-    /**
-     * Returns {code true} if the given level is enabled for the given handler.
-     *
-     * @param handler  The handler name.
-     * @param level The level.
-     *
-     * @return {code true} if the given level is enabled for the given handler.
-     */
-    public boolean isEnabled(@NonNull String handler, @NonNull Level level) {
-        return isEnabled(handler, level, null);
     }
 
     /**

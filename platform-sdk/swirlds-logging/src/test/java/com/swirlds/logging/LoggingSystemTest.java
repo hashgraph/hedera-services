@@ -30,14 +30,15 @@ import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 @WithContext
 @WithLoggingMirror
@@ -95,35 +96,35 @@ public class LoggingSystemTest {
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
-        final boolean rootTraceEnabled = loggingSystem.isEnabled("", Level.TRACE);
-        final boolean rootDebugEnabled = loggingSystem.isEnabled("", Level.DEBUG);
-        final boolean rootInfoEnabled = loggingSystem.isEnabled("", Level.INFO);
-        final boolean rootWarnEnabled = loggingSystem.isEnabled("", Level.WARN);
-        final boolean rootErrorEnabled = loggingSystem.isEnabled("", Level.ERROR);
+        final boolean rootTraceEnabled = loggingSystem.isEnabled("", Level.TRACE, null);
+        final boolean rootDebugEnabled = loggingSystem.isEnabled("", Level.DEBUG, null);
+        final boolean rootInfoEnabled = loggingSystem.isEnabled("", Level.INFO, null);
+        final boolean rootWarnEnabled = loggingSystem.isEnabled("", Level.WARN, null);
+        final boolean rootErrorEnabled = loggingSystem.isEnabled("", Level.ERROR, null);
 
-        final boolean rootTrimTraceEnabled = loggingSystem.isEnabled("  ", Level.TRACE);
-        final boolean rootTrimDebugEnabled = loggingSystem.isEnabled("  ", Level.DEBUG);
-        final boolean rootTrimInfoEnabled = loggingSystem.isEnabled("  ", Level.INFO);
-        final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN);
-        final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR);
+        final boolean rootTrimTraceEnabled = loggingSystem.isEnabled("  ", Level.TRACE, null);
+        final boolean rootTrimDebugEnabled = loggingSystem.isEnabled("  ", Level.DEBUG, null);
+        final boolean rootTrimInfoEnabled = loggingSystem.isEnabled("  ", Level.INFO, null);
+        final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN, null);
+        final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR, null);
 
-        final boolean rootNullTraceEnabled = loggingSystem.isEnabled(null, Level.TRACE);
-        final boolean rootNullDebugEnabled = loggingSystem.isEnabled(null, Level.DEBUG);
-        final boolean rootNullInfoEnabled = loggingSystem.isEnabled(null, Level.INFO);
-        final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN);
-        final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR);
+        final boolean rootNullTraceEnabled = loggingSystem.isEnabled(null, Level.TRACE, null);
+        final boolean rootNullDebugEnabled = loggingSystem.isEnabled(null, Level.DEBUG, null);
+        final boolean rootNullInfoEnabled = loggingSystem.isEnabled(null, Level.INFO, null);
+        final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN, null);
+        final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR, null);
 
-        final boolean testTraceEnabled = loggingSystem.isEnabled("test", Level.TRACE);
-        final boolean testDebugEnabled = loggingSystem.isEnabled("test", Level.DEBUG);
-        final boolean testInfoEnabled = loggingSystem.isEnabled("test", Level.INFO);
-        final boolean testWarnEnabled = loggingSystem.isEnabled("test", Level.WARN);
-        final boolean testErrorEnabled = loggingSystem.isEnabled("test", Level.ERROR);
+        final boolean testTraceEnabled = loggingSystem.isEnabled("test", Level.TRACE, null);
+        final boolean testDebugEnabled = loggingSystem.isEnabled("test", Level.DEBUG, null);
+        final boolean testInfoEnabled = loggingSystem.isEnabled("test", Level.INFO, null);
+        final boolean testWarnEnabled = loggingSystem.isEnabled("test", Level.WARN, null);
+        final boolean testErrorEnabled = loggingSystem.isEnabled("test", Level.ERROR, null);
 
-        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test  ", Level.TRACE);
-        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test  ", Level.DEBUG);
-        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test  ", Level.INFO);
-        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test  ", Level.WARN);
-        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test  ", Level.ERROR);
+        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test  ", Level.TRACE, null);
+        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test  ", Level.DEBUG, null);
+        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test  ", Level.INFO, null);
+        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test  ", Level.WARN, null);
+        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test  ", Level.ERROR, null);
 
         // then
         Assertions.assertFalse(rootTraceEnabled, "INFO should be default level");
@@ -165,11 +166,11 @@ public class LoggingSystemTest {
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
-        final boolean rootEnabled = loggingSystem.isEnabled("", null);
-        final boolean rootTrimEnabled = loggingSystem.isEnabled("  ", null);
-        final boolean rootNullEnabled = loggingSystem.isEnabled(null, null);
-        final boolean testEnabled = loggingSystem.isEnabled("test", null);
-        final boolean testBlankEnabled = loggingSystem.isEnabled("  test  ", null);
+        final boolean rootEnabled = loggingSystem.isEnabled("", null, null);
+        final boolean rootTrimEnabled = loggingSystem.isEnabled("  ", null, null);
+        final boolean rootNullEnabled = loggingSystem.isEnabled(null, null, null);
+        final boolean testEnabled = loggingSystem.isEnabled("test", null, null);
+        final boolean testBlankEnabled = loggingSystem.isEnabled("  test  ", null, null);
 
         // then
         Assertions.assertTrue(rootEnabled, "For a NULL level all must be enabled");
@@ -187,10 +188,10 @@ public class LoggingSystemTest {
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
-        loggingSystem.isEnabled("test", Level.TRACE); // no logged error
-        loggingSystem.isEnabled("test", null); // 1 logged error
-        loggingSystem.isEnabled(null, Level.TRACE); // 1 logged error
-        loggingSystem.isEnabled(null, null); // 2 logged errors
+        loggingSystem.isEnabled("test", Level.TRACE, null); // no logged error
+        loggingSystem.isEnabled("test", null, null); // 1 logged error
+        loggingSystem.isEnabled(null, Level.TRACE, null); // 1 logged error
+        loggingSystem.isEnabled(null, null, null); // 2 logged errors
 
         final List<LogEvent> loggedErrorEvents = getLoggedEvents();
 
@@ -230,35 +231,35 @@ public class LoggingSystemTest {
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
 
         // when
-        final boolean rootTraceEnabled = loggingSystem.isEnabled("", Level.TRACE);
-        final boolean rootDebugEnabled = loggingSystem.isEnabled("", Level.DEBUG);
-        final boolean rootInfoEnabled = loggingSystem.isEnabled("", Level.INFO);
-        final boolean rootWarnEnabled = loggingSystem.isEnabled("", Level.WARN);
-        final boolean rootErrorEnabled = loggingSystem.isEnabled("", Level.ERROR);
+        final boolean rootTraceEnabled = loggingSystem.isEnabled("", Level.TRACE, null);
+        final boolean rootDebugEnabled = loggingSystem.isEnabled("", Level.DEBUG, null);
+        final boolean rootInfoEnabled = loggingSystem.isEnabled("", Level.INFO, null);
+        final boolean rootWarnEnabled = loggingSystem.isEnabled("", Level.WARN, null);
+        final boolean rootErrorEnabled = loggingSystem.isEnabled("", Level.ERROR, null);
 
-        final boolean rootNullTraceEnabled = loggingSystem.isEnabled(null, Level.TRACE);
-        final boolean rootNullDebugEnabled = loggingSystem.isEnabled(null, Level.DEBUG);
-        final boolean rootNullInfoEnabled = loggingSystem.isEnabled(null, Level.INFO);
-        final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN);
-        final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR);
+        final boolean rootNullTraceEnabled = loggingSystem.isEnabled(null, Level.TRACE, null);
+        final boolean rootNullDebugEnabled = loggingSystem.isEnabled(null, Level.DEBUG, null);
+        final boolean rootNullInfoEnabled = loggingSystem.isEnabled(null, Level.INFO, null);
+        final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN, null);
+        final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR, null);
 
-        final boolean rootTrimTraceEnabled = loggingSystem.isEnabled("  ", Level.TRACE);
-        final boolean rootTrimDebugEnabled = loggingSystem.isEnabled("  ", Level.DEBUG);
-        final boolean rootTrimInfoEnabled = loggingSystem.isEnabled("  ", Level.INFO);
-        final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN);
-        final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR);
+        final boolean rootTrimTraceEnabled = loggingSystem.isEnabled("  ", Level.TRACE, null);
+        final boolean rootTrimDebugEnabled = loggingSystem.isEnabled("  ", Level.DEBUG, null);
+        final boolean rootTrimInfoEnabled = loggingSystem.isEnabled("  ", Level.INFO, null);
+        final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN, null);
+        final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR, null);
 
-        final boolean testTraceEnabled = loggingSystem.isEnabled("test", Level.TRACE);
-        final boolean testDebugEnabled = loggingSystem.isEnabled("test", Level.DEBUG);
-        final boolean testInfoEnabled = loggingSystem.isEnabled("test", Level.INFO);
-        final boolean testWarnEnabled = loggingSystem.isEnabled("test", Level.WARN);
-        final boolean testErrorEnabled = loggingSystem.isEnabled("test", Level.ERROR);
+        final boolean testTraceEnabled = loggingSystem.isEnabled("test", Level.TRACE, null);
+        final boolean testDebugEnabled = loggingSystem.isEnabled("test", Level.DEBUG, null);
+        final boolean testInfoEnabled = loggingSystem.isEnabled("test", Level.INFO, null);
+        final boolean testWarnEnabled = loggingSystem.isEnabled("test", Level.WARN, null);
+        final boolean testErrorEnabled = loggingSystem.isEnabled("test", Level.ERROR, null);
 
-        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test  ", Level.TRACE);
-        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test  ", Level.DEBUG);
-        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test  ", Level.INFO);
-        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test  ", Level.WARN);
-        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test  ", Level.ERROR);
+        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test  ", Level.TRACE, null);
+        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test  ", Level.DEBUG, null);
+        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test  ", Level.INFO, null);
+        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test  ", Level.WARN, null);
+        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test  ", Level.ERROR, null);
 
         // then
         Assertions.assertFalse(rootTraceEnabled, "ERROR is configured for root");

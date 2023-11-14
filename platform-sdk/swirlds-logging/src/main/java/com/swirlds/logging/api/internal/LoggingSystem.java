@@ -18,6 +18,7 @@ package com.swirlds.logging.api.internal;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
@@ -27,6 +28,7 @@ import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -131,24 +133,20 @@ public class LoggingSystem implements LogEventConsumer {
      * @param level the level to check
      * @return true, if the logger with the given name is enabled for the given level, otherwise false
      */
-    public boolean isEnabled(@NonNull final String name, @NonNull final Level level) {
+    public boolean isEnabled (@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
         if (name == null) {
             EMERGENCY_LOGGER.logNPE("name");
-            return isEnabled(ROOT_LOGGER_NAME, level);
+            return isEnabled(ROOT_LOGGER_NAME, level, marker);
         }
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
         if (handlers.isEmpty()) {
-            return levelConfig.isEnabled(name, level);
+            return levelConfig.isEnabled(name, level, marker);
         } else {
-            final boolean match = handlers.stream().anyMatch(handler -> handler.isEnabled(name, level));
-            if (handlers.isEmpty() || match) {
-                return levelConfig.isEnabled(name, level);
-            }
+            return handlers.stream().anyMatch(handler -> handler.isEnabled(name, level, marker));
         }
-        return false;
     }
 
     @Override
@@ -156,15 +154,15 @@ public class LoggingSystem implements LogEventConsumer {
         if (event == null) {
             EMERGENCY_LOGGER.logNPE("event");
         } else {
-            if (isEnabled(event.loggerName(), event.level())) {
+            if (isEnabled(event.loggerName(), event.level(), event.marker())) {
                 try {
                     final List<Consumer<LogEvent>> eventConsumers = new ArrayList<>();
                     handlers.stream()
-                            .filter(handler -> handler.isEnabled(event.loggerName(), event.level()))
+                            .filter(handler -> handler.isEnabled(event.loggerName(), event.level(),  event.marker()))
                             .forEach(eventConsumers::add);
 
                     if (eventConsumers.isEmpty()) {
-                        if (isEnabled(event.loggerName(), event.level())) {
+                        if (isEnabled(event.loggerName(), event.level(),  event.marker())) {
                             eventConsumers.add(e -> EMERGENCY_LOGGER.log(event));
                         }
                     }

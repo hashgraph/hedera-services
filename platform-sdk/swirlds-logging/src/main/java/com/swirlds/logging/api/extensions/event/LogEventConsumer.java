@@ -17,7 +17,10 @@
 package com.swirlds.logging.api.extensions.event;
 
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.function.Consumer;
 
 /**
@@ -32,7 +35,7 @@ public interface LogEventConsumer extends Consumer<LogEvent> {
      * @param level the level
      * @return true if the consumer is enabled, false otherwise
      */
-    default boolean isEnabled(@NonNull String name, @NonNull Level level) {
+    default boolean isEnabled (@NonNull String name, @NonNull Level level, @Nullable Marker marker) {
         return true;
     }
 }
