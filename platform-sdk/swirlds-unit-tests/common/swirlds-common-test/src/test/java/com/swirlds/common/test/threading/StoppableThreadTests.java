@@ -269,28 +269,36 @@ class StoppableThreadTests {
 
         final AtomicInteger count = new AtomicInteger(0);
 
-        final StoppableThread thread = new StoppableThreadConfiguration(getStaticThreadManager())
+        final StoppableThread thread = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setWork(count::getAndIncrement)
                 .build();
 
         thread.start();
 
         final int firstValueRead = count.get();
-        Thread.sleep(1);
-        final int secondValueRead = count.get();
-        assertTrue(firstValueRead < secondValueRead, "count should have increased");
+        assertEventuallyTrue(
+                () -> {
+                    final int secondValueRead = count.get();
+                    return secondValueRead > firstValueRead;
+                },
+                Duration.ofSeconds(1),
+                "expected count to have been increased");
 
         thread.pause();
         final int thirdValueRead = count.get();
-        Thread.sleep(1);
+        Thread.sleep(50);
 
         final int fourthValueRead = count.get();
         assertEquals(thirdValueRead, fourthValueRead, "expected count to not change during pause");
 
         thread.resume();
-        Thread.sleep(1);
-        final int fifthValueRead = count.get();
-        assertTrue(fifthValueRead > fourthValueRead, "count should have increased");
+        assertEventuallyTrue(
+                () -> {
+                    final int fifthValueRead = count.get();
+                    return fifthValueRead > fourthValueRead;
+                },
+                Duration.ofSeconds(1),
+                "expected count to have been increased");
 
         thread.stop();
     }
