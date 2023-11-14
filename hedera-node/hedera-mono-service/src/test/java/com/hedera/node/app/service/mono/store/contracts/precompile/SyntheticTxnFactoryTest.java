@@ -502,7 +502,7 @@ class SyntheticTxnFactoryTest {
                 THREE_MONTHS_IN_SECONDS,
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
-        assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(1L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
     }
 
     @Test
