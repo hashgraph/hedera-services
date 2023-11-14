@@ -7,6 +7,7 @@ open module com.swirlds.platform.test {
     requires transitive com.swirlds.platform.gui;
     requires com.swirlds.config.api.test.fixtures;
     requires com.swirlds.config.api;
+    requires com.swirlds.metrics.api;
     requires com.swirlds.test.framework;
     requires java.desktop;
     requires org.junit.jupiter.api;

@@ -5,6 +5,7 @@ module com.swirlds.platform.gui {
     exports com.swirlds.gui.model;
 
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.metrics.api;
     requires transitive java.desktop;
     requires com.swirlds.logging;
     requires org.apache.logging.log4j;

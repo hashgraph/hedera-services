@@ -5,6 +5,7 @@ module com.swirlds.demo.migration {
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
+    requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
     requires com.swirlds.platform.gui;
     requires com.swirlds.virtualmap;
