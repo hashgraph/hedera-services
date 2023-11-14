@@ -50,7 +50,8 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: false
+      enable-hapi-tests-1: false
+      enable-hapi-tests-2: false
       enable-sonar-analysis: false
       enable-spotless-check: true
     secrets:
@@ -66,7 +67,8 @@ jobs:
       enable-unit-tests: true
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: false
+      enable-hapi-tests-1: false
+      enable-hapi-tests-2: false
       enable-sonar-analysis: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
@@ -82,7 +84,8 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: true
       enable-integration-tests: false
-      enable-hapi-tests: false
+      enable-hapi-tests-1: false
+      enable-hapi-tests-2: false
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
@@ -99,7 +102,8 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: true
-      enable-hapi-tests: false
+      enable-hapi-tests-1: false
+      enable-hapi-tests-2: false
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
@@ -116,7 +120,6 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: true
       enable-hapi-tests-1: true
       enable-hapi-tests-2: false
       enable-sonar-analysis: false
@@ -135,7 +138,6 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: true
       enable-hapi-tests-1: false
       enable-hapi-tests-2: true
       enable-sonar-analysis: false
@@ -173,7 +175,8 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: false
+      enable-hapi-tests-1: false
+      enable-hapi-tests-2: false
       enable-sonar-analysis: false
       enable-snyk-scan: true
     secrets:
