@@ -167,6 +167,7 @@ public class ReturnTypes {
     // spotless:on
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
+    private static final TupleType BOOL_ENCODER = TupleType.parse(BOOL);
 
     /**
      * Encodes the given {@code status} as a return value for a classic transfer call.
@@ -176,5 +177,9 @@ public class ReturnTypes {
      */
     public static ByteBuffer encodedRc(@NonNull final ResponseCodeEnum status) {
         return RC_ENCODER.encodeElements((long) status.protoOrdinal());
+    }
+
+    public static ByteBuffer encodeBool(final boolean flag) {
+        return BOOL_ENCODER.encodeElements(flag);
     }
 }

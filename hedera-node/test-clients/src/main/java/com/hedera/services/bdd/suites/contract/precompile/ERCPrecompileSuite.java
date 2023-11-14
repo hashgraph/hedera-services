@@ -488,6 +488,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 asHeadlongAddress(accountAddr.get()))));
     }
 
+    @HapiTest
     private HapiSpec transferErc20Token() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
