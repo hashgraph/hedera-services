@@ -40,9 +40,7 @@ public class HapiTestEnv {
     private boolean started = false;
 
     public HapiTestEnv(
-        @NonNull final String testName,
-        final int nodesSize,
-        @NonNull final HapiTestNodesType nodesType) {
+            @NonNull final String testName, final int nodesSize, @NonNull final HapiTestNodesType nodesType) {
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
@@ -84,7 +82,7 @@ public class HapiTestEnv {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(
-                        nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT + (nodeId * 2)));
+                            nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT + (nodeId * 2)));
                 }
             }
         } catch (Exception e) {
