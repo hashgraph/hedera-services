@@ -1330,7 +1330,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheckFrom(OK, MAX_GAS_LIMIT_EXCEEDED)
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .gas(101L)
+                                .hasPrecheckFrom(OK, MAX_GAS_LIMIT_EXCEEDED)
                                 .hasKnownStatus(MAX_GAS_LIMIT_EXCEEDED),
                         UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
     }
