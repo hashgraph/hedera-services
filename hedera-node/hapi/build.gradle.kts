@@ -26,19 +26,26 @@ description = "Hedera API"
 val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 val hederaProtoDir = layout.projectDirectory.dir("hedera-protobufs")
 
-@Suppress("UnstableApiUsage")
-providers
-    .exec {
-        if (!hederaProtoDir.dir(".git").asFile.exists()) {
-            workingDir = layout.projectDirectory.asFile
-            commandLine("git", "clone", "https://github.com/hashgraph/hedera-protobufs.git", "-q")
-        } else {
-            workingDir = hederaProtoDir.asFile
-            commandLine("git", "fetch", "-q")
+if (!gradle.startParameter.isOffline) {
+    @Suppress("UnstableApiUsage")
+    providers
+        .exec {
+            if (!hederaProtoDir.dir(".git").asFile.exists()) {
+                workingDir = layout.projectDirectory.asFile
+                commandLine(
+                    "git",
+                    "clone",
+                    "https://github.com/hashgraph/hedera-protobufs.git",
+                    "-q"
+                )
+            } else {
+                workingDir = hederaProtoDir.asFile
+                commandLine("git", "fetch", "-q")
+            }
         }
-    }
-    .result
-    .get()
+        .result
+        .get()
+}
 
 @Suppress("UnstableApiUsage")
 providers
