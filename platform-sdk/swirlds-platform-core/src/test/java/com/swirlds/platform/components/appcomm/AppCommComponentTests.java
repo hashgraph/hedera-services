@@ -71,8 +71,8 @@ public class AppCommComponentTests {
                 random.nextLong(1, Long.MAX_VALUE),
                 true,
                 random.nextBoolean(),
-                random.nextBoolean(),
-                RandomUtils.randomInstant(random)
+                RandomUtils.randomInstant(random),
+                random.nextLong(1, Long.MAX_VALUE)
         );
 
         final AtomicInteger numInvocations = new AtomicInteger();

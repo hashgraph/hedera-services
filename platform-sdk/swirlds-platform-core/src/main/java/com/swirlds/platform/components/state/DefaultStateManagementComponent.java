@@ -19,6 +19,7 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;
@@ -51,6 +52,7 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.SignatureTransmitter;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -212,9 +214,16 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 Time.getCurrent(),
                 mainClassName,
                 selfId,
-                swirldName,
-                setMinimumGenerationToStore
+                swirldName
         );
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
+            final long minimumGenerationNonAncientForOldestState = savedStates.get(savedStates.size() - 1).metadata()
+                    .minimumGenerationNonAncient();
+            setMinimumGenerationToStore.newMinimumGenerationNonAncient(
+                    minimumGenerationNonAncientForOldestState);
+        }
 
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
@@ -235,6 +244,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
                 .solderTo("status manager", statusActionSubmitter::submitStatusAction);
         savedStateScheduler.getOutputWire().solderTo("app comm", stateToDiskEventConsumer);
+        savedStateScheduler
+                .getOutputWire()
+                .buildFilter("filter success", StateSavingResult::success)
+                .buildTransformer("to mingen", StateSavingResult::minGen)
+                .solderTo("PCES mingen", setMinimumGenerationToStore::newMinimumGenerationNonAncient);
 
         savedStateController = new SavedStateController(stateConfig, saveStateToDisk::offer, dumpStateToDisk::offer);
 

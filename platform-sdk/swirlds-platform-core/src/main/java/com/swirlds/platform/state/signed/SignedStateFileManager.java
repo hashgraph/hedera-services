@@ -30,7 +30,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
-import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.event.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -78,11 +77,6 @@ public class SignedStateFileManager {
     private final Time time;
 
     /**
-     * This method must be called when the minimum generation non-ancient of the oldest state snapshot on disk changes.
-     */
-    private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
-
-    /**
      * Creates a new instance.
      *
      * @param context                             the platform context
@@ -91,7 +85,6 @@ public class SignedStateFileManager {
      * @param mainClassName                       the main class name of this node
      * @param selfId                              the ID of this node
      * @param swirldName                          the name of the swirld
-     * @param minimumGenerationNonAncientConsumer this method must be called when the minimum generation non-ancient
      */
     public SignedStateFileManager(
             @NonNull final PlatformContext context,
@@ -99,8 +92,7 @@ public class SignedStateFileManager {
             @NonNull final Time time,
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
-            @NonNull final String swirldName,
-            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
+            @NonNull final String swirldName) {
 
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
@@ -108,18 +100,7 @@ public class SignedStateFileManager {
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.platformContext = Objects.requireNonNull(context);
-        this.configuration = Objects.requireNonNull(context).getConfiguration();
-        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
-                minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
-
-        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
-        if (!savedStates.isEmpty()) {
-            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
-            final long minimumGenerationNonAncientForOldestState = savedStates.get(savedStates.size() - 1).metadata()
-                    .minimumGenerationNonAncient();
-            minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
-                    minimumGenerationNonAncientForOldestState);
-        }
+        this.configuration = Objects.requireNonNull(context.getConfiguration());
     }
 
     /**
@@ -142,7 +123,8 @@ public class SignedStateFileManager {
                     signedState.getRound(),
                     success,
                     signedState.isFreezeState(),
-                    signedState.getConsensusTimestamp()
+                    signedState.getConsensusTimestamp(),
+                    minGen
             );
         }
         metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
@@ -265,9 +247,7 @@ public class SignedStateFileManager {
             return EventConstants.GENERATION_UNDEFINED;
         }
         final SavedStateMetadata oldestStateMetadata = savedStates.get(index).metadata();
-        final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient();
-        minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);
-        return oldestStateMinimumGeneration;
+        return oldestStateMetadata.minimumGenerationNonAncient();
 
     }
 }

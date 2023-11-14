@@ -6,5 +6,6 @@ public record StateSavingResult(
         long round,
         boolean success,
         boolean freezeState,
-        Instant consensusTimestamp) {
+        Instant consensusTimestamp,
+        long minGen) {
 }
