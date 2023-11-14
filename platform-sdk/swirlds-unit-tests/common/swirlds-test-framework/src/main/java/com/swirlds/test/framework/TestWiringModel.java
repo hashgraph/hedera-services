@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -79,6 +80,14 @@ public class TestWiringModel extends WiringModel {
     /**
      * {@inheritDoc}
      */
+    @Override
+    public boolean checkForIllegalDirectSchedulerUsage() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public String generateWiringDiagram(@NonNull final Set<ModelGroup> modelGroups) {
@@ -89,7 +98,10 @@ public class TestWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {}
+    public void registerVertex(
+            @NonNull final String vertexName,
+            @NonNull final TaskSchedulerType type,
+            final boolean insertionIsBlocking) {}
 
     /**
      * {@inheritDoc}
