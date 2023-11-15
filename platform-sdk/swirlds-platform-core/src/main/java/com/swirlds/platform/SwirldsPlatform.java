@@ -92,7 +92,6 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
@@ -471,14 +470,6 @@ public class SwirldsPlatform implements Platform {
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        final MinimumGenerationNonAncientConsumer setMinimumGenerationToStore = generation -> {
-            try {
-                preconsensusEventWriter.setMinimumGenerationToStore(generation);
-            } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation non-ancient");
-            }
-        };
         /*
          * Manages the pipeline of signed states to be written to disk
          */
@@ -489,6 +480,7 @@ public class SwirldsPlatform implements Platform {
                 actualMainClassName,
                 selfId,
                 swirldName);
+        //TODO move wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withConcurrency(false)
@@ -507,16 +499,8 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManagerWiring
                 .outputWire()
                 .buildTransformer("to mingen", StateSavingResult::minGen)
-                .solderTo("PCES mingen", setMinimumGenerationToStore::newMinimumGenerationNonAncient);
+                .solderTo("PCES mingen", preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
 
-        // TODO find a place for this
-        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
-        if (!savedStates.isEmpty()) {
-            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
-            final long minimumGenerationNonAncientForOldestState =
-                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
-            setMinimumGenerationToStore.newMinimumGenerationNonAncient(minimumGenerationNonAncientForOldestState);
-        }
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
 
@@ -531,6 +515,15 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 savedStateController,
                 signedStateFileManagerWiring.dumpStateToDisk()::put);
+
+        // Load the minimum generation into the pre-consensus event writer
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
+            final long minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            preconsensusEventWriter.setMinimumGenerationToStoreUninterruptably(minimumGenerationNonAncientForOldestState);
+        }
 
         components.add(stateManagementComponent);
 
