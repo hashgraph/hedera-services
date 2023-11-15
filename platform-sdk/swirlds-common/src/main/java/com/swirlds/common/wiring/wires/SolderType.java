@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.wires;
+
+import com.swirlds.common.wiring.wires.input.InputWire;
 
 /**
- * The type of solder connection.
+ * The type of solder connection between an output wire and an input wire.
  */
 public enum SolderType {
     /**
@@ -30,8 +32,8 @@ public enum SolderType {
      */
     INJECT,
     /**
-     * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has
-     * backpressure enabled and the input wire is full, then the data will be dropped.
+     * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has backpressure
+     * enabled and the input wire is full, then the data will be dropped.
      */
     OFFER
 }
