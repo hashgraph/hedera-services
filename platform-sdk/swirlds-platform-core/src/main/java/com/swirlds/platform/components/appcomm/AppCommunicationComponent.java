@@ -88,15 +88,13 @@ public class AppCommunicationComponent
     }
 
     public void stateToDiskAttempt(@NonNull final StateSavingResult stateSavingResult) {
-        if (stateSavingResult.success()) {
-            // Synchronous notification, no need to take an extra reservation
-            notificationEngine.dispatch(
-                    StateWriteToDiskCompleteListener.class,
-                    new StateWriteToDiskCompleteNotification(
-                            stateSavingResult.round(),
-                            stateSavingResult.consensusTimestamp(),
-                            stateSavingResult.freezeState()));
-        }
+        // Synchronous notification, no need to take an extra reservation
+        notificationEngine.dispatch(
+                StateWriteToDiskCompleteListener.class,
+                new StateWriteToDiskCompleteNotification(
+                        stateSavingResult.round(),
+                        stateSavingResult.consensusTimestamp(),
+                        stateSavingResult.freezeState()));
     }
 
     @Override

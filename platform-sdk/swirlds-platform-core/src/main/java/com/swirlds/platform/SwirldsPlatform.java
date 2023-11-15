@@ -491,7 +491,7 @@ public class SwirldsPlatform implements Platform {
                 swirldName
         );
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
-        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
+        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
                 .withExternalBackPressure(false)
@@ -502,7 +502,6 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManagerWiring.bind(signedStateFileManager);
         signedStateFileManagerWiring
                 .outputWire()
-                .buildFilter("filter success", StateSavingResult::success)
                 .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
                 .solderTo("status manager", platformStatusManager::submitStatusAction);
         signedStateFileManagerWiring
@@ -510,7 +509,6 @@ public class SwirldsPlatform implements Platform {
                 .solderTo("app comm", appCommunicationComponent::stateToDiskAttempt);
         signedStateFileManagerWiring
                 .outputWire()
-                .buildFilter("filter success", StateSavingResult::success)
                 .buildTransformer("to mingen", StateSavingResult::minGen)
                 .solderTo("PCES mingen", setMinimumGenerationToStore::newMinimumGenerationNonAncient);
 

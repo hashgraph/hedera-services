@@ -79,12 +79,12 @@ public class SignedStateFileManager {
     /**
      * Creates a new instance.
      *
-     * @param context                             the platform context
-     * @param metrics                             metrics provider
-     * @param time                                provides time
-     * @param mainClassName                       the main class name of this node
-     * @param selfId                              the ID of this node
-     * @param swirldName                          the name of the swirld
+     * @param context       the platform context
+     * @param metrics       metrics provider
+     * @param time          provides time
+     * @param mainClassName the main class name of this node
+     * @param selfId        the ID of this node
+     * @param swirldName    the name of the swirld
      */
     public SignedStateFileManager(
             @NonNull final PlatformContext context,
@@ -112,16 +112,17 @@ public class SignedStateFileManager {
     public StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
         final long start = time.nanoTime();
         final StateSavingResult stateSavingResult;
-        final boolean success;
 
         // the state is reserved before it is handed to this method, and it is released when we are done
         try (reservedSignedState) {
             final SignedState signedState = reservedSignedState.get();
-            success = saveStateTask(signedState, false);
-            final long minGen = success ? deleteOldStates() : EventConstants.GENERATION_UNDEFINED;
+            final boolean success = saveStateTask(signedState, false);
+            if (!success) {
+                return null;
+            }
+            final long minGen = deleteOldStates();
             stateSavingResult = new StateSavingResult(
                     signedState.getRound(),
-                    success,
                     signedState.isFreezeState(),
                     signedState.getConsensusTimestamp(),
                     minGen
@@ -138,7 +139,7 @@ public class SignedStateFileManager {
         try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
             saveStateTask(reservedSignedState.get(), true);
         }
-       request.finishedCallback().run();
+        request.finishedCallback().run();
     }
 
     /**
@@ -238,7 +239,6 @@ public class SignedStateFileManager {
             }
         }
 
-        // Keep the minimum generation non-ancient for the oldest state up to date
         if (index < 0) {
             return EventConstants.GENERATION_UNDEFINED;
         }
