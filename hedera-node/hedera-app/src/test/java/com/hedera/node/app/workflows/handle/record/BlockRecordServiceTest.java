@@ -77,7 +77,7 @@ final class BlockRecordServiceTest {
             assertEquals(
                     new RunningHashes(GENESIS_HASH, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY),
                     runningHashesCapture.getValue());
-            assertEquals(new BlockInfo(0, null, Bytes.EMPTY), blockInfoCapture.getValue());
+            assertEquals(new BlockInfo(0, null, Bytes.EMPTY, null, false), blockInfoCapture.getValue());
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();

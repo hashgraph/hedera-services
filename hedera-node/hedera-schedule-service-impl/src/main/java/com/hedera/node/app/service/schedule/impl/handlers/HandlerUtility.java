@@ -149,6 +149,11 @@ final class HandlerUtility {
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNSET -> HederaFunctionality.NONE;
+            case PARTITION_CREATION -> null;
+            case PARTITION_UPDATE -> null;
+            case PARTITION_DELETION -> null;
+            case TOKEN_LOCK -> null;
+            case TOKEN_UNLOCK -> null;
         };
     }
 

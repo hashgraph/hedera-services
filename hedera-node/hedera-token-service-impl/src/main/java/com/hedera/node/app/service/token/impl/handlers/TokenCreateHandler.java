@@ -429,6 +429,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             case NON_FUNGIBLE_UNIQUE -> hasCustomFees
                     ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
                     : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+            case PARTITION -> throw new IllegalArgumentException("Cannot deduce sub-type for partitioned token");
         };
     }
 }

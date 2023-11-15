@@ -74,7 +74,7 @@ public final class BlockRecordService implements Service {
 
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
                 // Last block is set to 0 because the first valid block is 1
-                final var blocks = new BlockInfo(0, null, Bytes.EMPTY);
+                final var blocks = new BlockInfo(0, null, Bytes.EMPTY, null, false);
                 blocksState.put(blocks);
             }
         });
