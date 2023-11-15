@@ -3107,6 +3107,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
+    @HapiTest
     private HapiSpec erc721TransferFromWithApproval() {
         return defaultHapiSpec("erc721TransferFromWithApproval")
                 .given(
