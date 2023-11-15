@@ -175,7 +175,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -1319,8 +1318,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                 .gas(21_000L)
-                                .hasPrecheckFrom(OK, MAX_GAS_LIMIT_EXCEEDED)
-                                .hasKnownStatus(MAX_GAS_LIMIT_EXCEEDED),
+                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
@@ -1330,10 +1328,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .gas(101L)
-                                .hasPrecheckFrom(OK, MAX_GAS_LIMIT_EXCEEDED)
-                                .hasKnownStatus(MAX_GAS_LIMIT_EXCEEDED),
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
     }
 
