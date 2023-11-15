@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A suite for user stories Move-1 through Move-5 from HIP-796.
  */
+// @HapiTestSuite
 public class InterPartitionMovementSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(InterPartitionMovementSuite.class);
 

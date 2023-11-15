@@ -71,6 +71,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A suite for user stories Partitions-1 through Partitions-18 from HIP-796.
  */
+// @HapiTestSuite
 public class PartitionsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PartitionsSuite.class);
 

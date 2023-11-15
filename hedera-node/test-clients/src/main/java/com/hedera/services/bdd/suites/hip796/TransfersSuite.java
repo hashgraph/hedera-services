@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A suite for user stories Transfers-1 through Transfers-3 from HIP-796.
  */
+// @HapiTestSuite
 public class TransfersSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransfersSuite.class);
 
