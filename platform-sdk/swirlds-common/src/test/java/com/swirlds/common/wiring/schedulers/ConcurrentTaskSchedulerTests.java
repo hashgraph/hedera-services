@@ -26,7 +26,7 @@ import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.test.framework.TestWiringModel;
+import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Random;
@@ -38,13 +38,13 @@ import org.junit.jupiter.api.Test;
 
 class ConcurrentTaskSchedulerTests {
 
-    private static final WiringModel model = TestWiringModel.getInstance();
-
     /**
      * Add a bunch of operations to a wire and ensure that they are all eventually handled.
      */
     @Test
     void allOperationsHandledTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
+
         final Random random = getRandomPrintSeed();
 
         final AtomicLong count = new AtomicLong();
@@ -85,6 +85,8 @@ class ConcurrentTaskSchedulerTests {
      */
     @Test
     void parallelOperationTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
+
         final Random random = getRandomPrintSeed();
 
         // Each operation has a value that needs to be added the counter.

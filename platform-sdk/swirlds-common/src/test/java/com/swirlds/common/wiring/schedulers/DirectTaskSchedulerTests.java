@@ -27,7 +27,7 @@ import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
-import com.swirlds.test.framework.TestWiringModel;
+import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Random;
@@ -37,11 +37,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class DirectTaskSchedulerTests {
 
-    private static final WiringModel model = TestWiringModel.getInstance();
-
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void basicOperationTest(final boolean stateless) {
+        final WiringModel model = TestWiringModelBuilder.create();
+
         final Random random = getRandomPrintSeed();
         final Thread mainThread = Thread.currentThread();
 
@@ -117,6 +117,7 @@ class DirectTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void exceptionHandlerTest(final boolean stateless) {
+        final WiringModel model = TestWiringModelBuilder.create();
 
         final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
         final Thread mainThread = Thread.currentThread();
