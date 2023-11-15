@@ -1,5 +1,10 @@
 [
   {
+    "inputs": [],
+    "stateMutability": "payable",
+    "type": "constructor"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -8,6 +13,32 @@
       }
     ],
     "name": "callContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_addr",
+        "type": "address"
+      }
+    ],
+    "name": "callTransfer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_addr",
+        "type": "address"
+      }
+    ],
+    "name": "callWithValue",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
