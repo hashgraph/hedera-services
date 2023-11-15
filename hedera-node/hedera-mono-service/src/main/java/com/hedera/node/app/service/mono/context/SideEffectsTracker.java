@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,8 @@ import org.hyperledger.besu.datatypes.Address;
  */
 @Singleton
 public class SideEffectsTracker {
+    private static final Comparator<FcTokenAssociation> FC_TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.comparingLong(FcTokenAssociation::token).thenComparingLong(FcTokenAssociation::account);
     private static final long INAPPLICABLE_NEW_SUPPLY = -1;
     public static final int MISSING_NUMBER = -1;
     private static final int MAX_TOKENS_TOUCHED = 1_000;
@@ -303,7 +306,14 @@ public class SideEffectsTracker {
      * @return the created auto-associations
      */
     public List<FcTokenAssociation> getTrackedAutoAssociations() {
-        return autoAssociations.isEmpty() ? Collections.emptyList() : new ArrayList<>(autoAssociations);
+        // Sort the associations by token id and then by account id to ensure a consistent order
+        // to be matched with modular service
+        if (!autoAssociations.isEmpty()) {
+            final var newAssociations = new ArrayList<>(autoAssociations);
+            newAssociations.sort(FC_TOKEN_ASSOCIATION_COMPARATOR);
+            return newAssociations;
+        }
+        return Collections.emptyList();
     }
 
     /**
