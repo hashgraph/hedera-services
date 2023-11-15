@@ -266,7 +266,7 @@ jobs:
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+#        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
