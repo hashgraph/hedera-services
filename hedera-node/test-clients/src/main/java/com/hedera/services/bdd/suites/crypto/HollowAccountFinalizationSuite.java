@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -44,6 +45,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -441,7 +446,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest // here Transaction fees '600874461' and '14200000' varied by more than 1 tinybar
+    @HapiTest // will be fixed after calculateFees is implemented in ContractCreate
     private HapiSpec hollowAccountCompletionWithContractCreate() {
         final var CONTRACT = "CreateTrivial";
         return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
@@ -474,7 +479,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec hollowAccountCompletionWithContractCall() {
         final var DEPOSIT_AMOUNT = 1000;
-        return defaultHapiSpec("HollowAccountCompletionWithContractCall")
+        return defaultHapiSpec("HollowAccountCompletionWithContractCall", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ADMIN_KEY),
@@ -541,7 +546,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest //here
     private HapiSpec tooManyHollowAccountFinalizationsShouldFail() {
         final var ECDSA_KEY_1 = "ECDSA_KEY_1";
         final var ECDSA_KEY_2 = "ECDSA_KEY_2";
@@ -689,7 +694,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest //here
     private HapiSpec txnWith2CompletionsAndAnother2PrecedingChildRecords() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -754,7 +759,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest //here expected 4 but 3 records
+    @HapiTest //here expected 4 but 3 accountNum
     private HapiSpec hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -843,13 +848,14 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest //here
     private HapiSpec precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount() {
         final var receiver = "receiver";
         final var ft = "ft";
         final String CONTRACT = "CryptoTransfer";
         final var TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
-        return defaultHapiSpec("precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount")
+        // since we are passing the address of the account looking up in spec-registry function parameters will vary
+        return defaultHapiSpec("precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(receiver).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),

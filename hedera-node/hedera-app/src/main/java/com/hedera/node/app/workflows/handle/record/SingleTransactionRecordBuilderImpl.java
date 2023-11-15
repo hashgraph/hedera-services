@@ -268,20 +268,18 @@ public class SingleTransactionRecordBuilderImpl
             newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
         }
 
-        final var recordBuilder = transactionRecordBuilder
+        final var transactionRecord = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
                 .transactionHash(transactionHash)
                 .consensusTimestamp(consensusTimestamp)
                 .parentConsensusTimestamp(parentConsensusTimestamp)
+                .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(newAutomaticTokenAssociations)
-                .paidStakingRewards(paidStakingRewards);
-        if(transferList.hasAccountAmounts()){
-            recordBuilder.transferList(transferList);
-        }
-        final var transactionRecord = recordBuilder.build();
+                .paidStakingRewards(paidStakingRewards)
+                .build();
 
         // create list of sidecar records
         List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
