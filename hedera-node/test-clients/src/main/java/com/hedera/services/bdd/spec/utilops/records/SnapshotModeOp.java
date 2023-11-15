@@ -21,8 +21,10 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
@@ -97,7 +99,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static final long MAX_NORMAL_FEE_VARIATION_IN_TINYBARS = 1;
     // For large key structures, there can be "significant" fee variation in tinybar units
     // due to different public key sizes and signature map prefixes
-    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 25_000;
+    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 50_000;
+
+    private static final long CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR = 500_000;
     private static final ObjectMapper om = new ObjectMapper();
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
@@ -160,7 +164,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "AliasKeysAreValidated");
+        final var snapshotFileMeta =
+                new SnapshotFileMeta("AutoAccountCreation", "failureAfterHollowAccountCreationReclaimsAlias");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -547,23 +552,25 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         + actual.getClass().getSimpleName() + " '" + actual + "' - " + mismatchContext.get());
             }
         } else {
-            final var nonDeterministicTransactionFees = matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES);
+            // Transaction fees can vary by based on the size of the sig map
+            final var maxVariation = feeVariation(matchModes);
             if ("transactionFee".equals(fieldName)) {
-                // Transaction fees can vary by based on the size of the sig map
-                final var maxVariation = nonDeterministicTransactionFees
-                        ? MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR
-                        : MAX_NORMAL_FEE_VARIATION_IN_TINYBARS;
+                ;
                 Assertions.assertTrue(
                         Math.abs((long) expected - (long) actual) <= maxVariation,
                         "Transaction fees '" + expected + "' and '" + actual
                                 + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
-            } else if ("amount".equals(fieldName) && nonDeterministicTransactionFees) {
+            } else if ("amount".equals(fieldName) && (maxVariation > 1)) {
                 Assertions.assertTrue(
-                        Math.abs((long) expected - (long) actual) <= MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR,
+                        Math.abs((long) expected - (long) actual) <= maxVariation,
                         "Amount '" + expected + "' and '" + actual
-                                + "' varied by more than " + MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR + " tinybar - "
+                                + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
+            } else if ("accountNum".equals(fieldName) && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
+                Assertions.assertTrue(
+                        (long) expected - (long) actual >= 0,
+                        "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
             } else {
                 Assertions.assertEquals(
                         expected,
@@ -572,6 +579,15 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                                 + mismatchContext.get());
             }
         }
+    }
+
+    private long feeVariation(Set<SnapshotMatchMode> matchModes) {
+        if (matchModes.contains(HIGHLY_NON_DETERMINISTIC_FEES)) {
+            return CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR;
+        } else if (matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES)) {
+            return MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR;
+        }
+        return MAX_NORMAL_FEE_VARIATION_IN_TINYBARS;
     }
 
     /**

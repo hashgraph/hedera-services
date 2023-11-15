@@ -87,8 +87,6 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         // Decrease staking reward account balance by rewardPaid amount
         decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
         return rewardsPaid;
-
-        // TODO: Confirm if we need logic for activating staking ?
     }
 
     /**

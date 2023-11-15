@@ -500,9 +500,14 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
-    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
+    public TransactionBody.Builder createHollowAccount(
+            final ByteString alias, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
+        baseBuilder
+                .setKey(asKeyUnchecked(EMPTY_KEY))
+                .setAlias(alias)
+                .setMaxAutomaticTokenAssociations(maxAutoAssociations)
+                .setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 

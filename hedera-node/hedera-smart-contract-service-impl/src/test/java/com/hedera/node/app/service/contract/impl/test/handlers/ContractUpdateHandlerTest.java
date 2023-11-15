@@ -56,6 +56,7 @@ import com.hedera.hapi.node.state.token.Account.Builder;
 import com.hedera.hapi.node.state.token.Account.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -118,6 +119,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Mock
     private ContractsConfig contractsConfig;
+
+    @Mock
+    private ContractUpdateRecordBuilder recordBuilder;
 
     private ContractUpdateHandler subject;
 
@@ -441,6 +445,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
+        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 
@@ -448,6 +453,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         verify(tokenServiceApi, times(1))
                 .assertValidStakingElectionForUpdate(anyBoolean(), anyBoolean(), any(), any(), any(), any(), any());
         verify(tokenServiceApi, times(1)).updateContract(any());
+        verify(recordBuilder, times(1)).contractID(any());
     }
 
     @Test

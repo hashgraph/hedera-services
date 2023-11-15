@@ -264,7 +264,7 @@ class AutoCreationLogicTest {
                 .setReceiptBuilder(TxnReceipt.newBuilder().setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L, 0)).willReturn(syntheticHollowCreation);
         given(txnCtx.activePayer()).willReturn(payer);
 
         final var input = wellKnownChange(evmAddressAlias);
@@ -303,7 +303,7 @@ class AutoCreationLogicTest {
                 .setReceiptBuilder(TxnReceipt.newBuilder().setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L, 1)).willReturn(syntheticHollowCreation);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(txnCtx.activePayer()).willReturn(payer);
 
@@ -340,7 +340,7 @@ class AutoCreationLogicTest {
                 .setReceiptBuilder(TxnReceipt.newBuilder().setAccountId(new EntityId(0, 0, createdNum.longValue())));
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L, 1)).willReturn(syntheticHollowCreation);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(txnCtx.activePayer()).willReturn(payer);
 

@@ -60,7 +60,6 @@ public class StakingRewardsHelper {
         final var possibleRewardReceivers = new HashSet<AccountID>();
         for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.get(id);
-            // TODO: change to use originalValue
             final var originalAcct = writableAccountStore.getOriginalValue(id);
             // It is possible that original account is null if the account was created in this transaction
             // In that case it is not a reward situation

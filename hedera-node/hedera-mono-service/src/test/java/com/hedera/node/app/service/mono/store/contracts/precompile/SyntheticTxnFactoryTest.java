@@ -488,7 +488,7 @@ class SyntheticTxnFactoryTest {
     void createsExpectedHollowAccountCreate() {
         final var balance = 10L;
         final var evmAddressAlias = ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
-        final var result = subject.createHollowAccount(evmAddressAlias, balance);
+        final var result = subject.createHollowAccount(evmAddressAlias, balance, 1);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -502,7 +502,7 @@ class SyntheticTxnFactoryTest {
                 THREE_MONTHS_IN_SECONDS,
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
-        assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(1L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
     }
 
     @Test

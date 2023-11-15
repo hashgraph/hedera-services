@@ -50,6 +50,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -116,6 +117,7 @@ public class SingleTransactionRecordBuilderImpl
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
+                ContractUpdateRecordBuilder,
                 EthereumTransactionRecordBuilder,
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
