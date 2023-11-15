@@ -30,7 +30,7 @@ import java.util.function.Function;
  */
 public class InputWire<IN, OUT> {
 
-    private final TaskSchedulerInput<OUT> taskScheduler;
+    private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private Consumer<Object> handler;
     private final String name;
     private final String taskSchedulerName;
@@ -42,7 +42,7 @@ public class InputWire<IN, OUT> {
      * @param name          the name of the input wire
      */
     public InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
-        this.taskScheduler = Objects.requireNonNull(taskScheduler);
+        this.taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
         this.taskSchedulerName = taskScheduler.getName();
     }
@@ -134,7 +134,7 @@ public class InputWire<IN, OUT> {
         this.handler = i -> {
             final OUT output = handler.apply((IN) i);
             if (output != null) {
-                taskScheduler.forward(output);
+                taskSchedulerInput.forward(output);
             }
         };
 
@@ -147,7 +147,7 @@ public class InputWire<IN, OUT> {
      * @param data the data to be processed by the task scheduler
      */
     public void put(@NonNull final IN data) {
-        taskScheduler.put(handler, data);
+        taskSchedulerInput.put(handler, data);
     }
 
     /**
@@ -158,7 +158,7 @@ public class InputWire<IN, OUT> {
      * @return true if the data was accepted, false otherwise
      */
     public boolean offer(@NonNull final IN data) {
-        return taskScheduler.offer(handler, data);
+        return taskSchedulerInput.offer(handler, data);
     }
 
     /**
@@ -169,6 +169,6 @@ public class InputWire<IN, OUT> {
      * @param data the data to be processed by the task scheduler
      */
     public void inject(@NonNull final IN data) {
-        taskScheduler.inject(handler, data);
+        taskSchedulerInput.inject(handler, data);
     }
 }

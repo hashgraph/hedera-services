@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OUT> {
 
-    private static final Logger logger = LogManager.getLogger(StandardOutputWire.class);
+    private static final Logger logger = LogManager.getLogger(TransformingOutputWire.class);
     private final List<Consumer<OUT>> forwardingDestinations = new ArrayList<>();
 
     private final Function<IN, OUT> transform;
@@ -51,7 +50,7 @@ public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OU
      *
      * @param model       the wiring model containing this output wire
      * @param name        the name of the output wire
-     * @param transformer the function to transform the data from the input tye to the output type. Is called once per
+     * @param transformer the function to transform the data from the input type to the output type. Is called once per
      *                    output per data item. If this method returns null then the data is not forwarded.
      * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
      *                    original data is passed to this method. Ignored if null.

@@ -43,7 +43,7 @@ public class AdvancedWireTransformer<A, B> implements Consumer<A> {
      *
      * @param model       the wiring model containing this output wire
      * @param name        the name of the output wire
-     * @param transformer the function to transform the data from the input tye to the output type. Is called once per
+     * @param transformer the function to transform the data from the input type to the output type. Is called once per
      *                    output per data item. If this method returns null then the data is not forwarded.
      * @param cleanup     an optional method that is called after the data is forwarded to all destinations. The
      *                    original data is passed to this method. Ignored if null.
