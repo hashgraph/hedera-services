@@ -337,7 +337,6 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(FIRST_PAYER));
     }
 
-    @HapiTest
     private HapiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
@@ -410,7 +409,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .logged());
     }
 
-    // todo issue open 9869
+    // @todo('9869')
     private HapiSpec preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
@@ -534,7 +533,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         getTxnRecord(BASIC_XFER).scheduled());
     }
 
-    @HapiTest
+    // @todo('9838')
     public HapiSpec rejectsUnresolvableReqSigners() {
         return defaultHapiSpec("RejectsUnresolvableReqSigners")
                 .given()
