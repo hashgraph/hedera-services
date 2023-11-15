@@ -33,11 +33,14 @@ defaults:
     shell: bash
 
 env:
-  TEST_SCRIPT: ".github/workflows/support/scripts/run_perf6_nightly.sh"
-  PARAMS: ".github/workflows/support/scripts/env.perf6_nightly"
+  TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
 
   BUILD_VERSION : "build-v0.44.0-alpha.1"
+
+  VERSION_SERVICE : "v0.43.0"
+  VERSION_MIRRORNODE : "v0.90.0-rc1"
+  K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
 
   USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
   PASSWORD: ${{ secrets.TESTING_JENKINS_API_PASSWORD }}
@@ -88,8 +91,7 @@ jobs:
         run: |
           printf "Work space : \t\t${{ github.workspace }}"
           printf "Script : \t\t${{ env.TEST_SCRIPT }}"
-          printf "Parameter : \t\t${{ env.PARAMS }}"
           printf "User : \t\t${{ env.USERNAME }}"
           printf "Password : \t\t${{ env.PASSWORD }}"
           printf "Server : \t\t${{ env.SERVER }}"
-          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ github.workspace }}/${{ env.PARAMS }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}"
+          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ env.VERSION_SERVICE }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
