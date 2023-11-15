@@ -5,6 +5,7 @@ module com.hedera.node.app.test.fixtures {
     requires transitive com.hedera.node.app;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.spi.test.fixtures;
+    requires com.hedera.node.config;
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
     requires com.swirlds.config.api;

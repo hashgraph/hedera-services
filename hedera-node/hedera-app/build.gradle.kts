@@ -88,7 +88,6 @@ xtestModuleInfo {
     requires("com.hedera.node.app.service.util.impl")
     requires("com.hedera.node.app.spi")
     requires("com.hedera.node.app.spi.test.fixtures")
-    requires("com.hedera.node.config")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.github.spotbugs.annotations")
