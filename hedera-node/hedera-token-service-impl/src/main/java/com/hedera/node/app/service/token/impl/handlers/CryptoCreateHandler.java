@@ -163,7 +163,10 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 // converted into the same EVM address as the alias
                 final var payerEvmAddress = extractEvmAddress(payerKey);
                 final var accountKeyEvmAddress = extractEvmAddress(op.keyOrThrow());
-                if (!alias.equals(payerEvmAddress) && !alias.equals(accountKeyEvmAddress)) {
+                // payerEvmAddress will be null for cases where we have synthetic crypto-create used to create a
+                // contract as part of a contract call or contract create,
+                // those cases should not be treated as hollow account creation
+                if (payerEvmAddress != null && !alias.equals(payerEvmAddress) && !alias.equals(accountKeyEvmAddress)) {
                     // Verify there is a signature that matches the EVM address
                     context.requireSignatureForHollowAccountCreation(alias);
                 }
