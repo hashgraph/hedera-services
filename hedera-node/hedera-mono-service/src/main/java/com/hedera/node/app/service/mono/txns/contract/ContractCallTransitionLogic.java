@@ -172,7 +172,13 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                     receiver = accountStore.loadContract(targetId);
                 } else {
                     validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
-                    receiver = new Account(targetId);
+                    if (targetAddressIsMissing) {
+                        final var evmAddress = op.getContractID().getEvmAddress();
+                        validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
+                        receiver = new Account(evmAddress);
+                    } else {
+                        receiver = new Account(targetId);
+                    }
                 }
             }
         }
