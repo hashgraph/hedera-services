@@ -139,24 +139,24 @@ public class Erc20TransfersCall extends AbstractHtsCall {
 
     private Log getLogForFungibleTransfer(
             final org.hyperledger.besu.datatypes.Address logger, List<AccountAmount> transfers) {
-        long sender = 0;
-        long receiver = 0;
+        AccountID sender = AccountID.DEFAULT;
+        AccountID receiver = AccountID.DEFAULT;
         BigInteger amount = BigInteger.ZERO;
 
         for (final var accountAmount : transfers) {
             if (accountAmount.amount() > 0) {
-                receiver = accountAmount.accountID().accountNum();
+                receiver = accountAmount.accountID();
                 amount = BigInteger.valueOf(accountAmount.amount());
             } else {
-                sender = accountAmount.accountID().accountNum();
+                sender = accountAmount.accountID();
             }
         }
 
         return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.TRANSFER_EVENT)
-                .forIndexedArgument(asLongZeroAddress(sender))
-                .forIndexedArgument(asLongZeroAddress(receiver))
+                .forIndexedArgument(asLongZeroAddress(sender.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(receiver.accountNum()))
                 .forDataItem(amount)
                 .build();
     }
