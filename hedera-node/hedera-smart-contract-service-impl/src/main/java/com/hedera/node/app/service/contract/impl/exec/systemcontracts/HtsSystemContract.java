@@ -77,29 +77,26 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         try {
             pricedResult = call.execute(frame);
             final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
-            if (proxyWorldUpdater != null) {
-                final var enhancement = proxyWorldUpdater.enhancement();
+            final var enhancement = proxyWorldUpdater.enhancement();
+            final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
 
-                final var responseCode = pricedResult.responseCode() != null ? pricedResult.responseCode() : null;
-
-                if (responseCode == SUCCESS) {
-                    final var output = pricedResult.fullResult().result().getOutput();
-                    enhancement
-                            .systemOperations()
-                            .externalizeResult(
-                                    contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(), output, contractID),
-                                    responseCode);
-                } else {
-                    enhancement
-                            .systemOperations()
-                            .externalizeResult(
-                                    contractFunctionResultFailedFor(
-                                            pricedResult.fullResult().gasRequirement(),
-                                            responseCode.toString(),
-                                            contractID),
-                                    responseCode);
-                }
+            if (responseCode == SUCCESS) {
+                final var output = pricedResult.fullResult().result().getOutput();
+                enhancement
+                        .systemOperations()
+                        .externalizeResult(
+                                contractFunctionResultSuccessFor(
+                                        pricedResult.fullResult().gasRequirement(), output, contractID),
+                                responseCode);
+            } else {
+                enhancement
+                        .systemOperations()
+                        .externalizeResult(
+                                contractFunctionResultFailedFor(
+                                        pricedResult.fullResult().gasRequirement(),
+                                        responseCode.toString(),
+                                        contractID),
+                                responseCode);
             }
         } catch (final HandleException handleException) {
             throw handleException;

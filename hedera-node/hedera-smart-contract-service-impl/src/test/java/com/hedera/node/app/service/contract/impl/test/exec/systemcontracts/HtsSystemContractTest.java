@@ -21,15 +21,20 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -51,6 +56,15 @@ class HtsSystemContractTest {
 
     @Mock
     private MessageFrame frame;
+
+    @Mock
+    private ProxyWorldUpdater updater;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
+
+    @Mock
+    private SystemContractOperations systemOperations;
 
     @Mock
     private HtsCallFactory attemptFactory;
@@ -113,6 +127,9 @@ class HtsSystemContractTest {
 
     private void givenValidCallAttempt() {
         frameUtils.when(() -> isDelegateCall(frame)).thenReturn(false);
+        frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
+        lenient().when(updater.enhancement()).thenReturn(enhancement);
+        lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
         given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willReturn(call);
     }
 }
