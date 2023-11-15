@@ -89,6 +89,8 @@ public class SyncProtocol implements Protocol {
      */
     private final Time time;
 
+    private final PlatformContext platformContext;
+
     /**
      * Constructs a new sync protocol
      *
@@ -113,6 +115,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Time time) {
 
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = Objects.requireNonNull(peerId);
         this.synchronizer = Objects.requireNonNull(synchronizer);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
@@ -217,7 +220,7 @@ public class SyncProtocol implements Protocol {
             throws NetworkProtocolException, IOException, InterruptedException {
 
         try {
-            synchronizer.synchronize(connection);
+            synchronizer.synchronize(platformContext, connection);
         } catch (final ParallelExecutionException | SyncException e) {
             if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
                 throw new IOException(e);
