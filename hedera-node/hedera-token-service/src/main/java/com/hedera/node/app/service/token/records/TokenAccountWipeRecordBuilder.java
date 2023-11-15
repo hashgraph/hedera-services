@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers;
+package com.hedera.node.app.service.token.records;
 
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Consumer;
 
 /**
- * A task that is performed by a {@link SequentialThreadTaskScheduler}.
- *
- * @param handler the handler to call
- * @param data    the data to pass to the handler
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
+ * transaction.
  */
-record SequentialThreadTask(@NonNull Consumer<Object> handler, @NonNull Object data) {
+public interface TokenAccountWipeRecordBuilder extends SingleTransactionRecordBuilder {
 
     /**
-     * Handle the task.
+     * Gets the new total supply of a token
+     * @return new total supply of a token
      */
-    public void handle() {
-        handler.accept(data);
-    }
+    long getNewTotalSupply();
+
+    /**
+     * Sets the new total supply of a token
+     * @param newTotalSupply the new total supply of a token
+     */
+    @NonNull
+    TokenAccountWipeRecordBuilder newTotalSupply(final long newTotalSupply);
 }
