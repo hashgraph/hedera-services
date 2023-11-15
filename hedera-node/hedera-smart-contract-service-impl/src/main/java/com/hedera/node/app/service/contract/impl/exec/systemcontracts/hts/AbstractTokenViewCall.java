@@ -35,7 +35,7 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token) {
-        super(gasCalculator, enhancement);
+        super(gasCalculator, enhancement, true);
         this.token = token;
     }
 
@@ -49,11 +49,11 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     }
 
     protected PricedResult externalizeSuccessfulResult() {
-        return gasOnly(resultOfViewingToken(token), SUCCESS);
+        return gasOnly(resultOfViewingToken(token), SUCCESS, true);
     }
 
     protected PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        return gasOnly(viewCallResultWith(responseCode, gasRequirement), responseCode);
+        return gasOnly(viewCallResultWith(responseCode, gasRequirement), responseCode, true);
     }
 
     /**

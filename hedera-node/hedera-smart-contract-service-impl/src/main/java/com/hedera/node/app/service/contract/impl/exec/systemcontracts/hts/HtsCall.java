@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
@@ -40,9 +39,13 @@ public interface HtsCall {
      * @param responseCode the response code after the execution
      */
     record PricedResult(
-            HederaSystemContract.FullResult fullResult, long nonGasCost, @Nullable ResponseCodeEnum responseCode) {
-        public static PricedResult gasOnly(HederaSystemContract.FullResult result, ResponseCodeEnum responseCode) {
-            return new PricedResult(result, 0L, responseCode);
+            HederaSystemContract.FullResult fullResult,
+            long nonGasCost,
+            ResponseCodeEnum responseCode,
+            boolean isViewCall) {
+        public static PricedResult gasOnly(
+                HederaSystemContract.FullResult result, ResponseCodeEnum responseCode, boolean isViewCall) {
+            return new PricedResult(result, 0L, responseCode, isViewCall);
         }
     }
 

@@ -80,7 +80,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
             @NonNull final Class<T> recordBuilderType,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final DispatchGasCalculator dispatchGasCalculator) {
-        super(gasCalculator, enhancement);
+        super(gasCalculator, enhancement, false);
         this.senderId = Objects.requireNonNull(senderId);
         this.syntheticBody = Objects.requireNonNull(syntheticBody);
         this.recordBuilderType = Objects.requireNonNull(recordBuilderType);

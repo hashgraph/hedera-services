@@ -91,7 +91,7 @@ class HtsSystemContractTest {
     void returnsResultFromImpliedCall() {
         givenValidCallAttempt();
 
-        final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS);
+        final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
@@ -119,7 +119,8 @@ class HtsSystemContractTest {
     @Test
     void callWithNonGasCostNotImplemented() {
         givenValidCallAttempt();
-        final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS);
+        final var pricedResult =
+                new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L, SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
 
         assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));

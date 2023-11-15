@@ -37,12 +37,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public abstract class AbstractHtsCall implements HtsCall {
     protected final SystemContractGasCalculator gasCalculator;
     protected final HederaWorldUpdater.Enhancement enhancement;
+    private final boolean isViewCall;
 
     protected AbstractHtsCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final boolean isViewCall) {
         this.gasCalculator = requireNonNull(gasCalculator);
         this.enhancement = requireNonNull(enhancement);
+        this.isViewCall = isViewCall;
     }
 
     protected HederaNativeOperations nativeOperations() {
@@ -54,11 +57,11 @@ public abstract class AbstractHtsCall implements HtsCall {
     }
 
     protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement), status);
+        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement), status, isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(revertResult(standardized(status), gasRequirement), status);
+        return gasOnly(revertResult(standardized(status), gasRequirement), status, isViewCall);
     }
 
     private ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {

@@ -41,7 +41,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
-
     public ClassicGrantApprovalCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final Enhancement enhancement,
@@ -51,7 +50,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(gasCalculator, enhancement, verificationStrategy, senderId, token, spender, amount, tokenType);
+        super(gasCalculator, enhancement, verificationStrategy, senderId, token, spender, amount, tokenType, false);
     }
 
     @NonNull
@@ -77,7 +76,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
 
-            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement), status);
+            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement), status, false);
         }
     }
 

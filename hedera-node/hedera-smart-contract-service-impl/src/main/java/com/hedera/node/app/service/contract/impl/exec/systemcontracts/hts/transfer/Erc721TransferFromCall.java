@@ -65,7 +65,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final AccountID senderId,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(gasCalculator, enhancement);
+        super(gasCalculator, enhancement, false);
         this.from = requireNonNull(from);
         this.to = requireNonNull(to);
         this.tokenId = tokenId;
@@ -90,7 +90,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                 .dispatch(syntheticTransfer, verificationStrategy, senderId, CryptoTransferRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, gasRequirement), status);
+            return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
             return gasOnly(
                     successResult(
@@ -98,7 +98,8 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                                     .getOutputs()
                                     .encodeElements(),
                             gasRequirement),
-                    status);
+                    status,
+                    false);
         }
     }
 

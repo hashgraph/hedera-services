@@ -71,7 +71,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(gasCalculator, enhancement);
+        super(gasCalculator, enhancement, false);
         this.amount = amount;
         this.from = from;
         this.to = requireNonNull(to);
@@ -100,12 +100,12 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                         CryptoTransferRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, gasRequirement), status);
+            return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
             final var encodedOutput = (from == null)
                     ? Erc20TransfersTranslator.ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
-            return gasOnly(successResult(encodedOutput, gasRequirement), status);
+            return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
         }
     }
 

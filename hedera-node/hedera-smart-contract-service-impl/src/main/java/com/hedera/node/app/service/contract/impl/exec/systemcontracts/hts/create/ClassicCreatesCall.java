@@ -74,7 +74,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final BlockValues blockValues,
             @NonNull final Wei value) {
-        super(systemContractGasCalculator, enhancement);
+        super(systemContractGasCalculator, enhancement, false);
         this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
@@ -114,7 +114,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, MINIMUM_TINYBAR_PRICE), status);
+            return gasOnly(revertResult(status, MINIMUM_TINYBAR_PRICE), status, false);
         } else {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
@@ -136,13 +136,13 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
-            return gasOnly(successResult(encodedOutput, gasRequirement), status);
+            return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
         }
     }
 
     // @TODO extract externalizeResult() calls into a single location on a higher level
     private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        final var result = gasOnly(revertResult(responseCode, gasRequirement), responseCode);
+        final var result = gasOnly(revertResult(responseCode, gasRequirement), responseCode, false);
         final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
 
         enhancement

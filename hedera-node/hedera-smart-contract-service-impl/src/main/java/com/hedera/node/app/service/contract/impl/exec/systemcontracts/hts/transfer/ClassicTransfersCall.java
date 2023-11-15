@@ -85,7 +85,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final SystemAccountCreditScreen systemAccountCreditScreen) {
-        super(gasCalculator, enhancement);
+        super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
         this.spenderId = requireNonNull(spenderId);
         this.syntheticTransfer = requireNonNull(syntheticTransfer);
