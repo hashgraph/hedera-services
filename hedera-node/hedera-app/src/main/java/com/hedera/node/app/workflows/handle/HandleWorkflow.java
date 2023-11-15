@@ -550,6 +550,8 @@ public class HandleWorkflow {
                                     .key(verification.key())
                                     .build())
                             .build();
+                    // Note the null key verification callback below; we bypass signature
+                    // verifications when doing hollow account finalization
                     context.dispatchPrecedingTransaction(
                             syntheticUpdateTxn, SingleTransactionRecordBuilder.class, null, context.payer());
                 }
