@@ -80,6 +80,7 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring;
     exports com.swirlds.common.wiring.builders;
     exports com.swirlds.common.wiring.counters;
+    exports com.swirlds.common.wiring.transformers;
     exports com.swirlds.common.wiring.utility;
     exports com.swirlds.common.wiring.wires;
     exports com.swirlds.common.wiring.wires.input;

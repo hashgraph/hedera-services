@@ -28,6 +28,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -394,6 +395,119 @@ class TaskSchedulerTransformersTests {
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved =
                 outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release);
+
+        final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
+
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
+
+        final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
+
+        outAReserved.solderTo(inB);
+        outAReserved.solderTo(inC);
+        outAReserved.solderTo(inD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        inA.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countA.getAndIncrement();
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        inB.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countB.getAndIncrement();
+            x.release();
+        });
+
+        final AtomicInteger countC = new AtomicInteger();
+        inC.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countC.getAndIncrement();
+            x.release();
+        });
+
+        final AtomicInteger countD = new AtomicInteger();
+        inD.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countD.getAndIncrement();
+            x.release();
+        });
+
+        final List<FooBar> fooBars = new ArrayList<>(100);
+        for (int i = 0; i < 100; i++) {
+            final FooBar fooBar = new FooBar();
+            fooBars.add(fooBar);
+            inA.put(fooBar);
+        }
+
+        assertEventuallyEquals(100, countA::get, Duration.ofSeconds(1), "A did not receive all data");
+        assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
+        assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
+        assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+
+        assertEventuallyTrue(
+                () -> {
+                    for (final FooBar fooBar : fooBars) {
+                        if (fooBar.getReferenceCount() != 0) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                Duration.ofSeconds(1),
+                "Not all FooBars were released");
+
+        assertFalse(error.get());
+
+        model.stop();
+    }
+
+    private static class FooBarTransformer implements AdvancedTransformation<FooBar, FooBar> {
+        @Nullable
+        @Override
+        public FooBar transform(@NonNull final FooBar fooBar) {
+            return fooBar.copyAndReserve();
+        }
+
+        @Override
+        public void cleanup(@NonNull final FooBar fooBar) {
+            fooBar.release();
+        }
+    }
+
+    /**
+     * Tests the version of the buildAdvancedTransformer() method that takes a single object implementing
+     * {@link AdvancedTransformation}.
+     */
+    @Test
+    void advancedWireTransformerInterfaceVariationTest() {
+        // Component A passes data to components B, C, and D.
+        final WiringModel model = TestWiringModelBuilder.create();
+
+        final AtomicBoolean error = new AtomicBoolean(false);
+        final UncaughtExceptionHandler exceptionHandler = (t, e) -> error.set(true);
+
+        final TaskScheduler<FooBar> taskSchedulerA = model.schedulerBuilder("A")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
+        final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
+        final OutputWire<FooBar> outAReserved =
+                outA.buildAdvancedTransformer("reserve FooBar", new FooBarTransformer());
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
