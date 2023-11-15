@@ -569,7 +569,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
+            @Nullable final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final ExternalizedRecordCustomizer customizer) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
@@ -584,11 +584,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
+            @Nullable final Predicate<Key> callback,
             @NonNull final TransactionCategory childCategory) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(callback, "callback must not be null");
         requireNonNull(childCategory, "childCategory must not be null");
 
         if (category == PRECEDING) {
