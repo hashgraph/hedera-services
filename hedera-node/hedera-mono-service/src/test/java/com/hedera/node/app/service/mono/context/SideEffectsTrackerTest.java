@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.context;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,6 +40,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +138,7 @@ class SideEffectsTrackerTest {
 
     @Test
     void usesSingletonForNoAutoAssociations() {
-        assertSame(Collections.emptyList(), subject.getTrackedAutoAssociations());
+        assertEquals(new ArrayList<>(), subject.getTrackedAutoAssociations());
     }
 
     @Test
@@ -150,7 +151,8 @@ class SideEffectsTrackerTest {
         subject.trackAutoAssociation(bToken, bAccount);
 
         assertEquals(expected, subject.getTrackedAutoAssociations());
-        assertNotSame(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());
+
+        assertIterableEquals(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());
 
         subject.reset();
 

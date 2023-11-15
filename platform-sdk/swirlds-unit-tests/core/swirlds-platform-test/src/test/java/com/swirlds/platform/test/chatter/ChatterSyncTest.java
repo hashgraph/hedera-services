@@ -16,9 +16,12 @@
 
 package com.swirlds.platform.test.chatter;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
@@ -45,8 +48,10 @@ class ChatterSyncTest {
     final Connection connection = Mockito.mock(Connection.class);
     final MessageProvider messageProvider = Mockito.mock(MessageProvider.class);
     final FallenBehindManager fallenBehindManager = Mockito.mock(FallenBehindManager.class);
-    final ChatterSyncProtocol chatterSync =
-            new ChatterSyncProtocol(PEER_ID, state, messageProvider, synchronizer, fallenBehindManager);
+    private final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().build();
+    final ChatterSyncProtocol chatterSync = new ChatterSyncProtocol(
+            platformContext, PEER_ID, state, messageProvider, synchronizer, fallenBehindManager);
 
     private static List<Arguments> exceptions() {
         return List.of(
@@ -65,7 +70,7 @@ class ChatterSyncTest {
             throws ParallelExecutionException, IOException, SyncException, InterruptedException,
                     NetworkProtocolException {
         chatterSync.runProtocol(connection);
-        Mockito.verify(synchronizer).synchronize(connection);
+        Mockito.verify(synchronizer).synchronize(platformContext, connection);
     }
 
     @Test
@@ -134,7 +139,7 @@ class ChatterSyncTest {
                     throw e;
                 })
                 .when(synchronizer)
-                .synchronize(Mockito.any());
+                .synchronize(any(), any());
         Assertions.assertThrows(
                 Exception.class, () -> chatterSync.runProtocol(connection), "the exception should be propagated");
         Assertions.assertFalse(state.shouldChatter(), "we should not be chattering after an exception");

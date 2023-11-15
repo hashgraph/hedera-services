@@ -26,6 +26,7 @@ import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import java.time.Duration;
@@ -63,7 +64,7 @@ class WiringBenchmark {
 
         final TaskScheduler<WiringBenchmarkEvent> verificationTaskScheduler = model.schedulerBuilder("verification")
                 .withPool(executor)
-                .withConcurrency(true)
+                .withType(TaskSchedulerType.CONCURRENT)
                 .withOnRamp(backpressure)
                 .withExternalBackPressure(true)
                 .build()
@@ -71,14 +72,14 @@ class WiringBenchmark {
 
         final TaskScheduler<WiringBenchmarkEvent> orphanBufferTaskScheduler = model.schedulerBuilder("orphanBuffer")
                 .withPool(executor)
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
 
         final TaskScheduler<Void> eventPoolTaskScheduler = model.schedulerBuilder("eventPool")
                 .withPool(executor)
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withOffRamp(backpressure)
                 .withExternalBackPressure(true)
                 .build()

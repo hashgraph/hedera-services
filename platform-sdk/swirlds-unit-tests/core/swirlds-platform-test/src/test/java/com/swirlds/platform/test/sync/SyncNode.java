@@ -22,13 +22,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -224,12 +227,19 @@ public class SyncNode {
                 .when(intakeQueueThread)
                 .put(any());
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        // The original sync tests are incompatible with event filtering.
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("sync.filterLikelyDuplicates", false)
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowGraphSynchronizer(
                 platformContext,
+                Time.getCurrent(),
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
