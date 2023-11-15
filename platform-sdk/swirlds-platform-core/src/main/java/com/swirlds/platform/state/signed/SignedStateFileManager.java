@@ -134,15 +134,11 @@ public class SignedStateFileManager {
     }
 
     public void dumpStateTask(@NonNull final StateDumpRequest request) {
-        final boolean success;
-
         // the state is reserved before it is handed to this method, and it is released when we are done
         try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
-            success = saveStateTask(reservedSignedState.get(), true);
+            saveStateTask(reservedSignedState.get(), true);
         }
-        if (request.finishedCallback() != null) {
-            request.finishedCallback().accept(success);
-        }
+       request.finishedCallback().run();
     }
 
     /**

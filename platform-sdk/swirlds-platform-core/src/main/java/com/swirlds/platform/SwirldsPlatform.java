@@ -524,8 +524,8 @@ public class SwirldsPlatform implements Platform {
         }
         final SavedStateController savedStateController = new SavedStateController(
                 stateConfig,
-                signedStateFileManagerWiring.saveStateToDisk()::offer,
-                signedStateFileManagerWiring.dumpStateToDisk()::offer);
+                signedStateFileManagerWiring.saveStateToDisk()::offer
+        );
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -536,7 +536,8 @@ public class SwirldsPlatform implements Platform {
                 appCommunicationComponent,
                 this::handleFatalError,
                 platformStatusManager,
-                savedStateController);
+                savedStateController,
+                signedStateFileManagerWiring.dumpStateToDisk()::put);
 
         components.add(stateManagementComponent);
 

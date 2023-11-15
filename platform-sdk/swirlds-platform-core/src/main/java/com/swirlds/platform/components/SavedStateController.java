@@ -8,16 +8,12 @@ import static com.swirlds.platform.state.signed.StateToDiskReason.RECONNECT;
 
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateToDiskReason;
-import com.swirlds.platform.state.signed.StateDumpRequest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,15 +26,12 @@ public class SavedStateController {
     private Instant previousSavedStateTimestamp;
     private final StateConfig stateConfig;
     private final BooleanFunction<ReservedSignedState> stateWrite;
-    private final BooleanFunction<StateDumpRequest> stateDump;
 
     public SavedStateController(
             final StateConfig stateConfig,
-            final BooleanFunction<ReservedSignedState> stateWrite,
-            final BooleanFunction<StateDumpRequest> stateDump) {
+            final BooleanFunction<ReservedSignedState> stateWrite) {
         this.stateConfig = stateConfig;
         this.stateWrite = stateWrite;
-        this.stateDump = stateDump;
     }
 
     /**
@@ -62,52 +55,12 @@ public class SavedStateController {
     }
 
     /**
-     * Dump a state to disk out-of-band.
-     * <p>
-     * Writing a state "out-of-band" means the state is being written for the sake of a human, whether for debug
-     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform, and
-     * will not be used as an initial state at boot time.
-     * <p>
-     * A dumped state will be saved in a subdirectory of the signed states base directory, with the subdirectory being
-     * named after the reason the state is being written out-of-band.
+     * This should be called at boot time when a signed state is read from the disk.
      *
-     * @param signedState the signed state to write to disk
-     * @param reason      the reason why the state is being written out-of-band
-     * @param blocking    if true then block until the state has been fully written to disk
+     * @param signedState the signed state that was read from file at boot time
      */
-    public void dumpState(
-            @NonNull final SignedState signedState, @NonNull final StateToDiskReason reason, final boolean blocking) {
-        Objects.requireNonNull(signedState);
-        Objects.requireNonNull(reason);
-        signedState.markAsStateToSave(reason);
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        final StateDumpRequest request = new StateDumpRequest(
-                signedState.reserve("dumping to disk"),
-                success -> latch.countDown(),
-                true);
-
-        final boolean accepted = stateDump.apply(request);
-
-        if (!accepted) {
-            if (request.finishedCallback() != null) {
-                request.finishedCallback().accept(false);
-            }
-
-            logger.error(
-                    STATE_TO_DISK.getMarker(),
-                    "Unable to save signed state to disk for round {} due to backlog of "
-                            + "operations in the SignedStateManager task queue.",
-                    signedState.getRound());
-
-            request.reservedSignedState().close();
-        }
-
-        if (blocking) {
-            Uninterruptable.abortAndLogIfInterrupted(
-                    latch::await,
-                    "interrupted while waiting for state dump to complete, state dump may not be completed");
-        }
+    public synchronized void registerSignedStateFromDisk(final SignedState signedState) {
+        previousSavedStateTimestamp = signedState.getConsensusTimestamp();
     }
 
     private void saveToDisk(@NonNull final ReservedSignedState state, final StateToDiskReason reason) {
@@ -179,14 +132,5 @@ public class SavedStateController {
             // the period hasn't yet elapsed
             return null;
         }
-    }
-
-    /**
-     * This should be called at boot time when a signed state is read from the disk.
-     *
-     * @param signedState the signed state that was read from file at boot time
-     */
-    public synchronized void registerSignedStateFromDisk(final SignedState signedState) {
-        previousSavedStateTimestamp = signedState.getConsensusTimestamp();
     }
 }

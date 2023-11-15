@@ -48,6 +48,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -101,6 +103,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     private final SignedStateSentinel signedStateSentinel;
     private final SavedStateController savedStateController;
+    private final Consumer<StateDumpRequest> stateDumpConsumer;
 
     private final StateConfig stateConfig;
 
@@ -129,25 +132,26 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final SavedStateController savedStateController) {
+            @NonNull final SavedStateController savedStateController,
+            @NonNull final Consumer<StateDumpRequest> stateDumpConsumer) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(signer);
         Objects.requireNonNull(prioritySystemTransactionSubmitter);
         Objects.requireNonNull(newLatestCompleteStateConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
         Objects.requireNonNull(platformStatusGetter);
-        Objects.requireNonNull(savedStateController);
 
-        this.signer = signer;
+
+        this.signer = Objects.requireNonNull(signer);
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
         // Various metrics about signed states
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
-        this.savedStateController = savedStateController;
+        this.savedStateController = Objects.requireNonNull(savedStateController);
+        this.stateDumpConsumer = Objects.requireNonNull(stateDumpConsumer);
 
         hashLogger = new HashLogger(threadManager, stateConfig);
 
@@ -314,7 +318,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             try (final ReservedSignedState reservedState =
                     signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
                 if (reservedState.isNotNull()) {
-                    savedStateController.dumpState(reservedState.get(), FATAL_ERROR, true);
+                    dumpState(reservedState.get(), FATAL_ERROR, true);
                 }
             }
         }
@@ -355,7 +359,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             if (reservedState.isNotNull()) {
                 // We were able to find the requested round. Dump it.
-                savedStateController.dumpState(reservedState.get(), reason, blocking);
+                dumpState(reservedState.get(), reason, blocking);
                 return;
             }
         }
@@ -379,8 +383,37 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             if (reservedState.isNull()) {
                 logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
             } else {
-                savedStateController.dumpState(reservedState.get(), reason, blocking);
+                dumpState(reservedState.get(), reason, blocking);
             }
+        }
+    }
+
+    /**
+     * Dump a state to disk out-of-band.
+     * <p>
+     * Writing a state "out-of-band" means the state is being written for the sake of a human, whether for debug
+     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform, and
+     * will not be used as an initial state at boot time.
+     * <p>
+     * A dumped state will be saved in a subdirectory of the signed states base directory, with the subdirectory being
+     * named after the reason the state is being written out-of-band.
+     *
+     * @param signedState the signed state to write to disk
+     * @param reason      the reason why the state is being written out-of-band
+     * @param blocking    if true then block until the state has been fully written to disk
+     */
+    private void dumpState(
+            @NonNull final SignedState signedState, @NonNull final StateToDiskReason reason, final boolean blocking) {
+        Objects.requireNonNull(signedState);
+        Objects.requireNonNull(reason);
+        signedState.markAsStateToSave(reason);
+
+        final StateDumpRequest request = StateDumpRequest.create(signedState.reserve("dumping to disk"));
+
+        stateDumpConsumer.accept(request);
+
+        if (blocking) {
+            request.waitForFinished().run();
         }
     }
 
