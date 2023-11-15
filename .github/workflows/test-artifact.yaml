@@ -46,7 +46,7 @@ env:
   LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
   LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
 jobs:
-  test-artifact
+  TestArtifact:
     name: Test artifact
     runs-on: ubuntu-latest
     steps:
