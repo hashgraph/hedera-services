@@ -1620,6 +1620,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
+    @HapiTest
     private HapiSpec deletedContractsCannotBeUpdated() {
         final var contract = "SelfDestructCallable";
         final var beneficiary = "beneficiary";

@@ -117,6 +117,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             ContractUpdateTransactionBody op,
             ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
+        validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey() && processAdminKey(op)) {
             throw new HandleException(INVALID_ADMIN_KEY);
