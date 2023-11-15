@@ -93,15 +93,13 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
         final var ownerAccount = nativeOperations().getAccount(getOwnerAccountNum(nonNullNft, token));
-        if (ownerAccount == null) {
-            return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
-        }
-        return successResult(
+        FullResult a = successResult(
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
                         .encodeElements(
                                 status.protoOrdinal(),
                                 nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
                 gasRequirement);
+        return a;
     }
 }
