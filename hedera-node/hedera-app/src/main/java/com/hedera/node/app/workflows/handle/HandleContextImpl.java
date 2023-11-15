@@ -508,7 +508,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchRemovablePrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
+            @Nullable final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
                 () -> recordListBuilder.addRemovablePreceding(configuration());
@@ -654,8 +654,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             syntheticPayerKey = validate(
                     callback == null ? null : childVerifier,
                     function,
-                    body(),
-                    payer(),
+                    txBody,
+                    syntheticPayer,
                     networkInfo().selfNodeInfo().nodeId(),
                     dispatchNeedsHapiPayerChecks(category));
         } catch (final PreCheckException e) {

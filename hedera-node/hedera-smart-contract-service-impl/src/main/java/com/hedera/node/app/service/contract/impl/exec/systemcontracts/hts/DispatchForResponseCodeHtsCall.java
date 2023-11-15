@@ -33,6 +33,7 @@ import java.util.Objects;
  * @param <T> the type of the record builder to expect from the dispatch
  */
 public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
+
     private final AccountID senderId;
     private final TransactionBody syntheticBody;
     private final Class<T> recordBuilderType;

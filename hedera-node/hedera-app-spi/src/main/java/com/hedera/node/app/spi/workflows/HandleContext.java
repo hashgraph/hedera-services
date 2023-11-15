@@ -452,7 +452,7 @@ public interface HandleContext {
      *
      * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param verifier           if non-null, a {@link Predicate} that will be used to validate primitive keys
      * @param syntheticPayer    the payer of the transaction
      * @return the record builder of the transaction
      * @throws NullPointerException     if {@code txBody} is {@code null}
@@ -464,7 +464,7 @@ public interface HandleContext {
     <T> T dispatchRemovablePrecedingTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> verifier,
+            @Nullable Predicate<Key> verifier,
             AccountID syntheticPayer);
 
     /**

@@ -285,6 +285,9 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
+        if (accountID.equals(payer)) {
+            return this;
+        }
 
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
