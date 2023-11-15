@@ -85,6 +85,7 @@ import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
@@ -483,7 +484,7 @@ public class SwirldsPlatform implements Platform {
         //TODO move wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                 .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
                 .withExternalBackPressure(false)
                 .build()
