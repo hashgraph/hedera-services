@@ -20,6 +20,10 @@ import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.TaskSchedulerInput;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -38,13 +42,13 @@ import java.util.function.Consumer;
  *
  * @param <OUT> the output type of the primary output wire (use {@link Void} if no output is needed)
  */
-public abstract class TaskScheduler<OUT> {
+public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     private final boolean flushEnabled;
     private final WiringModel model;
     private final String name;
     private final TaskSchedulerType type;
-    private final OutputWire<OUT> primaryOutputWire;
+    private final StandardOutputWire<OUT> primaryOutputWire;
     private final boolean insertionIsBlocking;
 
     /**
@@ -68,7 +72,7 @@ public abstract class TaskScheduler<OUT> {
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
         this.flushEnabled = flushEnabled;
-        primaryOutputWire = new OutputWire<>(model, name);
+        primaryOutputWire = new StandardOutputWire<>(model, name);
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -110,10 +114,10 @@ public abstract class TaskScheduler<OUT> {
      * @return the secondary output wire
      */
     @NonNull
-    public <T> OutputWire<T> buildSecondaryOutputWire() {
+    public <T> StandardOutputWire<T> buildSecondaryOutputWire() {
         // Intentionally do not register this with the model. Connections using this output wire will be represented
         // in the model in the same way as connections to the primary output wire.
-        return new OutputWire<>(model, name);
+        return new StandardOutputWire<>(model, name);
     }
 
     /**
@@ -195,34 +199,6 @@ public abstract class TaskScheduler<OUT> {
     public abstract void flush();
 
     /**
-     * Add a task to the scheduler. May block if back pressure is enabled.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the task scheduler
-     */
-    protected abstract void put(@NonNull Consumer<Object> handler, @NonNull Object data);
-
-    /**
-     * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this
-     * method will not accept the data.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the scheduler
-     * @return true if the data was accepted, false otherwise
-     */
-    protected abstract boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data);
-
-    /**
-     * Inject data into the scheduler, doing so even if it causes the number of unprocessed tasks to exceed the capacity
-     * specified by configured back pressure. If backpressure is disabled, this operation is logically equivalent to
-     * {@link #put(Consumer, Object)}.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the scheduler
-     */
-    protected abstract void inject(@NonNull Consumer<Object> handler, @NonNull Object data);
-
-    /**
      * Throw an {@link UnsupportedOperationException} if flushing is not enabled.
      */
     protected final void throwIfFlushDisabled() {
@@ -232,12 +208,10 @@ public abstract class TaskScheduler<OUT> {
     }
 
     /**
-     * Pass data to this scheduler's primary output wire.
-     * <p>
-     * This method is implemented here to allow classes in this package to call forward(), which otherwise would not be
-     * visible.
+     * {@inheritDoc}
      */
-    protected final void forward(@NonNull final OUT data) {
+    @Override
+    protected void forward(@NonNull final OUT data) {
         primaryOutputWire.forward(data);
     }
 }

@@ -56,6 +56,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     private static final int BUFFER_SIZE = 1024;
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
+
     private final Thread thread;
 
     /**

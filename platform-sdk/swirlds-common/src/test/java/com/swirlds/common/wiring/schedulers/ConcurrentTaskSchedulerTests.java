@@ -22,10 +22,10 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

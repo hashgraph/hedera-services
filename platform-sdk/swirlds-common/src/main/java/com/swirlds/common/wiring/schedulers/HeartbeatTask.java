@@ -17,8 +17,9 @@
 package com.swirlds.common.wiring.schedulers;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -32,7 +33,7 @@ class HeartbeatTask extends TimerTask {
 
     private final Time time;
     private final Duration period;
-    private final OutputWire<Instant> outputWire;
+    private final StandardOutputWire<Instant> outputWire;
 
     /**
      * Constructor.
@@ -49,7 +50,7 @@ class HeartbeatTask extends TimerTask {
         this.period = Objects.requireNonNull(period);
         Objects.requireNonNull(name);
 
-        this.outputWire = new OutputWire<>(model, name);
+        this.outputWire = new StandardOutputWire<>(model, name);
     }
 
     /**

@@ -48,13 +48,14 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param onRamp                   an object counter that is incremented when data is added to the scheduler
      * @param offRamp                  an object counter that is decremented when data is removed from the scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
-     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is available?
+     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is
+     *                                 available?
      */
     public ConcurrentTaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
-            @NonNull ForkJoinPool pool,
-            @NonNull UncaughtExceptionHandler uncaughtExceptionHandler,
+            @NonNull final ForkJoinPool pool,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled,
