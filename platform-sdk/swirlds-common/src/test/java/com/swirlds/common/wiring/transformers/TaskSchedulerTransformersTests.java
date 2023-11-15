@@ -23,7 +23,7 @@ import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.test.framework.TestWiringModel;
+import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,10 +31,9 @@ import org.junit.jupiter.api.Test;
 
 class TaskSchedulerTransformersTests {
 
-    private static final WiringModel model = TestWiringModel.getInstance();
-
     @Test
     void wireListSplitterTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
 
         // Component A produces lists of integers. It passes data to B, C, and D.
         // Components B and C want individual integers. Component D wants the full list of integers.
@@ -105,6 +104,7 @@ class TaskSchedulerTransformersTests {
 
     @Test
     void wireFilterTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
 
         // Wire A passes data to B, C, and a lambda.
         // B wants all of A's data, but C and the lambda only want even values.
@@ -166,6 +166,7 @@ class TaskSchedulerTransformersTests {
 
     @Test
     void wireTransformerTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
 
         // A produces data of type TestData.
         // B wants all of A's data, C wants the integer values, and D wants the boolean values.
