@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.wires.input;
 
+import com.swirlds.common.wiring.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -30,9 +30,10 @@ import java.util.function.Function;
  */
 public class InputWire<IN, OUT> {
 
-    private final TaskScheduler<OUT> taskScheduler;
+    private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private Consumer<Object> handler;
     private final String name;
+    private final String taskSchedulerName;
 
     /**
      * Constructor.
@@ -40,9 +41,10 @@ public class InputWire<IN, OUT> {
      * @param taskScheduler the scheduler to insert data into
      * @param name          the name of the input wire
      */
-    InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
-        this.taskScheduler = Objects.requireNonNull(taskScheduler);
+    public InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
+        this.taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
+        this.taskSchedulerName = taskScheduler.getName();
     }
 
     /**
@@ -62,7 +64,7 @@ public class InputWire<IN, OUT> {
      */
     @NonNull
     public String getTaskSchedulerName() {
-        return taskScheduler.getName();
+        return taskSchedulerName;
     }
 
     /**
@@ -132,7 +134,7 @@ public class InputWire<IN, OUT> {
         this.handler = i -> {
             final OUT output = handler.apply((IN) i);
             if (output != null) {
-                taskScheduler.forward(output);
+                taskSchedulerInput.forward(output);
             }
         };
 
@@ -144,8 +146,8 @@ public class InputWire<IN, OUT> {
      *
      * @param data the data to be processed by the task scheduler
      */
-    public void put(@Nullable final IN data) {
-        taskScheduler.put(handler, data);
+    public void put(@NonNull final IN data) {
+        taskSchedulerInput.put(handler, data);
     }
 
     /**
@@ -155,8 +157,8 @@ public class InputWire<IN, OUT> {
      * @param data the data to be processed by the task scheduler
      * @return true if the data was accepted, false otherwise
      */
-    public boolean offer(@Nullable final IN data) {
-        return taskScheduler.offer(handler, data);
+    public boolean offer(@NonNull final IN data) {
+        return taskSchedulerInput.offer(handler, data);
     }
 
     /**
@@ -166,7 +168,7 @@ public class InputWire<IN, OUT> {
      *
      * @param data the data to be processed by the task scheduler
      */
-    public void inject(@Nullable final IN data) {
-        taskScheduler.inject(handler, data);
+    public void inject(@NonNull final IN data) {
+        taskSchedulerInput.inject(handler, data);
     }
 }
