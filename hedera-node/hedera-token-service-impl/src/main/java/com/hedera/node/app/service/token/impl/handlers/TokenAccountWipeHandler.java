@@ -201,9 +201,11 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
         final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType = readableTokenStore
-                .get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT))
-                .tokenType();
+        final var token = readableTokenStore.get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT));
+        if (token == null) {
+            return feeContext.feeCalculator(SubType.DEFAULT).calculate();
+        }
+        final var tokenType = token.tokenType();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
         return feeContext
                 .feeCalculator(

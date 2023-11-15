@@ -21,9 +21,9 @@ import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -150,7 +150,8 @@ public class PausesXTest extends AbstractContractXTest {
                         .tokenId(ERC721_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                        .pauseKey(AN_ED25519_KEY)
+                        .pauseKey(SENDER_CONTRACT_ID_KEY)
+                        .kycKey(SENDER_CONTRACT_ID_KEY)
                         .build());
         return tokens;
     }
@@ -159,6 +160,7 @@ public class PausesXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc721Relation(tokenRelationships, OWNER_ID, 3L);
+        addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
         return tokenRelationships;
     }
 
@@ -191,6 +193,7 @@ public class PausesXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(OWNER_ID)
                         .alias(SENDER_ADDRESS)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .smartContract(true)
                         .build());
         accounts.put(
@@ -209,6 +212,12 @@ public class PausesXTest extends AbstractContractXTest {
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 }

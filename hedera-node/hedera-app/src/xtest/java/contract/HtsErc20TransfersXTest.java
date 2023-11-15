@@ -26,12 +26,14 @@ import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDR
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -144,6 +146,12 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
                         .alias(APPROVED_ADDRESS)
                         .build());
         accounts.put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 

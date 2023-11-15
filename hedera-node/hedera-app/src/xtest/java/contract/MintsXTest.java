@@ -24,12 +24,12 @@ import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
 import static contract.WipeXTest.NUMBER_OWNED_NFTS;
 import static contract.WipeXTest.TOKEN_BALANCE;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -53,6 +53,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -150,7 +151,7 @@ public class MintsXTest extends AbstractContractXTest {
                 ERC20_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(ERC20_TOKEN_ID)
-                        .supplyKey(AN_ED25519_KEY)
+                        .supplyKey(Scenarios.ALICE.account().key())
                         .totalSupply(1000)
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -159,7 +160,7 @@ public class MintsXTest extends AbstractContractXTest {
                 ERC721_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(ERC721_TOKEN_ID)
-                        .supplyKey(AN_ED25519_KEY)
+                        .supplyKey(Scenarios.ALICE.account().key())
                         .totalSupply(1000)
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -215,10 +216,16 @@ public class MintsXTest extends AbstractContractXTest {
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()
-                        .key(AN_ED25519_KEY)
+                        .key(Scenarios.ALICE.account().key())
                         .accountId(OWNER_ID)
                         .numberOwnedNfts(NUMBER_OWNED_NFTS)
                         .alias(OWNER_ADDRESS)
+                        .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         return accounts;
     }

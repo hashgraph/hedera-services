@@ -33,11 +33,11 @@ import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
-import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
@@ -244,6 +244,8 @@ public class BurnsXTest extends AbstractContractXTest {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
         addErc721Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, TOKEN_BALANCE);
+        addErc721Relation(tokenRelationships, MISC_PAYER_ID, TOKEN_BALANCE);
+        addErc20Relation(tokenRelationships, MISC_PAYER_ID, TOKEN_BALANCE);
         return tokenRelationships;
     }
 
@@ -256,19 +258,26 @@ public class BurnsXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .alias(SENDER_ADDRESS)
                         .smartContract(true)
+                        .key(AN_ED25519_KEY)
                         .build());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()
                         .accountId(OWNER_ID)
                         .alias(OWNER_ADDRESS)
-                        .key(SENDER_CONTRACT_ID_KEY)
+                        .key(AN_ED25519_KEY)
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder()
                         .accountId(UNAUTHORIZED_SPENDER_ID)
                         .alias(UNAUTHORIZED_SPENDER_ADDRESS)
+                        .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(AN_ED25519_KEY)
                         .build());
         return accounts;
     }

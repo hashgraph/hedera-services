@@ -16,8 +16,8 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
@@ -30,6 +30,7 @@ import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDR
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -53,6 +54,7 @@ import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -89,7 +91,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
                         ERC721_TOKEN_ID),
-                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                INVALID_ACCOUNT_ID);
         // Unauthorized spender cannot transfer owner's SN1234 NFT
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -174,6 +176,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
         XTestConstants.addErc721Relation(tokenRelationships, APPROVED_ID, 1L);
         XTestConstants.addErc721Relation(tokenRelationships, OPERATOR_ID, 1L);
         XTestConstants.addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
+        XTestConstants.addErc721Relation(tokenRelationships, MISC_PAYER_ID, 1000L);
         return tokenRelationships;
     }
 
@@ -221,6 +224,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 .spenderId(OPERATOR_ID)
                                 .tokenId(ERC721_TOKEN_ID)
                                 .build()))
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
@@ -241,6 +245,12 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                         .alias(OPERATOR_ADDRESS)
                         .build());
         accounts.put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(Scenarios.ALICE.account().key())
+                        .build());
         return accounts;
     }
 }

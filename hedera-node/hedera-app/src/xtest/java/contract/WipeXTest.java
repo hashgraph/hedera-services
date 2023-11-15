@@ -21,17 +21,18 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OTHER_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.addErc20Relation;
@@ -147,7 +148,7 @@ public class WipeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(OTHER_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, 10L)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
     }
 
     @Override
@@ -164,7 +165,7 @@ public class WipeXTest extends AbstractContractXTest {
                 ERC721_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(ERC721_TOKEN_ID)
-                        .wipeKey(AN_ED25519_KEY)
+                        .wipeKey(SENDER_CONTRACT_ID_KEY)
                         .totalSupply(1000)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -173,7 +174,7 @@ public class WipeXTest extends AbstractContractXTest {
                 ERC20_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(ERC20_TOKEN_ID)
-                        .wipeKey(AN_ED25519_KEY)
+                        .wipeKey(SENDER_CONTRACT_ID_KEY)
                         .totalSupply(1000)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -212,10 +213,17 @@ public class WipeXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .numberOwnedNfts(NUMBER_OWNED_NFTS)
                         .alias(OWNER_ADDRESS)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 

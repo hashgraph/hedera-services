@@ -18,6 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.INT;
+import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
@@ -28,6 +29,7 @@ import static contract.AssociationsXTestConstants.D_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.D_TOKEN_ID;
 import static contract.AssociationsXTestConstants.E_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -48,6 +50,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -215,6 +218,13 @@ public class AssociationsXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .alias(OWNER_ADDRESS)
                         .tinybarBalance(100_000_000L)
+                        .key(Scenarios.ALICE.account().key())
+                        .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(ALICE.account().key())
                         .build());
         return accounts;
     }

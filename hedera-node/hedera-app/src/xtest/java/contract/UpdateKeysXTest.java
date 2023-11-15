@@ -26,6 +26,7 @@ import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.INVALID_CONTRACT_ID_KEY;
 import static contract.XTestConstants.INVALID_ID;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
@@ -156,6 +157,12 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                         .alias(INVALID_ACCOUNT_ADDRESS)
                         .key(INVALID_CONTRACT_ID_KEY)
                         .smartContract(true)
+                        .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         return accounts;
     }

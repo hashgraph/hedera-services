@@ -31,12 +31,16 @@ import static contract.Erc721XTestConstants.PARTY_ID;
 import static contract.Erc721XTestConstants.TOKEN_TREASURY_ADDRESS;
 import static contract.Erc721XTestConstants.TOKEN_TREASURY_ID;
 import static contract.XTestConstants.COINBASE_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -53,6 +57,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -110,12 +115,17 @@ public class Erc721XTest extends AbstractContractXTest {
 
     private TransactionBody synthCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(TOKEN_TREASURY_ID))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(TOKEN_TREASURY_ID)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build()))
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
-                        .fileID(Erc721XTestConstants.ERC721_FULL_INITCODE_FILE_ID)
+                        .fileID(ERC721_FULL_INITCODE_FILE_ID)
                         .gas(AbstractContractXTest.GAS_TO_OFFER)
                         .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -124,8 +134,13 @@ public class Erc721XTest extends AbstractContractXTest {
         final var encoded =
                 Erc721XTestConstants.APPROVE.encodeCallWithArgs(addressOf(spender), BigInteger.valueOf(serialNum));
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(payer))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payer)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build()))
                 .contractCall(callWithParams(encoded))
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -134,8 +149,14 @@ public class Erc721XTest extends AbstractContractXTest {
         final var encoded = Erc721XTestConstants.SAFE_TRANSFER_FROM.encodeCallWithArgs(
                 addressOf(from), addressOf(to), BigInteger.valueOf(serialNo));
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(payer))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payer)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build())
+                        .build())
                 .contractCall(callWithParams(encoded))
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -143,8 +164,14 @@ public class Erc721XTest extends AbstractContractXTest {
             @NonNull final AccountID payer, @NonNull final Bytes operator, final boolean approved) {
         final var encoded = Erc721XTestConstants.SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(payer))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payer)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build())
+                        .build())
                 .contractCall(callWithParams(encoded))
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -198,6 +225,7 @@ public class Erc721XTest extends AbstractContractXTest {
                         .accountId(TOKEN_TREASURY_ID)
                         .alias(TOKEN_TREASURY_ADDRESS)
                         .tinybarBalance(INITIAL_BALANCE)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 COUNTERPARTY_ID,
@@ -220,6 +248,12 @@ public class Erc721XTest extends AbstractContractXTest {
                         .tinybarBalance(INITIAL_BALANCE)
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 

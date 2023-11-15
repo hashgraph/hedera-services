@@ -18,9 +18,9 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.AssortedOpsXTestConstants.COINBASE_ID;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
@@ -29,6 +29,7 @@ import static contract.XTestConstants.THREE_MONTHS_IN_SECONDS;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -38,6 +39,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.HashMap;
@@ -65,6 +67,7 @@ public class TestApproverXTest extends AbstractContractXTest {
                         .fileID(TEST_APPROVER_INITCODE_FILE_ID)
                         .gas(CREATE_GAS)
                         .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -94,8 +97,15 @@ public class TestApproverXTest extends AbstractContractXTest {
                         .expirationSecond(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
                         .alias(SENDER_ADDRESS)
                         .tinybarBalance(123 * 100 * ONE_HBAR)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(Scenarios.ALICE.account().key())
+                        .build());
         return accounts;
     }
 
@@ -115,7 +125,7 @@ public class TestApproverXTest extends AbstractContractXTest {
                         .tokenId(ERC20_TOKEN_ID)
                         .treasuryAccountId(SENDER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyKey(AN_ED25519_KEY)
+                        .supplyKey(Scenarios.ALICE.account().key())
                         .totalSupply(APPROVAL_TOKEN_BALANCE)
                         .build());
         return tokens;

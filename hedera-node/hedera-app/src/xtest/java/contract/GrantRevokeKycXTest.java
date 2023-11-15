@@ -26,6 +26,7 @@ import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -57,6 +58,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
@@ -193,6 +195,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .tokenId(ERC721_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(Scenarios.ALICE.account().key())
                         .build());
         return tokens;
     }
@@ -201,6 +204,8 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc721Relation(tokenRelationships, OWNER_ID, 3L);
+        addErc721Relation(tokenRelationships, SENDER_ID, 3L);
+        addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
         return tokenRelationships;
     }
 
@@ -234,6 +239,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .alias(SENDER_ADDRESS)
                         .smartContract(true)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(
                 OWNER_ID,
@@ -247,10 +253,17 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(RECEIVER_ID)
                         .maxAutoAssociations(INITIAL_RECEIVER_AUTO_ASSOCIATIONS)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 }

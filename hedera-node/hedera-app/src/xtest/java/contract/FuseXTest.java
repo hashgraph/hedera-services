@@ -18,21 +18,26 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.XTestConstants.COINBASE_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_ALIAS;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,12 +64,17 @@ public class FuseXTest extends AbstractContractXTest {
 
     private TransactionBody synthCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(SENDER_ID)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build()))
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .fileID(FUSE_INITCODE_ID)
                         .gas(GAS)
                         .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -99,8 +109,15 @@ public class FuseXTest extends AbstractContractXTest {
                         .accountId(SENDER_ID)
                         .alias(SENDER_ALIAS)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 }

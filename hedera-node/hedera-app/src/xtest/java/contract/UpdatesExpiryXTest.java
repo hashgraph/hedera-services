@@ -23,6 +23,7 @@ import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
@@ -161,6 +162,12 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .alias(SENDER_ADDRESS)
                         .key(SENDER_CONTRACT_ID_KEY)
                         .smartContract(true)
+                        .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         return accounts;
     }

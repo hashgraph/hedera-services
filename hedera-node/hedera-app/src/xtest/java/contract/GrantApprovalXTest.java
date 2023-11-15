@@ -32,6 +32,7 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -296,6 +297,12 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 .alias(UNAUTHORIZED_SPENDER_ADDRESS)
                                 .build());
                 put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
+                put(
+                        MISC_PAYER_ID,
+                        Account.newBuilder()
+                                .accountId(MISC_PAYER_ID)
+                                .key(SENDER_CONTRACT_ID_KEY)
+                                .build());
             }
         };
     }
@@ -304,6 +311,7 @@ public class GrantApprovalXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, 1_000L);
+        addErc20Relation(tokenRelationships, MISC_PAYER_ID, 1_000L);
         addErc20Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, 0L);
         addErc20Relation(tokenRelationships, RECEIVER_ID, 0L);
         addErc721Relation(tokenRelationships, OWNER_ID, 3L);

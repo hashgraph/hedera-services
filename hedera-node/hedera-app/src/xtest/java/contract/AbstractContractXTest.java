@@ -278,8 +278,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final ContractID contractId,
             @NonNull final ByteBuffer encoded) {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(payer))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payer)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond() - 5L)
+                                .build())
+                        .build())
                 .contractCall(createContractCallTransactionBody(value, contractId, encoded))
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 

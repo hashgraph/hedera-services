@@ -60,13 +60,17 @@ import static contract.MiscViewsXTestConstants.VIEWS_INITCODE_FILE_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.ONE_HBAR;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -86,6 +90,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,13 +203,19 @@ public class MiscViewsXTest extends AbstractContractXTest {
         final var params =
                 Bytes.wrap(TupleType.parse("(uint256)").encodeElements(SECRET).array());
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(ERC_USER_ID))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(ERC_USER_ID)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build())
+                        .build())
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .constructorParameters(params)
                         .fileID(VIEWS_INITCODE_FILE_ID)
                         .gas(GAS_TO_OFFER)
                         .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 
@@ -249,6 +260,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                                 .tokenId(ERC721_TOKEN_ID)
                                 .spenderId(OPERATOR_ID)
                                 .build()))
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 OPERATOR_ID,
@@ -257,6 +269,12 @@ public class MiscViewsXTest extends AbstractContractXTest {
                         .tinybarBalance(100 * ONE_HBAR)
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 

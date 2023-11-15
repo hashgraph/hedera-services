@@ -51,7 +51,7 @@ public class XTestConstants {
     public static final AccountID MISC_PAYER_ID =
             AccountID.newBuilder().accountNum(950L).build();
 
-   public static final TransactionBody PLACEHOLDER_CALL_BODY = TransactionBody.newBuilder()
+    public static final TransactionBody PLACEHOLDER_CALL_BODY = TransactionBody.newBuilder()
             .transactionID(TransactionID.newBuilder()
                     .accountID(MISC_PAYER_ID)
                     .transactionValidStart(Timestamp.newBuilder()

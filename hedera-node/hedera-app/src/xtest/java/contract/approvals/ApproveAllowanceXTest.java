@@ -18,9 +18,11 @@ package contract.approvals;
 
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.COINBASE_ID;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_ALIAS;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.approvals.ApproveAllowanceXTestConstants.ACCOUNT_ID;
 import static contract.approvals.ApproveAllowanceXTestConstants.EXPECTED_HTS_APPROVE_ALLOWANCE_CONTRACT_ID;
@@ -34,8 +36,10 @@ import static contract.approvals.ApproveAllowanceXTestConstants.RECIPIENT_ID;
 import static contract.approvals.ApproveAllowanceXTestConstants.TOKEN_TREASURY_ID;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -50,6 +54,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import contract.AbstractContractXTest;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -133,6 +138,7 @@ public class ApproveAllowanceXTest extends AbstractContractXTest {
                         .accountId(SENDER_ID)
                         .alias(SENDER_ALIAS)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 OWNER_ID,
@@ -143,6 +149,7 @@ public class ApproveAllowanceXTest extends AbstractContractXTest {
                                 .tokenId(NFT_TOKEN_TYPE_ID)
                                 .spenderId(RECIPIENT_ID)
                                 .build())
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 RECIPIENT_ID,
@@ -163,17 +170,29 @@ public class ApproveAllowanceXTest extends AbstractContractXTest {
                         .tinybarBalance(10_000 * ONE_HBAR)
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 
     private TransactionBody createHtsApproveAllowanceTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(SENDER_ID)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build())
+                        .build())
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .fileID(HTS_APPROVE_ALLOWANCE_INITCODE_ID)
                         .gas(GAS)
                         .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .build();
     }
 }

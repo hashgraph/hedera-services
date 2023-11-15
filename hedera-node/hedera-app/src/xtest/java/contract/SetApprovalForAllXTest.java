@@ -24,10 +24,10 @@ import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
 import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -36,6 +36,7 @@ import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
 import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
@@ -61,6 +62,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
@@ -89,12 +91,12 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
         // Transfer series 1234 of ERC721_TOKEN to RECEIVER
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT_FROM
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
-                                SN_1234.serialNumber())
+                                BigInteger.valueOf(SN_1234.serialNumber()))
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
@@ -132,12 +134,12 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
         // Attempt to transfer series 2345 of ERC721_TOKEN to RECEIVER
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT
+                Bytes.wrap(ClassicTransfersTranslator.TRANSFER_NFT_FROM
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS,
                                 OWNER_HEADLONG_ADDRESS,
                                 RECEIVER_HEADLONG_ADDRESS,
-                                SN_2345.serialNumber())
+                                BigInteger.valueOf(SN_2345.serialNumber()))
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
@@ -225,6 +227,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         .tokenId(ERC721_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(SENDER_CONTRACT_ID_KEY)
                         .build());
         return tokens;
     }
@@ -233,6 +236,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc721Relation(tokenRelationships, OWNER_ID, NUMBER_OWNED_NFT);
+        addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
         return tokenRelationships;
     }
 
@@ -266,13 +270,14 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         .accountId(SENDER_ID)
                         .alias(SENDER_ADDRESS)
                         .smartContract(true)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()
                         .accountId(OWNER_ID)
                         .alias(OWNER_ADDRESS)
-                        .key(AN_ED25519_KEY)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .numberOwnedNfts(NUMBER_OWNED_NFT)
                         .build());
         accounts.put(
@@ -280,10 +285,17 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(RECEIVER_ID)
                         .maxAutoAssociations(INITIAL_RECEIVER_AUTO_ASSOCIATIONS)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 

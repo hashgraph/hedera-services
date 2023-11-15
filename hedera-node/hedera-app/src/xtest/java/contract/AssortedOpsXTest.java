@@ -50,7 +50,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
@@ -62,9 +64,11 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -89,7 +93,13 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     private TransactionBody synthCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(RELAYER_ID))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(RELAYER_ID)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond())
+                                .build())
+                        .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(15L).build())
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .fileID(ASSORTED_OPS_INITCODE_FILE_ID)
@@ -100,7 +110,13 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     private TransactionBody synthLazyCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(RELAYER_ID))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(RELAYER_ID)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(Instant.now().getEpochSecond() - 2L)
+                                .build())
+                        .build())
+                .transactionValidDuration(Duration.newBuilder().seconds(100L).build())
                 .ethereumTransaction(EthereumTransactionBody.newBuilder()
                         .ethereumData(ETH_LAZY_CREATE)
                         .maxGasAllowance(10 * ONE_HBAR)
@@ -160,18 +176,21 @@ public class AssortedOpsXTest extends AbstractContractXTest {
                         .accountId(SENDER_ID)
                         .alias(SENDER_ALIAS)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(
                 RELAYER_ID,
                 Account.newBuilder()
                         .accountId(RELAYER_ID)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(
                 MISC_PAYER_ID,
                 Account.newBuilder()
                         .accountId(MISC_PAYER_ID)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(Scenarios.ALICE.account().key())
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
         return accounts;

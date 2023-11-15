@@ -16,9 +16,9 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
 import static contract.CreatesXTestConstants.DECIMALS_LONG;
@@ -39,9 +39,9 @@ import static contract.CreatesXTestConstants.TOKEN_INVALID_KEY;
 import static contract.CreatesXTestConstants.TOKEN_KEY;
 import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -272,15 +272,19 @@ public class CreatesXTest extends AbstractContractXTest {
                 assertSuccess());
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(
                                 INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_ACCOUNT_ID);
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
@@ -293,24 +297,28 @@ public class CreatesXTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_ACCOUNT_ID);
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN)
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_ACCOUNT_ID);
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .encodeCallWithArgs(
                                 INVALID_ACCOUNT_ID_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_ACCOUNT_ID);
     }
 
     @Override
@@ -330,6 +338,7 @@ public class CreatesXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, 800L);
+        addErc20Relation(tokenRelationships, MISC_PAYER_ID, 800L);
         return tokenRelationships;
     }
 
@@ -351,6 +360,12 @@ public class CreatesXTest extends AbstractContractXTest {
                         .alias(OWNER_ADDRESS)
                         .key(SENDER_CONTRACT_ID_KEY)
                         .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
         return accounts;
     }
 
@@ -363,7 +378,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .tokenId(ERC20_TOKEN_ID)
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyKey(AN_ED25519_KEY)
+                        .supplyKey(SENDER_CONTRACT_ID_KEY)
                         .totalSupply(800L)
                         .build());
         return tokens;

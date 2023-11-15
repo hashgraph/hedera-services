@@ -25,6 +25,7 @@ import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
@@ -137,6 +138,12 @@ public class DeleteXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(SENDER_ID)
                         .alias(SENDER_ADDRESS)
+                        .key(SENDER_CONTRACT_ID_KEY)
+                        .build());
+        accounts.put(
+                MISC_PAYER_ID,
+                Account.newBuilder()
+                        .accountId(MISC_PAYER_ID)
                         .key(SENDER_CONTRACT_ID_KEY)
                         .build());
         return accounts;
