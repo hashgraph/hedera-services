@@ -1,0 +1,68 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+# Run performance test twice a day on performance 6 network
+
+name: "Test artifact"
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
+  CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
+
+  BUILD_VERSION : "build-v0.44.0-alpha.1"
+
+  VERSION_SERVICE : "v0.43.0"
+  VERSION_MIRRORNODE : "v0.90.0-rc1"
+  K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
+
+  USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
+  PASSWORD: ${{ secrets.TESTING_JENKINS_API_PASSWORD }}
+  SERVER: ${{ secrets.TESTING_JENKINS_API_SERVER }}
+
+  LOKI_ADDR: ${{ secrets.LOKI_ADDR }}
+  LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
+  LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
+jobs:
+  test-artifact
+    name: Test artifact
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+
+      - name: Ls Bucket
+        id: ls-bucket
+        run: |
+          gsutil -ls ${{ secrets.bucket-name }}
