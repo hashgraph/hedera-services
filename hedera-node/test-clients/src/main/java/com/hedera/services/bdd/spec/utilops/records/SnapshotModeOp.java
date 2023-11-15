@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -115,13 +116,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "ed25519",
             "ECDSA_secp256k1",
             // Plus some other fields that we might prefer to make deterministic
-            "symbol",
-            "alias");
+            "symbol");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
     private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
-            "hedera-node/test-clients/build/hapi-test/HAPI Tests/node%d/data/recordStreams/record0.0.%d";
+            "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
     private static final String PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC = "hedera-node/test-clients/record-snapshots";
 
@@ -160,13 +160,24 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "okToRepeatSerialNumbersInBurnList");
-        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta);
+        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "AliasKeysAreValidated");
+        final var maybeSnapshot = suiteSnapshotsFrom(
+                        resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
+                .flatMap(
+                        suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
+        if (maybeSnapshot.isEmpty()) {
+            throw new IllegalStateException("No such snapshot");
+        }
+        final var snapshot = maybeSnapshot.get();
         final var items = snapshot.parsedItems();
-        for (int i = 0, n = items.size(); i < n; i++) {
-            final var item = items.get(i);
-            System.out.println("Item #" + i + " body: " + item.itemBody());
-            System.out.println("Item #" + i + " record: " + item.itemRecord());
+        try (var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"))) {
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                dumpLoc.write("--- Item #" + i + " ---\n");
+                dumpLoc.write(item.itemBody() + "\n\n");
+                dumpLoc.write("➡️\n\n");
+                dumpLoc.write(item.itemRecord() + "\n\n");
+            }
         }
     }
 
@@ -237,7 +248,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     @Override
-    public void finishLifecycle() {
+    public void finishLifecycle(@NonNull final HapiSpec spec) {
         if (!hasWorkToDo()) {
             return;
         }
@@ -245,11 +256,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
             for (final var recordLoc : recordLocs) {
                 try {
+                    log.info("Trying to read post-placeholder items from {}", recordLoc);
                     data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
                         final var fileConsTime = parseRecordFileConsensusTime(f);
                         return fileConsTime.isAfter(lowerBoundConsensusStartTime)
                                 && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;
                     });
+                    log.info("Read {} record files from {}", data.records().size(), recordLoc);
                 } catch (Exception ignore) {
                     // We will try the next location, if any
                 }
@@ -268,6 +281,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
+                    continue;
+                }
+                if (spec.setup()
+                                .streamlinedIngestChecks()
+                                .contains(parsedItem.itemRecord().getReceipt().getStatus())
+                        && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
+                    // There are no records written in mono-service when a transaction fails in ingest.
+                    // But in modular service we write them. While validating fuzzy records, we always skip the records
+                    // with status in spec.streamlinedIngestChecks. But for some error codes like INVALID_ACCOUNT_ID,
+                    // which are thrown in both ingest and handle, we need to validate the records.
                     continue;
                 }
                 if (!placeholderFound) {
@@ -326,10 +349,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     fromStream.itemRecord(),
                     placeholderAccountNum,
                     () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
-                            + fromStream.itemRecord() + ")");
+                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
-            Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, " + postPlaceholderItems.size()
+            Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
+                    + (postPlaceholderItems.size())
                     + " were generated");
         }
     }
@@ -632,6 +656,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @return the suite snapshots, if any
      */
     private static Optional<SuiteSnapshots> suiteSnapshotsFrom(@NonNull final Path p) {
+        log.info("Trying to load suite snapshots from {}", p);
         final var f = p.toFile();
         if (f.exists()) {
             try {

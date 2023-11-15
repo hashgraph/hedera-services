@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -45,6 +46,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -789,6 +791,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addRemovableChildWithExternalizationCustomizer(any(), any()))
+                    .thenReturn(childRecordBuilder);
 
             stack = new SavepointStackImpl(baseState);
         }
@@ -857,13 +861,21 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                            null,
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
+                            txBody,
+                            SingleTransactionRecordBuilder.class,
+                            (Predicate<Key>) null,
+                            AccountID.DEFAULT,
+                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -889,7 +901,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)));
+                            AccountID.DEFAULT,
+                            (ignore) -> Transaction.DEFAULT)));
         }
 
         @ParameterizedTest
@@ -977,7 +990,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @ParameterizedTest
         @EnumSource(TransactionCategory.class)
         void testDispatchPrecedingWithNonUserTxnFails(final TransactionCategory category) {
-            if (category != TransactionCategory.USER && category != CHILD) {
+            if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
                 // given
                 final var context = createContext(defaultTransactionBody(), category);
 
@@ -1091,7 +1104,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
+                            AccountID.DEFAULT,
+                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());

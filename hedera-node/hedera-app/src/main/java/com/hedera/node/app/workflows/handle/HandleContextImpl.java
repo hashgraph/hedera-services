@@ -68,6 +68,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -457,6 +458,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                                     .nanos(consensusNow().getNano())))
                     .build();
         }
+        try {
+            // If the payer is authorized to waive fees, then we can skip the fee calculation.
+            if (authorizer.hasWaivedFees(syntheticPayerId, functionOf(txBody), bodyToDispatch)) {
+                return Fees.FREE;
+            }
+        } catch (UnknownHederaFunctionality ex) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+
         return dispatcher.dispatchComputeFees(
                 new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }
@@ -560,9 +570,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final ExternalizedRecordCustomizer customizer) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addRemovableChild(configuration());
+                () -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(configuration(), customizer);
         return doDispatchChildTransaction(
                 syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback, CHILD);
     }
