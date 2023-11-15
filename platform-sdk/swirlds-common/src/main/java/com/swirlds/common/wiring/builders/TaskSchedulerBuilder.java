@@ -28,6 +28,7 @@ import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.schedulers.ConcurrentTaskScheduler;
+import com.swirlds.common.wiring.schedulers.DirectTaskScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,7 +53,7 @@ public class TaskSchedulerBuilder<O> {
 
     private final WiringModel model;
 
-    private boolean concurrent = false;
+    private TaskSchedulerType type = TaskSchedulerType.SEQUENTIAL;
     private final String name;
     private TaskSchedulerMetricsBuilder metricsBuilder;
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
@@ -87,14 +88,14 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
-     * Set whether the scheduler should be concurrent or not. Default false.
+     * Set the type of task scheduler to build. Alters the semantics of the scheduler (i.e. this is not just an internal
+     * implementation detail).
      *
-     * @param concurrent true if the task scheduler should be concurrent, false otherwise
+     * @param type the type of task scheduler to build
      * @return this
      */
-    @NonNull
-    public TaskSchedulerBuilder<O> withConcurrency(final boolean concurrent) {
-        this.concurrent = concurrent;
+    public TaskSchedulerBuilder<O> withType(@NonNull final TaskSchedulerType type) {
+        this.type = Objects.requireNonNull(type);
         return this;
     }
 
@@ -281,7 +282,7 @@ public class TaskSchedulerBuilder<O> {
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
         } else if ((metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled())
-                || (concurrent && flushingEnabled)) {
+                || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {
             innerCounter = null;
@@ -300,8 +301,8 @@ public class TaskSchedulerBuilder<O> {
         if (metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
             return NoOpFractionalTimer.getInstance();
         }
-        if (concurrent) {
-            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent wires");
+        if (type == TaskSchedulerType.CONCURRENT) {
+            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent schedulers");
         }
         return metricsBuilder.buildBusyTimer();
     }
@@ -322,8 +323,8 @@ public class TaskSchedulerBuilder<O> {
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
-        if (concurrent) {
-            return new ConcurrentTaskScheduler<>(
+        return switch (type) {
+            case CONCURRENT -> new ConcurrentTaskScheduler<>(
                     model,
                     name,
                     pool,
@@ -332,8 +333,7 @@ public class TaskSchedulerBuilder<O> {
                     counters.offRamp(),
                     flushingEnabled,
                     insertionIsBlocking);
-        } else {
-            return new SequentialTaskScheduler<>(
+            case SEQUENTIAL -> new SequentialTaskScheduler<>(
                     model,
                     name,
                     pool,
@@ -343,6 +343,23 @@ public class TaskSchedulerBuilder<O> {
                     busyFractionTimer,
                     flushingEnabled,
                     insertionIsBlocking);
-        }
+            case SEQUENTIAL_THREAD -> throw new UnsupportedOperationException("SEQUENTIAL_THREAD not yet implemented");
+            case DIRECT -> new DirectTaskScheduler<>(
+                    model,
+                    name,
+                    buildUncaughtExceptionHandler(),
+                    counters.onRamp(),
+                    counters.offRamp(),
+                    busyFractionTimer,
+                    false);
+            case DIRECT_STATELESS -> new DirectTaskScheduler<>(
+                    model,
+                    name,
+                    buildUncaughtExceptionHandler(),
+                    counters.onRamp(),
+                    counters.offRamp(),
+                    busyFractionTimer,
+                    true);
+        };
     }
 }

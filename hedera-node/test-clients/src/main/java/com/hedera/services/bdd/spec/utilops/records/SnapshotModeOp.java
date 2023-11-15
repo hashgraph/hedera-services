@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -159,7 +160,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("ContractCall", "MultipleSelfDestructsAreSafe");
+        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "AliasKeysAreValidated");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -247,7 +248,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     @Override
-    public void finishLifecycle() {
+    public void finishLifecycle(@NonNull final HapiSpec spec) {
         if (!hasWorkToDo()) {
             return;
         }
@@ -280,6 +281,16 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 final var body = parsedItem.itemBody();
                 if (body.hasNodeStakeUpdate()) {
                     // We cannot ever expect to match node stake update export sequencing
+                    continue;
+                }
+                if (spec.setup()
+                                .streamlinedIngestChecks()
+                                .contains(parsedItem.itemRecord().getReceipt().getStatus())
+                        && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
+                    // There are no records written in mono-service when a transaction fails in ingest.
+                    // But in modular service we write them. While validating fuzzy records, we always skip the records
+                    // with status in spec.streamlinedIngestChecks. But for some error codes like INVALID_ACCOUNT_ID,
+                    // which are thrown in both ingest and handle, we need to validate the records.
                     continue;
                 }
                 if (!placeholderFound) {
@@ -338,10 +349,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     fromStream.itemRecord(),
                     placeholderAccountNum,
                     () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
-                            + fromStream.itemRecord() + ")");
+                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
-            Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, " + postPlaceholderItems.size()
+            Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
+                    + (postPlaceholderItems.size())
                     + " were generated");
         }
     }
