@@ -281,6 +281,17 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return BlockRecordInfoUtils.blockHashByBlockNumber(lastBlockInfo, blockNo);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void advanceConsensusClock(@NonNull final Instant consensusTime) {
+        this.lastBlockInfo = this.lastBlockInfo
+                .copyBuilder()
+                .consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                        .seconds(consensusTime.getEpochSecond())
+                        .nanos(consensusTime.getNano()))
+                .build();
+    }
+
     // ========================================================================================================
     // Private Methods
 
@@ -325,6 +336,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return new BlockInfo(
                 newBlockNumber,
                 new Timestamp(blockFirstTransactionTime.getEpochSecond(), blockFirstTransactionTime.getNano()),
-                Bytes.wrap(newBlockHashesBytes));
+                Bytes.wrap(newBlockHashesBytes),
+                lastBlockInfo.consTimeOfLastHandledTxn(),
+                lastBlockInfo.migrationRecordsStreamed());
     }
 }

@@ -296,6 +296,8 @@ public class HandleWorkflow {
         }
         // @future('7836'): update the exchange rate and call from here
 
+        blockRecordManager.advanceConsensusClock(consensusNow);
+
         TransactionBody txBody = null;
         AccountID payer = null;
         Fees fees = null;
