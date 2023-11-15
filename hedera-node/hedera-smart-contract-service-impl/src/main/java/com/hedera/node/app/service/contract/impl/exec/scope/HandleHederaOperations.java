@@ -31,6 +31,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -257,8 +258,11 @@ public class HandleHederaOperations implements HederaOperations {
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().evmAddress(evmAddress).build());
+        final ContractID contractId =
+                ContractID.newBuilder().evmAddress(evmAddress).build();
+
+        tokenServiceApi.deleteContract(contractId);
+        addContractDeleteChildRecord(contractId);
     }
 
     /**
@@ -267,8 +271,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void deleteUnaliasedContract(final long number) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().contractNum(number).build());
+        final ContractID contractId =
+                ContractID.newBuilder().contractNum(number).build();
+
+        tokenServiceApi.deleteContract(contractId);
+        addContractDeleteChildRecord(contractId);
     }
 
     /**
@@ -343,6 +350,12 @@ public class HandleHederaOperations implements HederaOperations {
         final var accountId = AccountID.newBuilder().accountNum(number).build();
 
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
+    }
+
+    private void addContractDeleteChildRecord(final ContractID contractId) {
+        final var childRecordBuilder = context.addChildRecordBuilder(ContractDeleteRecordBuilder.class);
+        childRecordBuilder.contractID(contractId)
+                .transaction(Transaction.DEFAULT);
     }
 
     private ExternalizedRecordCustomizer contractBodyCustomizerFor(@NonNull final ContractCreateTransactionBody op) {
