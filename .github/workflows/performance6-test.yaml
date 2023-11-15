@@ -55,15 +55,15 @@ jobs:
     name: Cron
     runs-on: ubuntu-latest
     steps:
-#      - name: Checkout Code
-#        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
-#
-#      - name: Reset Network
-#        id: reset-network
-#        run: |
-#          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ env.RESET_TOKEN }}&command=/devops-startup&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-#          echo "Sleep 15 minutes for network reset"
-#          sleep 15m
+      - name: Checkout Code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      - name: Reset Network
+        id: reset-network
+        run: |
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ env.RESET_TOKEN }}&command=/devops-reset&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 15 minutes for network reset"
+          sleep 15m
 
       - name: Run LogCLI to Wait for Network Active
         id: run-logcli-wait-network-active
