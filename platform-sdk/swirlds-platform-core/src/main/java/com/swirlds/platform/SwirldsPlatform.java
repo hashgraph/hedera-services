@@ -781,7 +781,7 @@ public class SwirldsPlatform implements Platform {
             if (eventConfig.useLegacyIntake()) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
-                platformWiring.forceUpdateMinimumGenerationNonAncient(RoundCalculationUtils.getMinGenNonAncient(
+                platformWiring.updateMinimumGenerationNonAncient(RoundCalculationUtils.getMinGenNonAncient(
                         platformContext
                                 .getConfiguration()
                                 .getConfigData(ConsensusConfig.class)
@@ -1046,7 +1046,7 @@ public class SwirldsPlatform implements Platform {
                             .accept(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
-                    platformWiring.forceUpdateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
+                    platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
                 }
             } finally {
                 intakeQueue.resume();

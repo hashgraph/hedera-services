@@ -193,7 +193,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
-    public void forceUpdateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    public void updateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         eventDeduplicatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
         eventSignatureValidatorWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
         orphanBufferWiring.minimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
