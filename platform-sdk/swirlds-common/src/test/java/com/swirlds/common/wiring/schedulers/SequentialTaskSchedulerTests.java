@@ -38,7 +38,7 @@ import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.test.framework.TestWiringModel;
+import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Random;
@@ -56,10 +56,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class SequentialTaskSchedulerTests {
 
-    private static final WiringModel model = TestWiringModel.getInstance();
-
     @Test
     void illegalNamesTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
+
         assertThrows(NullPointerException.class, () -> model.schedulerBuilder(null));
         assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder(""));
         assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder(" "));
@@ -82,15 +82,18 @@ class SequentialTaskSchedulerTests {
     /**
      * Add values to the task scheduler, ensure that each value was processed in the correct order.
      */
-    @Test
-    void orderOfOperationsTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void orderOfOperationsTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -98,13 +101,19 @@ class SequentialTaskSchedulerTests {
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
 
+        model.start();
         int value = 0;
         for (int i = 0; i < 100; i++) {
             channel.put(i);
             value = hash32(value, i);
         }
 
-        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(
+                value,
+                wireValue::get,
+                Duration.ofSeconds(1),
+                "Wire sum did not match expected sum: " + value + " vs " + wireValue.get());
+        model.stop();
     }
 
     /**
@@ -113,8 +122,12 @@ class SequentialTaskSchedulerTests {
      * is allowing things to happen with parallelism, then the delay is likely to result in a reordering of operations
      * (which will fail the test).
      */
-    @Test
-    void orderOfOperationsWithDelayTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void orderOfOperationsWithDelayTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final Random random = getRandomPrintSeed();
 
         final AtomicInteger wireValue = new AtomicInteger();
@@ -128,10 +141,8 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -139,6 +150,7 @@ class SequentialTaskSchedulerTests {
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
 
+        model.start();
         int value = 0;
         for (int i = 0; i < 100; i++) {
             channel.put(i);
@@ -146,14 +158,19 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        model.stop();
     }
 
     /**
      * Multiple threads adding work to the task scheduler shouldn't cause problems. Also, work should always be handled
      * sequentially regardless of the number of threads adding work.
      */
-    @Test
-    void multipleChannelsTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multipleChannelsTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final AtomicInteger operationCount = new AtomicInteger();
         final Set<Integer> arguments = ConcurrentHashMap.newKeySet(); // concurrent hash set
@@ -163,16 +180,16 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         final int operationsPerWorker = 1_000;
         final int workers = 10;
@@ -208,6 +225,7 @@ class SequentialTaskSchedulerTests {
                 Duration.ofSeconds(1),
                 "Wire arguments did not match expected arguments");
         assertEquals(expectedArguments, arguments);
+        model.stop();
     }
 
     /**
@@ -215,8 +233,12 @@ class SequentialTaskSchedulerTests {
      * sequentially regardless of the number of threads adding work. Random delay is added to the workers. This should
      * not effect the outcome.
      */
-    @Test
-    void multipleChannelsWithDelayTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multipleChannelsWithDelayTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final Random random = getRandomPrintSeed();
 
         final AtomicInteger wireValue = new AtomicInteger();
@@ -228,10 +250,8 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -260,6 +280,8 @@ class SequentialTaskSchedulerTests {
                     .build(true);
         }
 
+        model.start();
+
         // Compute the values we expect to be computed by the wire
         final Set<Integer> expectedArguments = new HashSet<>();
         int expectedValue = 0;
@@ -280,13 +302,19 @@ class SequentialTaskSchedulerTests {
                 Duration.ofSeconds(1),
                 "Wire arguments did not match expected arguments");
         assertEquals(expectedArguments, arguments);
+
+        model.stop();
     }
 
     /**
      * Ensure that the work happening on the task scheduler is not happening on the callers thread.
      */
-    @Test
-    void wireWordDoesNotBlockCallingThreadTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void wireWordDoesNotBlockCallingThreadTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
         final Consumer<Integer> handler = x -> {
@@ -300,16 +328,16 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         // The wire will stop processing at 50, but this should not block the calling thread.
         final AtomicInteger value = new AtomicInteger();
@@ -328,13 +356,19 @@ class SequentialTaskSchedulerTests {
 
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+
+        model.stop();
     }
 
     /**
      * Sanity checks on the unprocessed event count.
      */
-    @Test
-    void unprocessedEventCountTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void unprocessedEventCountTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final CountDownLatch latch0 = new CountDownLatch(1);
         final CountDownLatch latch50 = new CountDownLatch(1);
@@ -356,7 +390,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
@@ -366,6 +400,8 @@ class SequentialTaskSchedulerTests {
                 .bind(handler);
         assertEquals(0, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -399,15 +435,24 @@ class SequentialTaskSchedulerTests {
         latch98.countDown();
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(
+                0L,
+                taskScheduler::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
 
-        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        model.stop();
     }
 
     /**
      * Make sure backpressure works.
      */
-    @Test
-    void backpressureTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void backpressureTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
         final Consumer<Integer> handler = x -> {
@@ -423,7 +468,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
                 .build()
@@ -434,6 +479,8 @@ class SequentialTaskSchedulerTests {
                 .bind(handler);
         assertEquals(0, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -491,13 +538,19 @@ class SequentialTaskSchedulerTests {
                 "Wire unprocessed task count did not match expected value. " + taskScheduler.getUnprocessedTaskCount());
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+
+        model.stop();
     }
 
     /**
      * Test interrupts with accept() when backpressure is being applied.
      */
-    @Test
-    void uninterruptableTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void uninterruptableTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
         final Consumer<Integer> handler = x -> {
@@ -513,7 +566,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
@@ -523,6 +576,8 @@ class SequentialTaskSchedulerTests {
                 .bind(handler);
         assertEquals(0, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -571,26 +626,32 @@ class SequentialTaskSchedulerTests {
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+
+        model.stop();
     }
 
     /**
      * Offering tasks is equivalent to calling accept() if there is no backpressure.
      */
-    @Test
-    void offerNoBackpressureTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void offerNoBackpressureTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -599,6 +660,7 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        model.stop();
     }
 
     /**
@@ -615,8 +677,12 @@ class SequentialTaskSchedulerTests {
      * D <------- C
      * </pre>
      */
-    @Test
-    void circularDataFlowTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void circularDataFlowTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final Random random = getRandomPrintSeed();
 
         final AtomicInteger countA = new AtomicInteger();
@@ -626,13 +692,13 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final TaskScheduler<Integer> taskSchedulerToA =
-                model.schedulerBuilder("wireToA").build().cast();
+                model.schedulerBuilder("wireToA").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerToB =
-                model.schedulerBuilder("wireToB").build().cast();
+                model.schedulerBuilder("wireToB").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerToC =
-                model.schedulerBuilder("wireToC").build().cast();
+                model.schedulerBuilder("wireToC").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerToD =
-                model.schedulerBuilder("wireToD").build().cast();
+                model.schedulerBuilder("wireToD").withType(type).build().cast();
 
         final InputWire<Integer, Integer> channelToA = taskSchedulerToA.buildInputWire("channelToA");
         final InputWire<Integer, Integer> channelToB = taskSchedulerToB.buildInputWire("channelToB");
@@ -680,6 +746,8 @@ class SequentialTaskSchedulerTests {
         channelToC.bind(handlerC);
         channelToD.bind(handlerD);
 
+        model.start();
+
         int expectedCountA = 0;
         int expectedNegativeCountA = 0;
         int expectedCountB = 0;
@@ -718,22 +786,26 @@ class SequentialTaskSchedulerTests {
                 expectedCountC, countC::get, Duration.ofSeconds(1), "Wire C sum did not match expected value");
         assertEventuallyEquals(
                 expectedCountD, countD::get, Duration.ofSeconds(1), "Wire D sum did not match expected value");
+
+        model.stop();
     }
 
     /**
      * Validate the behavior when there are multiple channels.
      */
-    @Test
-    void multipleChannelTypesTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multipleChannelTypesTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> integerHandler = x -> wireValue.set(hash32(wireValue.get(), x));
         final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
-                .build()
-                .cast();
+        final TaskScheduler<Void> taskScheduler =
+                model.schedulerBuilder("test").withType(type).build().cast();
 
         final InputWire<Integer, Void> integerChannel = taskScheduler
                 .buildInputWire("integerChannel")
@@ -751,6 +823,8 @@ class SequentialTaskSchedulerTests {
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
 
+        model.start();
+
         int value = 0;
         for (int i = 0; i < 100; i++) {
             integerChannel.put(i);
@@ -766,13 +840,19 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire value did not match expected value");
+
+        model.stop();
     }
 
     /**
      * Make sure backpressure works when there are multiple channels.
      */
-    @Test
-    void multipleChannelBackpressureTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multipleChannelBackpressureTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -791,7 +871,7 @@ class SequentialTaskSchedulerTests {
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
@@ -807,6 +887,8 @@ class SequentialTaskSchedulerTests {
 
         assertEquals(0, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -864,13 +946,19 @@ class SequentialTaskSchedulerTests {
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+
+        model.stop();
     }
 
     /**
      * Make sure backpressure works when a single counter spans multiple wires.
      */
-    @Test
-    void backpressureOverMultipleWiresTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void backpressureOverMultipleWiresTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValueA = new AtomicInteger();
         final AtomicInteger wireValueB = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -878,13 +966,13 @@ class SequentialTaskSchedulerTests {
         final ObjectCounter backpressure = new BackpressureObjectCounter("test", 11, Duration.ofMillis(1));
 
         final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withOnRamp(backpressure)
                 .build()
                 .cast();
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("testB")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withOffRamp(backpressure)
                 .build()
                 .cast();
@@ -918,6 +1006,8 @@ class SequentialTaskSchedulerTests {
 
         final AtomicInteger valueA = new AtomicInteger();
         final AtomicInteger valueB = new AtomicInteger();
+
+        model.start();
 
         // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
         completeBeforeTimeout(
@@ -978,13 +1068,18 @@ class SequentialTaskSchedulerTests {
                 valueA.get(), wireValueA::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
         assertEventuallyEquals(
                 valueB.get(), wireValueB::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        model.stop();
     }
 
     /**
      * Validate the behavior of the flush() method.
      */
-    @Test
-    void flushTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void flushTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
         final Consumer<Integer> handler = x -> {
@@ -1000,7 +1095,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build()
@@ -1013,6 +1108,8 @@ class SequentialTaskSchedulerTests {
         assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
+
+        model.start();
 
         // Flushing a wire with nothing in it should return quickly.
         completeBeforeTimeout(taskScheduler::flush, Duration.ofSeconds(1), "unable to flush wire");
@@ -1083,21 +1180,35 @@ class SequentialTaskSchedulerTests {
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+
+        model.stop();
     }
 
-    @Test
-    void flushDisabledTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void flushDisabledTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
 
+        model.start();
+
         assertThrows(UnsupportedOperationException.class, taskScheduler::flush, "flush() should not be supported");
+
+        model.stop();
     }
 
-    @Test
-    void exceptionHandlingTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void exceptionHandlingTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> {
             if (x == 50) {
@@ -1109,7 +1220,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger exceptionCount = new AtomicInteger();
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .build()
                 .cast();
@@ -1119,6 +1230,8 @@ class SequentialTaskSchedulerTests {
                 .bind(handler);
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
         assertEquals("test", taskScheduler.getName());
+
+        model.start();
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -1130,6 +1243,8 @@ class SequentialTaskSchedulerTests {
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
         assertEquals(1, exceptionCount.get());
+
+        model.stop();
     }
 
     /**
@@ -1137,28 +1252,31 @@ class SequentialTaskSchedulerTests {
      * than the number of blocking wires.
      */
     @ParameterizedTest
-    @ValueSource(ints = {1, 3})
-    void deadlockTest(final int parallelism) throws InterruptedException {
-        final ForkJoinPool pool = new ForkJoinPool(parallelism);
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void deadlockTestOneThread(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
+        final ForkJoinPool pool = new ForkJoinPool(1);
 
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
         final TaskScheduler<Void> a = model.schedulerBuilder("a")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
         final TaskScheduler<Void> b = model.schedulerBuilder("b")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
         final TaskScheduler<Void> c = model.schedulerBuilder("c")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+                .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
@@ -1181,6 +1299,8 @@ class SequentialTaskSchedulerTests {
             }
         });
 
+        model.start();
+
         // each wire has a capacity of 1, so we can have 1 task waiting on each wire
         // insert a task into C, which will start executing and waiting on the latch
         channelC.put(Object.class);
@@ -1202,21 +1322,100 @@ class SequentialTaskSchedulerTests {
                 "deadlock");
 
         pool.shutdown();
+        model.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void deadlockTestThreeThreads(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
+        final ForkJoinPool pool = new ForkJoinPool(3);
+
+        // create 3 wires with the following bindings:
+        // a -> b -> c -> latch
+        final TaskScheduler<Void> a = model.schedulerBuilder("a")
+                .withType(type)
+                .withUnhandledTaskCapacity(2)
+                .withSleepDuration(Duration.ofMillis(1))
+                .withPool(pool)
+                .build()
+                .cast();
+        final TaskScheduler<Void> b = model.schedulerBuilder("b")
+                .withType(type)
+                .withUnhandledTaskCapacity(2)
+                .withSleepDuration(Duration.ofMillis(1))
+                .withPool(pool)
+                .build()
+                .cast();
+        final TaskScheduler<Void> c = model.schedulerBuilder("c")
+                .withType(type)
+                .withUnhandledTaskCapacity(2)
+                .withSleepDuration(Duration.ofMillis(1))
+                .withPool(pool)
+                .build()
+                .cast();
+
+        final InputWire<Object, Void> channelA = a.buildInputWire("channelA");
+        final InputWire<Object, Void> channelB = b.buildInputWire("channelB");
+        final InputWire<Object, Void> channelC = c.buildInputWire("channelC");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        channelA.bind(channelB::put);
+        channelB.bind(channelC::put);
+        channelC.bind(o -> {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        model.start();
+
+        // each wire has a capacity of 1, so we can have 1 task waiting on each wire
+        // insert a task into C, which will start executing and waiting on the latch
+        channelC.put(Object.class);
+        // fill up the queues for each wire
+        channelC.put(Object.class);
+        channelA.put(Object.class);
+        channelB.put(Object.class);
+
+        completeBeforeTimeout(
+                () -> {
+                    // release the latch, that should allow all tasks to complete
+                    latch.countDown();
+                    // if tasks are completing, none of the wires should block
+                    channelA.put(Object.class);
+                    channelB.put(Object.class);
+                    channelC.put(Object.class);
+                },
+                Duration.ofSeconds(1),
+                "deadlock");
+
+        pool.shutdown();
+        model.stop();
     }
 
     /**
      * Solder together a simple sequence of wires.
      */
-    @Test
-    void simpleSolderingTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void simpleSolderingTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("A").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("B").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("C").withType(type).build().cast();
         final TaskScheduler<Void> taskSchedulerD =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("D").withType(type).build().cast();
 
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
@@ -1251,6 +1450,8 @@ class SequentialTaskSchedulerTests {
             countD.set(hash32(countD.get(), x));
         });
 
+        model.start();
+
         int expectedCount = 0;
 
         for (int i = 0; i < 100; i++) {
@@ -1263,21 +1464,27 @@ class SequentialTaskSchedulerTests {
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
+
+        model.stop();
     }
 
     /**
      * Test soldering to a lambda function.
      */
-    @Test
-    void lambdaSolderingTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void lambdaSolderingTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("A").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").build().cast();
+                model.schedulerBuilder("B").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").build().cast();
+                model.schedulerBuilder("C").withType(type).build().cast();
         final TaskScheduler<Void> taskSchedulerD =
-                model.schedulerBuilder("D").build().cast();
+                model.schedulerBuilder("D").withType(type).build().cast();
 
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
@@ -1315,6 +1522,8 @@ class SequentialTaskSchedulerTests {
             countD.set(hash32(countD.get(), x));
         });
 
+        model.start();
+
         int expectedCount = 0;
 
         int sum = 0;
@@ -1330,35 +1539,41 @@ class SequentialTaskSchedulerTests {
         assertEquals(expectedCount, countB.get());
         assertEquals(sum, lambdaSum.get());
         assertEquals(expectedCount, countC.get());
+
+        model.stop();
     }
 
     /**
      * Solder the output of a wire to the inputs of multiple other wires.
      */
-    @Test
-    void multiWireSolderingTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multiWireSolderingTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         // A passes data to X, Y, and Z
         // X, Y, and Z pass data to B
 
         final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("A").withType(type).build().cast();
         final InputWire<Integer, Integer> addNewValueToA = taskSchedulerA.buildInputWire("addNewValueToA");
         final InputWire<Boolean, Integer> setInversionBitInA = taskSchedulerA.buildInputWire("setInversionBitInA");
 
         final TaskScheduler<Integer> taskSchedulerX =
-                model.schedulerBuilder("X").build().cast();
+                model.schedulerBuilder("X").withType(type).build().cast();
         final InputWire<Integer, Integer> inputX = taskSchedulerX.buildInputWire("inputX");
 
         final TaskScheduler<Integer> taskSchedulerY =
-                model.schedulerBuilder("Y").build().cast();
+                model.schedulerBuilder("Y").withType(type).build().cast();
         final InputWire<Integer, Integer> inputY = taskSchedulerY.buildInputWire("inputY");
 
         final TaskScheduler<Integer> taskSchedulerZ =
-                model.schedulerBuilder("Z").build().cast();
+                model.schedulerBuilder("Z").withType(type).build().cast();
         final InputWire<Integer, Integer> inputZ = taskSchedulerZ.buildInputWire("inputZ");
 
         final TaskScheduler<Void> taskSchedulerB =
-                model.schedulerBuilder("B").build().cast();
+                model.schedulerBuilder("B").withType(type).build().cast();
         final InputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
         taskSchedulerA.getOutputWire().solderTo(inputX);
@@ -1403,6 +1618,8 @@ class SequentialTaskSchedulerTests {
             sumB.getAndAdd(x);
         });
 
+        model.start();
+
         int expectedCount = 0;
         boolean expectedInversionBit = false;
         int expectedSum = 0;
@@ -1434,26 +1651,32 @@ class SequentialTaskSchedulerTests {
                 invertA::get,
                 Duration.ofSeconds(1),
                 "Wire inversion bit did not match expected value");
+
+        model.stop();
     }
 
     /**
      * Validate that a wire soldered to another using injection ignores backpressure constraints.
      */
-    @Test
-    void injectionSolderingTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void injectionSolderingTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         // In this test, wires A and B are connected to the input of wire C, which has a maximum capacity.
         // Wire A respects back pressure, but wire B uses injection and can ignore it.
 
         final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("A").withType(type).build().cast();
         final InputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("inA");
 
         final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").build().cast();
+                model.schedulerBuilder("B").withType(type).build().cast();
         final InputWire<Integer, Integer> inB = taskSchedulerB.buildInputWire("inB");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
@@ -1484,6 +1707,8 @@ class SequentialTaskSchedulerTests {
             }
             sumC.getAndAdd(x);
         });
+
+        model.start();
 
         // Add 5 elements to A and B. This will completely fill C's capacity.
         int expectedCount = 0;
@@ -1538,21 +1763,27 @@ class SequentialTaskSchedulerTests {
         latch.countDown();
         assertEventuallyEquals(expectedSum, sumC::get, Duration.ofSeconds(1), "C should have processed all tasks");
         assertEquals(expectedCountAfterHandling6, countA.get());
+
+        model.stop();
     }
 
     /**
      * When a handler returns null, the wire should not forward the null value to the next wire.
      */
-    @Test
-    void squelchNullValuesInWiresTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void squelchNullValuesInWiresTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("A").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("B").withType(type).build().cast();
         final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("C").withType(type).build().cast();
         final TaskScheduler<Void> taskSchedulerD =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("D").withType(type).build().cast();
 
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
@@ -1596,6 +1827,8 @@ class SequentialTaskSchedulerTests {
             countD.set(hash32(countD.get(), x));
         });
 
+        model.start();
+
         int expectedCountA = 0;
         int expectedCountB = 0;
         int expectedCountC = 0;
@@ -1623,33 +1856,43 @@ class SequentialTaskSchedulerTests {
         assertEquals(expectedCountA, countA.get());
         assertEquals(expectedCountB, countB.get());
         assertEquals(expectedCountC, countC.get());
+
+        model.stop();
     }
 
     /**
      * Make sure we don't crash when metrics are enabled. Might be nice to eventually validate the metrics, but right
      * now the metrics framework makes it complex to do so.
      */
-    @Test
-    void metricsEnabledTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void metricsEnabledTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withType(type)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withType(type)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(false))
                 .build()
                 .cast();
         final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
+                .withType(type)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
         final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
+                .withType(type)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(false))
@@ -1689,6 +1932,8 @@ class SequentialTaskSchedulerTests {
             countD.set(hash32(countD.get(), x));
         });
 
+        model.start();
+
         int expectedCount = 0;
 
         for (int i = 0; i < 100; i++) {
@@ -1701,18 +1946,24 @@ class SequentialTaskSchedulerTests {
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
+
+        model.stop();
     }
 
-    @Test
-    void multipleOutputChannelsTest() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multipleOutputChannelsTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
         final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("A").withType(type).build().cast();
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
         final OutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
         final OutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
         final TaskScheduler<Void> taskSchedulerB =
-                model.schedulerBuilder("A").build().cast();
+                model.schedulerBuilder("B").withType(type).build().cast();
         final InputWire<Integer, Void> bInInteger = taskSchedulerB.buildInputWire("bIn1");
         final InputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
         final InputWire<String, Void> bInString = taskSchedulerB.buildInputWire("bIn3");
@@ -1744,6 +1995,8 @@ class SequentialTaskSchedulerTests {
             count.set(hash32(count.get(), x));
         });
 
+        model.start();
+
         int expectedCount = 0;
         for (int i = 0; i < 100; i++) {
             aIn.put(i);
@@ -1757,10 +2010,15 @@ class SequentialTaskSchedulerTests {
         }
 
         assertEventuallyEquals(expectedCount, count::get, Duration.ofSeconds(1), "Wire count did not match expected");
+
+        model.stop();
     }
 
-    @Test
-    void externalBackPressureTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void externalBackPressureTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         // There are three components, A, B, and C.
         // We want to control the number of elements in all three, not individually.
@@ -1768,6 +2026,7 @@ class SequentialTaskSchedulerTests {
         final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withType(type)
                 .withOnRamp(counter)
                 .withExternalBackPressure(true)
                 .build()
@@ -1775,12 +2034,14 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withType(type)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
         final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withType(type)
                 .withOffRamp(counter)
                 .withExternalBackPressure(true)
                 .build()
@@ -1789,6 +2050,8 @@ class SequentialTaskSchedulerTests {
 
         taskSchedulerA.getOutputWire().solderTo(bIn);
         taskSchedulerB.getOutputWire().solderTo(cIn);
+
+        model.start();
 
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);
@@ -1868,10 +2131,15 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
         assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(1), "C should have processed task");
         assertTrue(moreWorkInserted.get());
+
+        model.stop();
     }
 
-    @Test
-    void multipleCountersInternalBackpressureTest() throws InterruptedException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void multipleCountersInternalBackpressureTest(final String typeString) throws InterruptedException {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         // There are three components, A, B, and C.
         // The pipeline as a whole has a capacity of 10. Each step individually has a capacity of 5;
@@ -1879,6 +2147,7 @@ class SequentialTaskSchedulerTests {
         final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withType(type)
                 .withOnRamp(counter)
                 .withExternalBackPressure(true)
                 .withUnhandledTaskCapacity(5)
@@ -1887,6 +2156,7 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withType(type)
                 .withExternalBackPressure(true)
                 .withUnhandledTaskCapacity(5)
                 .build()
@@ -1894,6 +2164,7 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withType(type)
                 .withOffRamp(counter)
                 .withExternalBackPressure(true)
                 .withUnhandledTaskCapacity(5)
@@ -1955,6 +2226,8 @@ class SequentialTaskSchedulerTests {
                 })
                 .build(true);
 
+        model.start();
+
         // Work is currently stuck at A. No matter how much time passes, we should not be able to exceed A's capacity.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkInserted.get());
@@ -1980,17 +2253,25 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
         assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
         assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(1), "C should have processed task");
+
+        model.stop();
     }
 
-    @Test
-    void offerSolderingTest() {
-        final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("test")
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void offerSolderingTest(final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
+        final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("A")
+                .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
         final InputWire<Integer, Integer> inputA = schedulerA.buildInputWire("inputA");
 
-        final TaskScheduler<Void> schedulerB = model.schedulerBuilder("test")
+        final TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
+                .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
@@ -2015,6 +2296,8 @@ class SequentialTaskSchedulerTests {
             countB.set(hash32(countB.get(), x));
         });
 
+        model.start();
+
         // Fill up B's buffer.
         int expectedCountA = 0;
         int expectedCountB = 0;
@@ -2031,14 +2314,21 @@ class SequentialTaskSchedulerTests {
         }
 
         // Wait until A has handled all of its tasks.
-        assertEventuallyEquals(expectedCountA, countA::get, Duration.ofSeconds(1), "A should have processed task");
+        assertEventuallyEquals(
+                0L, schedulerA::getUnprocessedTaskCount, Duration.ofSeconds(1), "A should have processed tasks");
+        assertEquals(expectedCountA, countA.get());
 
         // B should not have processed any tasks.
         assertEquals(0, countB.get());
 
         // Release the latch and allow B to process tasks.
         latch.countDown();
-        assertEventuallyEquals(expectedCountB, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(
+                0L,
+                schedulerB::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "B should have processed all awaiting tasks");
+        assertEquals(expectedCountB, countB.get());
 
         // Now, add some more data to A. That data should flow to B as well.
         for (int i = 30, j = 0; i < 40; i++, j++) {
@@ -2047,7 +2337,20 @@ class SequentialTaskSchedulerTests {
             expectedCountB = hash32(expectedCountB, i);
         }
 
-        assertEventuallyEquals(expectedCountA, countA::get, Duration.ofSeconds(1), "A should have processed task");
-        assertEventuallyEquals(expectedCountB, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(
+                0L,
+                schedulerA::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "A should have processed all awaiting tasks");
+        assertEventuallyEquals(
+                0L,
+                schedulerB::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "B should have processed all awaiting tasks");
+
+        assertEquals(expectedCountA, countA.get());
+        assertEquals(expectedCountB, countB.get());
+
+        model.stop();
     }
 }

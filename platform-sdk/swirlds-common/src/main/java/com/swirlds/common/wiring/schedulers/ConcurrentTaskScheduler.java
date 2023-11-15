@@ -21,7 +21,6 @@ import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -73,7 +72,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
@@ -82,7 +81,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
             new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
@@ -94,7 +93,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }

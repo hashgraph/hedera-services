@@ -46,7 +46,7 @@ class ModelTests {
      * @param model         the model to validate
      * @param cycleExpected true if a cycle is expected, false otherwise
      */
-    private static void validateModel(@NonNull final WiringModel model, boolean cycleExpected) {
+    private static void validateModel(@NonNull final WiringModel model, final boolean cycleExpected) {
         final boolean cycleDetected = model.checkForCyclicalBackpressure();
         assertEquals(cycleExpected, cycleDetected);
 

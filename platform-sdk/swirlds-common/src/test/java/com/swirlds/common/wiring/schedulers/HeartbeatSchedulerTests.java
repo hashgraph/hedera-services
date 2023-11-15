@@ -24,11 +24,9 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.test.framework.TestWiringModel;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
@@ -36,10 +34,12 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatByFrequencyTest() throws InterruptedException {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
+        final WiringModel model = WiringModel.create(platformContext, fakeTime);
 
-        final HeartbeatScheduler scheduler = new HeartbeatScheduler(TestWiringModel.getInstance(), fakeTime, "test");
-        final OutputWire<Instant> outputWire = scheduler.buildHeartbeatWire(100);
+        final OutputWire<Instant> outputWire = model.buildHeartbeatWire(100);
 
         final AtomicLong counter = new AtomicLong(0);
         outputWire.solderTo("counter", (time) -> {
@@ -47,9 +47,9 @@ class HeartbeatSchedulerTests {
             counter.incrementAndGet();
         });
 
-        scheduler.start();
+        model.start();
         SECONDS.sleep(1);
-        scheduler.stop();
+        model.stop();
 
         // Exact timer rate is not guaranteed. Validate that it's within 50% of the expected rate.
         // Experimentally, I tend to see results in the region of 101. But making the assertion stricter
@@ -59,10 +59,12 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatByPeriodTest() throws InterruptedException {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
+        final WiringModel model = WiringModel.create(platformContext, fakeTime);
 
-        final HeartbeatScheduler scheduler = new HeartbeatScheduler(TestWiringModel.getInstance(), fakeTime, "test");
-        final OutputWire<Instant> outputWire = scheduler.buildHeartbeatWire(Duration.ofMillis(10));
+        final OutputWire<Instant> outputWire = model.buildHeartbeatWire(Duration.ofMillis(10));
 
         final AtomicLong counter = new AtomicLong(0);
         outputWire.solderTo("counter", (time) -> {
@@ -70,9 +72,9 @@ class HeartbeatSchedulerTests {
             counter.incrementAndGet();
         });
 
-        scheduler.start();
+        model.start();
         SECONDS.sleep(1);
-        scheduler.stop();
+        model.stop();
 
         // Exact timer rate is not guaranteed. Validate that it's within 50% of the expected rate.
         // Experimentally, I tend to see results in the region of 101. But making the assertion stricter
@@ -82,54 +84,9 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatsAtDifferentRates() throws InterruptedException {
-        final FakeTime fakeTime = new FakeTime();
-
-        final HeartbeatScheduler scheduler = new HeartbeatScheduler(TestWiringModel.getInstance(), fakeTime, "test");
-
-        final OutputWire<Instant> outputWireA = scheduler.buildHeartbeatWire(100);
-        final OutputWire<Instant> outputWireB = scheduler.buildHeartbeatWire(Duration.ofMillis(5));
-        final OutputWire<Instant> outputWireC = scheduler.buildHeartbeatWire(Duration.ofMillis(50));
-
-        final AtomicLong counterA = new AtomicLong(0);
-        outputWireA.solderTo("counter", (time) -> {
-            assertEquals(time, fakeTime.now());
-            counterA.incrementAndGet();
-        });
-
-        final AtomicLong counterB = new AtomicLong(0);
-        outputWireB.solderTo("counter", (time) -> {
-            assertEquals(time, fakeTime.now());
-            counterB.incrementAndGet();
-        });
-
-        final AtomicLong counterC = new AtomicLong(0);
-        outputWireC.solderTo("counter", (time) -> {
-            assertEquals(time, fakeTime.now());
-            counterC.incrementAndGet();
-        });
-
-        scheduler.start();
-        SECONDS.sleep(1);
-        scheduler.stop();
-
-        // Exact timer rate is not guaranteed. Validate that it's within 50% of the expected rate.
-        // Experimentally, I tend to see results in the region of 101, 202, and 21. But making the assertion stricter
-        // may result in a flaky test.
-        assertTrue(counterA.get() > 50 && counterA.get() < 150, "counter=" + counterA.get());
-        assertTrue(counterB.get() > 100 && counterB.get() < 300, "counter=" + counterB.get());
-        assertTrue(counterC.get() > 10 && counterC.get() < 30, "counter=" + counterC.get());
-    }
-
-    /**
-     * Make sure that building heartbeats works when using a real model.
-     */
-    @Test
-    void realModelTest() throws InterruptedException {
-        final FakeTime fakeTime = new FakeTime();
-
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-
+        final FakeTime fakeTime = new FakeTime();
         final WiringModel model = WiringModel.create(platformContext, fakeTime);
 
         final OutputWire<Instant> outputWireA = model.buildHeartbeatWire(100);
@@ -164,8 +121,5 @@ class HeartbeatSchedulerTests {
         assertTrue(counterA.get() > 50 && counterA.get() < 150, "counter=" + counterA.get());
         assertTrue(counterB.get() > 100 && counterB.get() < 300, "counter=" + counterB.get());
         assertTrue(counterC.get() > 10 && counterC.get() < 30, "counter=" + counterC.get());
-
-        // should not throw
-        model.generateWiringDiagram(Set.of());
     }
 }
