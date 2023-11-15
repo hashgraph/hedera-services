@@ -57,24 +57,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
-      - name: Reset Network
-        id: reset-network
-        run: |
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-          echo "Sleep 15 minutes for network reset"
-          sleep 15m
-
-      - name: Run LogCLI to Wait for Network Active
-        id: run-logcli-wait-network-active
-        run: |
-          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
-          unzip logcli-linux-amd64.zip
-          chmod a+x logcli-linux-amd64
-          printf "Work space : \t\t${{ github.workspace }}"
-          pwd
-          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
-          echo "Sleep 30 minutes for network reset completed"
-          sleep 30m
+#      - name: Reset Network
+#        id: reset-network
+#        run: |
+#          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+#          echo "Sleep 15 minutes for network reset"
+#          sleep 15m
+#
+#      - name: Run LogCLI to Wait for Network Active
+#        id: run-logcli-wait-network-active
+#        run: |
+#          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
+#          unzip logcli-linux-amd64.zip
+#          chmod a+x logcli-linux-amd64
+#          printf "Work space : \t\t${{ github.workspace }}"
+#          pwd
+#          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+#          echo "Sleep 30 minutes for network reset completed"
+#          sleep 30m
 
       - name: Restore Old Signed State
         id: restore-old-signed-state
