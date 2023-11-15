@@ -254,6 +254,14 @@ public interface HapiPropertySource {
                 .build();
     }
 
+    static ContractID asContractIdWithEvmAddress(ByteString address) {
+        return ContractID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setEvmAddress(address)
+                .build();
+    }
+
     static String asContractString(ContractID contract) {
         return String.format(ENTITY_STRING, contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
     }
