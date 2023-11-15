@@ -572,7 +572,7 @@ public interface HandleContext {
     <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> callback,
+            @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull ExternalizedRecordCustomizer customizer);
 
