@@ -21,3 +21,5 @@ plugins {
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
+
+testModuleInfo { requires("org.junit.jupiter.api") }
