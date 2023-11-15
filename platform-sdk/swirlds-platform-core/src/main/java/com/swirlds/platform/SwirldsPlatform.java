@@ -165,6 +165,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateSavingResult;
@@ -483,13 +484,13 @@ public class SwirldsPlatform implements Platform {
          */
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
-                null,//TODO metrics
+                new SignedStateMetrics(platformContext.getMetrics()),
                 Time.getCurrent(),
                 actualMainClassName,
                 selfId,
                 swirldName
         );
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());//TODO
+        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed-state-file-manager")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())

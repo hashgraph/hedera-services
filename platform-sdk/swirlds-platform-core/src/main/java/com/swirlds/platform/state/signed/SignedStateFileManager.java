@@ -95,10 +95,10 @@ public class SignedStateFileManager {
             @NonNull final String swirldName) {
 
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
-        this.time = time;
-        this.selfId = selfId;
-        this.mainClassName = mainClassName;
-        this.swirldName = swirldName;
+        this.time = Objects.requireNonNull(time);
+        this.selfId = Objects.requireNonNull(selfId);
+        this.mainClassName = Objects.requireNonNull(mainClassName);
+        this.swirldName = Objects.requireNonNull(swirldName);
         this.platformContext = Objects.requireNonNull(context);
         this.configuration = Objects.requireNonNull(context.getConfiguration());
     }
