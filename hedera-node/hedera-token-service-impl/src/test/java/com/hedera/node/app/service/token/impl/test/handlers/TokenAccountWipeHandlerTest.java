@@ -49,11 +49,13 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -74,6 +76,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -82,6 +85,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -97,6 +101,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
+    private TokenAccountWipeRecordBuilder recordBuilder;
 
     @BeforeEach
     public void setUp() {
@@ -105,6 +110,27 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
+        recordBuilder = new TokenAccountWipeRecordBuilder() {
+            private long newTotalSupply;
+
+            @Override
+            public long getNewTotalSupply() {
+                return newTotalSupply;
+            }
+
+            @NotNull
+            @Override
+            public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
+                newTotalSupply = supply;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public ResponseCodeEnum status() {
+                return OK;
+            }
+        };
     }
 
     @Nested
@@ -910,6 +936,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(context.configuration()).willReturn(configuration);
 
             given(context.expiryValidator()).willReturn(validator);
+            lenient()
+                    .when(context.recordBuilder(TokenAccountWipeRecordBuilder.class))
+                    .thenReturn(recordBuilder);
 
             return context;
         }

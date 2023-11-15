@@ -112,11 +112,16 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public boolean attemptOnRamp() {
-        final long currentCount = count.get();
-        if (currentCount >= capacity) {
-            return false;
+        while (true) {
+            final long currentCount = count.get();
+            if (currentCount >= capacity) {
+                return false;
+            }
+
+            if (count.compareAndSet(currentCount, currentCount + 1)) {
+                return true;
+            }
         }
-        return count.compareAndSet(currentCount, currentCount + 1);
     }
 
     /**

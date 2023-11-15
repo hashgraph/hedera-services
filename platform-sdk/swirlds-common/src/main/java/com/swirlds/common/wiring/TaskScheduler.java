@@ -18,9 +18,9 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -43,13 +43,16 @@ public abstract class TaskScheduler<OUT> {
     private final boolean flushEnabled;
     private final WiringModel model;
     private final String name;
+    private final TaskSchedulerType type;
     private final OutputWire<OUT> primaryOutputWire;
+    private final boolean insertionIsBlocking;
 
     /**
      * Constructor.
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
+     * @param type                the type of task scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
@@ -57,14 +60,16 @@ public abstract class TaskScheduler<OUT> {
     protected TaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
+            @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
 
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
+        this.type = Objects.requireNonNull(type);
         this.flushEnabled = flushEnabled;
         primaryOutputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, insertionIsBlocking);
+        this.insertionIsBlocking = insertionIsBlocking;
     }
 
     /**
@@ -122,6 +127,25 @@ public abstract class TaskScheduler<OUT> {
     }
 
     /**
+     * Get the type of this task scheduler.
+     *
+     * @return the type of this task scheduler
+     */
+    @NonNull
+    public TaskSchedulerType getType() {
+        return type;
+    }
+
+    /**
+     * Get whether or not this task scheduler can block when data is inserted into it.
+     *
+     * @return true if this task scheduler can block when data is inserted into it, false otherwise
+     */
+    public boolean isInsertionBlocking() {
+        return insertionIsBlocking;
+    }
+
+    /**
      * Cast this scheduler into whatever a variable is expecting. Sometimes the compiler gets confused with generics,
      * and path of least resistance is to just cast to the proper data type.
      *
@@ -142,8 +166,9 @@ public abstract class TaskScheduler<OUT> {
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
      * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
      * <p>
-     * Returns -1 if this task scheduler is not monitoring the number of unprocessed tasks. Schedulers do not track the
-     * number of unprocessed tasks by default. This method will always return -1 unless one of the following is true:
+     * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed
+     * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return
+     * {@link ObjectCounter#COUNT_UNDEFINED} unless one of the following is true:
      * <ul>
      * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>
@@ -175,7 +200,7 @@ public abstract class TaskScheduler<OUT> {
      * @param handler handles the provided data
      * @param data    the data to be processed by the task scheduler
      */
-    protected abstract void put(@NonNull Consumer<Object> handler, @Nullable Object data);
+    protected abstract void put(@NonNull Consumer<Object> handler, @NonNull Object data);
 
     /**
      * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this
@@ -185,7 +210,7 @@ public abstract class TaskScheduler<OUT> {
      * @param data    the data to be processed by the scheduler
      * @return true if the data was accepted, false otherwise
      */
-    protected abstract boolean offer(@NonNull Consumer<Object> handler, @Nullable Object data);
+    protected abstract boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data);
 
     /**
      * Inject data into the scheduler, doing so even if it causes the number of unprocessed tasks to exceed the capacity
@@ -195,7 +220,7 @@ public abstract class TaskScheduler<OUT> {
      * @param handler handles the provided data
      * @param data    the data to be processed by the scheduler
      */
-    protected abstract void inject(@NonNull Consumer<Object> handler, @Nullable Object data);
+    protected abstract void inject(@NonNull Consumer<Object> handler, @NonNull Object data);
 
     /**
      * Throw an {@link UnsupportedOperationException} if flushing is not enabled.

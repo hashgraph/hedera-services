@@ -42,7 +42,6 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,13 +86,6 @@ public class TeachingSynchronizer {
 
     protected final ReconnectConfig reconnectConfig;
 
-    /**
-     * A mechanism to check if teaching should be stopped, e.g. when the teacher itself has
-     * fallen behind network.
-     */
-    @Nullable
-    private final BooleanSupplier requestToStopTeaching;
-
     private final Time time;
 
     /**
@@ -113,8 +105,6 @@ public class TeachingSynchronizer {
      * 		if there is a thread stuck on a blocking IO
      * 		operation that will never finish due to a
      * 		failure.
-     * @param requestToStopTeaching
-     *      a function to check periodically if teaching should be stopped
      * @param reconnectConfig
      *      reconnect configuration from platform
      */
@@ -125,7 +115,6 @@ public class TeachingSynchronizer {
             @NonNull final MerkleDataOutputStream out,
             @NonNull final MerkleNode root,
             @Nullable final Runnable breakConnection,
-            @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectConfig reconnectConfig) {
 
         this.time = Objects.requireNonNull(time);
@@ -137,7 +126,6 @@ public class TeachingSynchronizer {
         subtrees.add(new TeacherSubtree(root));
 
         this.breakConnection = breakConnection;
-        this.requestToStopTeaching = requestToStopTeaching;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");
     }
 
@@ -202,16 +190,7 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(
-                        time,
-                        reconnectConfig,
-                        workGroup,
-                        in,
-                        out,
-                        subtrees,
-                        view,
-                        requestToStopTeaching,
-                        senderIsFinished)
+        new TeacherSendingThread<T>(time, reconnectConfig, workGroup, in, out, subtrees, view, senderIsFinished)
                 .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 
