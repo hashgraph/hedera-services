@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -36,9 +37,15 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
+import java.util.List;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.log.Log;
 
 /**
  * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
@@ -97,6 +104,36 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
                             .encodeElements(),
                     gasRequirement));
         }
+    }
+
+    @NonNull
+    @Override
+    public PricedResult execute(final MessageFrame frame) {
+        final var result = execute();
+
+        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
+            final var tokenAddress = asLongZeroAddress(tokenId.tokenNum());
+            List<TokenTransferList> tokenTransferLists =
+                    syntheticTransfer(senderId).cryptoTransfer().tokenTransfers();
+            for (final var nftTransfers : tokenTransferLists) {
+                frame.addLog(getLogForNftExchange(
+                        tokenAddress, nftTransfers.nftTransfers().get(0)));
+            }
+        }
+        return result;
+    }
+
+    private Log getLogForNftExchange(final org.hyperledger.besu.datatypes.Address logger, NftTransfer nftTransfer) {
+        AccountID sender = nftTransfer.senderAccountID();
+        AccountID receiver = nftTransfer.receiverAccountID();
+
+        return LogBuilder.logBuilder()
+                .forLogger(logger)
+                .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                .forIndexedArgument(asLongZeroAddress(sender.accountNum()))
+                .forIndexedArgument(asLongZeroAddress(receiver.accountNum()))
+                .forIndexedArgument(BigInteger.valueOf(nftTransfer.serialNumber()))
+                .build();
     }
 
     private TransactionBody syntheticTransfer(@NonNull final AccountID spenderId) {

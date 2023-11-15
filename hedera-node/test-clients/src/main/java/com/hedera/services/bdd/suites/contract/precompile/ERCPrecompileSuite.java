@@ -488,6 +488,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 asHeadlongAddress(accountAddr.get()))));
     }
 
+    @HapiTest
     private HapiSpec transferErc20Token() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
@@ -619,6 +620,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         childRecordsCheck(TRANSFER_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenReceiverContract() {
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
@@ -1314,6 +1316,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec directCallsWorkForErc20() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
@@ -3104,6 +3107,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
+    @HapiTest
     private HapiSpec erc721TransferFromWithApproval() {
         return defaultHapiSpec("erc721TransferFromWithApproval")
                 .given(
