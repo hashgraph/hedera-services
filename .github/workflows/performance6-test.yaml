@@ -37,7 +37,6 @@ env:
   PARAMS: ".github/workflows/support/scripts/env.perf6_nightly"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
 
-  GS_STATE : "186772"
   BUILD_VERSION : "build-v0.44.0-alpha.1"
 
   USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
