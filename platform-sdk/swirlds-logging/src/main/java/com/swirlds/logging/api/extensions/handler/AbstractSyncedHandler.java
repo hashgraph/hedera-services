@@ -21,6 +21,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -61,7 +62,7 @@ public abstract class AbstractSyncedHandler extends AbstractLogHandler {
         try {
             writeLock.lock();
             if (stopped) {
-                // TODO: is the emergency logger really the best idea in that case? If multiple handlers are stopped,
+                // FUTURE: is the emergency logger really the best idea in that case? If multiple handlers are stopped,
                 // the emergency logger will be called multiple times.
                 EMERGENCY_LOGGER.log(event);
             } else {

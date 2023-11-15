@@ -80,27 +80,30 @@ public class DefaultLoggingSystem {
      * The default constructor.
      */
     private DefaultLoggingSystem() {
-        final Configuration configuration = createConfiguration();
-        this.internalLoggingSystem = new LoggingSystem(configuration);
-        installHandlers(configuration);
-        installProviders(configuration);
+        try {
+            final Configuration configuration = createConfiguration();
+            this.internalLoggingSystem = new LoggingSystem(configuration);
+            installHandlers(configuration);
+            installProviders(configuration);
 
-        // TODO:  EmergencyLogger.setInnerLogger();
-
-        EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
-                .map(event -> this.internalLoggingSystem
-                        .getLogEventFactory()
-                        .createLogEvent(
-                                event.level(),
-                                "EMERGENCY-LOGGER-QUEUE",
-                                event.threadName(),
-                                event.timestamp(),
-                                event.message(),
-                                event.throwable(),
-                                event.marker(),
-                                event.context()))
-                .forEach(internalLoggingSystem::accept);
-        INITIALIZED.set(true);
+            EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
+                               .map(event -> this.internalLoggingSystem
+                                       .getLogEventFactory()
+                                       .createLogEvent(
+                                               event.level(),
+                                               "EMERGENCY-LOGGER-QUEUE",
+                                               event.threadName(),
+                                               event.timestamp(),
+                                               event.message(),
+                                               event.throwable(),
+                                               event.marker(),
+                                               event.context()))
+                               .forEach(internalLoggingSystem::accept);
+            INITIALIZED.set(true);
+        } catch (Exception e) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Unable to initialize logging system", e);
+            throw e;
+        }
     }
 
     private static Configuration createConfiguration() {

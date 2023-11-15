@@ -88,12 +88,16 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      * @param name        The name.
      */
-    public HandlerLoggingLevelConfig(@NonNull Configuration configuration, @NonNull String name) {
-        this.name = Objects.requireNonNull(name, "name must not be null");
+    public HandlerLoggingLevelConfig(@NonNull Configuration configuration, @Nullable String name) {
+        this.name = name;
         this.levelCache = new ConcurrentHashMap<>();
         this.markerCache = new ConcurrentHashMap<>();
         this.levelConfigProperties = new ConcurrentHashMap<>();
-        update(configuration);
+        try {
+            update(configuration);
+        } catch (Exception e) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Initial configuration for handler %s failed".formatted(name), e);
+        }
     }
 
     /**
@@ -101,7 +105,7 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      */
     public HandlerLoggingLevelConfig(@NonNull Configuration configuration) {
-        this(configuration, "");
+        this(configuration, null);
     }
 
     /**
@@ -123,7 +127,7 @@ public class HandlerLoggingLevelConfig {
         levelConfigProperties.clear();
         markerCache.clear();
 
-        if (!name.isBlank()) {
+        if (name != null) {
             defaultHandlerLevel =
                     configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
         } else {
@@ -149,7 +153,7 @@ public class HandlerLoggingLevelConfig {
 
         levelCache.clear();
 
-        if (!name.isBlank()) {
+        if (name != null) {
             levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
             markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
         }
