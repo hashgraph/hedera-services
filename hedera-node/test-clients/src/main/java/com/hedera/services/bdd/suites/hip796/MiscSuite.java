@@ -69,6 +69,7 @@ import org.apache.logging.log4j.Logger;
 
 // too may parameters
 @SuppressWarnings("java:S1192")
+// @HapiTestSuite
 public class MiscSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MiscSuite.class);
 
