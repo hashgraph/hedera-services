@@ -38,6 +38,8 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -181,6 +183,7 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         given(frame.getValue()).willReturn(Wei.ONE);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        givenExecutingFrame();
         given(addressChecks.isPresent(RECEIVER_ADDRESS, frame)).willReturn(true);
         given(proxyWorldUpdater.tryTransfer(SENDER_ADDRESS, RECEIVER_ADDRESS, Wei.ONE.toLong(), true))
                 .willReturn(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
@@ -251,6 +254,7 @@ class CustomMessageCallProcessorTest {
         given(proxyWorldUpdater.tryLazyCreation(RECEIVER_ADDRESS, frame)).willReturn(Optional.empty());
         given(proxyWorldUpdater.tryTransfer(SENDER_ADDRESS, RECEIVER_ADDRESS, Wei.ONE.toLong(), true))
                 .willReturn(Optional.empty());
+        givenExecutingFrame();
 
         subject.start(frame, operationTracer);
 
@@ -264,6 +268,7 @@ class CustomMessageCallProcessorTest {
         given(frame.getValue()).willReturn(Wei.ONE);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.tryLazyCreation(RECEIVER_ADDRESS, frame)).willReturn(Optional.of(INSUFFICIENT_GAS));
+        givenExecutingFrame();
 
         subject.start(frame, operationTracer);
 
@@ -324,5 +329,12 @@ class CustomMessageCallProcessorTest {
                             eq(frame),
                             argThat(result -> isSameResult(new Operation.OperationResult(0, reason), result)));
         }
+    }
+
+    private void givenExecutingFrame() {
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
+        stack.push(frame);
+        stack.push(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
     }
 }
