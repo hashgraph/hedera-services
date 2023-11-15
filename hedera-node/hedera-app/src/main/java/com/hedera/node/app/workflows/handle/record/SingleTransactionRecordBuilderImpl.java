@@ -60,6 +60,7 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
@@ -126,7 +127,8 @@ public class SingleTransactionRecordBuilderImpl
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
                 GasFeeRecordBuilder,
-                TokenAccountWipeRecordBuilder {
+                TokenAccountWipeRecordBuilder,
+                CryptoUpdateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -266,18 +268,20 @@ public class SingleTransactionRecordBuilderImpl
             newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
         }
 
-        final var transactionRecord = transactionRecordBuilder
+        final var recordBuilder = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
                 .transactionHash(transactionHash)
                 .consensusTimestamp(consensusTimestamp)
                 .parentConsensusTimestamp(parentConsensusTimestamp)
-                .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(newAutomaticTokenAssociations)
-                .paidStakingRewards(paidStakingRewards)
-                .build();
+                .paidStakingRewards(paidStakingRewards);
+        if(transferList.hasAccountAmounts()){
+            recordBuilder.transferList(transferList);
+        }
+        final var transactionRecord = recordBuilder.build();
 
         // create list of sidecar records
         List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();

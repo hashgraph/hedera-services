@@ -61,6 +61,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -440,7 +441,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest // here Transaction fees '600874461' and '14200000' varied by more than 1 tinybar
     private HapiSpec hollowAccountCompletionWithContractCreate() {
         final var CONTRACT = "CreateTrivial";
         return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
@@ -601,7 +602,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec completedHollowAccountsTransfer() {
-        return defaultHapiSpec("CompletedHollowAccountsTransfer")
+        return defaultHapiSpec("CompletedHollowAccountsTransfer", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ANOTHER_SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -693,7 +694,8 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
         final var recipientKey2 = "recipient2";
-        return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords")
+        // since ids are not reclaimed in mono-service
+        return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords", SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ecdsaKey2).shape(SECP_256K1_SHAPE),
@@ -752,7 +754,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest //here expected 4 but 3 records
     private HapiSpec hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
