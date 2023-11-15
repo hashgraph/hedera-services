@@ -113,6 +113,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
+     * Solder the minimum generation non-ancient output to all components that need it.
+     */
+    private void solderMinimumGenerationNonAncient() {
+        final OutputWire<Long> minimumGenerationNonAncientOutput =
+                linkedEventIntakeWiring.minimumGenerationNonAncientOutput();
+
+        minimumGenerationNonAncientOutput.solderTo(eventDeduplicatorWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(
+                eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
+    }
+
+    /**
      * Wire the components together.
      */
     private void wire() {
@@ -122,14 +136,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        final OutputWire<Long> minimumGenerationNonAncientOutput =
-                linkedEventIntakeWiring.minimumGenerationNonAncientOutput();
-
-        minimumGenerationNonAncientOutput.solderTo(eventDeduplicatorWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
+        solderMinimumGenerationNonAncient();
 
         // FUTURE WORK: solder all the things!
     }
