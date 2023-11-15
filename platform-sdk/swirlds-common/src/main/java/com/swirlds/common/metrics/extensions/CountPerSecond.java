@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metric;
@@ -70,7 +71,7 @@ public class CountPerSecond {
     }
 
     /**
-     * An implementation of a {@link com.swirlds.common.metrics.IntegerAccumulator} that does not change the value
+     * An implementation of a {@link IntegerAccumulator} that does not change the value
      */
     public static int noChangeAccumulator(final int currentValue, final int ignored) {
         return currentValue;

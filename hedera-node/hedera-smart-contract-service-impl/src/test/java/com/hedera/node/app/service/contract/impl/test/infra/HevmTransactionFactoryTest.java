@@ -282,7 +282,7 @@ class HevmTransactionFactoryTest {
     void fromHapiCreationValidatesStaking() {
         doThrow(new HandleException(INVALID_STAKING_ID))
                 .when(tokenServiceApi)
-                .assertValidStakingElection(
+                .assertValidStakingElectionForCreation(
                         DEFAULT_STAKING_CONFIG.isEnabled(),
                         false,
                         "STAKED_NODE_ID",

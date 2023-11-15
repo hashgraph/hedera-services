@@ -18,6 +18,7 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -50,6 +51,7 @@ public abstract class TaskScheduler<OUT> {
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
+     * @param type                the type of task scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
@@ -57,6 +59,7 @@ public abstract class TaskScheduler<OUT> {
     protected TaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
+            @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
 
@@ -64,7 +67,7 @@ public abstract class TaskScheduler<OUT> {
         this.name = Objects.requireNonNull(name);
         this.flushEnabled = flushEnabled;
         primaryOutputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, insertionIsBlocking);
+        model.registerVertex(name, type, insertionIsBlocking);
     }
 
     /**
@@ -142,8 +145,9 @@ public abstract class TaskScheduler<OUT> {
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
      * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
      * <p>
-     * Returns -1 if this task scheduler is not monitoring the number of unprocessed tasks. Schedulers do not track the
-     * number of unprocessed tasks by default. This method will always return -1 unless one of the following is true:
+     * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed
+     * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return
+     * {@link ObjectCounter#COUNT_UNDEFINED} unless one of the following is true:
      * <ul>
      * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>

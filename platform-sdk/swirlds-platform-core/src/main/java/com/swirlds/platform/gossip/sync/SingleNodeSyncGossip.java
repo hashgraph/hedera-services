@@ -30,8 +30,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -39,7 +37,6 @@ import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.metrics.SyncMetrics;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,7 +71,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
@@ -92,7 +88,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
@@ -110,7 +105,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 swirldStateManager,
                 stateManagementComponent,
                 syncMetrics,
-                eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
@@ -126,15 +120,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     protected boolean unidirectionalConnectionsEnabled() {
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**
