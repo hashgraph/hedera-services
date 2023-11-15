@@ -36,7 +36,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -52,8 +51,10 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decima
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.FungibleMintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.NonFungibleMintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
@@ -546,23 +547,18 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "0xe0f4059a,NON_FUNGIBLE",
     })
     void constructsMints(String hexedSelector, LinkedTokenType linkedTokenType) {
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
-                .willReturn(strategy);
+        lenient()
+                .when(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
+                .thenReturn(strategy);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
-        lenient()
-                .when(mintDecoder.decodeMint(any()))
-                .thenReturn(TransactionBody.newBuilder()
-                        .tokenMint(TokenMintTransactionBody.DEFAULT)
-                        .build());
-        lenient()
-                .when(mintDecoder.decodeMintV2(any()))
-                .thenReturn(TransactionBody.newBuilder()
-                        .tokenMint(TokenMintTransactionBody.DEFAULT)
-                        .build());
+        lenient().when(mintDecoder.decodeMint(any())).thenReturn(TransactionBody.DEFAULT);
+        lenient().when(mintDecoder.decodeMintV2(any())).thenReturn(TransactionBody.DEFAULT);
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var useV2 = Arrays.equals(MintTranslator.MINT_V2.selector(), selector);
         final Bytes input;
         if (linkedTokenType == LinkedTokenType.FUNGIBLE) {
+            given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                    .willReturn(FUNGIBLE_TOKEN);
             input = useV2
                     ? Bytes.wrap(MintTranslator.MINT_V2
                             .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), 1L, new byte[0][])
@@ -572,6 +568,8 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                                     asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.ONE, new byte[0][])
                             .array());
         } else {
+            given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                    .willReturn(NON_FUNGIBLE_TOKEN);
             input = useV2
                     ? Bytes.wrap(MintTranslator.MINT_V2
                             .encodeCallWithArgs(
@@ -597,7 +595,11 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 callTranslators,
                 false);
 
-        assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
+        if (linkedTokenType == LinkedTokenType.FUNGIBLE) {
+            assertInstanceOf(FungibleMintCall.class, subject.asExecutableCall());
+        } else {
+            assertInstanceOf(NonFungibleMintCall.class, subject.asExecutableCall());
+        }
         assertArrayEquals(selector, subject.selector());
         assertFalse(subject.isTokenRedirect());
     }

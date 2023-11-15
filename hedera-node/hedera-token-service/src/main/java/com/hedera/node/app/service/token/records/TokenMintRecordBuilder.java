@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -37,6 +39,12 @@ public interface TokenMintRecordBuilder extends SingleTransactionRecordBuilder {
     TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 
     /**
+     * Gets the newly generate serial numbers
+     * @return the newly generate serial numbers
+     */
+    List<Long> getSerialNumbers();
+
+    /**
      * Sets the new total supply of a token
      * @param newTotalSupply the new total supply of a token
      */
@@ -47,4 +55,7 @@ public interface TokenMintRecordBuilder extends SingleTransactionRecordBuilder {
      * @return new total supply of a token
      */
     long getNewTotalSupply();
+
+    @NonNull
+    TokenMintRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }
