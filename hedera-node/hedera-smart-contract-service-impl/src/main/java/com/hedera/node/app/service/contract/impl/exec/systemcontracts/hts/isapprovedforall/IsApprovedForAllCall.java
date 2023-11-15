@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
@@ -72,15 +71,11 @@ public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
             return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         }
+        boolean verdict = false;
         final var ownerNum = accountNumberForEvmReference(owner, nativeOperations());
-        if (ownerNum < 0) {
-            return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
-        }
         final var operatorNum = accountNumberForEvmReference(operator, nativeOperations());
-        final boolean verdict;
-        if (operatorNum < 0) {
-            verdict = false;
-        } else {
+
+        if (operatorNum > 0 && ownerNum > 0) {
             verdict = operatorMatches(
                     requireNonNull(nativeOperations().getAccount(ownerNum)),
                     AccountID.newBuilder().accountNum(operatorNum).build(),
