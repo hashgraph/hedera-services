@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A suite for user stories Lock-1 through Lock-8 from HIP-796.
  */
+// @HapiTestSuite
 public class LockSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LockSuite.class);
 
