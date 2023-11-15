@@ -50,29 +50,59 @@ env:
   LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
   LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
 jobs:
-  cron:
-    name: Cron
+
+  release-adhoc:
+    name: Release [Adhoc]
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
+    with:
+      version-policy: branch-commit
+      trigger-env-deploy: none
+      sdk-release-profile: AdhocCommit
+      dry-run-enabled: true
+      java-version: ${{ '17.0.8' }}
+      java-distribution: ${{ 'temurin' }}
+      gradle-version: ${{ 'wrapper' }}
+
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+
+  performance-test:
+    name: Performance Test
     runs-on: ubuntu-latest
+    needs:
+      - release-adhoc
     steps:
       - name: Checkout Code
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
-#
-#      - name: Reset Network
-#        id: reset-network
-#        run: |
-#          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-#          echo "Sleep 10 minutes for network reset"
-#          sleep 10m
-#
-#      - name: Run LogCLI to Wait for Network Active
-#        id: run-logcli-wait-network-active
-#        run: |
-#          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
-#          unzip logcli-linux-amd64.zip
-#          chmod a+x logcli-linux-amd64
-#          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
-#          echo "Sleep 10 minutes for network reset completed"
-#          sleep 10m
+
+      - name: Reset Network
+        id: reset-network
+        run: |
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 10 minutes for network reset"
+          sleep 10m
+
+      - name: Run LogCLI to Wait for Network Active
+        id: run-logcli-wait-network-active
+        run: |
+          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
+          unzip logcli-linux-amd64.zip
+          chmod a+x logcli-linux-amd64
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+          echo "Sleep 10 minutes for network reset completed"
+          sleep 10m
 
       - name: Restore Old Signed State
         id: restore-old-signed-state
