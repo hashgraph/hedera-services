@@ -23,11 +23,22 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.model.StandardWiringModel;
+import com.swirlds.common.wiring.model.CycleFinder;
+import com.swirlds.common.wiring.model.DirectSchedulerChecks;
+import com.swirlds.common.wiring.model.ModelEdge;
+import com.swirlds.common.wiring.model.ModelVertex;
+import com.swirlds.common.wiring.model.WiringFlowchart;
+import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
+import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,10 +46,30 @@ import java.util.Set;
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
  * of a system and to generate diagrams.
  */
-public abstract class WiringModel implements Startable, Stoppable {
+public class WiringModel implements Startable, Stoppable {
 
     private final PlatformContext platformContext;
     private final Time time;
+
+    /**
+     * A map of vertex names to vertices.
+     */
+    private final Map<String, ModelVertex> vertices = new HashMap<>();
+
+    /**
+     * A set of all edges in the model.
+     */
+    private final Set<ModelEdge> edges = new HashSet<>();
+
+    /**
+     * Schedules heartbeats. Not created unless needed.
+     */
+    private HeartbeatScheduler heartbeatScheduler = null;
+
+    /**
+     * Thread schedulers need to have their threads started/stopped.
+     */
+    private final List<SequentialThreadTaskScheduler<?>> threadSchedulers = new ArrayList<>();
 
     /**
      * Constructor.
@@ -46,7 +77,7 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @param platformContext the platform context
      * @param time            provides wall clock time
      */
-    protected WiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+    private WiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
     }
@@ -60,7 +91,7 @@ public abstract class WiringModel implements Startable, Stoppable {
      */
     @NonNull
     public static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        return new StandardWiringModel(platformContext, time);
+        return new WiringModel(platformContext, time);
     }
 
     /**
@@ -99,7 +130,9 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @throws IllegalStateException if the heartbeat has already started
      */
     @NonNull
-    public abstract OutputWire<Instant> buildHeartbeatWire(@NonNull Duration period);
+    public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
+        return getHeartbeatScheduler().buildHeartbeatWire(period);
+    }
 
     /**
      * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
@@ -110,7 +143,9 @@ public abstract class WiringModel implements Startable, Stoppable {
      *                  and so frequencies greater than 1000hz are not supported.
      * @return the output wire
      */
-    public abstract OutputWire<Instant> buildHeartbeatWire(double frequency);
+    public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
+        return getHeartbeatScheduler().buildHeartbeatWire(frequency);
+    }
 
     /**
      * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,
@@ -121,7 +156,9 @@ public abstract class WiringModel implements Startable, Stoppable {
      *
      * @return true if there is cyclical backpressure, false otherwise
      */
-    public abstract boolean checkForCyclicalBackpressure();
+    public boolean checkForCyclicalBackpressure() {
+        return CycleFinder.checkForCyclicalBackPressure(vertices.values());
+    }
 
     /**
      * Task schedulers using the {@link TaskSchedulerType#DIRECT} strategy have very strict rules about how data can be
@@ -133,7 +170,9 @@ public abstract class WiringModel implements Startable, Stoppable {
      *
      * @return true if there is illegal direct scheduler usage, false otherwise
      */
-    public abstract boolean checkForIllegalDirectSchedulerUsage();
+    public boolean checkForIllegalDirectSchedulerUsage() {
+        return DirectSchedulerChecks.checkForIllegalDirectSchedulerUse(vertices.values());
+    }
 
     /**
      * Generate a mermaid style wiring diagram.
@@ -142,21 +181,45 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    public abstract String generateWiringDiagram(@NonNull Set<ModelGroup> groups);
+    public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
+        return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
+    }
+
+    /**
+     * Reserved for framework use. Do not call this method directly.
+     * <p>
+     * Register a task scheduler with the wiring model.
+     * </p>
+     *
+     * @param scheduler the task scheduler to register
+     */
+    public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
+        registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
+        if (scheduler.getType() == TaskSchedulerType.SEQUENTIAL_THREAD) {
+            threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
+        }
+    }
 
     /**
      * Reserved for internal framework use. Do not call this method directly.
      * <p>
-     * Register a vertex in the wiring model. These are either task schedulers or wire transformers. Vertices always
-     * have a single Java object output type, although there may be many consumers of that output. Vertices may have
-     * many input types.
+     * Register a vertex in the wiring model. These are either task schedulers or wire transformers.
      *
      * @param vertexName          the name of the vertex
      * @param type                the type of task scheduler that corresponds to this vertex.
      * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
-    public abstract void registerVertex(
-            @NonNull String vertexName, @NonNull TaskSchedulerType type, boolean insertionIsBlocking);
+    public void registerVertex(
+            @NonNull final String vertexName,
+            @NonNull final TaskSchedulerType type,
+            final boolean insertionIsBlocking) {
+        Objects.requireNonNull(vertexName);
+        Objects.requireNonNull(type);
+        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
+        if (!unique) {
+            throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
+        }
+    }
 
     /**
      * Reserved for internal framework use. Do not call this method directly.
@@ -168,9 +231,86 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @param label             the label of the edge
      * @param solderType        the type of solder connection
      */
-    public abstract void registerEdge(
-            @NonNull String originVertex,
-            @NonNull String destinationVertex,
-            @NonNull String label,
-            @NonNull SolderType solderType);
+    public void registerEdge(
+            @NonNull final String originVertex,
+            @NonNull final String destinationVertex,
+            @NonNull final String label,
+            @NonNull final SolderType solderType) {
+
+        final boolean blockingEdge = solderType == SolderType.PUT;
+
+        final ModelVertex origin = getVertex(originVertex);
+        final ModelVertex destination = getVertex(destinationVertex);
+        final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
+
+        final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
+        origin.connectToEdge(edge);
+
+        final boolean unique = edges.add(edge);
+        if (!unique) {
+            throw new IllegalArgumentException(
+                    "Duplicate edge: " + originVertex + " -> " + destinationVertex + ", label = " + label);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.start();
+        }
+
+        for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
+            threadScheduler.start();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.stop();
+        }
+
+        for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
+            threadScheduler.stop();
+        }
+    }
+
+    /**
+     * Get the heartbeat scheduler, creating it if necessary.
+     *
+     * @return the heartbeat scheduler
+     */
+    @NonNull
+    private HeartbeatScheduler getHeartbeatScheduler() {
+        if (heartbeatScheduler == null) {
+            heartbeatScheduler = new HeartbeatScheduler(this, time, "heartbeat");
+        }
+        return heartbeatScheduler;
+    }
+
+    /**
+     * Find an existing vertex
+     *
+     * @param vertexName the name of the vertex
+     * @return the vertex
+     */
+    @NonNull
+    private ModelVertex getVertex(@NonNull final String vertexName) {
+        final ModelVertex vertex = vertices.get(vertexName);
+        if (vertex != null) {
+            return vertex;
+        }
+
+        // Create an ad hoc vertex.
+        final ModelVertex adHocVertex = new ModelVertex(vertexName, TaskSchedulerType.DIRECT, true);
+
+        vertices.put(vertexName, adHocVertex);
+        return adHocVertex;
+    }
 }
