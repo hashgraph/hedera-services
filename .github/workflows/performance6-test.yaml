@@ -1,0 +1,90 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+# Run performance test twice a day on performance 6 network
+
+name: "Service daily performance test"
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_SCRIPT: ".github/workflows/support/scripts/run_perf6_nightly.sh"
+  PARAMS: ".github/workflows/support/scripts/env.perf6_nightly"
+  CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
+
+  GS_STATE : "186772"
+  BUILD_VERSION : "build-v0.44.0-alpha.1"
+
+  USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
+  PASSWORD: ${{ secrets.TESTING_JENKINS_API_PASSWORD }}
+  SERVER: ${{ secrets.TESTING_JENKINS_API_SERVER }}
+  RESET_TOKEN: ${{ secrets.JENKINS_NETWORK_RESET }}
+  RESTORE_TOKEN: ${{ secrets.JENKINS_RESTORE_BACKUP }}
+  LOKI_ADDR: ${{ secrets.LOKI_ADDR }}
+  LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
+  LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
+jobs:
+  cron:
+    name: Cron
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      - name: Reset Network
+        id: reset-network
+        run: |
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ env.RESET_TOKEN }}&command=/devops-startup&text=performance6%20${{ env.BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 15 minutes for network reset"
+          sleep 15m
+
+      - name: Run LogCLI to Wait for Network Active
+        id: run-logcli-wait-network-active
+        run: |
+          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
+          unzip logcli-linux-amd64.zip
+          chmod a+x logcli-linux-amd64
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+          echo "Sleep 30 minutes for network reset completed"
+          sleep 30m
+
+      - name: Restore Old Signed State
+        id: restore-old-signed-state
+        run: |
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ env.RESTORE_TOKEN }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fperformance6-state-backups%2Fperformance6-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 10 minutes for network to load"
+          sleep 10m
+      - name: Run LogCLI to Wait for Network Active Again
+        id: run-logcli-wait-network-active-again
+        run: |
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+
+      - name: Call Test Script
+        id: call-test-script
+        run: |
+          printf "Work space : \t\t${{ github.workspace }}"
+          printf "Script : \t\t${{ env.TEST_SCRIPT }}"
+          printf "Parameter : \t\t${{ env.PARAMS }}"
+          printf "User : \t\t${{ env.USERNAME }}"
+          printf "Password : \t\t${{ env.PASSWORD }}"
+          printf "Server : \t\t${{ env.SERVER }}"
+          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ github.workspace }}/${{ env.PARAMS }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}"
