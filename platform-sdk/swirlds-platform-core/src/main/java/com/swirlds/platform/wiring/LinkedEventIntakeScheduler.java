@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,7 +37,7 @@ public class LinkedEventIntakeScheduler {
      */
     public LinkedEventIntakeScheduler(@NonNull final WiringModel model) {
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("linkedEventIntake")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))

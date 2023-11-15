@@ -388,6 +388,7 @@ public class HandleWorkflow {
                     platformEvent.getCreatorId().id());
 
             networkUtilizationManager.resetFrom(stack);
+            final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
 
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -399,17 +400,19 @@ public class HandleWorkflow {
                     networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
-
                 try {
-                    if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                        feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
-                    } else if (validationResult.status() == PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE) {
-                        // We do not charge partial service fees; if the payer is unwilling or unable to cover
-                        // the entire service fee, then we only charge network and node fees (prioritizing
-                        // the network fee in case of a very low payer balance)
-                        feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
-                    } else {
-                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    // If the payer is authorized to waive fees, then we don't charge them
+                    if (!hasWaivedFees) {
+                        if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                            feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
+                        } else if (validationResult.status() == PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE) {
+                            // We do not charge partial service fees; if the payer is unwilling or unable to cover
+                            // the entire service fee, then we only charge network and node fees (prioritizing
+                            // the network fee in case of a very low payer balance)
+                            feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
+                        } else {
+                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                        }
                     }
                 } catch (final HandleException ex) {
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
@@ -429,7 +432,8 @@ public class HandleWorkflow {
                     finalizeHollowAccounts(context, configuration, preHandleResult.hollowAccounts(), verifier);
 
                     networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
-                    if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
+                    // If the payer is authorized to waive fees, then we don't charge them
+                    if (!hasWaivedFees) {
                         // privileged transactions are not charged fees
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
@@ -450,7 +454,8 @@ public class HandleWorkflow {
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
                                 .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
                                 .sum();
-                        if (!feeAccumulator.chargeNetworkFee(payer, childFees)) {
+                        // If the payer is authorized to waive fees, then we don't charge them
+                        if (!hasWaivedFees && !feeAccumulator.chargeNetworkFee(payer, childFees)) {
                             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
                         }
                     }
@@ -478,7 +483,9 @@ public class HandleWorkflow {
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
-                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    if (!hasWaivedFees) {
+                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    }
                 }
             }
         } catch (final Exception e) {
