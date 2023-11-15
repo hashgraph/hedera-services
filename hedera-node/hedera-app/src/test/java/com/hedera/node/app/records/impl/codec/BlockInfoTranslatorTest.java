@@ -73,7 +73,11 @@ class BlockInfoTranslatorTest {
                 .put("hash3".getBytes())
                 .array();
         return new BlockInfo(
-                5L, Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build(), Bytes.wrap(result));
+                5L,
+                Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build(),
+                Bytes.wrap(result),
+                Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build(),
+                false);
     }
 
     private BlockInfo getExpectedBlockInfoWithoutTime() {
@@ -83,6 +87,6 @@ class BlockInfoTranslatorTest {
                 .put("hash2".getBytes())
                 .put("hash3".getBytes())
                 .array();
-        return new BlockInfo(5L, null, Bytes.wrap(result));
+        return new BlockInfo(5L, null, Bytes.wrap(result), null, false);
     }
 }

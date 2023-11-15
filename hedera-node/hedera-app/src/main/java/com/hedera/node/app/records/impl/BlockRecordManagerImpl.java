@@ -325,6 +325,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return new BlockInfo(
                 newBlockNumber,
                 new Timestamp(blockFirstTransactionTime.getEpochSecond(), blockFirstTransactionTime.getNano()),
-                Bytes.wrap(newBlockHashesBytes));
+                Bytes.wrap(newBlockHashesBytes),
+                currentBlockInfo.consTimeOfLastHandledTxn(),
+                currentBlockInfo.migrationRecordsStreamed());
     }
 }

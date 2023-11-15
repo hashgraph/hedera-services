@@ -214,7 +214,13 @@ public class HapiUtils {
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
+
             case UNSET -> throw new UnknownHederaFunctionality();
+            case TOKEN_CREATE_PARTITION -> null;
+            case TOKEN_UPDATE_PARTITION -> null;
+            case TOKEN_DELETE_PARTITION -> null;
+            case TOKEN_LOCK -> null;
+            case TOKEN_UNLOCK -> null;
         };
     }
 
