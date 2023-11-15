@@ -269,7 +269,7 @@ public class HevmTransactionFactory {
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
         final var usesNonDefaultProxyId = body.hasProxyAccountID() && !AccountID.DEFAULT.equals(body.proxyAccountID());
         validateFalse(usesNonDefaultProxyId, PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
-        tokenServiceApi.assertValidStakingElection(
+        tokenServiceApi.assertValidStakingElectionForCreation(
                 stakingConfig.isEnabled(),
                 body.declineReward(),
                 body.stakedId().kind().name(),

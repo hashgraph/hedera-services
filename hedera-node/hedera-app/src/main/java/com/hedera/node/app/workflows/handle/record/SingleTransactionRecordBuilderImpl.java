@@ -37,6 +37,8 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
@@ -59,6 +61,7 @@ import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
@@ -78,6 +81,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -119,8 +123,11 @@ public class SingleTransactionRecordBuilderImpl
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
-                GasFeeRecordBuilder {
-
+                GasFeeRecordBuilder,
+                TokenAccountWipeRecordBuilder {
+    private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
+                    .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -228,11 +235,16 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        transaction = customizer.apply(transaction);
-        final var transactionReceipt = transactionReceiptBuilder
-                .exchangeRate(exchangeRate)
-                .serialNumbers(serialNumbers)
-                .build();
+        if (customizer != null) {
+            transaction = customizer.apply(transaction);
+        }
+        final var builder = transactionReceiptBuilder.serialNumbers(serialNumbers);
+        // FUTURE : In mono-service exchange rate is not set in preceding child records.
+        // This should be changed after differential testing
+        if (exchangeRate != null && exchangeRate.hasCurrentRate() && exchangeRate.hasNextRate()) {
+            builder.exchangeRate(exchangeRate);
+        }
+        final var transactionReceipt = builder.build();
 
         final Bytes transactionHash;
         try {
@@ -246,6 +258,12 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
+        // sort the automatic associations to match the order of mono-service records
+        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+
         final var transactionRecord = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
@@ -255,7 +273,7 @@ public class SingleTransactionRecordBuilderImpl
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
-                .automaticTokenAssociations(automaticTokenAssociations)
+                .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
                 .build();
 
@@ -342,6 +360,35 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
         this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
+    }
+
+    /**
+     * When we update nonce on the record, we need to update the body as well with the same transactionID.
+     * @return the builder
+     */
+    @NonNull
+    public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
+        final var newTransactionID = transactionID;
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            final var existingTransactionBody =
+                    TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+            final var body = existingTransactionBody
+                    .copyBuilder()
+                    .transactionID(newTransactionID)
+                    .build();
+            final var newBodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+            final var newSignedTransaction =
+                    SignedTransaction.newBuilder().bodyBytes(newBodyBytes).build();
+            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(newSignedTransaction);
+            this.transaction = Transaction.newBuilder()
+                    .signedTransactionBytes(signedTransactionBytes)
+                    .build();
+            return this;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
