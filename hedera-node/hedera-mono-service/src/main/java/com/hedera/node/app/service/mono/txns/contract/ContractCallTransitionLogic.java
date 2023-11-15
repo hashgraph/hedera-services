@@ -168,7 +168,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             if (entityAccess.isTokenAccount(targetId.asEvmAddress())) {
                 receiver = new Account(targetId);
             } else {
-                if (accountStore.isContractUsable(targetId)) {
+                if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
                     receiver = accountStore.loadContract(targetId);
                 } else {
                     validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
