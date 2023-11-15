@@ -140,18 +140,16 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
-            final long newMax = op.maxAutomaticTokenAssociations();
+            final long newMax = op.maxAutomaticTokenAssociationsOrThrow();
 
+            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
             validateFalse(
                     newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
             validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
-            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
         }
 
         // validate expiry metadata
