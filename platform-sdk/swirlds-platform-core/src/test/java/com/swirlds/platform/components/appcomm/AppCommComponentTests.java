@@ -61,15 +61,13 @@ public class AppCommComponentTests {
                 ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("StateWriteToDiskCompleteNotification")
-    void testStateWriteToDiskCompleteNotification(final boolean success) {
+    void testStateWriteToDiskCompleteNotification() {
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final ResettableRandom random = RandomUtils.getRandomPrintSeed();
         final StateSavingResult result = new StateSavingResult(
                 random.nextLong(1, Long.MAX_VALUE),
-                true,
                 random.nextBoolean(),
                 RandomUtils.randomInstant(random),
                 random.nextLong(1, Long.MAX_VALUE)
@@ -89,11 +87,7 @@ public class AppCommComponentTests {
         final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
         component.stateToDiskAttempt(result);
 
-        if (success) {
-            assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
-        } else {
-            assertEquals(0, numInvocations.get(), "Notification should only be sent for successful saves");
-        }
+        assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
     }
 
     @Test
