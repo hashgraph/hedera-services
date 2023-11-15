@@ -551,7 +551,7 @@ public class HandleWorkflow {
                                     .build())
                             .build();
                     context.dispatchPrecedingTransaction(
-                            syntheticUpdateTxn, SingleTransactionRecordBuilder.class, k -> true, context.payer());
+                            syntheticUpdateTxn, SingleTransactionRecordBuilder.class, null, context.payer());
                 }
             }
         }

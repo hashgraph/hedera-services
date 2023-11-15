@@ -36,6 +36,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PARANOI
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -153,7 +154,11 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchChildTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn),
+                        eq(CryptoCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CHILD)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
@@ -169,7 +174,11 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchChildTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn),
+                        eq(CryptoCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CHILD)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

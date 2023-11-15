@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
@@ -465,7 +466,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
+            @Nullable final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
                 () -> recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
@@ -511,10 +512,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @Nullable final Predicate<Key> callback) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(callback, "callback must not be null");
 
         if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
             throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
@@ -546,10 +546,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final TransactionCategory childCategory) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
                 () -> recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+        return doDispatchChildTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback, childCategory);
     }
 
     @NonNull
@@ -561,7 +563,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayerId) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
                 () -> recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+        return doDispatchChildTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback, CHILD);
     }
 
     @NonNull
@@ -570,10 +573,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
+            @NonNull final Predicate<Key> callback,
+            @NonNull final TransactionCategory childCategory) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(callback, "callback must not be null");
+        requireNonNull(childCategory, "childCategory must not be null");
 
         if (category == PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
@@ -581,7 +586,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // run the child-transaction
         final var childRecordBuilder = recordBuilderFactory.get();
-        dispatchSyntheticTxn(syntheticPayer, txBody, CHILD, childRecordBuilder, callback);
+        dispatchSyntheticTxn(syntheticPayer, txBody, childCategory, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
@@ -591,7 +596,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
-            @NonNull final Predicate<Key> callback) {
+            @Nullable final Predicate<Key> callback) {
         // Initialize record builder list
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
@@ -632,16 +637,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // Any keys verified for this dispatch (including the payer key if
         // required) should incorporate the provided callback
-        final var childVerifier = new DelegateKeyVerifier(callback);
+        final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
         final Key syntheticPayerKey;
         try {
             syntheticPayerKey = validate(
-                    verifier,
+                    callback == null ? null : childVerifier,
                     function,
                     body(),
                     payer(),
                     networkInfo().selfNodeInfo().nodeId(),
-                    needsHapiPayerChecks(category));
+                    dispatchNeedsHapiPayerChecks(category));
         } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
             return;
@@ -682,7 +687,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     private @Nullable Key validate(
-            @NonNull final KeyVerifier keyVerifier,
+            @Nullable final KeyVerifier keyVerifier,
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody transactionBody,
             @NonNull final AccountID syntheticPayerId,
@@ -716,6 +721,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // ScheduleCreate id, which could have happened long ago
 
             syntheticPayerKey = payerAccount.keyOrThrow();
+            requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
@@ -728,18 +734,20 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         assertPayerIsAuthorized(function, transactionBody, syntheticPayerId);
 
         // No matter if using HAPI-style payer checks, we need to verify any
-        // additional signing requirements are met when using the given
+        // additional signing requirements are met if given a non-null
         // "verification assistant" callback
-        for (final var key : preHandleContext.requiredNonPayerKeys()) {
-            final var verification = keyVerifier.verificationFor(key);
-            if (verification.failed()) {
-                throw new PreCheckException(INVALID_SIGNATURE);
+        if (keyVerifier != null) {
+            for (final var key : preHandleContext.requiredNonPayerKeys()) {
+                final var verification = keyVerifier.verificationFor(key);
+                if (verification.failed()) {
+                    throw new PreCheckException(INVALID_SIGNATURE);
+                }
             }
-        }
-        for (final var hollowAccount : preHandleContext.requiredHollowAccounts()) {
-            final var verification = keyVerifier.verificationFor(hollowAccount.alias());
-            if (verification.failed()) {
-                throw new PreCheckException(INVALID_SIGNATURE);
+            for (final var hollowAccount : preHandleContext.requiredHollowAccounts()) {
+                final var verification = keyVerifier.verificationFor(hollowAccount.alias());
+                if (verification.failed()) {
+                    throw new PreCheckException(INVALID_SIGNATURE);
+                }
             }
         }
         return syntheticPayerKey;
@@ -816,7 +824,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      *
      * @return whether the category requires HAPI-style payer checks
      */
-    private boolean needsHapiPayerChecks(@NonNull final TransactionCategory category) {
-        return category != CHILD && category != PRECEDING;
+    private boolean dispatchNeedsHapiPayerChecks(@NonNull final TransactionCategory category) {
+        return category == SCHEDULED;
     }
 }
