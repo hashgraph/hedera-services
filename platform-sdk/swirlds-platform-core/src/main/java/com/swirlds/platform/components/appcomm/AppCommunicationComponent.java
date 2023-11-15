@@ -49,8 +49,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent
-        implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;

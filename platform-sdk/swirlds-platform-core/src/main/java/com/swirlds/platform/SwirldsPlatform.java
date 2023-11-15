@@ -488,8 +488,7 @@ public class SwirldsPlatform implements Platform {
                 Time.getCurrent(),
                 actualMainClassName,
                 selfId,
-                swirldName
-        );
+                swirldName);
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withConcurrency(false)
@@ -497,34 +496,29 @@ public class SwirldsPlatform implements Platform {
                 .withExternalBackPressure(false)
                 .build()
                 .cast();
-        final SignedStateFileManagerWiring signedStateFileManagerWiring = new SignedStateFileManagerWiring(
-                savedStateScheduler);
+        final SignedStateFileManagerWiring signedStateFileManagerWiring =
+                new SignedStateFileManagerWiring(savedStateScheduler);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         signedStateFileManagerWiring
                 .outputWire()
-                .buildTransformer("to status", ssr-> new StateWrittenToDiskAction(ssr.round()))
+                .buildTransformer("to status", ssr -> new StateWrittenToDiskAction(ssr.round()))
                 .solderTo("status manager", platformStatusManager::submitStatusAction);
-        signedStateFileManagerWiring
-                .outputWire()
-                .solderTo("app comm", appCommunicationComponent::stateToDiskAttempt);
+        signedStateFileManagerWiring.outputWire().solderTo("app comm", appCommunicationComponent::stateToDiskAttempt);
         signedStateFileManagerWiring
                 .outputWire()
                 .buildTransformer("to mingen", StateSavingResult::minGen)
                 .solderTo("PCES mingen", setMinimumGenerationToStore::newMinimumGenerationNonAncient);
 
-        //TODO find a place for this
+        // TODO find a place for this
         final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
         if (!savedStates.isEmpty()) {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
-            final long minimumGenerationNonAncientForOldestState = savedStates.get(savedStates.size() - 1).metadata()
-                    .minimumGenerationNonAncient();
-            setMinimumGenerationToStore.newMinimumGenerationNonAncient(
-                    minimumGenerationNonAncientForOldestState);
+            final long minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            setMinimumGenerationToStore.newMinimumGenerationNonAncient(minimumGenerationNonAncientForOldestState);
         }
-        final SavedStateController savedStateController = new SavedStateController(
-                stateConfig,
-                signedStateFileManagerWiring.saveStateToDisk()::offer
-        );
+        final SavedStateController savedStateController =
+                new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -730,8 +724,7 @@ public class SwirldsPlatform implements Platform {
                 intakeQueue,
                 eventObserverDispatcher,
                 platformStatusManager::getCurrentStatus,
-                latestReconnectRound::get
-        );
+                latestReconnectRound::get);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,

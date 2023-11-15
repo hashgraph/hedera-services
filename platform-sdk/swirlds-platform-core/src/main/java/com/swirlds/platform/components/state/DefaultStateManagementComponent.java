@@ -102,6 +102,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * Used to track signed state leaks, if enabled
      */
     private final SignedStateSentinel signedStateSentinel;
+
     private final SavedStateController savedStateController;
     private final Consumer<StateDumpRequest> stateDumpConsumer;
 
@@ -141,7 +142,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(newLatestCompleteStateConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
         Objects.requireNonNull(platformStatusGetter);
-
 
         this.signer = Objects.requireNonNull(signer);
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
@@ -186,7 +186,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the signed state that lacks signatures
      */
     private void stateLacksSignatures(@NonNull final SignedState signedState) {
-       savedStateController.maybeSaveState(signedState);
+        savedStateController.maybeSaveState(signedState);
     }
 
     private void newSignedStateBeingTracked(final SignedState signedState, final SourceOfSignedState source) {

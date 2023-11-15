@@ -122,11 +122,7 @@ public class SignedStateFileManager {
             }
             final long minGen = deleteOldStates();
             stateSavingResult = new StateSavingResult(
-                    signedState.getRound(),
-                    signedState.isFreezeState(),
-                    signedState.getConsensusTimestamp(),
-                    minGen
-            );
+                    signedState.getRound(), signedState.isFreezeState(), signedState.getConsensusTimestamp(), minGen);
         }
         metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
         metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
@@ -146,17 +142,17 @@ public class SignedStateFileManager {
      * A save state task
      */
     private boolean saveStateTask(@NonNull final SignedState state, final boolean outOfBand) {
-        final StateToDiskReason reason = Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
+        final StateToDiskReason reason =
+                Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
         final Path directory = outOfBand
                 ? getSignedStatesBaseDirectory()
-                .resolve(reason.getDescription())
-                .resolve(String.format("node%d_round%d", selfId.id(), state.getRound()))
+                        .resolve(reason.getDescription())
+                        .resolve(String.format("node%d_round%d", selfId.id(), state.getRound()))
                 : getSignedStateDir(state.getRound());
         try {
             if (outOfBand) {
                 // states requested to be written out-of-band are always written to disk
-                SignedStateFileWriter.writeSignedStateToDisk(
-                        platformContext, selfId, directory, state, reason);
+                SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, reason);
                 return true;
             }
             if (state.hasStateBeenSavedToDisk()) {
@@ -170,8 +166,7 @@ public class SignedStateFileManager {
                 stateLacksSignatures(state);
             }
 
-            SignedStateFileWriter.writeSignedStateToDisk(
-                    platformContext, selfId, directory, state, reason);
+            SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, reason);
 
             state.stateSavedToDisk();
 
@@ -201,8 +196,8 @@ public class SignedStateFileManager {
         logger.error(
                 EXCEPTION.getMarker(),
                 new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
-                        + "Collected signatures representing %d/%d weight. "
-                        + "Total unsigned disk states so far: %d.")
+                                + "Collected signatures representing %d/%d weight. "
+                                + "Total unsigned disk states so far: %d.")
                         .formatted(
                                 reservedState.getRound(),
                                 reservedState.getSigningWeight(),
@@ -244,6 +239,5 @@ public class SignedStateFileManager {
         }
         final SavedStateMetadata oldestStateMetadata = savedStates.get(index).metadata();
         return oldestStateMetadata.minimumGenerationNonAncient();
-
     }
 }

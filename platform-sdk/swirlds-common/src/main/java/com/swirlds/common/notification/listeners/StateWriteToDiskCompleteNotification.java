@@ -31,9 +31,7 @@ public class StateWriteToDiskCompleteNotification extends AbstractNotification {
     private final boolean isFreezeState;
 
     public StateWriteToDiskCompleteNotification(
-            final long roundNumber,
-            final Instant consensusTimestamp,
-            final boolean isFreezeState) {
+            final long roundNumber, final Instant consensusTimestamp, final boolean isFreezeState) {
         this.roundNumber = roundNumber;
         this.consensusTimestamp = consensusTimestamp;
         this.isFreezeState = isFreezeState;

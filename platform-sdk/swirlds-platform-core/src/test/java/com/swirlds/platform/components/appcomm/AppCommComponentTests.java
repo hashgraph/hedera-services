@@ -38,7 +38,6 @@ import com.swirlds.common.test.fixtures.ResettableRandom;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateSavingResult;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -46,9 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Basic sanity check tests for the {@link AppCommunicationComponent} class
@@ -70,14 +66,12 @@ public class AppCommComponentTests {
                 random.nextLong(1, Long.MAX_VALUE),
                 random.nextBoolean(),
                 RandomUtils.randomInstant(random),
-                random.nextLong(1, Long.MAX_VALUE)
-        );
+                random.nextLong(1, Long.MAX_VALUE));
 
         final AtomicInteger numInvocations = new AtomicInteger();
         notificationEngine.register(StateWriteToDiskCompleteListener.class, n -> {
             numInvocations.getAndIncrement();
-            assertEquals(
-                    result.consensusTimestamp(), n.getConsensusTimestamp(), "Unexpected consensus timestamp");
+            assertEquals(result.consensusTimestamp(), n.getConsensusTimestamp(), "Unexpected consensus timestamp");
             assertEquals(result.round(), n.getRoundNumber(), "Unexpected notification round number");
             assertEquals(result.freezeState(), n.isFreezeState(), "Unexpected notification freeze state");
             assertNull(n.getState(), "Deprecated field should be null");
