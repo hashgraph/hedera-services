@@ -40,8 +40,10 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -158,6 +160,10 @@ public interface BaseScaffoldingModule {
     @Singleton
     Authorizer bindAuthorizer(AuthorizerImpl authorizer);
 
+    @Binds
+    @Singleton
+    ChildRecordFinalizer bindChildRecordFinalizer(FinalizeChildRecordHandler childRecordFinalizer);
+
     @Provides
     @Singleton
     static Signer provideSigner() {
@@ -220,7 +226,8 @@ public interface BaseScaffoldingModule {
             @NonNull final HederaState state,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
@@ -248,6 +255,7 @@ public interface BaseScaffoldingModule {
                     configuration,
                     new DefaultKeyVerifier(1, configuration.getConfigData(HederaConfig.class), Map.of()),
                     recordListBuilder,
+                    childRecordFinalizer,
                     new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
                     dispatcher,
                     scopeLookup,
