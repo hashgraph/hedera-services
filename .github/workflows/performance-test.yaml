@@ -54,8 +54,8 @@ jobs:
     name: Cron
     runs-on: ubuntu-latest
     steps:
-#      - name: Checkout Code
-#        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - name: Checkout Code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 #
 #      - name: Reset Network
 #        id: reset-network
