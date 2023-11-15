@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,35 +14,36 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.source.ConfigSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 /**
- * A {@link com.swirlds.config.api.source.ConfigSource} implementation that provides values from the system properties.
+ * A {@link com.swirlds.config.api.source.ConfigSource} implementation that provides values from the system environment.
  * The class is defined as a singleton.
  */
-public final class SystemEnvironmentConfigSource implements ConfigSource {
+public final class SystemPropertiesConfigSource implements ConfigSource {
 
-    private static SystemEnvironmentConfigSource instance;
+    private static SystemPropertiesConfigSource instance;
 
-    private SystemEnvironmentConfigSource() {}
+    private SystemPropertiesConfigSource() {}
 
     /**
      * Returns the singleton
      *
      * @return the singleton
      */
-    public static SystemEnvironmentConfigSource getInstance() {
+    public static SystemPropertiesConfigSource getInstance() {
         if (instance == null) {
-            synchronized (SystemEnvironmentConfigSource.class) {
+            synchronized (SystemPropertiesConfigSource.class) {
                 if (instance != null) {
                     return instance;
                 }
-                instance = new SystemEnvironmentConfigSource();
+                instance = new SystemPropertiesConfigSource();
             }
         }
         return instance;
@@ -53,19 +54,19 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
      */
     @Override
     public Set<String> getPropertyNames() {
-        return System.getenv().keySet();
+        return System.getProperties().stringPropertyNames();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public String getValue(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public String getValue(@NonNull final String propertyName) {
+        Objects.requireNonNull(propertyName, "propertyName must not be null");
         if (!getPropertyNames().contains(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }
-        return System.getenv(propertyName);
+        return System.getProperty(propertyName);
     }
 
     /**
@@ -73,6 +74,6 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
      */
     @Override
     public int getOrdinal() {
-        return ConfigSourceOrdinalConstants.SYSTEM_ENVIRONMENT_ORDINAL;
+        return ConfigSourceOrdinalConstants.SYSTEM_PROPERTIES_ORDINAL;
     }
 }

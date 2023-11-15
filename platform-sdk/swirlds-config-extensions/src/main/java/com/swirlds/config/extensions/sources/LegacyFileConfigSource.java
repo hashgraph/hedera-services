@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -88,8 +87,8 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      * @param filePath the path of the file that contains the config properties
      * @throws IOException if the file can not be loaded or parsed
      */
-    public LegacyFileConfigSource(final String filePath) throws IOException {
-        this(Paths.get(CommonUtils.throwArgBlank(filePath, "filePath")));
+    public LegacyFileConfigSource(@NonNull final String filePath) throws IOException {
+        this(Paths.get(Objects.requireNonNull(filePath, "filePath must not be null")));
     }
 
     private static Map<String, String> loadSettings(final File settingsFile) throws IOException {

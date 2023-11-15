@@ -24,10 +24,10 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
-import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
-import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
