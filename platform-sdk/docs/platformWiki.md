@@ -12,6 +12,7 @@ The platform code is split into three categories:
 
 This code is maintained by the "Platform Base" team.
 
+- [Overview of Platform Base](./base/base.md)
 - [Configuration](./base/configuration/configuration.md)
 - [Context](./base/context/context.md)
 - [Metrics](./base/metrics/metrics.md)
