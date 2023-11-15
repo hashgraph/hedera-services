@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -41,7 +40,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -118,7 +116,8 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             List<TokenTransferList> tokenTransferLists =
                     syntheticTransfer(senderId).cryptoTransfer().tokenTransfers();
             for (final var nftTransfers : tokenTransferLists) {
-                frame.addLog(getLogForNftExchange(tokenAddress, nftTransfers.nftTransfers().get(0)));
+                frame.addLog(getLogForNftExchange(
+                        tokenAddress, nftTransfers.nftTransfers().get(0)));
             }
         }
         return result;
