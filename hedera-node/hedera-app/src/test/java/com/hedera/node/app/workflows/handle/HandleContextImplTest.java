@@ -885,23 +885,23 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)),
+                            ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)),
+                            ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
+                            ALICE.accountID(),
                             CHILD)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
+                            ALICE.accountID(),
                             (ignore) -> Transaction.DEFAULT)));
         }
 
@@ -1058,13 +1058,13 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT));
+                            ALICE.accountID()));
             assertThatNoException()
                     .isThrownBy((() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)));
+                            ALICE.accountID())));
             verify(recordListBuilder, times(2)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(2)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
