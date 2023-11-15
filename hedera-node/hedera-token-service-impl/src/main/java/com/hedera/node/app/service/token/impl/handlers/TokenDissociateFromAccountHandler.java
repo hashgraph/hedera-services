@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -47,6 +48,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -144,21 +146,25 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
 
                 if (tokenRelBalance > 0) {
                     validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
-                    // If the fungible token is NOT expired, then we throw an exception because we
-                    // can only dissociate tokens with a zero balance by this time in the code
-                    // @future('6864'): uncomment when token expiry is implemented
-                    // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
-                    // If the fungible common token is expired, we automatically transfer the
-                    // dissociating account's balance back to the token's treasury
-                    final var treasuryTokenRel = dissociation.treasuryTokenRel();
-                    if (treasuryTokenRel != null) {
-                        final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
-                        treasuryBalancesToUpdate.add(treasuryTokenRel
-                                .copyBuilder()
-                                .balance(updatedTreasuryBalanceTokenRel)
-                                .build());
-                    }
+                    // Remove when token expiry is implemented
+                    throw new HandleException(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+                }
+
+                // If the fungible token is NOT expired, then we throw an exception because we
+                // can only dissociate tokens with a zero balance by this time in the code
+                // @future('6864'): uncomment when token expiry is implemented
+                // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
+                // If the fungible common token is expired, we automatically transfer the
+                // dissociating account's balance back to the token's treasury
+                final var treasuryTokenRel = dissociation.treasuryTokenRel();
+                if (treasuryTokenRel != null) {
+                    final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
+                    treasuryBalancesToUpdate.add(treasuryTokenRel
+                            .copyBuilder()
+                            .balance(updatedTreasuryBalanceTokenRel)
+                            .build());
                 }
             }
 

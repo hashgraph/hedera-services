@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAccounts;
@@ -426,7 +427,32 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         }
 
         @Test
-        void tokenRelAndTreasuryTokenRelAreUpdatedForFungible() {
+        void rejectsAccountWithBalance() {
+            // Create the readable store with a token
+            final var tokenWithTreasury =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).build();
+            readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
+
+            // Create the frozen token rel
+            writableTokenRelStore.put(TokenRelation.newBuilder()
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
+                    .balance(1000L)
+                    .build());
+
+            // Create the context and transaction
+            final var context = mockContext();
+            final var txn = newDissociateTxn(ACCOUNT_1339, List.of(TOKEN_555_ID));
+            given(context.body()).willReturn(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
+        }
+
+        //        @Test
+        // Enable when token expiration is implemented
+        void tokenRelAndTreasuryTokenRelAreUpdatedForExpiredFungible() {
             // i.e. verify the token rel is removed and the treasury token rel balance is updated
 
             // Create the writable account store with account 1339 and the treasury account
