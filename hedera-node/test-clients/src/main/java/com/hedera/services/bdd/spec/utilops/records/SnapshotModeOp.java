@@ -169,8 +169,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta =
-                new SnapshotFileMeta("HollowAccountFinalization", "HollowAccountCompletionWithTokenAssociation");
+        final var snapshotFileMeta = new SnapshotFileMeta(
+                "HollowAccountFinalization", "txnWith2CompletionsAndAnother2PrecedingChildRecords");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
