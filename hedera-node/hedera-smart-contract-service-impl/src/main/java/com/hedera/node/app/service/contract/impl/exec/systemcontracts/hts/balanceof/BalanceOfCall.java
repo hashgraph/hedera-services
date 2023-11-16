@@ -40,7 +40,6 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
-import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Implements the token redirect {@code balanceOf()} call of the HTS system contract.
@@ -61,7 +60,8 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
     public @NonNull PricedResult execute() {
         PricedResult result;
         long gasRequirement;
-        ContractID contractID = asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        ContractID contractID =
+                asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
 
         if (token == null) {
             result = gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
