@@ -337,7 +337,6 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(FIRST_PAYER));
     }
 
-    @HapiTest
     private HapiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(

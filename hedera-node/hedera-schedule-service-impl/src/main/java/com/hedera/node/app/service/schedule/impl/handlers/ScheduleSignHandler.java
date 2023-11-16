@@ -146,6 +146,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                             scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
                                     scheduleToSign, updatedSignatories, currentConsensusTime));
                         } else {
+                            verifyHasNewSignatures(scheduleToSign.signatories(), updatedSignatories);
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
                         final ScheduleRecordBuilder scheduleRecords =

@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -264,13 +265,16 @@ final class HandlerUtility {
         // original create transaction and its transaction ID will never be null, but Sonar...
         final TransactionBody originalTransaction = valueInState.originalCreateTransactionOrThrow();
         final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
-        // payer on parent transaction ID will also never be null...
-        final AccountID payerAccount = valueInState.payerAccountIdOrElse(parentTransactionId.accountIDOrThrow());
-        // Scheduled transaction ID is the same as its parent except
-        //     if scheduled is set true, payer *might* be modified, and the nonce is incremented.
-        final TransactionID.Builder builder = TransactionID.newBuilder().accountID(payerAccount);
-        builder.transactionValidStart(parentTransactionId.transactionValidStart());
-        builder.scheduled(true).nonce(parentTransactionId.nonce() + 1);
+        final TransactionID.Builder builder = parentTransactionId.copyBuilder();
+        // This is tricky.
+        // The scheduled child transaction that is executed must have a transaction ID that exactly matches
+        // the original CREATE transaction, not the parent transaction that triggers execution.  So the child
+        // record is a child of "trigger" with an ID matching "create".  This is what mono service does, but it
+        // is not ideal.  Future work should change this (if at all possible) to have ID and parent match
+        // better, not rely on exact ID match, and only use the scheduleRef and scheduledId values in the transaction
+        // records (scheduleRef on the child pointing to the schedule ID, and scheduled ID on the parent pointing
+        // to the child transaction) for connecting things.
+        builder.scheduled(true);
         return builder.build();
     }
 
@@ -284,5 +288,36 @@ final class HandlerUtility {
             final Instant currentPlusMaxLife = currentConsensusTime.plusSeconds(maxLifeSeconds);
             return currentPlusMaxLife.getEpochSecond();
         }
+    }
+
+    static void filterSignatoriesToRequired(Set<Key> signatories, Set<Key> required) {
+        final Set<Key> incomingSignatories = Set.copyOf(signatories);
+        signatories.clear();
+        filterSignatoriesToRequired(signatories, required, incomingSignatories);
+    }
+
+    private static void filterSignatoriesToRequired(
+            final Set<Key> signatories, final Collection<Key> required, final Set<Key> incomingSignatories) {
+        for (final Key next : required)
+            switch (next.key().kind()) {
+                case ED25519, ECDSA_SECP256K1, CONTRACT_ID, DELEGATABLE_CONTRACT_ID:
+                    // Handle "primitive" keys, which are what the signatories set stores.
+                    if (incomingSignatories.contains(next)) {
+                        signatories.add(next);
+                    }
+                    break;
+                case KEY_LIST:
+                    // Dive down into the elements of the key list
+                    filterSignatoriesToRequired(signatories, next.keyList().keys(), incomingSignatories);
+                    break;
+                case THRESHOLD_KEY:
+                    // Dive down into the elements of the threshold key candidates list
+                    filterSignatoriesToRequired(
+                            signatories, next.thresholdKey().keys().keys(), incomingSignatories);
+                    break;
+                case ECDSA_384, RSA_3072, UNSET:
+                    // These types are unsupported
+                    break;
+            }
     }
 }
