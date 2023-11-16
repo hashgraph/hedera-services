@@ -151,17 +151,15 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
                 final List<Schedule> possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
-                if (isPresentIn(context, possibleDuplicates, provisionalSchedule)) {
+                if (isPresentIn(context, possibleDuplicates, provisionalSchedule))
                     throw new HandleException(ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
-                }
-                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber()) {
+                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber())
                     throw new HandleException(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-                }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                 final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                final long nextId = getNextId(context);
+                final long nextId = context.newEntityNum();
                 Schedule finalSchedule =
                         HandlerUtility.completeProvisionalSchedule(provisionalSchedule, nextId, updatedSignatories);
                 if (tryToExecuteSchedule(
@@ -186,22 +184,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         }
     }
 
-    /*
-     Note: This method should not be needed, but HapiTests don't work properly in this regard
-      (genesis doesn't fill in the next entity state).  This ensures the next entity is not a system entity before
-      returning the value.
-      This is temporary until we can fix the genesis state handling for newEntityNum...
-    */
-    private long getNextId(final HandleContext context) {
-        final LedgerConfig config = context.configuration().getConfigData(LedgerConfig.class);
-        long minEntity = config.numReservedSystemEntities();
-        long nextId;
-        do {
-            nextId = context.newEntityNum();
-        } while (nextId <= minEntity);
-        return nextId;
-    }
-
     private boolean isPresentIn(
             @NonNull final HandleContext context,
             @Nullable final List<Schedule> possibleDuplicates,
@@ -219,6 +201,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
     private boolean compareForDuplicates(@NonNull final Schedule candidate, @NonNull final Schedule requested) {
         return candidate.waitForExpiry() == requested.waitForExpiry()
+                // @todo('9447') This should be modified to use calculated expiration once
+                //               differential testing completes
                 && candidate.providedExpirationSecond() == requested.providedExpirationSecond()
                 && Objects.equals(candidate.memo(), requested.memo())
                 && Objects.equals(candidate.adminKey(), requested.adminKey())
