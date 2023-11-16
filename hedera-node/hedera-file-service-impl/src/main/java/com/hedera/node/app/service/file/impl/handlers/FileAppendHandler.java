@@ -111,11 +111,11 @@ public class FileAppendHandler implements TransactionHandler {
         final var target = fileAppend.fileID();
         final var data = fileAppend.contents();
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
-        if (data == null || data.length() <= 0) {   // should never happen, this is checked in pureChecks
+        if (data == null || data.length() <= 0) { // should never happen, this is checked in pureChecks
             logger.debug("FileAppend: No data to append");
         }
 
-        if (target == null) {  // should never happen, this is checked in pureChecks
+        if (target == null) { // should never happen, this is checked in pureChecks
             throw new HandleException(INVALID_FILE_ID);
         }
 
