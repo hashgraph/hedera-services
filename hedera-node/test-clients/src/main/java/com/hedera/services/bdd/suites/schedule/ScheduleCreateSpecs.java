@@ -492,7 +492,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
-    //Flaky test
+    // Flaky test
     public HapiSpec doesntTriggerUntilPayerSigns() {
         return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
                 .given(
@@ -533,7 +533,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         getTxnRecord(BASIC_XFER).scheduled());
     }
 
-    // @todo('9838')
+    @HapiTest
     public HapiSpec rejectsUnresolvableReqSigners() {
         return defaultHapiSpec("RejectsUnresolvableReqSigners")
                 .given()
