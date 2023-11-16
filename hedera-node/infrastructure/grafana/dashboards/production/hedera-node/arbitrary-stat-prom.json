@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 62,
   "links": [
     {
       "asDropdown": true,
@@ -148,7 +148,7 @@
       {
         "current": {
           "selected": false,
-          "text": "grafanacloud-swirldslabspreproduction-prom",
+          "text": "grafanacloud-swirldslabsproduction-prom",
           "value": "grafanacloud-prom"
         },
         "hide": 0,

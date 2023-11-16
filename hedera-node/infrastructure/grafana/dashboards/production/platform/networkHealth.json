@@ -7,24 +7,6 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
-    },
-    {
-      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL",
-      "label": "grafanacloud-swirldslabspreproduction-prom",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus",
-      "usage": {
-        "libraryPanels": [
-          {
-            "uid": "ea3a07d5-8f0b-4705-997d-51935e44d3c0"
-          },
-          {
-            "uid": "ce95d4af-054d-4590-8e28-c3bea14512ac"
-          }
-        ]
-      }
     }
   ],
   "__elements": {
@@ -35,7 +17,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "description": "The maximum size during a sampling period of the event intake queue.",
         "fieldConfig": {
@@ -44,6 +26,7 @@
               "mode": "palette-classic"
             },
             "custom": {
+              "axisBorderShow": false,
               "axisCenteredZero": false,
               "axisColorMode": "text",
               "axisLabel": "# of events",
@@ -95,9 +78,6 @@
           },
           "overrides": []
         },
-        "libraryPanel": {
-          "uid": "ea3a07d5-8f0b-4705-997d-51935e44d3c0"
-        },
         "options": {
           "legend": {
             "calcs": [],
@@ -118,7 +98,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"}",
+            "expr": "internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"}",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -139,7 +119,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "description": "",
         "fieldConfig": {
@@ -168,10 +148,9 @@
           },
           "overrides": []
         },
-        "libraryPanel": {
-          "uid": "ce95d4af-054d-4590-8e28-c3bea14512ac"
-        },
         "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
           "orientation": "auto",
           "reduceOptions": {
             "calcs": [],
@@ -181,7 +160,7 @@
           "showThresholdLabels": false,
           "showThresholdMarkers": true
         },
-        "pluginVersion": "10.2.0-59542pre",
+        "pluginVersion": "10.3.0-63137",
         "targets": [
           {
             "datasource": {
@@ -190,7 +169,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "min(min_over_time(internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+            "expr": "min(min_over_time(internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -206,7 +185,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "avg(internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"})",
+            "expr": "avg(internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"})",
             "fullMetaSearch": false,
             "hide": false,
             "includeNullMetadata": true,
@@ -223,7 +202,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "builder",
-            "expr": "max(max_over_time(internal_event_intake_queueMaxSize{environment=\"$Environment\", node_id=~\"$NodeID\"}[$__range]))",
+            "expr": "max(max_over_time(internal_event_intake_queueMaxSize{environment=\"$network\", node_id=~\"$NodeID\"}[$__range]))",
             "fullMetaSearch": false,
             "hide": false,
             "includeNullMetadata": true,
@@ -915,11 +894,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "sec",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -951,7 +930,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1028,7 +1008,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1062,7 +1043,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63137",
       "targets": [
         {
           "datasource": {
@@ -1133,11 +1114,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -1169,7 +1150,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "semi-dark-red"
+                "color": "semi-dark-red",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1240,7 +1222,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               },
               {
                 "color": "dark-yellow",
@@ -1276,7 +1259,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63137",
       "targets": [
         {
           "datasource": {
@@ -1387,7 +1370,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1421,7 +1405,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63137",
       "targets": [
         {
           "datasource": {
@@ -1489,11 +1473,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "seconds",
+            "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
@@ -1509,8 +1493,7 @@
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
-              "log": 2,
-              "type": "log"
+              "type": "linear"
             },
             "showPoints": "auto",
             "spanNulls": false,
@@ -1527,7 +1510,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1538,7 +1522,8 @@
                 "value": 0.001
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -1596,13 +1581,14 @@
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 7,
+          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
@@ -1613,7 +1599,8 @@
                 "value": 0.0001
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -1638,7 +1625,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63137",
       "targets": [
         {
           "datasource": {
@@ -1706,11 +1693,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "microseconds",
+            "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -1742,14 +1729,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -1803,24 +1792,26 @@
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 7,
+          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "semi-dark-yellow",
-                "value": 300
+                "value": 30000
               },
               {
                 "color": "red",
-                "value": 500
+                "value": 50000
               }
             ]
-          }
+          },
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -1845,7 +1836,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "10.2.0-60853",
+      "pluginVersion": "10.3.0-63137",
       "targets": [
         {
           "datasource": {
@@ -1903,7 +1894,7 @@
       "type": "gauge"
     }
   ],
-  "refresh": "",
+  "refresh": false,
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -1962,13 +1953,13 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Network Health",
   "uid": "ec9413c6-6f17-49fc-951b-51cbc21a1eef",
-  "version": 9,
+  "version": 11,
   "weekStart": ""
 }
