@@ -114,6 +114,9 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
      * <p>
      * If the input string is a number, then it is interpreted as a release number. Otherwise, it is interpreted as a
      * branch name.
+     * <p>
+     * If the input string contains a slash, then it is interpreted as a path to a non-standard test directory.
+     * Otherwise, it is assumed that the desired tests are in the `swirlds-automation` directory.
      *
      * @param inputString the input string
      * @return the interpreted target directory
@@ -121,8 +124,13 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
     @NonNull
     private static String interpretTargetDirectory(@NonNull final String inputString) {
         final StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("swirlds-automation/");
 
+        // allow the user to specify a path to a non-standard test directory
+        if (!inputString.contains("/")) {
+            stringBuilder.append("swirlds-automation/");
+        }
+
+        // if the input string is a number, then it is interpreted as a release number
         if (inputString.matches("\\d+")) {
             stringBuilder.append("release/0.");
         }
@@ -163,13 +171,16 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
      * @return the auto generated output directory name
      */
     @NonNull
-    private Path autoGenerateOutputDirectoryName(@NonNull final String target) {
+    private static Path autoGenerateOutputDirectoryName(@NonNull final String target) {
+        // remove everything before a slash, if one exists
+        final String targetWithoutPath = target.substring(target.lastIndexOf("/") + 1);
+
         // format example 'ThursdaySeptember21'
         final DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("EEEELLLLd").withZone(ZoneId.systemDefault());
         final String todayString = formatter.format(Instant.now());
 
-        return getAbsolutePath(Path.of("jtr-" + target + "-" + todayString + ".html"));
+        return getAbsolutePath(Path.of("jtr-" + targetWithoutPath + "-" + todayString + ".html"));
     }
 
     @Override
