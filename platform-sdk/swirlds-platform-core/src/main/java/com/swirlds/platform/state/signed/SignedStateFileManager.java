@@ -146,14 +146,16 @@ public class SignedStateFileManager {
         try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
             final SignedState signedState = reservedSignedState.get();
             // states requested to be written out-of-band are always written to disk
-            saveStateTask(reservedSignedState.get(), getSignedStatesBaseDirectory()
-                    .resolve(getReason(signedState).getDescription())
-                    .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())));
+            saveStateTask(
+                    reservedSignedState.get(),
+                    getSignedStatesBaseDirectory()
+                            .resolve(getReason(signedState).getDescription())
+                            .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())));
         }
         request.finishedCallback().run();
     }
 
-    private StateToDiskReason getReason(@NonNull final SignedState state){
+    private StateToDiskReason getReason(@NonNull final SignedState state) {
         return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
 

@@ -34,7 +34,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;

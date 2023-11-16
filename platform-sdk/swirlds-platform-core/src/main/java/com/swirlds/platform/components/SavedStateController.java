@@ -55,8 +55,8 @@ public class SavedStateController {
      * @param stateConfig the state config
      * @param stateWrite  a function that writes a signed state to disk asynchronously
      */
-    public SavedStateController(@NonNull final StateConfig stateConfig,
-            @NonNull final BooleanFunction<ReservedSignedState> stateWrite) {
+    public SavedStateController(
+            @NonNull final StateConfig stateConfig, @NonNull final BooleanFunction<ReservedSignedState> stateWrite) {
         this.stateConfig = Objects.requireNonNull(stateConfig);
         this.stateWrite = Objects.requireNonNull(stateWrite);
     }

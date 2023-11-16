@@ -417,13 +417,14 @@ class StateManagementComponentTests {
                 .withValue("state.saveStatePeriod", 1);
     }
 
-        @NonNull
-        private DefaultStateManagementComponent newStateManagementComponent() {
-            return newStateManagementComponent(defaultConfigBuilder());
-        }
+    @NonNull
+    private DefaultStateManagementComponent newStateManagementComponent() {
+        return newStateManagementComponent(defaultConfigBuilder());
+    }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent( @NonNull final TestConfigBuilder configBuilder) {
+    private DefaultStateManagementComponent newStateManagementComponent(
+            @NonNull final TestConfigBuilder configBuilder) {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
@@ -451,7 +452,7 @@ class StateManagementComponentTests {
                 (msg, t, code) -> {},
                 platformStatusGetter,
                 controller,
-                r->{});
+                r -> {});
 
         dispatchBuilder.start();
 

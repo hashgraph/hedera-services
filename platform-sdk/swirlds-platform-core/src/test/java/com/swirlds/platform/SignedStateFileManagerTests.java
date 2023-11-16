@@ -128,8 +128,7 @@ class SignedStateFileManagerTests {
     /**
      * Make sure the signed state was properly saved.
      */
-    private void validateSavingOfState(final SignedState originalState, final Path stateDirectory) throws
-            IOException {
+    private void validateSavingOfState(final SignedState originalState, final Path stateDirectory) throws IOException {
 
         assertEventuallyEquals(
                 -1, originalState::getReservationCount, Duration.ofSeconds(1), "invalid reservation count");
@@ -160,8 +159,7 @@ class SignedStateFileManagerTests {
                 originalState.getState().getHash(),
                 deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
-        assertEquals(originalState.getState().getHash(), deserializedSignedState.originalHash(),
-                "hash should match");
+        assertEquals(originalState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
     }
 
     @ParameterizedTest
@@ -185,12 +183,7 @@ class SignedStateFileManagerTests {
         }
 
         final SignedStateFileManager manager = new SignedStateFileManager(
-                context,
-                buildMockMetrics(),
-                new FakeTime(),
-                MAIN_CLASS_NAME,
-                SELF_ID,
-                SWIRLD_NAME);
+                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
         final StateSavingResult stateSavingResult = manager.saveStateTask(signedState.reserve("test"));
 
@@ -215,18 +208,12 @@ class SignedStateFileManagerTests {
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
-                context,
-                buildMockMetrics(),
-                new FakeTime(),
-                MAIN_CLASS_NAME,
-                SELF_ID,
-                SWIRLD_NAME);
+                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         signedState.markAsStateToSave(FATAL_ERROR);
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
-                .setInterruptableRunnable(() -> manager.dumpStateTask(
-                        StateDumpRequest.create(signedState.reserve("test"))
-                ))
+                .setInterruptableRunnable(
+                        () -> manager.dumpStateTask(StateDumpRequest.create(signedState.reserve("test"))))
                 .build(true);
 
         // State writing should be synchronized. So we shouldn't be able to finish until we unblock.
@@ -237,8 +224,7 @@ class SignedStateFileManagerTests {
         ((DummySwirldState) signedState.getSwirldState()).unblockSerialization();
         thread.join(1000);
 
-        final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" +
-                signedState.getRound());
+        final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
     }
 
@@ -254,17 +240,11 @@ class SignedStateFileManagerTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
-                context,
-                buildMockMetrics(),
-                new FakeTime(),
-                MAIN_CLASS_NAME,
-                SELF_ID,
-                SWIRLD_NAME);
+                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         signedState.markAsStateToSave(ISS);
         manager.dumpStateTask(StateDumpRequest.create(signedState.reserve("test")));
 
-        final Path stateDirectory = testDirectory.resolve("iss").resolve("node1234_round" +
-                signedState.getRound());
+        final Path stateDirectory = testDirectory.resolve("iss").resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
     }
 
@@ -298,19 +278,12 @@ class SignedStateFileManagerTests {
         final AtomicReference<StateSavingResult> lastResult = new AtomicReference<>();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
-                context,
-                buildMockMetrics(),
-                new FakeTime(),
-                MAIN_CLASS_NAME,
-                SELF_ID,
-                SWIRLD_NAME);
-        final SavedStateController controller = new SavedStateController(
-                context.getConfiguration().getConfigData(StateConfig.class),
-                (rss) -> {
+                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+        final SavedStateController controller =
+                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class), (rss) -> {
                     lastResult.set(manager.saveStateTask(rss));
                     return lastResult.get() != null;
-                }
-        );
+                });
 
         Instant timestamp;
         final long firstRound;
@@ -339,8 +312,7 @@ class SignedStateFileManagerTests {
         for (long round = firstRound; round < totalStates + firstRound; round++) {
 
             final int secondsDelta = (int)
-                    Math.max(1, random.nextGaussian() * standardDeviationTimeBetweenStates +
-                            averageTimeBetweenStates);
+                    Math.max(1, random.nextGaussian() * standardDeviationTimeBetweenStates + averageTimeBetweenStates);
 
             timestamp = timestamp.plus(secondsDelta, ChronoUnit.SECONDS);
 
@@ -361,12 +333,10 @@ class SignedStateFileManagerTests {
                 validateSavingOfState(signedState);
 
                 final List<SavedStateInfo> currentStatesOnDisk =
-                        SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID,
-                                SWIRLD_NAME);
+                        SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
-                final SavedStateMetadata oldestMetadata = currentStatesOnDisk
-                        .get(currentStatesOnDisk.size() - 1)
-                        .metadata();
+                final SavedStateMetadata oldestMetadata =
+                        currentStatesOnDisk.get(currentStatesOnDisk.size() - 1).metadata();
 
                 assertEquals(
                         oldestMetadata.minimumGenerationNonAncient(),
@@ -374,8 +344,7 @@ class SignedStateFileManagerTests {
 
                 assertTrue(
                         currentStatesOnDisk.size() <= statesOnDisk,
-                        "unexpected number of states on disk, current number = "
-                                + currentStatesOnDisk.size());
+                        "unexpected number of states on disk, current number = " + currentStatesOnDisk.size());
 
                 for (int index = 0; index < currentStatesOnDisk.size(); index++) {
 
@@ -383,9 +352,7 @@ class SignedStateFileManagerTests {
 
                     final SignedState stateFromDisk = assertDoesNotThrow(
                             () -> SignedStateFileReader.readStateFile(
-                                            TestPlatformContextBuilder.create()
-                                                    .build(),
-                                            savedStateInfo.stateFile())
+                                            TestPlatformContextBuilder.create().build(), savedStateInfo.stateFile())
                                     .reservedSignedState()
                                     .get(),
                             "should be able to read state on disk");
@@ -427,12 +394,7 @@ class SignedStateFileManagerTests {
         final int count = 10;
 
         final SignedStateFileManager manager = new SignedStateFileManager(
-                context,
-                buildMockMetrics(),
-                new FakeTime(),
-                MAIN_CLASS_NAME,
-                SELF_ID,
-                SWIRLD_NAME);
+                context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
         final Path statesDirectory =
                 SignedStateFileUtils.getSignedStatesDirectoryForSwirld(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -441,7 +403,8 @@ class SignedStateFileManagerTests {
         final int issRound = 666;
         final Path issDirectory =
                 getSignedStatesBaseDirectory().resolve("iss").resolve("node" + SELF_ID + "_round" + issRound);
-        final SignedState issState = new RandomSignedStateGenerator(random).setRound(issRound).build();
+        final SignedState issState =
+                new RandomSignedStateGenerator(random).setRound(issRound).build();
         issState.markAsStateToSave(ISS);
         manager.dumpStateTask(StateDumpRequest.create(issState.reserve("test")));
         validateSavingOfState(issState, issDirectory);
@@ -475,9 +438,8 @@ class SignedStateFileManagerTests {
             }
 
             // Verify that old states are properly deleted
-            assertEquals(
-                    Math.min(statesOnDisk, round),
-                    (int) Files.list(statesDirectory).count());
+            assertEquals(Math.min(statesOnDisk, round), (int)
+                    Files.list(statesDirectory).count());
 
             // ISS/fatal state should still be in place
             validateSavingOfState(issState, issDirectory);

@@ -29,8 +29,4 @@ import java.time.Instant;
  *                                      value represents the minimum generation non-ancient of the oldest state on disk
  */
 public record StateSavingResult(
-        long round,
-        boolean freezeState,
-        @NonNull Instant consensusTimestamp,
-        long oldestMinimumGenerationOnDisk) {
-}
+        long round, boolean freezeState, @NonNull Instant consensusTimestamp, long oldestMinimumGenerationOnDisk) {}

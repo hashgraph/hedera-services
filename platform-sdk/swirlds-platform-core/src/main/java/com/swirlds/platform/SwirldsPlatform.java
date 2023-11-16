@@ -478,7 +478,7 @@ public class SwirldsPlatform implements Platform {
                 actualMainClassName,
                 selfId,
                 swirldName);
-        //FUTURE WORK: at some point this should be part of the unified platform wiring
+        // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
@@ -486,12 +486,12 @@ public class SwirldsPlatform implements Platform {
                 .withExternalBackPressure(false)
                 .build()
                 .cast();
-        final SignedStateFileManagerWiring signedStateFileManagerWiring = new SignedStateFileManagerWiring(savedStateScheduler);
+        final SignedStateFileManagerWiring signedStateFileManagerWiring =
+                new SignedStateFileManagerWiring(savedStateScheduler);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         signedStateFileManagerWiring.solderPces(preconsensusEventWriter);
         signedStateFileManagerWiring.solderStatusManager(platformStatusManager::submitStatusAction);
         signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent::stateSavedToDisk);
-
 
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
@@ -514,7 +514,8 @@ public class SwirldsPlatform implements Platform {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
             final long minimumGenerationNonAncientForOldestState =
                     savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
-            preconsensusEventWriter.setMinimumGenerationToStoreUninterruptably(minimumGenerationNonAncientForOldestState);
+            preconsensusEventWriter.setMinimumGenerationToStoreUninterruptably(
+                    minimumGenerationNonAncientForOldestState);
         }
 
         components.add(stateManagementComponent);

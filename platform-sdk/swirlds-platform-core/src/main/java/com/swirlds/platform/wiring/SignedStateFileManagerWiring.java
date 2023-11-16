@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -67,17 +65,18 @@ public record SignedStateFileManagerWiring(
      * @param preconsensusEventWriter the pre-consensus event writer
      */
     public void solderPces(@NonNull final PreconsensusEventWriter preconsensusEventWriter) {
-        scheduler.getOutputWire()
+        scheduler
+                .getOutputWire()
                 .buildTransformer(
-                        "extract oldestMinimumGenerationOnDisk",
-                        StateSavingResult::oldestMinimumGenerationOnDisk)
+                        "extract oldestMinimumGenerationOnDisk", StateSavingResult::oldestMinimumGenerationOnDisk)
                 .solderTo(
                         "PCES minimum generation to store",
                         preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
     }
 
     public void solderStatusManager(@NonNull final Consumer<StateWrittenToDiskAction> statusConsumer) {
-        scheduler.getOutputWire()
+        scheduler
+                .getOutputWire()
                 .buildTransformer("to status", ssr -> new StateWrittenToDiskAction(ssr.round()))
                 .solderTo("status manager", statusConsumer);
     }
