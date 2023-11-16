@@ -35,9 +35,6 @@ defaults:
 env:
   TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
-
-  BUILD_VERSION : "build-09445-d-ci-performance-testing-a27efdfc"
-
   VERSION_SERVICE : "v0.43.0"
   VERSION_MIRRORNODE : "v0.90.0-rc1"
   K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
@@ -90,7 +87,7 @@ jobs:
         id: reset-network
         run: |
           BUILD_VERSION=${{ needs.release-adhoc.outputs.build-version }}
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ BUILD_VERSION }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${BUILD_VERSION}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
           echo "Sleep 10 minutes for network reset"
           sleep 10m
 
