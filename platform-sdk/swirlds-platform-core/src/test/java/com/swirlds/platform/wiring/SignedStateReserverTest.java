@@ -22,9 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.TestWiringModelBuilder;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,17 +47,28 @@ class SignedStateReserverTest {
                 Mockito.mock(State.class),
                 "create",
                 false);
+
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+        final OutputWire<ReservedSignedState> outputWire = taskScheduler.getOutputWire()
+                .buildAdvancedTransformer("test", new SignedStateReserver("test"));
+        final InputWire<ReservedSignedState, ReservedSignedState> inputWire = taskScheduler.buildInputWire("in")
+                .withInputType(ReservedSignedState.class);
+        inputWire.bind(s->s);
+
         final List<ValueReference<ReservedSignedState>> consumers = Stream.generate(
                         ValueReference<ReservedSignedState>::new)
                 .limit(numConsumers)
                 .toList();
-        final SignedStateReserver reserver = new SignedStateReserver();
-        consumers.forEach(c -> reserver.addConsumer(c::setValue));
+        consumers.forEach(c -> outputWire.solderTo("name", c::setValue));
 
         final ReservedSignedState state = signedState.reserve("main");
         assertFalse(state.isClosed(), "we just reserved it, so it should not be closed");
         assertEquals(1, signedState.getReservationCount(), "the reservation count should be 1");
-        reserver.accept(state);
+        inputWire.put(state);
         assertTrue(state.isClosed(), "the reserver should have closed our reservation");
         consumers.forEach(c -> assertFalse(c.getValue().isClosed(), "the consumer should not have closed its state"));
         assertEquals(
