@@ -31,6 +31,8 @@ import com.swirlds.common.wiring.model.WiringFlowchart;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
+import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

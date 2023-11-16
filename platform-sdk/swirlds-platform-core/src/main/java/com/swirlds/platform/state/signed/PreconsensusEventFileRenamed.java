@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.platform.state.signed;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The type of solder connection.
+ * This exception is thrown when a preconsensus event file is renamed, which prevents a preconsensus event file from
+ * being copied.
  */
-public enum SolderType {
+public class PreconsensusEventFileRenamed extends RuntimeException {
+
     /**
-     * When data is passed to the input wire, call {@link InputWire#put(Object)}. May block if the input wire has
-     * backpressure enabled and the input wire is full.
+     * Constructor.
+     * @param cause the cause
      */
-    PUT,
-    /**
-     * When data is passed to the input wire, call {@link InputWire#inject(Object)}. Ignores back pressure.
-     */
-    INJECT,
-    /**
-     * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has
-     * backpressure enabled and the input wire is full, then the data will be dropped.
-     */
-    OFFER
+    public PreconsensusEventFileRenamed(@NonNull final Throwable cause) {
+        super(cause);
+    }
 }

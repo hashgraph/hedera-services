@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;

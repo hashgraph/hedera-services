@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.Instant;
