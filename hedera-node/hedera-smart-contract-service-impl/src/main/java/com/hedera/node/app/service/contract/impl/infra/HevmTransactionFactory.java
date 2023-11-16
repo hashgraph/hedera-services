@@ -269,7 +269,7 @@ public class HevmTransactionFactory {
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
         final var usesNonDefaultProxyId = body.hasProxyAccountID() && !AccountID.DEFAULT.equals(body.proxyAccountID());
         validateFalse(usesNonDefaultProxyId, PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
-        tokenServiceApi.assertValidStakingElection(
+        tokenServiceApi.assertValidStakingElectionForCreation(
                 stakingConfig.isEnabled(),
                 body.declineReward(),
                 body.stakedId().kind().name(),
@@ -282,7 +282,7 @@ public class HevmTransactionFactory {
         if (!isEmpty(effectiveKey)) {
             try {
                 attributeValidator.validateKey(body.adminKeyOrElse(Key.DEFAULT));
-            } catch (Exception ignore) {
+            } catch (HandleException | NullPointerException ignore) {
                 throw new HandleException(SERIALIZATION_FAILED);
             }
         }
@@ -304,7 +304,7 @@ public class HevmTransactionFactory {
             try {
                 return Bytes.fromHex(new String(initcode.contents().toByteArray())
                         + body.constructorParameters().toHex());
-            } catch (Exception ignore) {
+            } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
         }

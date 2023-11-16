@@ -165,7 +165,8 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(mockContext.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
         given(mockContext.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
         given(mockContext.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
-        given(mockContext.dispatchChildTransaction(any(), eq(ScheduleRecordBuilder.class), any(Predicate.class)))
+        given(mockContext.dispatchScheduledChildTransaction(
+                        any(), eq(ScheduleRecordBuilder.class), any(Predicate.class)))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
         given(mockContext.recordBuilder(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));

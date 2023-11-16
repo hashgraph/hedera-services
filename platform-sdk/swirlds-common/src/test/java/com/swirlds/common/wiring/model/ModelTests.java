@@ -19,12 +19,12 @@ package com.swirlds.common.wiring.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
-import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
+import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -46,7 +46,7 @@ class ModelTests {
      * @param model         the model to validate
      * @param cycleExpected true if a cycle is expected, false otherwise
      */
-    private static void validateModel(@NonNull final WiringModel model, boolean cycleExpected) {
+    private static void validateModel(@NonNull final WiringModel model, final boolean cycleExpected) {
         final boolean cycleDetected = model.checkForCyclicalBackpressure();
         assertEquals(cycleExpected, cycleDetected);
 

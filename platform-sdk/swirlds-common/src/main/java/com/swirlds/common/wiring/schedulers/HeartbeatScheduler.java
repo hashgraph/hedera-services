@@ -19,8 +19,9 @@ package com.swirlds.common.wiring.schedulers;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -52,7 +53,7 @@ public class HeartbeatScheduler implements Startable, Stoppable {
         this.model = Objects.requireNonNull(model);
         this.time = Objects.requireNonNull(time);
         this.name = Objects.requireNonNull(name);
-        model.registerVertex(name, false);
+        model.registerVertex(name, TaskSchedulerType.DIRECT, false);
     }
 
     /**

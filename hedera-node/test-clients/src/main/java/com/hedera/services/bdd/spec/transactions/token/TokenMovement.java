@@ -39,6 +39,7 @@ import java.util.function.Function;
 public class TokenMovement {
     private final long amount;
     private final String token;
+    private final String toPartition;
     private long[] serialNums;
     private Optional<String> sender;
     private Optional<String> receiver;
@@ -62,6 +63,7 @@ public class TokenMovement {
         this.amount = amount;
         this.receiver = receiver;
         this.receivers = receivers;
+        this.toPartition = null;
 
         evmAddressReceiver = Optional.empty();
         senderFn = Optional.empty();
@@ -79,6 +81,7 @@ public class TokenMovement {
         this.sender = sender;
         this.amount = amount;
         this.serialNums = serialNums;
+        this.toPartition = null;
         this.evmAddressReceiver = evmAddressReceiver;
 
         receiver = Optional.empty();
@@ -94,6 +97,7 @@ public class TokenMovement {
         this.senderFn = Optional.of(senderFn);
         this.amount = amount;
         this.receiverFn = Optional.of(receiverFn);
+        this.toPartition = null;
 
         evmAddressReceiver = Optional.empty();
         sender = Optional.empty();
@@ -109,7 +113,8 @@ public class TokenMovement {
             long[] serialNums,
             Optional<String> receiver,
             Optional<List<String>> receivers,
-            boolean isApproval) {
+            boolean isApproval,
+            String toPartition) {
         this.token = token;
         this.sender = sender;
         this.amount = amount;
@@ -117,6 +122,7 @@ public class TokenMovement {
         this.receiver = receiver;
         this.receivers = receivers;
         this.isApproval = isApproval;
+        this.toPartition = toPartition;
 
         evmAddressReceiver = Optional.empty();
         senderFn = Optional.empty();
@@ -137,6 +143,7 @@ public class TokenMovement {
         this.amount = amount;
         this.receiver = receiver;
         this.receivers = receivers;
+        this.toPartition = null;
         this.expectedDecimals = expectedDecimals;
         this.isApproval = isApproval;
 
@@ -308,7 +315,20 @@ public class TokenMovement {
                     serialNums,
                     Optional.of(receiver),
                     Optional.empty(),
-                    isAllowance);
+                    isAllowance,
+                    null);
+        }
+
+        public TokenMovement betweenWithPartitionChange(String sender, String receiver, String targetPartition) {
+            return new TokenMovement(
+                    token,
+                    Optional.of(sender),
+                    amount,
+                    serialNums,
+                    Optional.of(receiver),
+                    Optional.empty(),
+                    isAllowance,
+                    targetPartition);
         }
 
         public TokenMovement between(String sender, ByteString receiver) {

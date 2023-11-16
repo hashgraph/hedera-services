@@ -44,7 +44,6 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.synchronization.views;
     exports com.swirlds.common.merkle.utility;
     exports com.swirlds.common.metrics;
-    exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
     exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
@@ -81,7 +80,11 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring;
     exports com.swirlds.common.wiring.builders;
     exports com.swirlds.common.wiring.counters;
+    exports com.swirlds.common.wiring.transformers;
     exports com.swirlds.common.wiring.utility;
+    exports com.swirlds.common.wiring.wires;
+    exports com.swirlds.common.wiring.wires.input;
+    exports com.swirlds.common.wiring.wires.output;
 
     /* Targeted exports */
     exports com.swirlds.common.internal to
@@ -162,6 +165,7 @@ module com.swirlds.common {
             com.swirlds.platform.test,
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
+    exports com.swirlds.common.threading.atomic;
 
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;

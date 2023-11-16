@@ -17,11 +17,10 @@
 package com.swirlds.common.metrics.extensions;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
-import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.units.TimeUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -35,7 +34,7 @@ import java.util.Set;
  */
 public class PhaseTimer<T extends Enum<T>> {
 
-    private final Time time;
+    private final IntegerEpochTime time;
 
     private final boolean fractionMetricsEnabled;
     private final boolean absoluteTimeMetricsEnabled;
@@ -53,7 +52,7 @@ public class PhaseTimer<T extends Enum<T>> {
     private T activePhase;
 
     /**
-     * The previous time as measured by {@link Time#nanoTime()}.
+     * The previous time as measured by {@link IntegerEpochTime#getMicroTime()}.
      */
     private long previousTime;
 
@@ -65,14 +64,14 @@ public class PhaseTimer<T extends Enum<T>> {
      * @param builder the builder
      */
     PhaseTimer(@NonNull final PhaseTimerBuilder<T> builder) {
-        this.time = builder.getTime();
+        this.time = new IntegerEpochTime(builder.getTime());
 
         fractionMetricsEnabled = builder.areFractionMetricsEnabled();
         absoluteTimeMetricsEnabled = builder.areAbsoluteTimeMetricsEnabled();
 
         if (fractionMetricsEnabled) {
             for (final T phase : builder.getPhases()) {
-                fractionalTimers.put(phase, new StandardFractionalTimer(time));
+                fractionalTimers.put(phase, new StandardFractionalTimer(builder.getTime()));
             }
         }
 
@@ -85,7 +84,7 @@ public class PhaseTimer<T extends Enum<T>> {
                 builder.getPhases());
 
         activePhase = builder.getInitialPhase();
-        previousTime = time.nanoTime();
+        previousTime = time.getMicroTime();
 
         if (fractionMetricsEnabled) {
             fractionalTimers.get(activePhase).activate();
@@ -106,17 +105,16 @@ public class PhaseTimer<T extends Enum<T>> {
             return;
         }
 
-        final long now = time.nanoTime();
+        final long now = time.getMicroTime();
 
         if (fractionMetricsEnabled) {
-            final long microNow = (long) UNIT_NANOSECONDS.convertTo(now, UNIT_MICROSECONDS);
-            fractionalTimers.get(activePhase).deactivate(microNow);
-            fractionalTimers.get(phase).activate(microNow);
+            fractionalTimers.get(activePhase).deactivate(now);
+            fractionalTimers.get(phase).activate(now);
         }
 
         if (absoluteTimeMetricsEnabled) {
-            final long elapsedNanos = now - previousTime;
-            absoluteTimeMetrics.get(activePhase).update(UNIT_NANOSECONDS.convertTo(elapsedNanos, absoluteTimeUnit));
+            final long elapsedMicros = now - previousTime;
+            absoluteTimeMetrics.get(activePhase).update(UNIT_MICROSECONDS.convertTo(elapsedMicros, absoluteTimeUnit));
         }
 
         previousTime = now;

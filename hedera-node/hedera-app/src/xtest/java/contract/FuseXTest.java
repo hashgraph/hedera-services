@@ -18,9 +18,7 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.XTestConstants.COINBASE_ID;
-import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
-import static contract.XTestConstants.SENDER_ALIAS;
 import static contract.XTestConstants.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -84,22 +82,14 @@ public class FuseXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        final var aliases = withSenderAlias(new HashMap<>());
         aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(SENDER_ID)
-                        .alias(SENDER_ALIAS)
-                        .tinybarBalance(100 * ONE_HBAR)
-                        .build());
+        final var accounts = withSenderAccount(new HashMap<>());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
         return accounts;
     }

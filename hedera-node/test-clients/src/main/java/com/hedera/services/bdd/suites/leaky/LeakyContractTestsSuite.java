@@ -1199,6 +1199,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"));
     }
 
+    @HapiTest
     private HapiSpec transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
         final var sender = "sender";
@@ -1306,6 +1307,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
+    @HapiTest
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
@@ -1320,6 +1322,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
+    @HapiTest
     private HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck")
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -1329,6 +1332,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
     }
 
+    @HapiTest
     private HapiSpec transferZeroHbarsToCaller() {
         final var transferTxn = TRANSFER_TXN;
         return defaultHapiSpec("transferZeroHbarsToCaller")
@@ -1371,6 +1375,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec resultSizeAffectsFees() {
         final var contract = "VerboseDeposit";
         final var TRANSFER_AMOUNT = 1_000L;
