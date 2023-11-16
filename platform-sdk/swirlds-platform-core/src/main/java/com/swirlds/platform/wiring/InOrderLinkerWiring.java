@@ -17,7 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -33,8 +33,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable                    the runnable to flush the linker
  */
 public record InOrderLinkerWiring(
-        @NonNull InputWire<GossipEvent, EventImpl> eventInput,
-        @NonNull InputWire<Long, EventImpl> minimumGenerationNonAncientInput,
+        @NonNull BindableInputWire<GossipEvent, EventImpl> eventInput,
+        @NonNull BindableInputWire<Long, EventImpl> minimumGenerationNonAncientInput,
         @NonNull OutputWire<EventImpl> eventOutput,
         @NonNull Runnable flushRunnable) {
 

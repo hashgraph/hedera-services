@@ -17,7 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -34,9 +34,9 @@ import java.util.List;
  * @param flushRunnable                    the runnable to flush the buffer
  */
 public record OrphanBufferWiring(
-        @NonNull InputWire<GossipEvent, List<GossipEvent>> eventInput,
-        @NonNull InputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput,
-        @NonNull InputWire<Boolean, List<GossipEvent>> pauseInput,
+        @NonNull BindableInputWire<GossipEvent, List<GossipEvent>> eventInput,
+        @NonNull BindableInputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput,
+        @NonNull BindableInputWire<Boolean, List<GossipEvent>> pauseInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 

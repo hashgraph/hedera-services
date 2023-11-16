@@ -17,7 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -32,8 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable                    the runnable to flush the deduplicator
  */
 public record EventDeduplicatorWiring(
-        @NonNull InputWire<GossipEvent, GossipEvent> eventInput,
-        @NonNull InputWire<Long, GossipEvent> minimumGenerationNonAncientInput,
+        @NonNull BindableInputWire<GossipEvent, GossipEvent> eventInput,
+        @NonNull BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 

@@ -17,7 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -35,7 +35,7 @@ import java.util.List;
  * @param flushRunnable                     the runnable to flush the intake
  */
 public record LinkedEventIntakeWiring(
-        @NonNull InputWire<EventImpl, List<ConsensusRound>> eventInput,
+        @NonNull BindableInputWire<EventImpl, List<ConsensusRound>> eventInput,
         @NonNull OutputWire<ConsensusRound> consensusRoundOutput,
         @NonNull OutputWire<Long> minimumGenerationNonAncientOutput,
         @NonNull Runnable flushRunnable) {

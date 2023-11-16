@@ -77,7 +77,7 @@ public abstract class OutputWire<OUT> {
      *
      * @param inputWire the input wire to forward output data to
      */
-    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
+    public void solderTo(@NonNull final InputWire<OUT> inputWire) {
         solderTo(inputWire, SolderType.PUT);
     }
 
@@ -95,7 +95,7 @@ public abstract class OutputWire<OUT> {
      * @param inputWire  the input wire to forward output data to
      * @param solderType the semantics of the soldering operation
      */
-    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, @NonNull final SolderType solderType) {
+    public void solderTo(@NonNull final InputWire<OUT> inputWire, @NonNull final SolderType solderType) {
         model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
 
         switch (solderType) {

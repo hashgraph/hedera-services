@@ -17,7 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -34,9 +34,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable                    the runnable to flush the validator
  */
 public record EventSignatureValidatorWiring(
-        @NonNull InputWire<GossipEvent, GossipEvent> eventInput,
-        @NonNull InputWire<Long, GossipEvent> minimumGenerationNonAncientInput,
-        @NonNull InputWire<AddressBookUpdate, GossipEvent> addressBookUpdateInput,
+        @NonNull BindableInputWire<GossipEvent, GossipEvent> eventInput,
+        @NonNull BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput,
+        @NonNull BindableInputWire<AddressBookUpdate, GossipEvent> addressBookUpdateInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
