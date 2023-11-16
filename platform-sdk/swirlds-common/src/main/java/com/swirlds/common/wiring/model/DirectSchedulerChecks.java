@@ -133,7 +133,7 @@ public final class DirectSchedulerChecks {
     }
 
     /**
-     * Collect all direct verticies that are accessed by a scheduler.
+     * Collect all direct vertices that are accessed by a scheduler.
      *
      * @param scheduler the scheduler to check
      * @return the set of direct vertices accessed by the scheduler
