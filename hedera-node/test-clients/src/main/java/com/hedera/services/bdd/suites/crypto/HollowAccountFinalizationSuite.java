@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -45,10 +44,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -479,7 +478,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec hollowAccountCompletionWithContractCall() {
         final var DEPOSIT_AMOUNT = 1000;
-        return defaultHapiSpec("HollowAccountCompletionWithContractCall", NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+        return defaultHapiSpec(
+                        "HollowAccountCompletionWithContractCall",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ADMIN_KEY),
@@ -546,7 +548,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest //here
+    @HapiTest // here
     private HapiSpec tooManyHollowAccountFinalizationsShouldFail() {
         final var ECDSA_KEY_1 = "ECDSA_KEY_1";
         final var ECDSA_KEY_2 = "ECDSA_KEY_2";
@@ -694,13 +696,14 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest //here
+    @HapiTest // here transfer list differes also
     private HapiSpec txnWith2CompletionsAndAnother2PrecedingChildRecords() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
         final var recipientKey2 = "recipient2";
-        // since ids are not reclaimed in mono-service
-        return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords", SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS)
+        // the charged fee is not re-claimed if auto-creation fails in mono-service, so the transaction
+        // fee differs a lot
+        return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ecdsaKey2).shape(SECP_256K1_SHAPE),
@@ -759,7 +762,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest //here expected 4 but 3 accountNum
+    @HapiTest
     private HapiSpec hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -848,14 +851,16 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest //here
+    @HapiTest // here
     private HapiSpec precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount() {
         final var receiver = "receiver";
         final var ft = "ft";
         final String CONTRACT = "CryptoTransfer";
         final var TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
         // since we are passing the address of the account looking up in spec-registry function parameters will vary
-        return defaultHapiSpec("precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(receiver).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),

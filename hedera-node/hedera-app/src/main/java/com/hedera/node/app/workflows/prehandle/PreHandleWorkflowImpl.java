@@ -176,11 +176,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null, null);
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null, null, null);
         } else if (payerAccount.deleted()) {
             // this check is not guaranteed, it should be checked again in handle phase. If the payer account is
             // deleted, we skip the signature verification.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null);
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null, null);
         }
 
         // 3. Expand and verify signatures
@@ -250,7 +250,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // verifications that we have determined so far.
             logger.debug("Transaction failed pre-check", preCheck);
             final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
-            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), results);
+            return preHandleFailure(
+                    payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), Set.of(), results);
         }
 
         // 3. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
@@ -269,6 +270,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 OK,
                 txInfo,
                 context.requiredNonPayerKeys(),
+                context.optionalNonPayerKeys(),
                 context.requiredHollowAccounts(),
                 results,
                 null,

@@ -100,8 +100,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     // For large key structures, there can be "significant" fee variation in tinybar units
     // due to different public key sizes and signature map prefixes
     private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 50_000;
-
-    private static final long CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR = 500_000;
+    // For some edge cases of custom fee charging,. when crypto transfer fails there are variations in fees
+    // Also when auto-creation fails, transaction fee is not re-claimed from payer, so mono-service records
+    // has a lot of fees
+    private static final long CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR = 1000_000_000;
     private static final ObjectMapper om = new ObjectMapper();
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
@@ -166,8 +168,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta =
-                new SnapshotFileMeta("HollowAccountFinalization", "hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction");
+        final var snapshotFileMeta = new SnapshotFileMeta(
+                "HollowAccountFinalization", "hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(

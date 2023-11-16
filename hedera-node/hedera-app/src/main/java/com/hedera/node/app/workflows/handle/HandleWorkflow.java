@@ -109,7 +109,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -557,6 +556,7 @@ public class HandleWorkflow {
                                     .key(verification.key())
                                     .build())
                             .build();
+                    System.out.println("Dispatching " + syntheticUpdateTxn);
                     // Note the null key verification callback below; we bypass signature
                     // verifications when doing hollow account finalization
                     context.dispatchPrecedingTransaction(
@@ -758,31 +758,35 @@ public class HandleWorkflow {
 
         // extract keys and hollow accounts again
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
+        // Need to add payer key first in the list of required hollow accounts here, because this order
+        // determines the order of hollow account finalization records. The payer key must be finalized first.
+        // to easily compare results in differential testing
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
+        final var payerKey = payer.key();
+        if (isHollow(payer)) {
+            context.requireSignatureForHollowAccount(payer);
+        }
+
         dispatcher.dispatchPreHandle(context);
 
         // re-expand keys only if any of the keys have changed
-        final var previousResults = previousResult.verificationResults();
         final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
         final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
-        final var anyKeyChanged = haveKeyChanges(previousResults, context);
+        final var anyKeyChanged = haveKeyChanges(previousResult, context);
         // If none of the keys changed then non need to re-expand all signatures.
         if (!anyKeyChanged) {
             return previousResult;
         }
-
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
-        final var payerKey = payer.key();
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(sigPairs, expanded);
         if (payerKey != null && !isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expanded);
-        } else if (isHollow(payer)) {
-            context.requireSignatureForHollowAccount(payer);
         }
+
         signatureExpander.expand(currentRequiredNonPayerKeys, sigPairs, expanded);
         signatureExpander.expand(currentOptionalNonPayerKeys, sigPairs, expanded);
 
@@ -808,6 +812,7 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
+                context.optionalNonPayerKeys(),
                 context.requiredHollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
@@ -818,26 +823,30 @@ public class HandleWorkflow {
      * Checks if any of the keys changed from previous result to current result.
      * Only if keys changed we need to re-expand and re-verify the signatures.
      *
-     * @param previousResults previous result from signature verification
-     * @param context current context
+     * @param previousResult            previous pre-handle result
+     * @param context                    current context
      * @return true if any of the keys changed
      */
-    private boolean haveKeyChanges(
-            final Map<Key, SignatureVerificationFuture> previousResults, final PreHandleContextImpl context) {
+    private boolean haveKeyChanges(final PreHandleResult previousResult, final PreHandleContextImpl context) {
         final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
         final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
         final var currentPayerKey = context.payerKey();
 
+        // keys from previous pre-handle result
+        final var previousResultRequiredKeys = previousResult.requiredKeys();
+        final var previousResultOptionalKeys = previousResult.optionalKeys();
+        final var previousResultPayerKey = previousResult.payerKey();
+
         for (final var key : currentRequiredNonPayerKeys) {
-            if (!previousResults.containsKey(key)) {
+            if (!previousResultRequiredKeys.contains(key)) {
                 return true;
             }
         }
         for (final var key : currentOptionalNonPayerKeys) {
-            if (!previousResults.containsKey(key)) {
+            if (!previousResultOptionalKeys.contains(key)) {
                 return true;
             }
         }
-        return !previousResults.containsKey(currentPayerKey);
+        return !previousResultPayerKey.equals(currentPayerKey);
     }
 }

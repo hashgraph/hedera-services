@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

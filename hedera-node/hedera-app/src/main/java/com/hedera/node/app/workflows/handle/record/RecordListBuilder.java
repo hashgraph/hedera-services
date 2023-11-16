@@ -381,6 +381,8 @@ public final class RecordListBuilder {
                     .transactionID(idBuilder.nonce(i + 1).build())
                     .syncBodyIdFromRecordId()
                     .build());
+            System.out.println("RecordListBuilder.build() : Adding recordBuilder = " + i + ", "
+                    + recordBuilder.build().transactionRecord().body());
         }
 
         records.add(userTxnRecord);
