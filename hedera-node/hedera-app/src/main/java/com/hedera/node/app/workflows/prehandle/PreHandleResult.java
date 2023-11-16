@@ -28,7 +28,6 @@ import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -70,19 +69,19 @@ public record PreHandleResult(
         @Nullable PreHandleResult innerResult,
         long configVersion) {
 
-    public Set<Key> getRequiredKeys(){
+    public Set<Key> getRequiredKeys() {
         return requiredKeys == null ? Collections.emptySet() : requiredKeys;
     }
 
-    public Set<Key> getOptionalKeys(){
+    public Set<Key> getOptionalKeys() {
         return optionalKeys == null ? Collections.emptySet() : optionalKeys;
     }
 
-    public Key getPayerKey(){
+    public Key getPayerKey() {
         return payerKey == null ? IMMUTABILITY_SENTINEL_KEY : payerKey;
     }
 
-    public Set<Account> getHollowAccounts(){
+    public Set<Account> getHollowAccounts() {
         return hollowAccounts == null ? Collections.emptySet() : hollowAccounts;
     }
 

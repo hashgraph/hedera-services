@@ -72,7 +72,6 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -108,7 +107,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
@@ -357,7 +355,7 @@ public class HandleWorkflow {
                     transactionInfo.functionality(),
                     signatureMapSize,
                     payer,
-                    preHandleResult.payerKey(),
+                    preHandleResult.getPayerKey(),
                     networkInfo,
                     TransactionCategory.USER,
                     recordBuilder,
@@ -483,7 +481,7 @@ public class HandleWorkflow {
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
-                    rollback(e.getStatus(), stack, recordListBuilder);
+                    rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
                     if (!hasWaivedFees) {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
@@ -491,7 +489,7 @@ public class HandleWorkflow {
             }
         } catch (final Exception e) {
             logger.error("An unexpected exception was thrown during handle", e);
-            rollback(ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
+            rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
                 try {
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -659,7 +657,7 @@ public class HandleWorkflow {
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
-        if(!isPayerHollow){
+        if (!isPayerHollow) {
             final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
             if (payerKeyVerification.failed()) {
                 return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
@@ -688,10 +686,13 @@ public class HandleWorkflow {
             @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
 
     private void rollback(
+            final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder) {
-        stack.rollbackFullStack();
+        if (rollbackStack) {
+            stack.rollbackFullStack();
+        }
         final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         userTransactionRecordBuilder.status(status);
         recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
@@ -826,8 +827,8 @@ public class HandleWorkflow {
      * Checks if any of the keys changed from previous result to current result.
      * Only if keys changed we need to re-expand and re-verify the signatures.
      *
-     * @param previousResult            previous pre-handle result
-     * @param context                    current context
+     * @param previousResult previous pre-handle result
+     * @param context current context
      * @return true if any of the keys changed
      */
     private boolean haveKeyChanges(final PreHandleResult previousResult, final PreHandleContextImpl context) {

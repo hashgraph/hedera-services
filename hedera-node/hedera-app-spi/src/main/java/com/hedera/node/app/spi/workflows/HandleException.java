@@ -30,11 +30,26 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * {@link IllegalArgumentException} as appropriate.
  */
 public class HandleException extends RuntimeException {
+    private final ShouldRollbackStack shouldRollbackStack;
     private final ResponseCodeEnum status;
 
+    public enum ShouldRollbackStack {
+        YES,
+        NO
+    }
+
     public HandleException(final ResponseCodeEnum status) {
+        this(status, ShouldRollbackStack.YES);
+    }
+
+    public HandleException(final ResponseCodeEnum status, final ShouldRollbackStack shouldRollbackStack) {
         super(status.protoName());
         this.status = status;
+        this.shouldRollbackStack = shouldRollbackStack;
+    }
+
+    public boolean shouldRollbackStack() {
+        return shouldRollbackStack == ShouldRollbackStack.YES;
     }
 
     /**

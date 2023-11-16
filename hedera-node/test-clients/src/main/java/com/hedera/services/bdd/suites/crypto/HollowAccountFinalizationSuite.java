@@ -860,7 +860,8 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         // since we are passing the address of the account looking up in spec-registry function parameters will vary
         return defaultHapiSpec(
                         "precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(receiver).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),

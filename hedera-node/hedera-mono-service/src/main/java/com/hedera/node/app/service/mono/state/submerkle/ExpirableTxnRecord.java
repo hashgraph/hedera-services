@@ -924,7 +924,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
 
         private void nullOutSideEffectFields(final boolean removeCallResult) {
-            hbarAdjustments = CurrencyAdjustments.fromChanges(new long[0], new long[0]);
+            hbarAdjustments = CurrencyAdjustments.EMPTY;
             stakingRewardsPaid = null;
             contractCreateResult = null;
             tokens = NO_TOKENS;
