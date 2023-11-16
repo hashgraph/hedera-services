@@ -302,7 +302,6 @@ public class PreHandleContextImpl implements PreHandleContext {
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
             requiredHollowAccounts.add(account);
-            System.out.println("Adding hollow account 4" + account.accountId());
             return this;
         }
         // Verify this key isn't for an immutable account
@@ -335,7 +334,6 @@ public class PreHandleContextImpl implements PreHandleContext {
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
             requiredHollowAccounts.add(account);
-            System.out.println("Adding hollow account 5" + account.accountId());
             return this;
         }
         // Verify this key isn't for an immutable account
@@ -374,7 +372,6 @@ public class PreHandleContextImpl implements PreHandleContext {
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
             requiredHollowAccounts.add(account);
-            System.out.println("Adding hollow account 6" + account.accountId());
             return this;
         }
         // Verify this key isn't for an immutable account
@@ -415,7 +412,6 @@ public class PreHandleContextImpl implements PreHandleContext {
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
             requiredHollowAccounts.add(account);
-            System.out.println("Adding hollow account 1" + account.accountId());
             return this;
         }
         // Verify this key isn't for an immutable account
@@ -441,7 +437,6 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
 
         requiredHollowAccounts.add(hollowAccount);
-        System.out.println("Adding hollow account 2" + hollowAccount.accountId());
         return this;
     }
 
@@ -454,7 +449,6 @@ public class PreHandleContextImpl implements PreHandleContext {
                 .key(EMPTY_KEY_LIST)
                 .alias(hollowAccountAlias)
                 .build());
-        System.out.println("Adding hollow account 3" + AccountID.DEFAULT);
         return this;
     }
 

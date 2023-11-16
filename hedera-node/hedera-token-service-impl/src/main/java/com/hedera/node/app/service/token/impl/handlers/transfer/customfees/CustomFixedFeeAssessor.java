@@ -101,7 +101,6 @@ public class CustomFixedFeeAssessor {
                 .amount(amount)
                 .feeCollectorAccountId(collector)
                 .build());
-        System.out.println("Added assessed fee " + amount + " to collector " + collector);
     }
 
     /**
