@@ -358,7 +358,7 @@ public class HandleWorkflow {
                     transactionInfo.functionality(),
                     signatureMapSize,
                     payer,
-                    preHandleResult.payerKey(),
+                    preHandleResult.getPayerKey(),
                     networkInfo,
                     TransactionCategory.USER,
                     recordBuilder,
