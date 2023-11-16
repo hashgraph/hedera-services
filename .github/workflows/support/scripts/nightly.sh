@@ -34,6 +34,6 @@ curl --no-progress-meter -f -X POST -u "$USERPASSWORD" --cookie "$COOKIEJAR" -H 
 fi
 rm "$COOKIEJAR"
 
-echo date `Nightly test started! - status [${status}]"
+echo date "Nightly test started! - status [${status}]"
 exit $status
 
