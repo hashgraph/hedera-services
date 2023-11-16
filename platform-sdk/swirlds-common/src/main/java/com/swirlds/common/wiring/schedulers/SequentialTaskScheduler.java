@@ -22,7 +22,6 @@ import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -91,7 +90,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         scheduleTask(handler, data);
     }
@@ -100,7 +99,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         final boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
             scheduleTask(handler, data);
@@ -112,7 +111,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         scheduleTask(handler, data);
     }
@@ -123,7 +122,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param handler the method that will be called when this task is executed
      * @param data    the data to be passed to the consumer for this task
      */
-    private void scheduleTask(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    private void scheduleTask(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         // This method may be called by many threads, but actual execution is required to happen serially. This method
         // organizes tasks into a linked list. Tasks in this linked list are executed one at a time in order.
         // When execution of one task is completed, execution of the next task is scheduled on the pool.
@@ -161,8 +160,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @NonNull
     private Semaphore flushWithSemaphore() {
         onRamp.forceOnRamp();
-        final Semaphore semaphore = new Semaphore(1);
-        semaphore.acquireUninterruptibly();
+        final Semaphore semaphore = new Semaphore(0);
 
         final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
         SequentialTask currentTask;

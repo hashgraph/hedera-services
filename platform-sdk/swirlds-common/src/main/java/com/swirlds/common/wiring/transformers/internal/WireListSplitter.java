@@ -14,46 +14,41 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.transformers;
+package com.swirlds.common.wiring.transformers.internal;
 
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
- * Filters out data, allowing some objects to pass and blocking others.
+ * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
+ * collection.
  */
-public class WireFilter<T> implements Consumer<T> {
+public class WireListSplitter<T> implements Consumer<List<T>> {
 
-    private final Predicate<T> predicate;
-    private final OutputWire<T> outputWire;
+    private final StandardOutputWire<T> outputWire;
 
     /**
      * Constructor.
      *
-     * @param model     the wiring model containing this output channel
-     * @param name      the name of the output wire
-     * @param predicate only data that causes this method to return true is forwarded. This method must be very fast.
-     *                  Putting large amounts of work into this transformer violates the intended usage pattern of the
-     *                  wiring framework and may result in very poor system performance.
+     * @param model the wiring model containing this output wire
+     * @param name  the name of the output channel
      */
-    public WireFilter(
-            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
-        this.predicate = Objects.requireNonNull(predicate);
-        this.outputWire = new OutputWire<>(model, name);
+    public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
+        outputWire = new StandardOutputWire<>(model, name);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void accept(@NonNull final T t) {
-        if (predicate.test(t)) {
+    public void accept(@NonNull final List<T> list) {
+        for (final T t : list) {
             outputWire.forward(t);
         }
     }
