@@ -39,11 +39,14 @@ import javax.inject.Singleton;
 public final class DeduplicationCacheImpl implements DeduplicationCache {
     /**
      * The {@link TransactionID}s that this node has already submitted to the platform, sorted by transaction start
-     * time, such that earlier start times come first. We guard this data structure within a synchronized block.
+     * time, such that earlier start times come first. An ID with scheduled set is different from the same ID
+     * without scheduled set (and, in fact, an ID with scheduled set will always match the ID of the ScheduleCreate
+     * transaction that created the schedule, except scheduled is set).
      */
     private final Set<TransactionID> submittedTxns = new ConcurrentSkipListSet<>(
             (t1, t2) -> Comparator.comparing(TransactionID::transactionValidStartOrThrow, TIMESTAMP_COMPARATOR)
                     .thenComparing(TransactionID::accountID, ACCOUNT_ID_COMPARATOR)
+                    .thenComparing(TransactionID::scheduled)
                     .compare(t1, t2));
 
     /** Used for looking up the max transaction duration window. */
