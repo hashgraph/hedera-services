@@ -40,7 +40,7 @@ public class HapiTestEnv {
     private boolean started = false;
 
     public HapiTestEnv(
-            @NonNull final String testName, final int nodesSize, @NonNull final HapiTestNodesType nodesType) {
+            @NonNull final String testName, final int nodeCount, @NonNull final HapiTestNodesType nodesType) {
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
@@ -48,7 +48,7 @@ public class HapiTestEnv {
                     .append("\n")
                     .append("\n# This next line is, hopefully, ignored.\n")
                     .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-            for (int nodeId = 0; nodeId < nodesSize; nodeId++) {
+            for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
                 final var nodeName = NODE_NAMES[nodeId];
                 final var firstChar = nodeName.charAt(0);
                 final var account = "0.0." + (3 + nodeId);
@@ -67,10 +67,10 @@ public class HapiTestEnv {
                         .append("\n");
                 nodeHosts.add("127.0.0.1:" + (FIRST_GRPC_PORT + (nodeId * 2)) + ":" + account);
             }
-            sb.append("\nnextNodeId, ").append(nodesSize).append("\n");
+            sb.append("\nnextNodeId, ").append(nodeCount).append("\n");
             final String configText = sb.toString();
 
-            for (int nodeId = 0; nodeId < nodesSize; nodeId++) {
+            for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
                 final Path workingDir =
                         Path.of("./build/hapi-test/node" + nodeId).normalize();
                 setupWorkingDirectory(workingDir, configText);
@@ -78,7 +78,7 @@ public class HapiTestEnv {
                 final AccountID acct =
                         AccountID.newBuilder().accountNum(3L + nodeId).build();
                 boolean currentNodeAlice = nodeId == 0;
-                if (IN_PROCESS_ALICE.equals(nodesType) && currentNodeAlice) {
+                if (IN_PROCESS_ALICE == nodesType && currentNodeAlice) {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(
@@ -94,7 +94,7 @@ public class HapiTestEnv {
     enum HapiTestNodesType {
         // Makes the fist starting node(Alice, id=0) to use InProcessHapiTestNode. This gives us the ability to debug
         IN_PROCESS_ALICE,
-        UNDEFINED
+        OUT_OF_PROCESS_ALICE
     }
 
     /**

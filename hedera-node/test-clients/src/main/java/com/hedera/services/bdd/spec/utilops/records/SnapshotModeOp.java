@@ -691,8 +691,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     private List<String> hapiTestStreamLocs() {
-        final List<String> locs = new ArrayList<>(HapiTestEngine.NODES_SIZE);
-        for (int i = 0; i < HapiTestEngine.NODES_SIZE; i++) {
+        final List<String> locs = new ArrayList<>(HapiTestEngine.NODE_COUNT);
+        for (int i = 0; i < HapiTestEngine.NODE_COUNT; i++) {
             locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
         }
         return locs;
