@@ -80,7 +80,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * @return the type of task scheduler that corresponds to this vertex, or null if this vertex does not correspond to
      * a task scheduler
      */
-    @Nullable
+    @NonNull
     public TaskSchedulerType getType() {
         return type;
     }
