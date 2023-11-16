@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -108,7 +109,8 @@ class HandleSystemContractOperationsTest {
                         eq(TransactionBody.DEFAULT),
                         eq(CryptoTransferRecordBuilder.class),
                         captor.capture(),
-                        eq(A_NEW_ACCOUNT_ID));
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CHILD));
         final var test = captor.getValue();
         assertTrue(test.test(TestHelpers.A_CONTRACT_KEY));
         assertTrue(test.test(AN_ED25519_KEY));

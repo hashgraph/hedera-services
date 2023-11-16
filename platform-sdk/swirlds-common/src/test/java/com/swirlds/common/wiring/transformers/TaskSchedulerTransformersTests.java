@@ -17,15 +17,23 @@
 package com.swirlds.common.wiring.transformers;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -237,5 +245,346 @@ class TaskSchedulerTransformersTests {
         assertEventuallyEquals(expectedCountAB, countB::get, Duration.ofSeconds(1), "B did not receive all data");
         assertEventuallyEquals(expectedCountC, countC::get, Duration.ofSeconds(1), "C did not receive all data");
         assertEventuallyEquals(expectedCountD, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+    }
+
+    /**
+     * This test performs the same actions as the {@link #wireTransformerTest()} test, but it uses the advanced
+     * transformer implementation. It should be possible to perform these tasks with both implementations.
+     */
+    @Test
+    void advancedWireTransformerSimpleTaskTest() {
+        final WiringModel model = TestWiringModelBuilder.create();
+
+        // A produces data of type TestData.
+        // B wants all of A's data, C wants the integer values, and D wants the boolean values.
+
+        final TaskScheduler<TestData> taskSchedulerA =
+                model.schedulerBuilder("A").build().cast();
+        final InputWire<TestData, TestData> inA = taskSchedulerA.buildInputWire("A in");
+
+        final TaskScheduler<Void> taskSchedulerB =
+                model.schedulerBuilder("B").build().cast();
+        final InputWire<TestData, Void> inB = taskSchedulerB.buildInputWire("B in");
+
+        final TaskScheduler<Void> taskSchedulerC =
+                model.schedulerBuilder("C").build().cast();
+        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
+
+        final TaskScheduler<Void> taskSchedulerD =
+                model.schedulerBuilder("D").build().cast();
+        final InputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
+
+        taskSchedulerA.getOutputWire().solderTo(inB);
+        taskSchedulerA
+                .getOutputWire()
+                .buildAdvancedTransformer("getValue", TestData::value, null)
+                .solderTo(inC);
+        taskSchedulerA
+                .getOutputWire()
+                .buildAdvancedTransformer("getInvert", TestData::invert, null)
+                .solderTo(inD);
+
+        final AtomicInteger countA = new AtomicInteger(0);
+        inA.bind(x -> {
+            final int invert = x.invert() ? -1 : 1;
+            countA.set(hash32(countA.get(), x.value() * invert));
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger(0);
+        inB.bind(x -> {
+            final int invert = x.invert() ? -1 : 1;
+            countB.set(hash32(countB.get(), x.value() * invert));
+        });
+
+        final AtomicInteger countC = new AtomicInteger(0);
+        inC.bind(x -> {
+            countC.set(hash32(countC.get(), x));
+        });
+
+        final AtomicInteger countD = new AtomicInteger(0);
+        inD.bind(x -> {
+            countD.set(hash32(countD.get(), x ? 1 : 0));
+        });
+
+        int expectedCountAB = 0;
+        int expectedCountC = 0;
+        int expectedCountD = 0;
+
+        for (int i = 0; i < 100; i++) {
+            final boolean invert = i % 3 == 0;
+            inA.put(new TestData(i, invert));
+
+            expectedCountAB = hash32(expectedCountAB, i * (invert ? -1 : 1));
+            expectedCountC = hash32(expectedCountC, i);
+            expectedCountD = hash32(expectedCountD, invert ? 1 : 0);
+        }
+
+        assertEventuallyEquals(expectedCountAB, countA::get, Duration.ofSeconds(1), "A did not receive all data");
+        assertEventuallyEquals(expectedCountAB, countB::get, Duration.ofSeconds(1), "B did not receive all data");
+        assertEventuallyEquals(expectedCountC, countC::get, Duration.ofSeconds(1), "C did not receive all data");
+        assertEventuallyEquals(expectedCountD, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+    }
+
+    /**
+     * A test object with vaguely similar semantics to a reserved signed state.
+     */
+    private static class FooBar {
+        private final AtomicInteger referenceCount;
+
+        public FooBar() {
+            referenceCount = new AtomicInteger(1);
+        }
+
+        private FooBar(@NonNull final FooBar that) {
+            this.referenceCount = that.referenceCount;
+        }
+
+        /**
+         * Make a copy and increase the reference count.
+         *
+         * @return a copy of this object
+         */
+        @NonNull
+        public FooBar copyAndReserve() {
+            final int previousCount = referenceCount.getAndIncrement();
+            if (previousCount == 0) {
+                throw new IllegalStateException("Cannot reserve a copy once it has been fully released");
+            }
+
+            return new FooBar(this);
+        }
+
+        /**
+         * Release this copy.
+         */
+        public void release() {
+            final int count = referenceCount.decrementAndGet();
+            if (count < 0) {
+                throw new IllegalStateException("Cannot release a copy more times than it was reserved");
+            }
+        }
+
+        /**
+         * Get the reference count.
+         *
+         * @return the reference count
+         */
+        public int getReferenceCount() {
+            return referenceCount.get();
+        }
+    }
+
+    /**
+     * Test a wiring setup that vaguely resembles the way states are reserved and passed around. How to pass around
+     * state reservations was the original use case for advanced wire transformers.
+     */
+    @Test
+    void advancedWireTransformerTest() {
+        // Component A passes data to components B, C, and D.
+        final WiringModel model = TestWiringModelBuilder.create();
+
+        final AtomicBoolean error = new AtomicBoolean(false);
+        final UncaughtExceptionHandler exceptionHandler = (t, e) -> error.set(true);
+
+        final TaskScheduler<FooBar> taskSchedulerA = model.schedulerBuilder("A")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
+        final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
+        final OutputWire<FooBar> outAReserved =
+                outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release);
+
+        final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
+
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
+
+        final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
+
+        outAReserved.solderTo(inB);
+        outAReserved.solderTo(inC);
+        outAReserved.solderTo(inD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        inA.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countA.getAndIncrement();
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        inB.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countB.getAndIncrement();
+            x.release();
+        });
+
+        final AtomicInteger countC = new AtomicInteger();
+        inC.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countC.getAndIncrement();
+            x.release();
+        });
+
+        final AtomicInteger countD = new AtomicInteger();
+        inD.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countD.getAndIncrement();
+            x.release();
+        });
+
+        final List<FooBar> fooBars = new ArrayList<>(100);
+        for (int i = 0; i < 100; i++) {
+            final FooBar fooBar = new FooBar();
+            fooBars.add(fooBar);
+            inA.put(fooBar);
+        }
+
+        assertEventuallyEquals(100, countA::get, Duration.ofSeconds(1), "A did not receive all data");
+        assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
+        assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
+        assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+
+        assertEventuallyTrue(
+                () -> {
+                    for (final FooBar fooBar : fooBars) {
+                        if (fooBar.getReferenceCount() != 0) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                Duration.ofSeconds(1),
+                "Not all FooBars were released");
+
+        assertFalse(error.get());
+
+        model.stop();
+    }
+
+    private static class FooBarTransformer implements AdvancedTransformation<FooBar, FooBar> {
+        @Nullable
+        @Override
+        public FooBar transform(@NonNull final FooBar fooBar) {
+            return fooBar.copyAndReserve();
+        }
+
+        @Override
+        public void cleanup(@NonNull final FooBar fooBar) {
+            fooBar.release();
+        }
+    }
+
+    /**
+     * Tests the version of the buildAdvancedTransformer() method that takes a single object implementing
+     * {@link AdvancedTransformation}.
+     */
+    @Test
+    void advancedWireTransformerInterfaceVariationTest() {
+        // Component A passes data to components B, C, and D.
+        final WiringModel model = TestWiringModelBuilder.create();
+
+        final AtomicBoolean error = new AtomicBoolean(false);
+        final UncaughtExceptionHandler exceptionHandler = (t, e) -> error.set(true);
+
+        final TaskScheduler<FooBar> taskSchedulerA = model.schedulerBuilder("A")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
+        final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
+        final OutputWire<FooBar> outAReserved =
+                outA.buildAdvancedTransformer("reserve FooBar", new FooBarTransformer());
+
+        final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
+
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
+
+        final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
+                .withUncaughtExceptionHandler(exceptionHandler)
+                .build()
+                .cast();
+        final InputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
+
+        outAReserved.solderTo(inB);
+        outAReserved.solderTo(inC);
+        outAReserved.solderTo(inD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        inA.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countA.getAndIncrement();
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        inB.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countB.getAndIncrement();
+            x.release();
+        });
+
+        final AtomicInteger countC = new AtomicInteger();
+        inC.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countC.getAndIncrement();
+            x.release();
+        });
+
+        final AtomicInteger countD = new AtomicInteger();
+        inD.bind(x -> {
+            assertTrue(x.getReferenceCount() > 0);
+            countD.getAndIncrement();
+            x.release();
+        });
+
+        final List<FooBar> fooBars = new ArrayList<>(100);
+        for (int i = 0; i < 100; i++) {
+            final FooBar fooBar = new FooBar();
+            fooBars.add(fooBar);
+            inA.put(fooBar);
+        }
+
+        assertEventuallyEquals(100, countA::get, Duration.ofSeconds(1), "A did not receive all data");
+        assertEventuallyEquals(100, countB::get, Duration.ofSeconds(1), "B did not receive all data");
+        assertEventuallyEquals(100, countC::get, Duration.ofSeconds(1), "C did not receive all data");
+        assertEventuallyEquals(100, countD::get, Duration.ofSeconds(1), "D did not receive all data");
+
+        assertEventuallyTrue(
+                () -> {
+                    for (final FooBar fooBar : fooBars) {
+                        if (fooBar.getReferenceCount() != 0) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                Duration.ofSeconds(1),
+                "Not all FooBars were released");
+
+        assertFalse(error.get());
+
+        model.stop();
     }
 }
