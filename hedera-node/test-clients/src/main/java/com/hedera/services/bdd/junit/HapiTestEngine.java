@@ -427,12 +427,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         final var tags = new HashSet<TestTag>();
         if (tagsAnnotation != null) {
             tags.addAll(Arrays.stream(tagsAnnotation.value())
-                .map(t -> TestTag.create(t.value()))
-                .toList());
+                    .map(t -> TestTag.create(t.value()))
+                    .toList());
         } else if (tagAnnotation != null) {
             tags.add(TestTag.create(tagAnnotation.value()));
         }
         return tags;
     }
-
 }
