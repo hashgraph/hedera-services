@@ -27,8 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.shuffle;
+import static com.hedera.services.bdd.suites.contract.Utils.nonMirrorAddrWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -41,6 +40,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.List;
+import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -149,10 +149,7 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalCallToNonExistingEvmAddress")
                 .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-                .when(contractCall(
-                                contract,
-                                "callContract",
-                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
+                .when(contractCall(contract, "callContract", nonMirrorAddrWith(new Random().nextLong()))
                         .via(innerTx)
                         .hasKnownStatus(SUCCESS))
                 .then(getTxnRecord(innerTx));
@@ -181,10 +178,7 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalTransferToNonExistingEvmAddress")
                 .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-                .when(contractCall(
-                                contract,
-                                "callTransfer",
-                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
+                .when(contractCall(contract, "callTransfer", nonMirrorAddrWith(new Random().nextLong()))
                         .via(innerTx)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(getTxnRecord(innerTx));
@@ -215,10 +209,7 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalCallWithValueToNonExistingEvmAddress")
                 .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-                .when(contractCall(
-                                contract,
-                                "callWithValue",
-                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
+                .when(contractCall(contract, "callWithValue", nonMirrorAddrWith(new Random().nextLong()))
                         .via(innerTx)
                         .gas(1_000_000L)
                         .hasKnownStatus(SUCCESS))
