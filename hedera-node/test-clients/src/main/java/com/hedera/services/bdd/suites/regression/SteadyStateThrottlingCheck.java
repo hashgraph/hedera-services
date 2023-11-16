@@ -70,6 +70,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
 @TestMethodOrder(OrderAnnotation.class)
+@Tag(TIME_CONSUMING)
 public class SteadyStateThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
@@ -128,7 +129,6 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     }
 
     @HapiTest
-    @Tag(TIME_CONSUMING)
     @Order(1)
     private HapiSpec setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
@@ -142,42 +142,36 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     }
 
     @HapiTest
-    @Tag(TIME_CONSUMING)
     @Order(2)
     private HapiSpec checkXfersTps() {
         return checkTps("Xfers", EXPECTED_XFER_TPS, xferOps());
     }
 
     @HapiTest
-    @Tag(TIME_CONSUMING)
     @Order(3)
     private HapiSpec checkFungibleMintsTps() {
         return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
     }
 
     //    @HapiTest - This test fails
-    @Tag(TIME_CONSUMING)
     @Order(4)
     private HapiSpec checkContractCallsTps() {
         return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
     }
 
     //    @HapiTest - This test fails
-    @Tag(TIME_CONSUMING)
     @Order(5)
     private HapiSpec checkCryptoCreatesTps() {
         return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
     }
 
     //    @HapiTest - This test hangs
-    @Tag(TIME_CONSUMING)
     @Order(6)
     private HapiSpec checkBalanceQps() {
         return checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS);
     }
 
     @HapiTest
-    @Tag(TIME_CONSUMING)
     @Order(7)
     private HapiSpec restoreDevLimits() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
