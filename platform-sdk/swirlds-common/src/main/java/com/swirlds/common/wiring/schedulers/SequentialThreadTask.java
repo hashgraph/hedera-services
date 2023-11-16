@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.schedulers;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
 
 /**
- * The type of solder connection.
+ * A task that is performed by a {@link SequentialThreadTaskScheduler}.
+ *
+ * @param handler the handler to call
+ * @param data    the data to pass to the handler
  */
-public enum SolderType {
+record SequentialThreadTask(@NonNull Consumer<Object> handler, @NonNull Object data) {
+
     /**
-     * When data is passed to the input wire, call {@link InputWire#put(Object)}. May block if the input wire has
-     * backpressure enabled and the input wire is full.
+     * Handle the task.
      */
-    PUT,
-    /**
-     * When data is passed to the input wire, call {@link InputWire#inject(Object)}. Ignores back pressure.
-     */
-    INJECT,
-    /**
-     * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has
-     * backpressure enabled and the input wire is full, then the data will be dropped.
-     */
-    OFFER
+    public void handle() {
+        handler.accept(data);
+    }
 }

@@ -285,6 +285,14 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
+        // Immediately return if we would just repeat the payer requirement; note that correctness
+        // of signing requirements for children dispatched by the contract service depends on this.
+        // If we repeated the payer requirement, we would be requiring "double authorization" from
+        // the contract doing the dispatch; but the contract has already authorized the action by
+        // the very execution of its bytecode.
+        if (accountID.equals(payer)) {
+            return this;
+        }
 
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {

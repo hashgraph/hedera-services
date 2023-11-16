@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.transformers;
+package com.swirlds.common.wiring.transformers.internal;
 
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
@@ -28,7 +30,7 @@ import java.util.function.Consumer;
  */
 public class WireListSplitter<T> implements Consumer<List<T>> {
 
-    private final OutputWire<T> outputWire;
+    private final StandardOutputWire<T> outputWire;
 
     /**
      * Constructor.
@@ -37,8 +39,8 @@ public class WireListSplitter<T> implements Consumer<List<T>> {
      * @param name  the name of the output channel
      */
     public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
-        model.registerVertex(name, true);
-        outputWire = new OutputWire<>(model, name);
+        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
+        outputWire = new StandardOutputWire<>(model, name);
     }
 
     /**

@@ -151,6 +151,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2877
+    @HapiTest
     private HapiSpec eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
@@ -323,6 +324,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
+    @HapiTest
     private HapiSpec givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid")
