@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -33,6 +36,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class TokenUriCall extends AbstractNftViewCall {
 
+    public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
+
     public TokenUriCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
@@ -45,12 +50,24 @@ public class TokenUriCall extends AbstractNftViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
-            @NonNull final Token token, @NonNull final Nft nft) {
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
         requireNonNull(token);
-        requireNonNull(nft);
-        final var metadata = new String(nft.metadata().toByteArray());
+        validateFalse(token.tokenType() == TokenType.FUNGIBLE_COMMON, FAIL_INVALID);
+        String metadata;
+        if (nft != null) {
+            metadata = new String(nft.metadata().toByteArray());
+        } else {
+            metadata = URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+        }
         return successResult(
                 TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), gasCalculator.viewGasRequirement());
+    }
+
+    @Override
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
+        requireNonNull(token);
+        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
+
+        return resultOfViewingNft(token, nft);
     }
 }

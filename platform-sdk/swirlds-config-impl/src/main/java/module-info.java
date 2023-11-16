@@ -9,6 +9,7 @@ module com.swirlds.config.impl {
     requires transitive com.swirlds.logging;
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.config.extensions;
     requires static com.github.spotbugs.annotations;
 
     provides ConfigurationBuilderFactory with
