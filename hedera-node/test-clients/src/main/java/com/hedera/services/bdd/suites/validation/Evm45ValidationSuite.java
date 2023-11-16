@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.nonMirrorAddrWith;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -88,6 +89,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                 internalCallToExistingMirrorAddressResultsInSuccessfulCall(),
                 // EOA -calls-> InternalCaller -calls-> NonExistingNonMirror, expect noop success
                 internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess(),
+                // todo EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
+//                internalCallToExistingRevertingWithoutMessageResultsInRevert(),
                 // todo EOA -calls-> InternalCaller -calls-> ExistingNonMirror, expect successful call
 
                 // Internal transfers:
@@ -219,6 +222,30 @@ public class Evm45ValidationSuite extends HapiSuite {
                                 .status(SUCCESS)
                                 .contractCallResult(
                                         resultWith().createdContractIdsCount(0).gasUsed(24618))));
+    }
+
+    private HapiSpec internalCallToExistingRevertingWithoutMessageResultsInRevert() {
+
+        final AtomicLong calleeNum = new AtomicLong();
+
+        return defaultHapiSpec("internalCallToExistingRevertingWithoutMessageResultsInRevert")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set))
+                .when(withOpContext((spec, ignored) -> allRunFor(
+                        spec,
+                        contractCall(
+                        INTERNAL_CALLER_CONTRACT,
+                        CALL_REVERT_WITHOUT_REVERT_REASON_FUNCTION,
+                        mirrorAddrWith(calleeNum.get()))
+                        .gas(25000)
+                                .hasKnownStatus(SUCCESS)
+                        .via(INNER_TXN))))
+                .then(getTxnRecord(INNER_TXN).logged()
+//                        .hasPriority(recordWith()
+//                                .status(CONTRACT_REVERT_EXECUTED)
+                        );
     }
 
     private HapiSpec internalTransferToNonExistingMirrorAddressResultsInRevert() {
