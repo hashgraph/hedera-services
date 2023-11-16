@@ -18,7 +18,10 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
@@ -56,6 +59,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
@@ -72,6 +76,8 @@ import org.apache.tuweni.bytes.Bytes;
  *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}. This should fail with status INVALID_ACCOUNT_ID.</li>
  *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.This should fail with status INVALID_TOKEN_ID.</li>
  *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should now succeed</li>*
+ *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.This should fail with status INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}.This should fail with status INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
  * </ol>
  */
 public class GrantRevokeKycXTest extends AbstractContractXTest {
@@ -177,6 +183,29 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                                 SN_2345.serialNumber())
                         .array()),
                 assertSuccess("Should now be able to transfer ERC721_TOKEN serial 2345 to RECEIVER"));
+
+        // GRANT_KYC with invalid key
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Should not be able to grant KYC with invalid signature"));
+        // REVOKE_KYC with invalid key
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Should not be able to revoke KYC with invalid signature"));
     }
 
     @Override
@@ -201,6 +230,14 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .kycKey(SENDER_CONTRACT_ID_KEY)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(Scenarios.ALICE.account().key())
                         .build());
         return tokens;
     }
