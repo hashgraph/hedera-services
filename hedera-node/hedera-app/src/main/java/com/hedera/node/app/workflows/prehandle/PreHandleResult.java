@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -27,6 +28,8 @@ import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -66,6 +69,22 @@ public record PreHandleResult(
         @Nullable Map<Key, SignatureVerificationFuture> verificationResults,
         @Nullable PreHandleResult innerResult,
         long configVersion) {
+
+    public Set<Key> getRequiredKeys(){
+        return requiredKeys == null ? Collections.emptySet() : requiredKeys;
+    }
+
+    public Set<Key> getOptionalKeys(){
+        return optionalKeys == null ? Collections.emptySet() : optionalKeys;
+    }
+
+    public Key getPayerKey(){
+        return payerKey == null ? IMMUTABILITY_SENTINEL_KEY : payerKey;
+    }
+
+    public Set<Account> getHollowAccounts(){
+        return hollowAccounts == null ? Collections.emptySet() : hollowAccounts;
+    }
 
     /**
      * An enumeration of all possible types of pre-handle results.

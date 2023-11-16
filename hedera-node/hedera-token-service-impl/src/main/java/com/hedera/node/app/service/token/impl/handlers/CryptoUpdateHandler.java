@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -167,6 +168,9 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // Add account to the modifications in state
         accountStore.put(builder.build());
+        // For some reason update accountId is set only for the hollow account finalizations and not
+        // for top level crypto update transactions. So we set it here.
+        context.recordBuilder(CryptoUpdateRecordBuilder.class).accountID(target);
     }
 
     /**

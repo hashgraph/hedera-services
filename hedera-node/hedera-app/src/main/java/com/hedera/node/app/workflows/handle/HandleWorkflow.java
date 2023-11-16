@@ -72,6 +72,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -107,6 +108,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
@@ -560,9 +562,6 @@ public class HandleWorkflow {
                     // verifications when doing hollow account finalization
                     context.dispatchPrecedingTransaction(
                             syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
-                    // For some reason update accountId is set only for the hollow account finalizations and not
-                    // for top level crypto update transactions. So we set it here.
-                    context.recordBuilder(CryptoUpdateRecordBuilder.class).accountID(hollowAccount.accountId());
                 }
             }
         }
@@ -601,7 +600,7 @@ public class HandleWorkflow {
         final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
-        boolean isPayerHollow = false;
+        boolean isPayerHollow;
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
@@ -660,20 +659,22 @@ public class HandleWorkflow {
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
-        final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
-        if (!isPayerHollow && payerKeyVerification.failed()) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
+        if(!isPayerHollow){
+            final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
+            if (payerKeyVerification.failed()) {
+                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
+            }
         }
 
         // verify all the keys
-        for (final var key : preHandleResult.requiredKeys()) {
+        for (final var key : preHandleResult.getRequiredKeys()) {
             final var verification = verifier.verificationFor(key);
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
         }
         // If there are any hollow accounts whose signatures need to be verified, verify them
-        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
             final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
@@ -835,9 +836,9 @@ public class HandleWorkflow {
         final var currentPayerKey = context.payerKey();
 
         // keys from previous pre-handle result
-        final var previousResultRequiredKeys = previousResult.requiredKeys();
-        final var previousResultOptionalKeys = previousResult.optionalKeys();
-        final var previousResultPayerKey = previousResult.payerKey();
+        final var previousResultRequiredKeys = previousResult.getRequiredKeys();
+        final var previousResultOptionalKeys = previousResult.getOptionalKeys();
+        final var previousResultPayerKey = previousResult.getPayerKey();
 
         for (final var key : currentRequiredNonPayerKeys) {
             if (!previousResultRequiredKeys.contains(key)) {
