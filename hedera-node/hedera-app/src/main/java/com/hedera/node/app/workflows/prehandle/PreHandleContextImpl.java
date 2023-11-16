@@ -459,7 +459,12 @@ public class PreHandleContextImpl implements PreHandleContext {
         dispatcher.dispatchPureChecks(nestedTxn);
         final var nestedContext =
                 new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
-        dispatcher.dispatchPreHandle(nestedContext);
+        try {
+            dispatcher.dispatchPreHandle(nestedContext);
+        } catch (final PreCheckException ignored) {
+            // We must ignore/translate the exception here, as this is key gathering, not transaction validation.
+            throw new PreCheckException(ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
+        }
         return nestedContext;
     }
 
