@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall.standardized;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
@@ -662,7 +663,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     networkInfo().selfNodeInfo().nodeId(),
                     dispatchNeedsHapiPayerChecks(category));
         } catch (final PreCheckException e) {
-            childRecordBuilder.status(e.responseCode());
+            childRecordBuilder.status(standardized(e.responseCode()));
             return;
         }
 

@@ -371,6 +371,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 50));
     }
 
+    @HapiTest
     private HapiSpec staticCallForDissociatePrecompileFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
@@ -657,6 +658,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec staticCallForAssociatePrecompileFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
@@ -1000,6 +1002,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     public HapiSpec callForDissociateWithDelegateContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -1064,6 +1067,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
+    @HapiTest
     public HapiSpec callForDissociateWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -1260,6 +1264,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
@@ -1339,6 +1344,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)));
     }
 
+    @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -1793,6 +1799,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN));
     }
 
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
@@ -1873,6 +1880,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)));
     }
 
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -1949,6 +1957,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
@@ -2026,6 +2035,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)));
     }
 
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
@@ -2105,6 +2115,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)));
     }
 
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -2179,6 +2190,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
@@ -2222,6 +2234,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
+    @HapiTest
     private HapiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;

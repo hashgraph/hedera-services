@@ -146,7 +146,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                     .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
         }
 
-        var output = ReturnTypes.encodedRc(recordBuilder.status());
+        var output = ReturnTypes.encodedRc(standardized(recordBuilder.status()));
         recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
                 .contractCallResult(Bytes.wrap(output.array()))
                 .build());

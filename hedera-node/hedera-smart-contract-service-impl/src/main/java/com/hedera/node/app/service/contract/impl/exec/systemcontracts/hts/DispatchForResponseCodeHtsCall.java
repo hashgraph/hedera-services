@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 
@@ -181,7 +180,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
 
         if (TokenUpdateRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
-            var output = ReturnTypes.encodedRc(recordBuilder.status());
+            var output = ReturnTypes.encodedRc(standardized(recordBuilder.status()));
             ((TokenUpdateRecordBuilder) recordBuilder)
                     .contractCallResult(ContractFunctionResult.newBuilder()
                             .contractCallResult(Bytes.wrap(output.array()))
