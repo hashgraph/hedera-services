@@ -57,6 +57,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -77,7 +78,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -558,8 +558,11 @@ public class HandleWorkflow {
                             .build();
                     // Note the null key verification callback below; we bypass signature
                     // verifications when doing hollow account finalization
-                    context.dispatchPrecedingTransaction(
-                            syntheticUpdateTxn, SingleTransactionRecordBuilder.class, null, context.payer());
+                    final var recordBuilder = context.dispatchPrecedingTransaction(
+                            syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
+                    // For some reason update accountId is set only for the hollow account finalizations and not
+                    // for top level crypto update transactions. So we set it here.
+                    recordBuilder.accountID(hollowAccount.accountId());
                 }
             }
         }
