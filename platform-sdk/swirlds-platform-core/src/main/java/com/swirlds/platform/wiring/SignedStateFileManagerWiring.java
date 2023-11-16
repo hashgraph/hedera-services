@@ -16,18 +16,24 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
+
+import com.swirlds.common.system.status.actions.PlatformStatusAction;
+import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public record SignedStateFileManagerWiring(
-        TaskScheduler<StateSavingResult> scheduler,
-        InputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
-        InputWire<StateDumpRequest, Void> dumpStateToDisk) {
+        @NonNull TaskScheduler<StateSavingResult> scheduler,
+        @NonNull InputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
+        @NonNull InputWire<StateDumpRequest, Void> dumpStateToDisk) {
     public SignedStateFileManagerWiring(final TaskScheduler<StateSavingResult> scheduler) {
         this(
                 scheduler,
@@ -42,5 +48,21 @@ public record SignedStateFileManagerWiring(
 
     public OutputWire<StateSavingResult> outputWire() {
         return scheduler.getOutputWire();
+    }
+
+    public void solderPces(final Consumer<Long> minimumGenerationToStoreConsumer){
+        scheduler.getOutputWire()
+                .buildTransformer("to mingen", StateSavingResult::minGen)
+                .solderTo("PCES mingen", minimumGenerationToStoreConsumer);
+    }
+
+    public void solderStatusManager(final Consumer<StateWrittenToDiskAction> statusConsumer){
+        scheduler.getOutputWire()
+                .buildTransformer("to status", ssr -> new StateWrittenToDiskAction(ssr.round()))
+                .solderTo("status manager", statusConsumer);
+    }
+
+    public void solderAppCommunication(final Consumer<StateSavingResult> stateSavingResultConsumer){
+        scheduler.getOutputWire().solderTo("app comm", stateSavingResultConsumer);
     }
 }

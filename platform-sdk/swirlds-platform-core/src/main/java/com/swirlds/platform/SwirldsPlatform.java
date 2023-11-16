@@ -489,18 +489,11 @@ public class SwirldsPlatform implements Platform {
                 .withExternalBackPressure(false)
                 .build()
                 .cast();
-        final SignedStateFileManagerWiring signedStateFileManagerWiring =
-                new SignedStateFileManagerWiring(savedStateScheduler);
+        final SignedStateFileManagerWiring signedStateFileManagerWiring = new SignedStateFileManagerWiring(savedStateScheduler);
         signedStateFileManagerWiring.bind(signedStateFileManager);
-        signedStateFileManagerWiring
-                .outputWire()
-                .buildTransformer("to status", ssr -> new StateWrittenToDiskAction(ssr.round()))
-                .solderTo("status manager", platformStatusManager::submitStatusAction);
-        signedStateFileManagerWiring.outputWire().solderTo("app comm", appCommunicationComponent::stateToDiskAttempt);
-        signedStateFileManagerWiring
-                .outputWire()
-                .buildTransformer("to mingen", StateSavingResult::minGen)
-                .solderTo("PCES mingen", preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
+        signedStateFileManagerWiring.solderStatusManager(platformStatusManager::submitStatusAction);
+        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent::stateToDiskAttempt);
+        signedStateFileManagerWiring.solderPces(preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
 
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
