@@ -20,8 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.B_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
@@ -206,6 +209,26 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                                 .array()),
                         output,
                         "Should not be able to revoke KYC with invalid signature"));
+        // GRANT_KYC with no kyc key
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_KYC_KEY).array()),
+                        output,
+                        "Should not be able to grant KYC with invalid signature"));
+        // REVOKE_KYC with no kyc key
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_KYC_KEY).array()),
+                        output,
+                        "Should not be able to revoke KYC with invalid signature"));
     }
 
     @Override
@@ -238,6 +261,13 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .kycKey(Scenarios.ALICE.account().key())
+                        .build());
+        tokens.put(
+                B_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(B_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .build());
         return tokens;
     }
