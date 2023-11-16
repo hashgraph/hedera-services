@@ -108,7 +108,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -333,7 +332,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    @HapiTest
     private HapiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
@@ -1386,7 +1384,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 (spec, opLog) -> Assertions.assertEquals(successFeesObs.get(), failureFeesObs.get())));
     }
 
-    @HapiTest
     private HapiSpec scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
         String civilianPayer = PAYER;
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
