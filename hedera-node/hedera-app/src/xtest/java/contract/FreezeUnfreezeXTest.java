@@ -76,8 +76,8 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Freeze {@code ERC721_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
  *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
  *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
- *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_SIGNATURE.</li>
- *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
  * </ol>
  */
 public class FreezeUnfreezeXTest extends AbstractContractXTest {
