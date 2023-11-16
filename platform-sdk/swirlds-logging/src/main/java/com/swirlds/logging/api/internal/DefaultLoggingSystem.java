@@ -19,6 +19,7 @@ package com.swirlds.logging.api.internal;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
@@ -29,7 +30,6 @@ import com.swirlds.logging.api.extensions.provider.LogProvider;
 import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerDecisionConverter;
-import com.swirlds.logging.api.internal.configuration.PropertyFileConfigSource;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
