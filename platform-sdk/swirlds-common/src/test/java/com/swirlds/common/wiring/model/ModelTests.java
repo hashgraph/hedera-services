@@ -1677,7 +1677,6 @@ class ModelTests {
         taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, false, true);
-        model.checkForUnboundInputWires();
     }
 
     @Test
@@ -1691,7 +1690,8 @@ class ModelTests {
 
         assertTrue(model.checkForUnboundInputWires());
 
-        inputA.bind(x -> {});
+        inputA.bind(x -> {
+        });
 
         assertFalse(model.checkForUnboundInputWires());
     }
