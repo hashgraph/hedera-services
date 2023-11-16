@@ -28,6 +28,7 @@ import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDR
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
@@ -294,6 +295,7 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         Account.newBuilder()
                                 .accountId(UNAUTHORIZED_SPENDER_ID)
                                 .alias(UNAUTHORIZED_SPENDER_ADDRESS)
+                                .key(AN_ED25519_KEY)
                                 .build());
                 put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
             }

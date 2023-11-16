@@ -140,7 +140,6 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
-        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         // When we create a PreHandleContext by passing null as either argument
@@ -233,7 +232,6 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
-        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(storeFactory, createAccountTransaction(), CONFIG, dispatcher);
 

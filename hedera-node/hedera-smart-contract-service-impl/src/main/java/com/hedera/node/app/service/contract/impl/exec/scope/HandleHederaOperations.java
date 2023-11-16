@@ -320,7 +320,7 @@ public class HandleHederaOperations implements HederaOperations {
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
                 ContractCreateRecordBuilder.class,
-                key -> true,
+                null,
                 context.payer(),
                 (bodyToExternalize == null)
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER

@@ -27,7 +27,6 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
-import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
@@ -89,33 +88,37 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_1234.serialNumber())
                         .array()),
-                assertSuccess());
+                assertSuccess("Should be able to transfer ERC721_TOKEN serial 1234 to RECEIVER"));
 
         // REVOKE_KYC
         runHtsCallAndExpectOnSuccess(
-                OWNER_BESU_ADDRESS,
+                SENDER_BESU_ADDRESS,
                 Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
-                assertSuccess());
+                assertSuccess("Should be able to revoke KYC"));
 
         // REVOKE_KYC WITH INVALID ACCOUNT
         runHtsCallAndExpectOnSuccess(
-                OWNER_BESU_ADDRESS,
+                SENDER_BESU_ADDRESS,
                 Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, ERC721_TOKEN_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()),
+                        output,
+                        "Should not be able to revoke KYC with invalid account"));
 
         // REVOKE_KYC WITH INVALID TOKEN
         runHtsCallAndExpectOnSuccess(
-                OWNER_BESU_ADDRESS,
+                SENDER_BESU_ADDRESS,
                 Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
                         .encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()),
+                        output,
+                        "Should not be able to revoke KYC with invalid token"));
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should fail with ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN
         runHtsCallAndExpectOnSuccess(
@@ -130,33 +133,38 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN)
                                 .array()),
-                        output));
+                        output,
+                        "Transfer w/o KYC granted should fail with ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN"));
 
         // GRANT_KYC
         runHtsCallAndExpectOnSuccess(
-                OWNER_BESU_ADDRESS,
+                SENDER_BESU_ADDRESS,
                 Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
-                assertSuccess());
+                assertSuccess("Should be able to grant KYC"));
 
         // GRANT_KYC INVALID ACCOUNT
         runHtsCallAndExpectOnSuccess(
-                OWNER_BESU_ADDRESS,
+                SENDER_BESU_ADDRESS,
                 Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, ERC20_TOKEN_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()),
+                        output,
+                        "Should not be able to grant KYC with invalid account"));
 
         // GRANT_KYC INVALID TOKEN
         runHtsCallAndExpectOnSuccess(
-                OWNER_BESU_ADDRESS,
+                SENDER_BESU_ADDRESS,
                 Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
                         .encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()),
+                        output,
+                        "Should not be able to grant KYC with invalid token"));
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should succeed now.
         runHtsCallAndExpectOnSuccess(
@@ -168,7 +176,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_2345.serialNumber())
                         .array()),
-                assertSuccess());
+                assertSuccess("Should now be able to transfer ERC721_TOKEN serial 2345 to RECEIVER"));
     }
 
     @Override
@@ -178,8 +186,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        final var aliases = withSenderAddress(new HashMap<>());
         aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
         return aliases;
     }
@@ -193,6 +200,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .tokenId(ERC721_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(SENDER_CONTRACT_ID_KEY)
                         .build());
         return tokens;
     }
@@ -201,6 +209,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc721Relation(tokenRelationships, OWNER_ID, 3L);
+        addErc721Relation(tokenRelationships, RECEIVER_ID, 0L);
         return tokenRelationships;
     }
 
@@ -233,6 +242,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(OWNER_ID)
                         .alias(SENDER_ADDRESS)
+                        .key(SENDER_CONTRACT_ID_KEY)
                         .smartContract(true)
                         .build());
         accounts.put(

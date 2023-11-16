@@ -28,10 +28,8 @@ import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
-import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
-import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
@@ -95,8 +93,7 @@ public class GetApprovedXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        final var aliases = withSenderAlias(new HashMap<>());
         aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
         return aliases;
     }
@@ -144,14 +141,7 @@ public class GetApprovedXTest extends AbstractContractXTest {
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(OWNER_ID)
-                        .alias(SENDER_ADDRESS)
-                        .smartContract(true)
-                        .build());
+        final var accounts = withSenderContractAccount(new HashMap<>());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

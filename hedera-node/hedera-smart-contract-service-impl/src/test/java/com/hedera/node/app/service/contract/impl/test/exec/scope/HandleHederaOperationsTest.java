@@ -54,7 +54,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -251,7 +250,7 @@ class HandleHederaOperationsTest {
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
                 .willReturn(contractCreateRecordBuilder);
@@ -326,7 +325,7 @@ class HandleHederaOperationsTest {
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
@@ -339,7 +338,7 @@ class HandleHederaOperationsTest {
                 .dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class));
         verify(tokenServiceApi)
@@ -364,7 +363,7 @@ class HandleHederaOperationsTest {
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);

@@ -55,7 +55,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
-import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -235,7 +234,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -266,7 +265,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -342,7 +341,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -388,7 +387,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

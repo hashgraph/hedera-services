@@ -126,14 +126,7 @@ public class ApproveAllowanceXTest extends AbstractContractXTest {
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(SENDER_ID)
-                        .alias(SENDER_ALIAS)
-                        .tinybarBalance(100 * ONE_HBAR)
-                        .build());
+        final var accounts = withSenderAccount(new HashMap<>());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

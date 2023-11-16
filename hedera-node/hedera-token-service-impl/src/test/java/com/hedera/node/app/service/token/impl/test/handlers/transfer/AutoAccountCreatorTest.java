@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,7 +75,7 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathECKeyAliasWorks() {
         accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -106,7 +105,7 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathEDKeyAliasWorks() {
         accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -137,7 +136,7 @@ class AutoAccountCreatorTest extends StepsBase {
         accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

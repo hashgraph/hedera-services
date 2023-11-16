@@ -43,7 +43,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +64,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
     void autoCreatesAccounts() {
         replaceAliasesInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -131,7 +130,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         givenTxn(body, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(hbarReceiverId)
@@ -232,7 +231,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -272,7 +271,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

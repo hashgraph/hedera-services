@@ -204,7 +204,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void verifyTryExecute() {
         final var mockRecordBuilder = Mockito.mock(SingleTransactionRecordBuilderImpl.class);
-        BDDMockito.given(mockContext.dispatchChildTransaction(
+        BDDMockito.given(mockContext.dispatchScheduledChildTransaction(
                         Mockito.any(TransactionBody.class), Mockito.any(), Mockito.any(Predicate.class)))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {

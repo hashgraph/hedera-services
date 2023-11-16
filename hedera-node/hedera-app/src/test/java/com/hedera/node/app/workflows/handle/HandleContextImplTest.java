@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,7 +85,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -848,13 +848,17 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             txBody, SingleTransactionRecordBuilder.class, null, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () -> context.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+            assertThatThrownBy(() ->
+                            context.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchChildTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
+                            txBody,
+                            SingleTransactionRecordBuilder.class,
+                            (Predicate<Key>) null,
+                            AccountID.DEFAULT,
+                            CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
                             null,
@@ -881,22 +885,23 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)),
+                            ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)),
+                            ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)),
+                            ALICE.accountID(),
+                            CHILD)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
+                            ALICE.accountID(),
                             (ignore) -> Transaction.DEFAULT)));
         }
 
@@ -907,7 +912,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
-            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -956,12 +960,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) {
+        void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
-            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -1041,13 +1044,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testDispatchPrecedingWithChangedDataDoesntFail() {
+        void testDispatchPrecedingWithChangedDataDoesntFail() throws PreCheckException {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
             when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
             when(selfNodeInfo.nodeId()).thenReturn(0L);
-            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             // then
@@ -1056,13 +1058,13 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT));
+                            ALICE.accountID()));
             assertThatNoException()
                     .isThrownBy((() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)));
+                            ALICE.accountID())));
             verify(recordListBuilder, times(2)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(2)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
@@ -1081,7 +1083,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
+                            AccountID.DEFAULT,
+                            CHILD))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());
@@ -1113,7 +1116,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testDispatchPrecedingIsCommitted() {
+        void testDispatchPrecedingIsCommitted() throws PreCheckException {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             doAnswer(answer -> {
@@ -1126,7 +1129,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .dispatchHandle(any());
             given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
             given(selfNodeInfo.nodeId()).willReturn(0L);
-            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -101,9 +102,10 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
                 .build();
-        // There are no non-payer keys that will need to sign this transaction; therefore, activate no keys
+        // Note the use of the null "verification assistant" callback; we don't want any
+        // signing requirements enforced for this synthetic transaction
         final var childRecordBuilder = context.dispatchChildTransaction(
-                synthTxn, CryptoCreateRecordBuilder.class, key -> false, context.payer());
+                synthTxn, CryptoCreateRecordBuilder.class, null, context.payer(), CHILD);
         // FUTURE - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");

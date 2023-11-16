@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
@@ -55,6 +56,7 @@ public class XTestConstants {
 
     public static final AccountID SENDER_ID =
             AccountID.newBuilder().accountNum(12345789L).build();
+
     public static final Key SENDER_CONTRACT_ID_KEY = Key.newBuilder()
             .contractID(ContractID.newBuilder()
                     .contractNum(SENDER_ID.accountNumOrThrow())
@@ -129,6 +131,18 @@ public class XTestConstants {
     public static final long ONE_HBAR = 100_000_000L;
     public static final AccountID COINBASE_ID =
             AccountID.newBuilder().accountNum(98L).build();
+    public static final Account TYPICAL_SENDER_ACCOUNT = Account.newBuilder()
+            .accountId(SENDER_ID)
+            .alias(SENDER_ALIAS)
+            .key(AN_ED25519_KEY)
+            .tinybarBalance(100 * ONE_HBAR)
+            .build();
+    public static final Account TYPICAL_SENDER_CONTRACT = Account.newBuilder()
+            .accountId(OWNER_ID)
+            .alias(SENDER_ADDRESS)
+            .key(SENDER_CONTRACT_ID_KEY)
+            .smartContract(true)
+            .build();
 
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {

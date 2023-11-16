@@ -45,7 +45,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 public class AutoAccountCreator {
     private WritableAccountStore accountStore;
@@ -91,11 +90,10 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
-        final Predicate<Key> verifier =
-                key -> handleContext.verificationFor(key).passed();
-        // dispatch the auto-creation record as a preceding record
+        // Dispatch the auto-creation record as a preceding record; note we pass null for the
+        // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
+                syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
 
         var fee = autoCreationFeeFor(syntheticCreation);
         if (isAliasEVMAddress) {

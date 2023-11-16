@@ -61,6 +61,7 @@ import static contract.MiscViewsXTestConstants.NEXT_ENTITY_NUM;
 import static contract.MiscViewsXTestConstants.OPERATOR_ID;
 import static contract.MiscViewsXTestConstants.RAW_ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.SECRET;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
@@ -264,6 +265,7 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                         .accountId(ERC_USER_ID)
                         .alias(RAW_ERC_USER_ADDRESS)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(AN_ED25519_KEY)
                         .approveForAllNftAllowances(List.of(AccountApprovalForAllAllowance.newBuilder()
                                 .tokenId(ERC721_TOKEN_ID)
                                 .spenderId(OPERATOR_ID)
@@ -273,6 +275,7 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                 OPERATOR_ID,
                 Account.newBuilder()
                         .accountId(OPERATOR_ID)
+                        .key(AN_ED25519_KEY)
                         .tinybarBalance(100 * ONE_HBAR)
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());

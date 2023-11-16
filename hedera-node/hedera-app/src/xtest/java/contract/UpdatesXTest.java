@@ -77,7 +77,7 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         // Expiry
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
-                assertSuccess());
+                assertSuccess("V1 update failed"));
 
         // Successfully update token via TOKEN_UPDATE_INFO V2
         runHtsCallAndExpectOnSuccess(
@@ -98,7 +98,7 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         // Expiry
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
-                assertSuccess());
+                assertSuccess("V2 update failed"));
 
         // Successfully update token via TOKEN_UPDATE_INFO V3
         runHtsCallAndExpectOnSuccess(
@@ -119,7 +119,7 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         // Expiry
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
-                assertSuccess());
+                assertSuccess("V3 update failed"));
 
         // Fails if the treasury is invalid (owner address is not initialized)
         runHtsCallAndExpectOnSuccess(
@@ -143,7 +143,8 @@ public class UpdatesXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
                                 .array()),
-                        output));
+                        output,
+                        "Invalid treasury account not detected"));
 
         // Fails if the token ID is invalid (erc721 token address is not initialized)
         runHtsCallAndExpectOnSuccess(
@@ -165,7 +166,9 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()),
+                        output,
+                        "Invalid token ID not detected"));
 
         // Fails if the expiration time is invalid
         runHtsCallAndExpectOnSuccess(
@@ -189,7 +192,8 @@ public class UpdatesXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(
                                 ReturnTypes.encodedRc(INVALID_EXPIRATION_TIME).array()),
-                        output));
+                        output,
+                        "Invalid expiration time not detected"));
     }
 
     @Override
