@@ -16,10 +16,10 @@
 
 package com.swirlds.config.extensions.sources;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -62,7 +62,7 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
      */
     @Override
     public String getValue(@NonNull final String propertyName) {
-        Objects.requireNonNull(propertyName, "propertyName must not be null");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!getPropertyNames().contains(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }

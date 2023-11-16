@@ -16,6 +16,7 @@
 
 package com.swirlds.config.extensions.sources;
 
+import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -88,7 +89,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      * @throws IOException if the file can not be loaded or parsed
      */
     public LegacyFileConfigSource(@NonNull final String filePath) throws IOException {
-        this(Paths.get(Objects.requireNonNull(filePath, "filePath must not be null")));
+        this(Paths.get(ArgumentUtils.throwArgBlank(filePath, "filePath")));
     }
 
     private static Map<String, String> loadSettings(final File settingsFile) throws IOException {
