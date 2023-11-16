@@ -1,31 +1,36 @@
 package com.swirlds.platform.components.state;
 
-import static org.mockito.ArgumentMatchers.any;
-
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Deque;
 import java.util.LinkedList;
-import org.mockito.Mockito;
 
-public class TestSavedStateController {
+public class TestSavedStateController extends SavedStateController {
     private final Deque<SignedState> queue = new LinkedList<>();
 
-    public SavedStateController createMock(){
-        final SavedStateController mock = Mockito.mock(SavedStateController.class);
-        Mockito.doAnswer(
-                invocation -> {
-                    final SignedState signedState = invocation.getArgument(0);
-                    System.out.println("aaaaaaa");
-                    queue.add(signedState);
-                    return null;
-                }
-        ).when(mock).maybeSaveState(any());
-        return mock;
+    public TestSavedStateController() {
+        super(new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class), s->true);
     }
 
-    public @NonNull Deque<SignedState> getAttemptQueue() {
+    @Override
+    public synchronized void maybeSaveState(@NonNull final SignedState signedState) {
+        queue.add(signedState);
+    }
+
+    @Override
+    public synchronized void reconnectStateReceived(@NonNull final SignedState signedState) {
+        queue.add(signedState);
+    }
+
+    @Override
+    public synchronized void registerSignedStateFromDisk(@NonNull final SignedState signedState) {
+        queue.add(signedState);
+    }
+
+    public @NonNull Deque<SignedState> getStatesQueue() {
         return queue;
     }
 

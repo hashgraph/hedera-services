@@ -79,7 +79,7 @@ class StateManagementComponentTests {
     protected void beforeEach() {
         systemTransactionConsumer.reset();
         newLatestCompleteStateConsumer.reset();
-        controller.getAttemptQueue().clear();
+        controller.getStatesQueue().clear();
     }
 
     /**
@@ -338,7 +338,7 @@ class StateManagementComponentTests {
                 .setSigningNodeIds(majorityWeightNodes)
                 .build();
         component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-        final SignedState stateSentForWriting = controller.getAttemptQueue().poll();
+        final SignedState stateSentForWriting = controller.getStatesQueue().poll();
         assertNotNull(stateSentForWriting, "The state should be saved to disk.");
         assertEquals(
                 stateSentForWriting, signedState, "The state saved to disk should be the same as the state loaded.");
@@ -450,7 +450,7 @@ class StateManagementComponentTests {
                 newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
                 platformStatusGetter,
-                controller.createMock(),
+                controller,
                 r->{});
 
         dispatchBuilder.start();
