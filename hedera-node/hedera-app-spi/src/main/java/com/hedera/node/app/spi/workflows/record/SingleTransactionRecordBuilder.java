@@ -31,4 +31,12 @@ public interface SingleTransactionRecordBuilder {
      */
     @NonNull
     ResponseCodeEnum status();
+
+    /**
+     * Sets the receipt status.
+     *
+     * @param status the receipt status
+     * @return the builder
+     */
+    SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
 }
