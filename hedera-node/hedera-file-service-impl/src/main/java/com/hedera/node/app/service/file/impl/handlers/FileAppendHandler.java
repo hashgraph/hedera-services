@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
@@ -66,6 +67,22 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     /**
+     * Performs checks independent of state or context
+     * @param txn the transaction to check
+     */
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final FileAppendTransactionBody transactionBody = txn.fileAppendOrThrow();
+
+        if (transactionBody.fileID() == null) {
+            throw new PreCheckException(INVALID_FILE_ID);
+        }
+        if (transactionBody.contents() == null || transactionBody.contents().length() == 0) {
+            throw new PreCheckException(FILE_CONTENT_EMPTY);
+        }
+    }
+
+    /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Determines signatures needed for append a file
@@ -79,8 +96,8 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var transactionFileId = requireNonNull(transactionBody.fileID());
-        preValidate(transactionFileId, fileStore, context, false);
+        final var transactionFileId = transactionBody.fileIDOrThrow();
+        preValidate(transactionFileId, fileStore, context);
 
         var file = fileStore.getFileLeaf(transactionFileId);
         validateAndAddRequiredKeys(file, null, context);
@@ -94,11 +111,11 @@ public class FileAppendHandler implements TransactionHandler {
         final var target = fileAppend.fileID();
         final var data = fileAppend.contents();
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
-        if (data == null || data.length() <= 0) {
+        if (data == null || data.length() <= 0) { // should never happen, this is checked in pureChecks
             logger.debug("FileAppend: No data to append");
         }
 
-        if (target == null) {
+        if (target == null) { // should never happen, this is checked in pureChecks
             throw new HandleException(INVALID_FILE_ID);
         }
 

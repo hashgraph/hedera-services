@@ -165,18 +165,19 @@ class FileCreateTest extends FileTestBase {
     }
 
     @Test
-    @DisplayName("no expatriation time is added")
+    @DisplayName("no expiration time is added")
     void createAddsDifferentSubmitKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
         final var keys = anotherKeys;
 
         // when:
-        final var context = new FakePreHandleContext(accountStore, newCreateTxn(keys, 0));
+        final var txn = newCreateTxn(keys, 0);
+        final var context = new FakePreHandleContext(accountStore, txn);
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_EXPIRATION_TIME);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_EXPIRATION_TIME);
     }
 
     @Test

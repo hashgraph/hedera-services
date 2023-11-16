@@ -35,6 +35,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -70,6 +71,19 @@ public class FileUpdateHandler implements TransactionHandler {
     }
 
     /**
+     * Performs checks independent of state or context
+     * @param txn the transaction to check
+     */
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var transactionBody = txn.fileUpdateOrThrow();
+
+        if (transactionBody.fileID() == null) {
+            throw new PreCheckException(INVALID_FILE_ID);
+        }
+    }
+
+    /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Determines signatures needed for update a file
@@ -84,7 +98,7 @@ public class FileUpdateHandler implements TransactionHandler {
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var transactionFileId = requireNonNull(transactionBody.fileID());
-        preValidate(transactionFileId, fileStore, context, false);
+        preValidate(transactionFileId, fileStore, context);
 
         var file = fileStore.getFileLeaf(transactionFileId);
         if (wantsToMutateNonExpiryField(transactionBody)) {

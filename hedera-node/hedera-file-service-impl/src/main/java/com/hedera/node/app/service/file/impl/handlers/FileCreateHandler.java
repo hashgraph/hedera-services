@@ -29,7 +29,9 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -61,6 +63,19 @@ public class FileCreateHandler implements TransactionHandler {
     }
 
     /**
+     * Performs checks independent of state or context
+     * @param txn the transaction to check
+     */
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final FileCreateTransactionBody transactionBody = txn.fileCreateOrThrow();
+
+        if (!transactionBody.hasExpirationTime()) {
+            throw new PreCheckException(INVALID_EXPIRATION_TIME);
+        }
+    }
+
+    /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Determines signatures needed for create a file
@@ -75,10 +90,6 @@ public class FileCreateHandler implements TransactionHandler {
         final var transactionBody = context.body().fileCreateOrThrow();
 
         validateAndAddRequiredKeys(null, transactionBody.keys(), context);
-
-        if (!transactionBody.hasExpirationTime()) {
-            throw new PreCheckException(INVALID_EXPIRATION_TIME);
-        }
     }
 
     @Override
