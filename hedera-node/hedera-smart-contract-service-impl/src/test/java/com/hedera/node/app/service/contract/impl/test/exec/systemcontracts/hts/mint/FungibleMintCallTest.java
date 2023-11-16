@@ -56,6 +56,9 @@ class FungibleMintCallTest extends HtsCallTestBase {
 
     private FungibleMintCall subject;
 
+    @Mock
+    private TransactionBody syntheticTransfer;
+
     @Test
     void revertsOnMissingToken() {
         subject = new FungibleMintCall(
@@ -65,7 +68,8 @@ class FungibleMintCallTest extends HtsCallTestBase {
                 null,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
-                addressIdConverter);
+                addressIdConverter,
+                syntheticTransfer);
 
         final var result = subject.execute().fullResult().result();
 
@@ -120,6 +124,7 @@ class FungibleMintCallTest extends HtsCallTestBase {
                 FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
-                addressIdConverter);
+                addressIdConverter,
+                syntheticTransfer);
     }
 }
