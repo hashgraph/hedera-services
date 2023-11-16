@@ -177,6 +177,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     private HapiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";

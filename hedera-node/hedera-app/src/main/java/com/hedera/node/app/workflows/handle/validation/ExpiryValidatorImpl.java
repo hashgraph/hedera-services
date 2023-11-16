@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
@@ -130,6 +131,11 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         var resolvedExpiry = currentMeta.expiry();
         if (updateMeta.hasExplicitExpiry()) {
             context.attributeValidator().validateExpiry(updateMeta.expiry());
+            if (isForTokenUpdate) {
+                // In mono-service, INVALID_EXPIRATION_TIME is thrown for token update
+                // if the new expiry is smaller number than the current expiry.
+                validateFalse(updateMeta.expiry() < currentMeta.expiry(), INVALID_EXPIRATION_TIME);
+            }
             validateFalse(updateMeta.expiry() < currentMeta.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
             resolvedExpiry = updateMeta.expiry();
         }
