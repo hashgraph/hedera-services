@@ -213,7 +213,6 @@ public abstract class AbstractAutoCreationLogic {
 
         final var sideEffects = new SideEffectsTracker();
         sideEffects.trackAutoCreation(newId);
-        sideEffects.getNewEntityAlias()
 
         final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
 
