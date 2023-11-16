@@ -68,7 +68,7 @@ tasks.register<Test>("hapiTest") {
 
 // This task runs the 'HapiTestEngine' tests (residing in src/main/java).
 // IntelliJ picks up this task when running tests through in the IDE.
-tasks.register<Test>("hapiTestTimeCrypto") {
+tasks.register<Test>("hapiTestCrypto") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
@@ -80,7 +80,7 @@ tasks.register<Test>("hapiTestTimeCrypto") {
 
 // This task runs the 'HapiTestEngine' tests (residing in src/main/java).
 // IntelliJ picks up this task when running tests through in the IDE.
-tasks.register<Test>("hapiTestTimeSmartContract") {
+tasks.register<Test>("hapiTestSmartContract") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
