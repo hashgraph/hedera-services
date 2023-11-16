@@ -30,14 +30,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
-import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.time.Duration;
 import java.util.HashSet;
@@ -1959,8 +1959,8 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
-        final OutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
-        final OutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
+        final StandardOutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
+        final StandardOutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
