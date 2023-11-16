@@ -77,7 +77,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         given(attempt.inputBytes()).willReturn(inputBytes);
 
         subject = new SetApprovalForAllCall(
-                attempt, TransactionBody.newBuilder().build(), SetApprovalForAllTranslator::gasRequirement);
+                attempt, TransactionBody.newBuilder().build(), SetApprovalForAllTranslator::gasRequirement, false);
 
         given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
     }
