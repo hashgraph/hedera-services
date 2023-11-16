@@ -39,7 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
     @Nullable
-    private final Token token;
+    protected final Token token;
 
     protected AbstractRevertibleTokenViewCall(
             @NonNull final SystemContractGasCalculator gasCalculator,

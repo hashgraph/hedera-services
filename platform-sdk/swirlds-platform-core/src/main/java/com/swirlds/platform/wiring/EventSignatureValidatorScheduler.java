@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
@@ -32,8 +33,8 @@ public class EventSignatureValidatorScheduler {
 
     private final TaskScheduler<GossipEvent> taskScheduler;
 
-    private final InputWire<GossipEvent, GossipEvent> eventInput;
-    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
+    private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
+    private final BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
 
     /**
      * Constructor.
@@ -59,7 +60,7 @@ public class EventSignatureValidatorScheduler {
      * @return the event input wire
      */
     @NonNull
-    public InputWire<GossipEvent, GossipEvent> getEventInput() {
+    public InputWire<GossipEvent> getEventInput() {
         return eventInput;
     }
 
@@ -69,7 +70,7 @@ public class EventSignatureValidatorScheduler {
      * @return the minimum generation non ancient input wire
      */
     @NonNull
-    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 

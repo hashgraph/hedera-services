@@ -252,7 +252,7 @@ abstract class AbstractScheduleHandler {
             final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder =
-                    context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
+                    context.dispatchScheduledChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
             // set the schedule ref for the child transaction
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             recordBuilder.scheduledTransactionID(childTransaction.transactionID());
