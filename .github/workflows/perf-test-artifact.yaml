@@ -14,7 +14,10 @@
 # limitations under the License.
 ##
 
-name: "ZXC: [Node] Test Release Artifacts"
+#
+# Reused from node-flow-deploy-release-artifact.yaml
+#
+name: "Generate Artifact for Performance Test"
 on:
   workflow_call:
     inputs:
@@ -272,7 +275,6 @@ jobs:
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
-#        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
@@ -360,7 +362,6 @@ jobs:
 
       - name: Upload Artifacts (DevOps GCP Bucket)
         uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
-#        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
           destination: ${{ secrets.bucket-name }}
