@@ -60,7 +60,31 @@ tasks.register<Test>("hapiTest") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { excludeTags("TIME_CONSUMING") }
+    useJUnitPlatform { excludeTags("CRYPTO", "SMART_CONTRACT", "TIME_CONSUMING") }
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
+// IntelliJ picks up this task when running tests through in the IDE.
+tasks.register<Test>("hapiTestTimeCrypto") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("CRYPTO") }
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
+// IntelliJ picks up this task when running tests through in the IDE.
+tasks.register<Test>("hapiTestTimeSmartContract") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("SMART_CONTRACT") }
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
