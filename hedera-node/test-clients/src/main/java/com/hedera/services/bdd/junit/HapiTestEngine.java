@@ -400,13 +400,13 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         }
     }
 
-    private static Set<TestTag> getTagsIfAny(Class<?> testMethod) {
+    private static Set<TestTag> getTagsIfAny(Class<?> testClass) {
         // When a class has a single @Tag annotation, we retrieve it by filtering for Tag.class.
         // In cases where a class has multiple @Tag annotations, we use Tags.class to access all of them.
         // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
         // but the current implementation does not support this.
-        final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
-        final var tagAnnotation = testMethod.getAnnotation(Tag.class);
+        final var tagsAnnotation = testClass.getAnnotation(Tags.class);
+        final var tagAnnotation = testClass.getAnnotation(Tag.class);
 
         return extractTags(tagsAnnotation, tagAnnotation);
     }
