@@ -16,7 +16,6 @@
 
 package com.swirlds.common.wiring.model.internal;
 
-import com.swirlds.common.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -25,18 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>
  * This object exists so that standard input wires don't have to implement equals and hash code.
  *
- * @param name              the name of the input wire
  * @param taskSchedulerName the name of the task scheduler the input wire is bound to
+ * @param name              the name of the input wire
  */
-public record InputWireDescriptor(@NonNull String name, @NonNull String taskSchedulerName) {
-
-    /**
-     * Create a descriptor for the given input wire.
-     *
-     * @param inputWire the input wire to describe
-     * @return a descriptor for the given input wire
-     */
-    public static InputWireDescriptor of(@NonNull final InputWire<?> inputWire) {
-        return new InputWireDescriptor(inputWire.getName(), inputWire.getTaskSchedulerName());
-    }
-}
+public record InputWireDescriptor(@NonNull String taskSchedulerName, @NonNull String name) {}

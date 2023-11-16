@@ -88,7 +88,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      */
     @NonNull
     public final <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
-        return new BindableInputWire<>(this, name);
+        return new BindableInputWire<>(model, this, name);
     }
 
     /**

@@ -27,7 +27,6 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
-import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -221,38 +220,41 @@ public class StandardWiringModel implements WiringModel {
 
     /**
      * Register an input wire with the wiring model. For every input wire registered via this method, the model expects
-     * to see exactly one registration via {@link #registerInputWireBinding(InputWire)}.
+     * to see exactly one registration via {@link #registerInputWireBinding(String, String)}.
      *
-     * @param inputWire the input wire that was just created
+     * @param taskSchedulerName the name of the task scheduler that the input wire is associated with
+     * @param inputWireName     the name of the input wire
      */
-    public void registerInputWireCreation(@NonNull final InputWire<?> inputWire) {
-        final boolean unique = inputWires.add(InputWireDescriptor.of(inputWire));
+    public void registerInputWireCreation(
+            @NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        final boolean unique = inputWires.add(new InputWireDescriptor(taskSchedulerName, inputWireName));
         if (!unique) {
-            throw new IllegalStateException("Duplicate input wire " + inputWire.getName() + " for scheduler "
-                    + inputWire.getTaskSchedulerName());
+            throw new IllegalStateException(
+                    "Duplicate input wire " + inputWireName + " for scheduler " + taskSchedulerName);
         }
     }
 
     /**
      * Register an input wire binding with the wiring model. For every input wire registered via
-     * {@link #registerInputWireCreation(InputWire)}, the model expects to see exactly one registration via this
+     * {@link #registerInputWireCreation(String, String)}, the model expects to see exactly one registration via this
      * method.
      *
-     * @param inputWire the input wire that was just bound
+     * @param taskSchedulerName the name of the task scheduler that the input wire is associated with
+     * @param inputWireName     the name of the input wire
      */
-    public void registerInputWireBinding(@NonNull final InputWire<?> inputWire) {
-        final InputWireDescriptor descriptor = InputWireDescriptor.of(inputWire);
+    public void registerInputWireBinding(@NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        final InputWireDescriptor descriptor = new InputWireDescriptor(taskSchedulerName, inputWireName);
 
         final boolean registerd = inputWires.contains(descriptor);
         if (!registerd) {
-            throw new IllegalStateException("Input wire " + inputWire.getName() + " for scheduler "
-                    + inputWire.getTaskSchedulerName() + " was not registered");
+            throw new IllegalStateException(
+                    "Input wire " + inputWireName + " for scheduler " + taskSchedulerName + " was not registered");
         }
 
         final boolean unique = boundInputWires.add(descriptor);
         if (!unique) {
-            throw new IllegalStateException("Input wire " + inputWire.getName() + " for scheduler "
-                    + inputWire.getTaskSchedulerName() + " should not be bound more than once");
+            throw new IllegalStateException("Input wire " + inputWireName + " for scheduler " + taskSchedulerName
+                    + " should not be bound more than once");
         }
     }
 
