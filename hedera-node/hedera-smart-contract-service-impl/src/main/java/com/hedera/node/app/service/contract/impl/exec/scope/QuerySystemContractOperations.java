@@ -29,6 +29,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -90,6 +91,17 @@ public class QuerySystemContractOperations implements SystemContractOperations {
             @NonNull final VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
             @NonNull Class<T> recordBuilderClass) {
+        throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
+    }
+
+    @NonNull
+    @Override
+    public <T> T dispatchRemovable(
+            @NonNull TransactionBody syntheticBody,
+            @NonNull VerificationStrategy strategy,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull ExternalizedRecordCustomizer customizer) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 

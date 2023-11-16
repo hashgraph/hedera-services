@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -35,6 +37,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -43,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implements the "classic" HTS transfer calls, which differ from the ERC redirects in three notable ways:
@@ -100,6 +104,12 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public PricedResult execute(MessageFrame frame) {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
@@ -120,8 +130,21 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                                         nativeOperations()))
                         .build()
                 : syntheticTransfer;
-        final var recordBuilder = systemContractOperations()
-                .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
+
+        CryptoTransferRecordBuilder recordBuilder;
+
+        if (frame.isStatic() && !isTokenProxyRedirect(frame.getInputData()) && !isViewFunction(frame.getInputData())) {
+            recordBuilder = systemContractOperations()
+                    .dispatchRemovable(
+                            transferToDispatch,
+                            verificationStrategy,
+                            spenderId,
+                            CryptoTransferRecordBuilder.class,
+                            ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        } else {
+            recordBuilder = systemContractOperations()
+                    .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
+        }
 
         var output = ReturnTypes.encodedRc(recordBuilder.status());
         recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()

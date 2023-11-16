@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -24,10 +27,12 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
@@ -96,8 +101,25 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      */
     @Override
     public @NonNull PricedResult execute() {
-        final var recordBuilder =
-                systemContractOperations().dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public @NonNull PricedResult execute(MessageFrame frame) {
+        T recordBuilder;
+
+        if (frame.isStatic() && !isTokenProxyRedirect(frame.getInputData()) && !isViewFunction(frame.getInputData())) {
+            recordBuilder = systemContractOperations()
+                    .dispatchRemovable(
+                            syntheticBody,
+                            verificationStrategy,
+                            senderId,
+                            recordBuilderType,
+                            ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        } else {
+            recordBuilder = systemContractOperations()
+                    .dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
+        }
+
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
 

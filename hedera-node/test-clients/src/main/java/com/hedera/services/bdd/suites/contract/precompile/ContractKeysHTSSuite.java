@@ -406,6 +406,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec staticCallForTransferWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -453,6 +454,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(emptyChildRecordsCheck("staticTransferCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec staticCallForBurnWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -491,6 +493,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(emptyChildRecordsCheck(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec staticCallForMintWithContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -526,6 +529,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(emptyChildRecordsCheck(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec staticCallForTransferWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -574,6 +578,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(emptyChildRecordsCheck("staticTransferCallWithDelegateContractKeyTxn", CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec staticCallForBurnWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -614,6 +619,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec staticCallForMintWithDelegateContractKey() {
         final var outerContract = STATIC_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();

@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -94,6 +95,14 @@ public interface SystemContractOperations {
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
             @NonNull Class<T> recordBuilderClass);
+
+    @NonNull
+    <T> T dispatchRemovable(
+            @NonNull TransactionBody syntheticBody,
+            @NonNull VerificationStrategy strategy,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull ExternalizedRecordCustomizer customizer);
 
     /**
      * Returns a {@link Predicate} that tests whether the given {@link Key} is active based on the
