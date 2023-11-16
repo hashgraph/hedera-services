@@ -727,7 +727,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
             // Check the status and solvency of the payer
             final var fee = dispatchComputeFees(body(), syntheticPayerId);
-            final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
+            final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId, false);
             solvencyPreCheck.checkSolvency(body(), syntheticPayerId, functionality, payerAccount, fee, true);
             // FUTURE - charge fees here?
 
