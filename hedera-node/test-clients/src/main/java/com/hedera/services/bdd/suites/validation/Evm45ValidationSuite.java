@@ -17,12 +17,21 @@
 package com.hedera.services.bdd.suites.validation;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.shuffle;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
@@ -30,7 +39,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,19 +65,15 @@ public class Evm45ValidationSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                directCallToNonExistingLongZeroAddress()
-                // call to 0.0.5435435 (mirror) what should happen?
-                //                directCallToNonExistingEvmAddress(),
-                //                internalCallToNonExistingLongZeroAddress(),§
+                //                directCallToNonExistingLongZeroAddress(),
+                internalCallToNonExistingLongZeroAddress(),
                 //                //                internalCallToExistingLongZeroAddress(),
-                //                internalCallToNonExistingEvmAddress(),
+                internalCallToNonExistingEvmAddress(),
                 //                //                internalCallToExistingEvmAddress(),
-                //
-                //                internalTransferToNonExistingLongZeroAddress(),
+                internalTransferToNonExistingLongZeroAddress(),
                 //                //                internalTransferToExistingLongZeroAddress(),
-                //                internalTransferToNonExistingEvmAddress(),
+                internalTransferToNonExistingEvmAddress()
                 //                //                internalTransferToExistingEvmAddress(),
-                //
                 //                internalCallWithValueToNonExistingLongZeroAddress(),
                 //                //                internalCallWithValueToExistingLongZeroAddress(),
                 //                internalCallWithValueToNonExistingEvmAddress()
@@ -111,79 +116,79 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .then(
                         getTxnRecord("directCallToNonExistingMirrorAddress")
                                 .hasPriority(TransactionRecordAsserts.recordWith()
-                                        .status(ResponseCodeEnum.SUCCESS)
+                                        .status(SUCCESS)
                                         .contractCallResult(ContractFnResultAsserts.resultWith()
                                                 .gasUsed(21364))),
-                        getTxnRecord("directCallToNonExistingNonMirrorAddress").logged());
+                        getTxnRecord("directCallToNonExistingNonMirrorAddress")
+                                .hasPriority(TransactionRecordAsserts.recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(ContractFnResultAsserts.resultWith()
+                                                .gasUsed(21364))));
     }
 
-    //    private HapiSpec directCallToNonExistingEvmAddress() {
-    //        final String SPONSOR = "autoCreateSponsor";
-    //        return defaultHapiSpec("directCallToNonExistingEvmAddress")
-    //                .given(cryptoCreate(SPONSOR).balance(10L * ONE_HBAR))
-    //                .when()
-    //                .then(
-    //                        cryptoTransfer(tinyBarsFromToWithAlias(
-    //                                SPONSOR, "0x" + shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C"), ONE_HBAR))
-    //                        .hasKnownStatusFrom(SUCCESS)
-    //                );
-    //    }
-    //
-    //    private HapiSpec internalCallToNonExistingLongZeroAddress() {
-    //        final var contract = "InternalCaller";
-    //
-    //        return defaultHapiSpec("internalCallToNonExistingLongZeroAddress")
-    //                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-    //                .when()
-    //                .then(contractCall(
-    //                                contract,
-    //                                "callContract",
-    //                                idAsHeadlongAddress(AccountID.newBuilder()
-    //                                        .setAccountNum(5644L)
-    //                                        .build()))
-    //                        .hasKnownStatus(SUCCESS));
-    //    }
-    //
-    //    private HapiSpec internalCallToNonExistingEvmAddress() {
-    //        final var contract = "InternalCaller";
-    //
-    //        return defaultHapiSpec("internalCallToNonExistingEvmAddress")
-    //                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-    //                .when()
-    //                .then(contractCall(
-    //                                contract,
-    //                                "callContract",
-    //                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
-    //                        .hasKnownStatus(SUCCESS));
-    //    }
-    //
-    //    private HapiSpec internalTransferToNonExistingLongZeroAddress() {
-    //        final var contract = "InternalCaller";
-    //
-    //        return defaultHapiSpec("internalTransferToNonExistingLongZeroAddress")
-    //                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-    //                .when()
-    //                .then(contractCall(
-    //                                contract,
-    //                                "callTransfer",
-    //                                idAsHeadlongAddress(AccountID.newBuilder()
-    //                                        .setAccountNum(5644L)
-    //                                        .build()))
-    //                        .hasKnownStatus(SUCCESS));
-    //    }
-    //
-    //    private HapiSpec internalTransferToNonExistingEvmAddress() {
-    //        final var contract = "InternalCaller";
-    //
-    //        return defaultHapiSpec("internalTransferToNonExistingEvmAddress")
-    //                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
-    //                .when()
-    //                .then(contractCall(
-    //                                contract,
-    //                                "callTransfer",
-    //                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
-    //                        .hasKnownStatus(SUCCESS));
-    //    }
+    private HapiSpec internalCallToNonExistingLongZeroAddress() {
+        final var contract = "InternalCaller";
+        final var innerTx = "innerTx";
+
+        return defaultHapiSpec("internalCallToNonExistingLongZeroAddress")
+                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
+                .when(contractCall(
+                                contract,
+                                "callContract",
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(564400L)
+                                        .build()))
+                        .via(innerTx)
+                        .hasKnownStatus(SUCCESS))
+                .then();
+    }
+
+    private HapiSpec internalCallToNonExistingEvmAddress() {
+        final var contract = "InternalCaller";
+        final var innerTx = "innerTx";
+
+        return defaultHapiSpec("internalCallToNonExistingEvmAddress")
+                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
+                .when(contractCall(
+                                contract,
+                                "callContract",
+                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
+                        .via(innerTx)
+                        .hasKnownStatus(SUCCESS))
+                .then(getTxnRecord(innerTx));
+    }
+
+    private HapiSpec internalTransferToNonExistingLongZeroAddress() {
+        final var contract = "InternalCaller";
+        final var innerTx = "innerTx";
+
+        return defaultHapiSpec("internalTransferToNonExistingLongZeroAddress")
+                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
+                .when(contractCall(
+                                contract,
+                                "callTransfer",
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(564400L)
+                                        .build()))
+                        .via(innerTx)
+                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
+                .then(getTxnRecord(innerTx));
+    }
+
+    private HapiSpec internalTransferToNonExistingEvmAddress() {
+        final var contract = "InternalCaller";
+        final var innerTx = "innerTx";
+
+        return defaultHapiSpec("internalTransferToNonExistingEvmAddress")
+                .given(uploadInitCode(contract), contractCreate(contract).balance(ONE_HBAR))
+                .when(contractCall(
+                                contract,
+                                "callTransfer",
+                                headlongFromHexed(shuffle("0B759e491B554D8b3fD3F2fe8Be4035E289b489C")))
+                        .via(innerTx)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(getTxnRecord(innerTx));
+    }
     //
     //    private HapiSpec internalCallWithValueToNonExistingLongZeroAddress() {
     //        final var contract = "InternalCaller";
@@ -195,7 +200,7 @@ public class Evm45ValidationSuite extends HapiSuite {
     //                                contract,
     //                                "callWithValue",
     //                                idAsHeadlongAddress(AccountID.newBuilder()
-    //                                        .setAccountNum(5644L)
+    //                                        .setAccountNum(564400L)
     //                                        .build()))
     //                        .hasKnownStatus(SUCCESS));
     //    }
