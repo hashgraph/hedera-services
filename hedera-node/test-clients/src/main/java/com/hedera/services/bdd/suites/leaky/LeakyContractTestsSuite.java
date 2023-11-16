@@ -2033,7 +2033,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"));
     }
 
-    @HapiTest
     private HapiSpec whitelistPositiveCase() {
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
