@@ -102,9 +102,7 @@ public class DeleteXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
-        return aliases;
+        return withSenderAddress(new HashMap<>());
     }
 
     @Override

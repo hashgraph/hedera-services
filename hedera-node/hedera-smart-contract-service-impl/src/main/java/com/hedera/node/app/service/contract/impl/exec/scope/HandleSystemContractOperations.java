@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -107,7 +108,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(recordBuilderClass);
 
         return context.dispatchChildTransaction(
-                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId);
+                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
     }
 
     /**
