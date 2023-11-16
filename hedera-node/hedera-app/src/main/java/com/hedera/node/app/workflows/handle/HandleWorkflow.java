@@ -57,6 +57,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -77,7 +78,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -481,6 +481,7 @@ public class HandleWorkflow {
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
 
                 } catch (final HandleException e) {
+                    // In case of a ContractCall when it reverts, the gas charged should not be rolled back
                     rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
                     if (!hasWaivedFees) {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -489,6 +490,7 @@ public class HandleWorkflow {
             }
         } catch (final Exception e) {
             logger.error("An unexpected exception was thrown during handle", e);
+            // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {
                 try {
@@ -558,8 +560,11 @@ public class HandleWorkflow {
                             .build();
                     // Note the null key verification callback below; we bypass signature
                     // verifications when doing hollow account finalization
-                    context.dispatchPrecedingTransaction(
-                            syntheticUpdateTxn, SingleTransactionRecordBuilder.class, null, context.payer());
+                    final var recordBuilder = context.dispatchPrecedingTransaction(
+                            syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
+                    // For some reason update accountId is set only for the hollow account finalizations and not
+                    // for top level crypto update transactions. So we set it here.
+                    recordBuilder.accountID(hollowAccount.accountId());
                 }
             }
         }
@@ -657,6 +662,7 @@ public class HandleWorkflow {
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
+        // If the payer is hollow the key will be null, so we skip the payer signature verification.
         if (!isPayerHollow) {
             final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
             if (payerKeyVerification.failed()) {
@@ -685,6 +691,14 @@ public class HandleWorkflow {
     private record ValidationResult(
             @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
 
+    /**
+     * Rolls back the stack and sets the status of the transaction in case of a failure.
+     * @param rollbackStack whether to rollback the stack. Will be false when the failure is due to a
+     *                      {@link HandleException} that is due to a contract call revert.
+     * @param status the status to set
+     * @param stack the save point stack to rollback
+     * @param recordListBuilder the record list builder to revert
+     */
     private void rollback(
             final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
