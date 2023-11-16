@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
-
-import static com.swirlds.logging.legacy.LogMarker.CONFIG;
+package com.swirlds.config.extensions.sources;
 
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -128,7 +126,7 @@ public class MappedConfigSource extends AbstractConfigSource {
                 } else {
                     mappedProperties.put(
                             configMapping.mappedName(), internalProperties.get(configMapping.originalName()));
-                    logger.debug(CONFIG.getMarker(), "Added config mapping: {}", configMapping);
+                    logger.debug("Added config mapping: {}", configMapping);
                 }
             });
 

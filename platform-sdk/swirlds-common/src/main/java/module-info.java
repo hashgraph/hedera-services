@@ -8,7 +8,6 @@ module com.swirlds.common {
     exports com.swirlds.common.config.export;
     exports com.swirlds.common.config.reflection;
     exports com.swirlds.common.config.singleton;
-    exports com.swirlds.common.config.sources;
     exports com.swirlds.common.config.validators;
     exports com.swirlds.common.constructable;
     exports com.swirlds.common.constructable.internal;

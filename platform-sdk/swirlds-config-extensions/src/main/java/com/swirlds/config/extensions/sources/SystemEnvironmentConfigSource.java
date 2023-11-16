@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -60,8 +61,8 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
      * {@inheritDoc}
      */
     @Override
-    public String getValue(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public String getValue(@NonNull final String propertyName) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!getPropertyNames().contains(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }

@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.config.converter.KeyValuePairConverter;
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.validation.ConfigViolation;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

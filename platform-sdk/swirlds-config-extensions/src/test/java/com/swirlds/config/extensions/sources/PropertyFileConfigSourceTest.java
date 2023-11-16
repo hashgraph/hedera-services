@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

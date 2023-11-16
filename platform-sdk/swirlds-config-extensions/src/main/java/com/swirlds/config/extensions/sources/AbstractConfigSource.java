@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -46,8 +47,8 @@ public abstract class AbstractConfigSource implements ConfigSource {
      * {@inheritDoc}
      */
     @Override
-    public final String getValue(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public final String getValue(@NonNull final String propertyName) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!getInternalProperties().containsKey(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }

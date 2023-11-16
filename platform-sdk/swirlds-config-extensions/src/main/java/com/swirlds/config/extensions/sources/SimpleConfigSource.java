@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
-import static com.swirlds.common.config.sources.ConfigSourceOrdinalConstants.PROGRAMMATIC_VALUES_ORDINAL;
+import static com.swirlds.config.extensions.sources.ConfigSourceOrdinalConstants.PROGRAMMATIC_VALUES_ORDINAL;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -182,14 +183,16 @@ public final class SimpleConfigSource extends AbstractConfigSource {
      * @param propertyName name of the peoprty
      * @param value        default value
      */
-    public SimpleConfigSource withValue(final String propertyName, final Boolean value) {
+    @NonNull
+    public SimpleConfigSource withValue(@NonNull final String propertyName, @NonNull final Boolean value) {
         setValue(propertyName, value, v -> Boolean.toString(v));
         return this;
     }
 
-    private <T> void setValue(final String propertyName, final T value, Function<T, String> converter) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(converter, "converter");
+    private <T> void setValue(
+            @NonNull final String propertyName, @Nullable final T value, @NonNull Function<T, String> converter) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        Objects.requireNonNull(converter, "converter must not be null");
         internalProperties.put(
                 propertyName, Optional.ofNullable(value).map(converter::apply).orElse(null));
     }
@@ -249,15 +252,18 @@ public final class SimpleConfigSource extends AbstractConfigSource {
         return this;
     }
 
-    private <T> void setValues(final String propertyName, final List<T> values, Function<T, String> converter) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(converter, "converter");
+    private <T> void setValues(
+            @NonNull final String propertyName,
+            @Nullable final List<T> values,
+            @NonNull Function<T, String> converter) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        Objects.requireNonNull(converter, "converter must not be null");
         if (values == null) {
             internalProperties.put(propertyName, null);
         } else if (values.isEmpty()) {
             internalProperties.put(propertyName, Configuration.EMPTY_LIST);
         } else {
-            String rawValues = values.stream().map(converter::apply).collect(Collectors.joining(","));
+            String rawValues = values.stream().map(converter).collect(Collectors.joining(","));
             internalProperties.put(propertyName, rawValues);
         }
     }

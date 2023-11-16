@@ -18,8 +18,8 @@ package com.swirlds.common.metrics.platform.prometheus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;

@@ -14,6 +14,7 @@ module com.hedera.node.services.cli {
     requires com.google.protobuf;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
+    requires com.swirlds.config.extensions;
     requires com.swirlds.fchashmap;
     requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;

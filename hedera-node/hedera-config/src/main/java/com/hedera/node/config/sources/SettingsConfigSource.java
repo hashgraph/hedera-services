@@ -19,7 +19,7 @@ package com.hedera.node.config.sources;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Setting;
-import com.swirlds.common.config.sources.AbstractConfigSource;
+import com.swirlds.config.extensions.sources.AbstractConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;

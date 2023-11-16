@@ -20,11 +20,11 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.config.extensions.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import edu.umd.cs.findbugs.annotations.NonNull;

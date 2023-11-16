@@ -24,14 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
-import com.swirlds.common.config.sources.SimpleConfigSource;
-import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.api.validation.ConfigViolationException;
+import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.config.impl.converters.DurationConverter;
 import com.swirlds.config.impl.validators.DefaultConfigViolation;
 import java.io.IOException;
