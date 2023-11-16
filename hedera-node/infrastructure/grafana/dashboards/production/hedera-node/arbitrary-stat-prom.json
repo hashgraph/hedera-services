@@ -163,7 +163,11 @@
         "type": "datasource"
       },
       {
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "mainnet",
+          "value": "mainnet"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "${Datasource}"
@@ -187,7 +191,11 @@
         "type": "query"
       },
       {
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "platform_secC2C",
+          "value": "platform_secC2C"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "${Datasource}"
