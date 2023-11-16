@@ -93,6 +93,10 @@ on:
         required: true
       jenkins-integration-url:
         required: false
+    outputs:
+      build-version:
+        description: "The build artifact version"
+        value: ${{ jobs.build-artifact.outputs.build-version }}
 
 defaults:
   run:
@@ -214,6 +218,8 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     needs:
       - validate
+    outputs:
+      build-version: ${{ steps.artifact-release.outputs.build-version }}
     steps:
       - name: Install Deterministic Zip Tooling
         run: |
@@ -341,6 +347,7 @@ jobs:
           ARTIFACT_FILE="${ARTIFACT_BASE_DIR}/${ARTIFACT_NAME}.zip"
           deterministic-zip -D -vr "${ARTIFACT_FILE}" *
 
+          echo "build-version=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
           echo "folder=${ARTIFACT_BASE_DIR}" >>"${GITHUB_OUTPUT}"
           echo "name=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
           echo "file=${ARTIFACT_FILE}" >>"${GITHUB_OUTPUT}"
@@ -359,10 +366,3 @@ jobs:
           destination: ${{ secrets.bucket-name }}
           parent: false
 
-      - name: Upload Artifacts (CDN Bucket)
-        uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
-#        if: ${{ inputs.dry-run-enabled != true && needs.validate.outputs.prerelease != 'true' && !cancelled() && !failure() }}
-        with:
-          path: ${{ steps.artifact-release.outputs.folder }}
-          destination: ${{ secrets.cdn-bucket-name }}/node/software/v${{ needs.validate.outputs.version-prefix }}/
-          parent: false
