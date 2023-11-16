@@ -82,7 +82,7 @@ public class WipeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {SN_1234.serialNumber()})
                         .array()),
-                assertSuccess());
+                assertSuccess("Failed to wipe NFT from Owner's account"));
 
         // WIPE 10 Tokens via wipeTokenAccountV1
         runHtsCallAndExpectOnSuccess(
@@ -90,7 +90,7 @@ public class WipeXTest extends AbstractContractXTest {
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
                         .array()),
-                assertSuccess());
+                assertSuccess("Failed to wipe 10 Tokens from Owner's account"));
 
         // WIPE 10 Tokens via wipeTokenAccountV2
         runHtsCallAndExpectOnSuccess(
@@ -98,7 +98,7 @@ public class WipeXTest extends AbstractContractXTest {
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
                         .array()),
-                assertSuccess());
+                assertSuccess("Failed to wipe 10 Tokens from Owner's account (V2)"));
 
         // @Future remove to revert #9272 after modularization is completed
         // Try to WIPE NFT with Invalid Token address
@@ -109,7 +109,9 @@ public class WipeXTest extends AbstractContractXTest {
                                 OTHER_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {SN_1234.serialNumber()})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()),
+                        output,
+                        "Expected INVALID_TOKEN_ID when trying to WIPE NFT with Invalid Token address"));
 
         // Try to WIPE NFT with Invalid Account address
         runHtsCallAndExpectOnSuccess(
@@ -120,7 +122,9 @@ public class WipeXTest extends AbstractContractXTest {
                         })
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()),
+                        output,
+                        "Expected INVALID_ACCOUNT_ID when trying to WIPE NFT with Invalid Account address"));
 
         // Try to WIPE NFT with Invalid serial numbers address
         runHtsCallAndExpectOnSuccess(
@@ -129,7 +133,9 @@ public class WipeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {-7511})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_NFT_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_NFT_ID).array()),
+                        output,
+                        "Expected INVALID_NFT_ID when trying to WIPE NFT with Invalid serial numbers address"));
 
         // Try to execute with token address
         runHtsCallAndExpectOnSuccess(
@@ -138,16 +144,20 @@ public class WipeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(OTHER_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()),
+                        output,
+                        "Expected INVALID_TOKEN_ID when trying to execute with other token address"));
 
         // Try to execute with invalid account address
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
-                        .encodeCallWithArgs(OTHER_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, 10L)
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, 10L)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()),
+                        output,
+                        "Expected INVALID_ACCOUNT_ID when trying to execute with invalid account address (V2)"));
     }
 
     @Override
@@ -212,10 +222,14 @@ public class WipeXTest extends AbstractContractXTest {
                         .accountId(OWNER_ID)
                         .numberOwnedNfts(NUMBER_OWNED_NFTS)
                         .alias(OWNER_ADDRESS)
+                        .key(AN_ED25519_KEY)
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
-                Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build());
+                Account.newBuilder()
+                        .accountId(UNAUTHORIZED_SPENDER_ID)
+                        .key(AN_ED25519_KEY)
+                        .build());
         return accounts;
     }
 
