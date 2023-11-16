@@ -20,10 +20,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPEND
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants.APPROVAL_FOR_ALL_EVENT;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -32,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -48,22 +51,32 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
     private final Address token;
     private final Address spender;
     private final boolean approved;
+    private final boolean isERC;
 
     public SetApprovalForAllCall(
             @NonNull final HtsCallAttempt attempt,
             @NonNull final TransactionBody transactionBody,
-            @NonNull final DispatchGasCalculator gasCalculator) {
+            @NonNull final DispatchGasCalculator gasCalculator,
+            final boolean isERC) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement());
         this.transactionBody = transactionBody;
         this.dispatchGasCalculator = gasCalculator;
+        this.isERC = isERC;
         this.verificationStrategy = attempt.defaultVerificationStrategy();
         this.sender = attempt.addressIdConverter().convertSender(attempt.senderAddress());
-
-        final var call = SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
-
-        this.token = fromHeadlongAddress(call.get(0));
-        this.spender = fromHeadlongAddress(call.get(1));
-        this.approved = call.get(2);
+        Tuple call;
+        if (isERC) {
+            call = ERC721_SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
+            this.token =
+                    ConversionUtils.asLongZeroAddress(attempt.redirectTokenId().tokenNum());
+            this.spender = fromHeadlongAddress(call.get(0));
+            this.approved = call.get(1);
+        } else {
+            call = SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
+            this.token = fromHeadlongAddress(call.get(0));
+            this.spender = fromHeadlongAddress(call.get(1));
+            this.approved = call.get(2);
+        }
     }
 
     @NonNull

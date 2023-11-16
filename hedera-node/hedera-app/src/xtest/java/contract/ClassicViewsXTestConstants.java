@@ -49,7 +49,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 public class ClassicViewsXTestConstants {
-    public static final String LEDGER_ID = "03";
+    public static final String LEDGER_ID = "0x03";
     private static final int SUCCESS_INT = 22;
     static final FileID CLASSIC_VIEWS_INITCODE_FILE_ID = new FileID(0, 0, 1029L);
     static final ContractID CLASSIC_QUERIES_X_TEST_ID =

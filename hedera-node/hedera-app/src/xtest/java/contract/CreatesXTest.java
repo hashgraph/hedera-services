@@ -16,9 +16,9 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
 import static contract.CreatesXTestConstants.DECIMALS_LONG;
@@ -275,16 +275,20 @@ public class CreatesXTest extends AbstractContractXTest {
                 assertSuccess("createNonFungibleWithCustomFeesV3"));
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(
                                 INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                INVALID_ACCOUNT_ID,
                 "createFungibleTokenV1 - invalid treasury account");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
@@ -297,16 +301,18 @@ public class CreatesXTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                INVALID_ACCOUNT_ID,
                 "createFungibleWithCustomFeesV1 - invalid treasury account");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN)
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                INVALID_ACCOUNT_ID,
                 "createNonFungibleTokenV1 - invalid treasury account");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
@@ -316,7 +322,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 INVALID_ACCOUNT_ID_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                INVALID_ACCOUNT_ID,
                 "createNonFungibleWithCustomFeesV1 - invalid treasury account");
     }
 
