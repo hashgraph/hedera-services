@@ -78,7 +78,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * arrived out of order.
      * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
      */
-    void advanceConsensusClock(@NonNull Instant consensusTime);
+    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
 
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only

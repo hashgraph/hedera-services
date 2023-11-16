@@ -35,7 +35,7 @@ public class ReadableBlockRecordStore {
      * Returns information about the currently-ongoing and latest completed record blocks
      */
     @NonNull
-    public BlockInfo lastBlockInfo() {
+    public BlockInfo getLastBlockInfo() {
         return blockInfo.get();
     }
 }

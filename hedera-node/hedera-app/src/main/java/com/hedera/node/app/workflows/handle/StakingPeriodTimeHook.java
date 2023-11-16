@@ -62,16 +62,16 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     public void process(@NonNull final TokenContext context) {
         requireNonNull(context, "context must not be null");
         final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
-        final var consensusTimeOfLastHandledTxn = blockStore.lastBlockInfo().consTimeOfLastHandledTxn();
+        final var consensusTimeOfLastHandledTxn = blockStore.getLastBlockInfo().consTimeOfLastHandledTxn();
 
         final var consensusTime = context.consensusTime();
         if (consensusTimeOfLastHandledTxn == null
-                || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.seconds()
+                || (consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.seconds()
                         && isNextStakingPeriod(
                                 consensusTime,
                                 Instant.ofEpochSecond(
                                         consensusTimeOfLastHandledTxn.seconds(), consensusTimeOfLastHandledTxn.nanos()),
-                                context)) {
+                                context))) {
             // Handle the daily staking distributions and updates
             try {
                 stakingCalculator.updateNodes(context);

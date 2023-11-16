@@ -740,7 +740,7 @@ class HandleWorkflowTest extends AppTestBase {
         // then
         assertThat(accountsState.isModified()).isFalse();
         assertThat(aliasesState.isModified()).isFalse();
-        verify(blockRecordManager, never()).advanceConsensusClock(any());
+        verify(blockRecordManager, never()).advanceConsensusClock(any(), any());
         verify(blockRecordManager, never()).startUserTransaction(any(), any());
         verify(blockRecordManager, never()).endUserTransaction(any(), any());
     }
@@ -752,7 +752,7 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, dualState, round);
 
         // then
-        verify(blockRecordManager).advanceConsensusClock(notNull());
+        verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
@@ -780,7 +780,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
         }
 
@@ -794,7 +794,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
         }
 
@@ -808,7 +808,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
         }
 
@@ -847,7 +847,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
             assertThat(alice).isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
@@ -865,7 +865,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
         }
@@ -882,7 +882,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check that record was created
         }
@@ -898,7 +898,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.isModified()).isFalse();
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check receipt
@@ -914,7 +914,7 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, dualState, round);
 
         // then
-        verify(blockRecordManager).advanceConsensusClock(notNull());
+        verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
         assertThat(aliasesState.isModified()).isFalse();
         // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
     }
@@ -1425,7 +1425,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
             assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
                     .isEqualTo(DEFAULT_FEES.totalFee() + DEFAULT_FEES.nodeFee());
@@ -1442,7 +1442,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
             assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
         }
@@ -1460,7 +1460,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1481,7 +1481,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1507,7 +1507,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1525,7 +1525,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(UNAUTHORIZED));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1547,7 +1547,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(AUTHORIZATION_FAILED));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1569,7 +1569,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(ENTITY_NOT_ALLOWED_TO_DELETE));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1592,7 +1592,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(SUCCESS));
         }
@@ -1611,7 +1611,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check that record was created
         }
@@ -1624,7 +1624,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.isModified()).isFalse();
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check receipt
@@ -1644,7 +1644,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull());
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(blockRecordManager).startUserTransaction(TX_CONSENSUS_NOW, state);
             verify(blockRecordManager).endUserTransaction(any(), eq(state));
             verify(blockRecordManager).endRound(state);

@@ -283,13 +283,23 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
     /** {@inheritDoc} */
     @Override
-    public void advanceConsensusClock(@NonNull final Instant consensusTime) {
-        this.lastBlockInfo = this.lastBlockInfo
+    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+        final var builder = this.lastBlockInfo
                 .copyBuilder()
                 .consTimeOfLastHandledTxn(Timestamp.newBuilder()
                         .seconds(consensusTime.getEpochSecond())
-                        .nanos(consensusTime.getNano()))
-                .build();
+                        .nanos(consensusTime.getNano()));
+        final var newBlockInfo = builder.build();
+
+        // Update the latest block info in state
+        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        blockInfoState.put(newBlockInfo);
+        // Commit the changes. We don't ever want to roll back when advancing the consensus clock
+        ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
+
+        // Cache the updated block info
+        this.lastBlockInfo = newBlockInfo;
     }
 
     // ========================================================================================================

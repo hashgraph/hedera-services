@@ -81,7 +81,7 @@ class GenesisRecordsConsensusHookTest {
         given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
 
-        given(blockStore.lastBlockInfo()).willReturn(defaultStartupBlockInfo());
+        given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
         subject = new GenesisRecordsConsensusHook();
     }
@@ -199,7 +199,7 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesNoRecordsAfterRunning() {
-        given(blockStore.lastBlockInfo())
+        given(blockStore.getLastBlockInfo())
                 .willReturn(defaultStartupBlockInfo()
                         .copyBuilder()
                         .consTimeOfLastHandledTxn(Timestamp.newBuilder()

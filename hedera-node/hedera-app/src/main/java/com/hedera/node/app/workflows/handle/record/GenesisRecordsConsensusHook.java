@@ -68,7 +68,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
         final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
 
         // This process should only run ONCE, when a node receives its first transaction after startup
-        if (blockStore.lastBlockInfo().consTimeOfLastHandledTxn() != null) return;
+        if (blockStore.getLastBlockInfo().consTimeOfLastHandledTxn() != null) return;
 
         // First we set consensusTimeOfLastHandledTxn so that this process won't run again
         final var consensusTime = context.consensusTime();

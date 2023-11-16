@@ -77,7 +77,7 @@ class StakingPeriodTimeHookTest {
 
     @Test
     void processUpdateCalledForNullConsensusTime() {
-        given(blockStore.lastBlockInfo())
+        given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn((Timestamp) null)
                         .build());
@@ -92,7 +92,7 @@ class StakingPeriodTimeHookTest {
     void processUpdateSkippedForPreviousConsensusTime() {
         final var beforeLastConsensusTime = CONSENSUS_TIME_1234567.minusSeconds(1);
         given(context.consensusTime()).willReturn(beforeLastConsensusTime);
-        given(blockStore.lastBlockInfo())
+        given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(Timestamp.newBuilder()
                                 .seconds(CONSENSUS_TIME_1234567.getEpochSecond())
@@ -109,7 +109,7 @@ class StakingPeriodTimeHookTest {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
         final var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
-        given(blockStore.lastBlockInfo())
+        given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(Timestamp.newBuilder()
                                 .seconds(CONSENSUS_TIME_1234567.getEpochSecond())
@@ -134,7 +134,7 @@ class StakingPeriodTimeHookTest {
                 .when(stakingPeriodCalculator)
                 .updateNodes(any());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plusSeconds(10));
-        given(blockStore.lastBlockInfo())
+        given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn((Timestamp) null)
                         .build());
