@@ -18,6 +18,7 @@ package com.swirlds.config.extensions.sources;
 
 import static com.swirlds.config.extensions.sources.ConfigSourceOrdinalConstants.PROGRAMMATIC_VALUES_ORDINAL;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -190,7 +191,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
 
     private <T> void setValue(
             @NonNull final String propertyName, @Nullable final T value, @NonNull Function<T, String> converter) {
-        Objects.requireNonNull(propertyName, "propertyName must not be null");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         Objects.requireNonNull(converter, "converter must not be null");
         internalProperties.put(
                 propertyName, Optional.ofNullable(value).map(converter::apply).orElse(null));
@@ -255,7 +256,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
             @NonNull final String propertyName,
             @Nullable final List<T> values,
             @NonNull Function<T, String> converter) {
-        Objects.requireNonNull(propertyName, "propertyName must not be null");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         Objects.requireNonNull(converter, "converter must not be null");
         if (values == null) {
             internalProperties.put(propertyName, null);
