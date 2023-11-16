@@ -25,6 +25,7 @@ import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
@@ -71,7 +72,8 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
                         ERC_20_TRANSFER.encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         ERC20_TOKEN_ID),
                 output ->
-                        assertEquals(asBytesResult(ERC_20_TRANSFER.getOutputs().encodeElements(true)), output));
+                        assertEquals(asBytesResult(ERC_20_TRANSFER.getOutputs().encodeElements(true)), output),
+                "Owner can transfer their own balance");
         // The approved spender can spend the owner's balance
         runHtsCallAndExpectOnSuccess(
                 APPROVED_BESU_ADDRESS,
@@ -80,7 +82,8 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
                                 OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(200L)),
                         ERC20_TOKEN_ID),
                 output -> assertEquals(
-                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output));
+                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output),
+                "Approved spender can spend the owner's balance");
         // Unauthorized spender cannot spend the owner's balance
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -88,7 +91,8 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
                         ERC_20_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(300L)),
                         ERC20_TOKEN_ID),
-                SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+                SPENDER_DOES_NOT_HAVE_ALLOWANCE,
+                "Unauthorized spender cannot spend the owner's balance");
     }
 
     @Override
@@ -130,17 +134,20 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
                                 .tokenId(ERC20_TOKEN_ID)
                                 .amount(Long.MAX_VALUE)
                                 .build()))
+                        .key(AN_ED25519_KEY)
                         .build());
         accounts.put(
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder()
                         .accountId(UNAUTHORIZED_SPENDER_ID)
+                        .key(AN_ED25519_KEY)
                         .alias(UNAUTHORIZED_SPENDER_ADDRESS)
                         .build());
         accounts.put(
                 APPROVED_ID,
                 Account.newBuilder()
                         .accountId(APPROVED_ID)
+                        .key(AN_ED25519_KEY)
                         .alias(APPROVED_ADDRESS)
                         .build());
         accounts.put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());

@@ -555,7 +555,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
+            @Nullable final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final TransactionCategory childCategory) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
