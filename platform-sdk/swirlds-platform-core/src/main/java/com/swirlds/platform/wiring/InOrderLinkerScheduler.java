@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
@@ -32,8 +33,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class InOrderLinkerScheduler {
     private final TaskScheduler<EventImpl> taskScheduler;
 
-    private final InputWire<GossipEvent, EventImpl> eventInput;
-    private final InputWire<Long, EventImpl> minimumGenerationNonAncientInput;
+    private final BindableInputWire<GossipEvent, EventImpl> eventInput;
+    private final BindableInputWire<Long, EventImpl> minimumGenerationNonAncientInput;
 
     /**
      * Constructor.
@@ -59,7 +60,7 @@ public class InOrderLinkerScheduler {
      * @return the event input wire
      */
     @NonNull
-    public InputWire<GossipEvent, EventImpl> getEventInput() {
+    public InputWire<GossipEvent> getEventInput() {
         return eventInput;
     }
 
@@ -69,7 +70,7 @@ public class InOrderLinkerScheduler {
      * @return the minimum generation non ancient input wire
      */
     @NonNull
-    public InputWire<Long, EventImpl> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 

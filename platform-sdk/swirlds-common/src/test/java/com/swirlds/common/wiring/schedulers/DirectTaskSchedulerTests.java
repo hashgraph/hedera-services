@@ -25,7 +25,7 @@ import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.wires.SolderType;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -54,7 +54,7 @@ class DirectTaskSchedulerTests {
                 .withOnRamp(counter)
                 .build()
                 .cast();
-        final InputWire<Integer, Integer> inA = schedulerA.buildInputWire("inA");
+        final BindableInputWire<Integer, Integer> inA = schedulerA.buildInputWire("inA");
         final OutputWire<Integer> outA = schedulerA.getOutputWire();
 
         final TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
@@ -62,7 +62,7 @@ class DirectTaskSchedulerTests {
                 .withOffRamp(counter)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> inB = schedulerB.buildInputWire("inB");
+        final BindableInputWire<Integer, Void> inB = schedulerB.buildInputWire("inB");
 
         final SolderType solderType;
         final double solderChoice = random.nextDouble();
@@ -136,7 +136,7 @@ class DirectTaskSchedulerTests {
                 .build()
                 .cast();
 
-        final InputWire<Integer, Void> in = scheduler.buildInputWire("in");
+        final BindableInputWire<Integer, Void> in = scheduler.buildInputWire("in");
 
         final AtomicInteger count = new AtomicInteger(0);
         in.bind(x -> {

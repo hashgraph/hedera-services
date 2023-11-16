@@ -20,17 +20,15 @@ import com.swirlds.common.wiring.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * An object that can insert work to be handled by a {@link TaskScheduler}.
  *
- * @param <IN> the type of data that passes into the wire
- * @param <OUT> the type of the data that comes out of the parent {@link TaskScheduler}'s primary output wire
+ * @param <IN>  the type of data that passes into the wire
  */
-public class InputWire<IN, OUT> {
+public abstract class InputWire<IN> {
 
-    private final TaskSchedulerInput<OUT> taskSchedulerInput;
+    private final TaskSchedulerInput<?> taskSchedulerInput;
     private Consumer<Object> handler;
     private final String name;
     private final String taskSchedulerName;
@@ -41,7 +39,7 @@ public class InputWire<IN, OUT> {
      * @param taskScheduler the scheduler to insert data into
      * @param name          the name of the input wire
      */
-    public InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
+    protected InputWire(@NonNull final TaskScheduler<?> taskScheduler, @NonNull final String name) {
         this.taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
         this.taskSchedulerName = taskScheduler.getName();
@@ -65,80 +63,6 @@ public class InputWire<IN, OUT> {
     @NonNull
     public String getTaskSchedulerName() {
         return taskSchedulerName;
-    }
-
-    /**
-     * Cast this input wire into whatever a variable is expecting. Sometimes the compiler gets confused with generics,
-     * and path of least resistance is to just cast to the proper data type.
-     *
-     * <p>
-     * Warning: this will appease the compiler, but it is possible to cast a wire into a data type that will cause
-     * runtime exceptions. Use with appropriate caution.
-     *
-     * @param <A> the input type to cast to
-     * @param <B> the output type to cast to
-     * @return this, cast into whatever type is requested
-     */
-    @NonNull
-    @SuppressWarnings("unchecked")
-    public final <A, B> InputWire<A, B> cast() {
-        return (InputWire<A, B>) this;
-    }
-
-    /**
-     * Convenience method for creating an input wire with a specific input type. This method is useful for when the
-     * compiler can't figure out the generic type of the input wire. This method is a no op.
-     *
-     * @param inputType the input type of the input wire
-     * @param <X>       the input type of the input wire
-     * @return this
-     */
-    @SuppressWarnings("unchecked")
-    public <X> InputWire<X, OUT> withInputType(@NonNull final Class<X> inputType) {
-        return (InputWire<X, OUT>) this;
-    }
-
-    /**
-     * Bind this input wire to a handler. A handler must be bound to this input wire prior to inserting data via any
-     * method.
-     *
-     * @param handler the handler to bind to this input wire
-     * @return this
-     * @throws IllegalStateException if a handler is already bound and this method is called a second time
-     */
-    @SuppressWarnings("unchecked")
-    @NonNull
-    public InputWire<IN, OUT> bind(@NonNull final Consumer<IN> handler) {
-        if (this.handler != null) {
-            throw new IllegalStateException("Input wire \"" + name + "\" already bound");
-        }
-        this.handler = (Consumer<Object>) Objects.requireNonNull(handler);
-
-        return this;
-    }
-
-    /**
-     * Bind this input wire to a handler. A handler must be bound to this inserter prior to inserting data via any
-     * method.
-     *
-     * @param handler the handler to bind to this input task scheduler
-     * @return this
-     * @throws IllegalStateException if a handler is already bound and this method is called a second time
-     */
-    @SuppressWarnings("unchecked")
-    @NonNull
-    public InputWire<IN, OUT> bind(@NonNull final Function<IN, OUT> handler) {
-        if (this.handler != null) {
-            throw new IllegalStateException("Handler already bound");
-        }
-        this.handler = i -> {
-            final OUT output = handler.apply((IN) i);
-            if (output != null) {
-                taskSchedulerInput.forward(output);
-            }
-        };
-
-        return this;
     }
 
     /**
@@ -170,5 +94,17 @@ public class InputWire<IN, OUT> {
      */
     public void inject(@NonNull final IN data) {
         taskSchedulerInput.inject(handler, data);
+    }
+
+    /**
+     * Set the method that will handle data traveling over this wire.
+     *
+     * @param handler the method that will handle data traveling over this wire
+     */
+    protected void setHandler(@NonNull final Consumer<Object> handler) {
+        if (this.handler != null) {
+            throw new IllegalStateException("Handler already bound");
+        }
+        this.handler = Objects.requireNonNull(handler);
     }
 }

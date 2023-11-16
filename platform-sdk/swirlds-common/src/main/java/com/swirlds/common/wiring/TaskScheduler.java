@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.input.TaskSchedulerInput;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -78,15 +79,15 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     /**
      * Build an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound
-     * via {@link InputWire#bind(Consumer)}.
+     * via {@link BindableInputWire#bind(Consumer)}.
      *
      * @param name the name of the input wire
      * @param <I>  the type of data that is inserted via this input wire
      * @return the input wire
      */
     @NonNull
-    public final <I> InputWire<I, OUT> buildInputWire(@NonNull final String name) {
-        return new InputWire<>(this, name);
+    public final <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
+        return new BindableInputWire<>(this, name);
     }
 
     /**
@@ -168,7 +169,8 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     /**
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
-     * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
+     * handler method (i.e. the one given to {@link BindableInputWire#bind(Consumer)}) and that handler method has
+     * returned.
      * <p>
      * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed
      * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return

@@ -36,7 +36,7 @@ import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.wires.SolderType;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import java.time.Duration;
@@ -94,7 +94,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -143,7 +143,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -182,7 +182,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -252,7 +252,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -330,7 +330,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -394,7 +394,7 @@ class SequentialTaskSchedulerTests {
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -473,7 +473,7 @@ class SequentialTaskSchedulerTests {
                 .withSleepDuration(Duration.ofMillis(1))
                 .build()
                 .cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -570,7 +570,7 @@ class SequentialTaskSchedulerTests {
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -644,7 +644,7 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -700,10 +700,10 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Integer> taskSchedulerToD =
                 model.schedulerBuilder("wireToD").withType(type).build().cast();
 
-        final InputWire<Integer, Integer> channelToA = taskSchedulerToA.buildInputWire("channelToA");
-        final InputWire<Integer, Integer> channelToB = taskSchedulerToB.buildInputWire("channelToB");
-        final InputWire<Integer, Integer> channelToC = taskSchedulerToC.buildInputWire("channelToC");
-        final InputWire<Integer, Integer> channelToD = taskSchedulerToD.buildInputWire("channelToD");
+        final BindableInputWire<Integer, Integer> channelToA = taskSchedulerToA.buildInputWire("channelToA");
+        final BindableInputWire<Integer, Integer> channelToB = taskSchedulerToB.buildInputWire("channelToB");
+        final BindableInputWire<Integer, Integer> channelToC = taskSchedulerToC.buildInputWire("channelToC");
+        final BindableInputWire<Integer, Integer> channelToD = taskSchedulerToD.buildInputWire("channelToD");
 
         final Function<Integer, Integer> handlerA = x -> {
             if (x > 0) {
@@ -807,15 +807,15 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Void> taskScheduler =
                 model.schedulerBuilder("test").withType(type).build().cast();
 
-        final InputWire<Integer, Void> integerChannel = taskScheduler
+        final BindableInputWire<Integer, Void> integerChannel = taskScheduler
                 .buildInputWire("integerChannel")
                 .withInputType(Integer.class)
                 .bind(integerHandler);
-        final InputWire<Boolean, Void> booleanChannel = taskScheduler
+        final BindableInputWire<Boolean, Void> booleanChannel = taskScheduler
                 .buildInputWire("booleanChannel")
                 .withInputType(Boolean.class)
                 .bind(booleanHandler);
-        final InputWire<String, Void> stringChannel = taskScheduler
+        final BindableInputWire<String, Void> stringChannel = taskScheduler
                 .buildInputWire("stringChannel")
                 .withInputType(String.class)
                 .bind(stringHandler);
@@ -876,11 +876,11 @@ class SequentialTaskSchedulerTests {
                 .build()
                 .cast();
 
-        final InputWire<Integer, Void> channel1 = taskScheduler
+        final BindableInputWire<Integer, Void> channel1 = taskScheduler
                 .buildInputWire("channel1")
                 .withInputType(Integer.class)
                 .bind(handler1);
-        final InputWire<Integer, Void> channel2 = taskScheduler
+        final BindableInputWire<Integer, Void> channel2 = taskScheduler
                 .buildInputWire("channel2")
                 .withInputType(Integer.class)
                 .bind(handler2);
@@ -977,8 +977,8 @@ class SequentialTaskSchedulerTests {
                 .build()
                 .cast();
 
-        final InputWire<Integer, Void> channelA = taskSchedulerA.buildInputWire("channelA");
-        final InputWire<Integer, Void> channelB = taskSchedulerB.buildInputWire("channelB");
+        final BindableInputWire<Integer, Void> channelA = taskSchedulerA.buildInputWire("channelA");
+        final BindableInputWire<Integer, Void> channelB = taskSchedulerB.buildInputWire("channelB");
 
         final Consumer<Integer> handlerA = x -> {
             wireValueA.set(hash32(wireValueA.get(), -x));
@@ -1100,7 +1100,7 @@ class SequentialTaskSchedulerTests {
                 .withFlushingEnabled(true)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -1224,7 +1224,7 @@ class SequentialTaskSchedulerTests {
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .build()
                 .cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -1283,9 +1283,9 @@ class SequentialTaskSchedulerTests {
                 .build()
                 .cast();
 
-        final InputWire<Object, Void> channelA = a.buildInputWire("channelA");
-        final InputWire<Object, Void> channelB = b.buildInputWire("channelB");
-        final InputWire<Object, Void> channelC = c.buildInputWire("channelC");
+        final BindableInputWire<Object, Void> channelA = a.buildInputWire("channelA");
+        final BindableInputWire<Object, Void> channelB = b.buildInputWire("channelB");
+        final BindableInputWire<Object, Void> channelC = c.buildInputWire("channelC");
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -1357,9 +1357,9 @@ class SequentialTaskSchedulerTests {
                 .build()
                 .cast();
 
-        final InputWire<Object, Void> channelA = a.buildInputWire("channelA");
-        final InputWire<Object, Void> channelB = b.buildInputWire("channelB");
-        final InputWire<Object, Void> channelC = c.buildInputWire("channelC");
+        final BindableInputWire<Object, Void> channelA = a.buildInputWire("channelA");
+        final BindableInputWire<Object, Void> channelB = b.buildInputWire("channelB");
+        final BindableInputWire<Object, Void> channelC = c.buildInputWire("channelC");
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -1417,10 +1417,10 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").withType(type).build().cast();
 
-        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
+        final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final BindableInputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final BindableInputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final BindableInputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
@@ -1486,10 +1486,10 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").withType(type).build().cast();
 
-        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
+        final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final BindableInputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final BindableInputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final BindableInputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
@@ -1557,24 +1557,25 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
-        final InputWire<Integer, Integer> addNewValueToA = taskSchedulerA.buildInputWire("addNewValueToA");
-        final InputWire<Boolean, Integer> setInversionBitInA = taskSchedulerA.buildInputWire("setInversionBitInA");
+        final BindableInputWire<Integer, Integer> addNewValueToA = taskSchedulerA.buildInputWire("addNewValueToA");
+        final BindableInputWire<Boolean, Integer> setInversionBitInA =
+                taskSchedulerA.buildInputWire("setInversionBitInA");
 
         final TaskScheduler<Integer> taskSchedulerX =
                 model.schedulerBuilder("X").withType(type).build().cast();
-        final InputWire<Integer, Integer> inputX = taskSchedulerX.buildInputWire("inputX");
+        final BindableInputWire<Integer, Integer> inputX = taskSchedulerX.buildInputWire("inputX");
 
         final TaskScheduler<Integer> taskSchedulerY =
                 model.schedulerBuilder("Y").withType(type).build().cast();
-        final InputWire<Integer, Integer> inputY = taskSchedulerY.buildInputWire("inputY");
+        final BindableInputWire<Integer, Integer> inputY = taskSchedulerY.buildInputWire("inputY");
 
         final TaskScheduler<Integer> taskSchedulerZ =
                 model.schedulerBuilder("Z").withType(type).build().cast();
-        final InputWire<Integer, Integer> inputZ = taskSchedulerZ.buildInputWire("inputZ");
+        final BindableInputWire<Integer, Integer> inputZ = taskSchedulerZ.buildInputWire("inputZ");
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
-        final InputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
+        final BindableInputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
         taskSchedulerA.getOutputWire().solderTo(inputX);
         taskSchedulerA.getOutputWire().solderTo(inputY);
@@ -1669,18 +1670,18 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
-        final InputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("inA");
+        final BindableInputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("inA");
 
         final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
-        final InputWire<Integer, Integer> inB = taskSchedulerB.buildInputWire("inB");
+        final BindableInputWire<Integer, Integer> inB = taskSchedulerB.buildInputWire("inB");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
+        final BindableInputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
 
         taskSchedulerA.getOutputWire().solderTo(inC); // respects capacity
         taskSchedulerB.getOutputWire().solderTo(inC, SolderType.INJECT); // ignores capacity
@@ -1785,10 +1786,10 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").withType(type).build().cast();
 
-        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
+        final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final BindableInputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final BindableInputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final BindableInputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
@@ -1899,10 +1900,10 @@ class SequentialTaskSchedulerTests {
                 .build()
                 .cast();
 
-        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
+        final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final BindableInputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final BindableInputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final BindableInputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
@@ -1958,15 +1959,15 @@ class SequentialTaskSchedulerTests {
 
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
-        final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
+        final BindableInputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
         final StandardOutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
         final StandardOutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
-        final InputWire<Integer, Void> bInInteger = taskSchedulerB.buildInputWire("bIn1");
-        final InputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
-        final InputWire<String, Void> bInString = taskSchedulerB.buildInputWire("bIn3");
+        final BindableInputWire<Integer, Void> bInInteger = taskSchedulerB.buildInputWire("bIn1");
+        final BindableInputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
+        final BindableInputWire<String, Void> bInString = taskSchedulerB.buildInputWire("bIn3");
 
         taskSchedulerA.getOutputWire().solderTo(bInInteger);
         aOutBoolean.solderTo(bInBoolean);
@@ -2031,14 +2032,14 @@ class SequentialTaskSchedulerTests {
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
-        final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
+        final BindableInputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
-        final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
+        final BindableInputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
@@ -2046,7 +2047,7 @@ class SequentialTaskSchedulerTests {
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
+        final BindableInputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
 
         taskSchedulerA.getOutputWire().solderTo(bIn);
         taskSchedulerB.getOutputWire().solderTo(cIn);
@@ -2153,7 +2154,7 @@ class SequentialTaskSchedulerTests {
                 .withUnhandledTaskCapacity(5)
                 .build()
                 .cast();
-        final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
+        final BindableInputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
@@ -2161,7 +2162,7 @@ class SequentialTaskSchedulerTests {
                 .withUnhandledTaskCapacity(5)
                 .build()
                 .cast();
-        final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
+        final BindableInputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
@@ -2170,7 +2171,7 @@ class SequentialTaskSchedulerTests {
                 .withUnhandledTaskCapacity(5)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
+        final BindableInputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
 
         taskSchedulerA.getOutputWire().solderTo(bIn);
         taskSchedulerB.getOutputWire().solderTo(cIn);
@@ -2268,14 +2269,14 @@ class SequentialTaskSchedulerTests {
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
-        final InputWire<Integer, Integer> inputA = schedulerA.buildInputWire("inputA");
+        final BindableInputWire<Integer, Integer> inputA = schedulerA.buildInputWire("inputA");
 
         final TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> inputB = schedulerB.buildInputWire("inputB");
+        final BindableInputWire<Integer, Void> inputB = schedulerB.buildInputWire("inputB");
 
         schedulerA.getOutputWire().solderTo(inputB, SolderType.OFFER);
 

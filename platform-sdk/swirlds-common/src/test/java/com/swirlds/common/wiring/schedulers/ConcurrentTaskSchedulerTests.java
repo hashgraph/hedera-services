@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -61,7 +61,7 @@ class ConcurrentTaskSchedulerTests {
                 .withType(TaskSchedulerType.CONCURRENT)
                 .build()
                 .cast();
-        final InputWire<Integer, Void> channel = taskScheduler
+        final BindableInputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
                 .bind(handler);
@@ -112,7 +112,7 @@ class ConcurrentTaskSchedulerTests {
                 .withType(TaskSchedulerType.CONCURRENT)
                 .build()
                 .cast();
-        final InputWire<Operation, Void> channel = taskScheduler
+        final BindableInputWire<Operation, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Operation.class)
                 .bind(handler);

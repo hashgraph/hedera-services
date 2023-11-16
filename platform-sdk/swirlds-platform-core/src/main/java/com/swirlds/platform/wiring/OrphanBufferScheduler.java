@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
@@ -31,8 +32,8 @@ import java.util.List;
  */
 public class OrphanBufferScheduler {
 
-    private final InputWire<GossipEvent, List<GossipEvent>> eventInput;
-    private final InputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput;
+    private final BindableInputWire<GossipEvent, List<GossipEvent>> eventInput;
+    private final BindableInputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput;
 
     private final OutputWire<GossipEvent> eventOutput;
 
@@ -62,7 +63,7 @@ public class OrphanBufferScheduler {
      * @return the event input wire
      */
     @NonNull
-    public InputWire<GossipEvent, List<GossipEvent>> getEventInput() {
+    public InputWire<GossipEvent> getEventInput() {
         return eventInput;
     }
 
@@ -72,7 +73,7 @@ public class OrphanBufferScheduler {
      * @return the minimum generation non ancient input wire
      */
     @NonNull
-    public InputWire<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
