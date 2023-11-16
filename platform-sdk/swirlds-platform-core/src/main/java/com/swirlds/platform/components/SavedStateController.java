@@ -30,9 +30,13 @@ import com.swirlds.platform.state.signed.StateToDiskReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Controls which signed states should be written to disk based on input from other components
+ */
 public class SavedStateController {
     private static final Logger logger = LogManager.getLogger(SavedStateController.class);
     /**
@@ -40,18 +44,26 @@ public class SavedStateController {
      * written to disk.
      */
     private Instant previousSavedStateTimestamp;
-
+    /** the state config */
     private final StateConfig stateConfig;
+    /** a function that writes a signed state to disk asynchronously */
     private final BooleanFunction<ReservedSignedState> stateWrite;
 
-    public SavedStateController(final StateConfig stateConfig, final BooleanFunction<ReservedSignedState> stateWrite) {
-        this.stateConfig = stateConfig;
-        this.stateWrite = stateWrite;
+    /**
+     * Create a new SavedStateController
+     *
+     * @param stateConfig the state config
+     * @param stateWrite  a function that writes a signed state to disk asynchronously
+     */
+    public SavedStateController(@NonNull final StateConfig stateConfig,
+            @NonNull final BooleanFunction<ReservedSignedState> stateWrite) {
+        this.stateConfig = Objects.requireNonNull(stateConfig);
+        this.stateWrite = Objects.requireNonNull(stateWrite);
     }
 
     /**
-     * Determine if a signed state should eventually be written to disk. If the state should eventually be written, the
-     * state's {@link SignedState#markAsStateToSave} method will be called, to indicate the reason
+     * Determine if a signed state should be written to disk. If the state should be written, the state will be passed
+     * on to the writer to be written asynchronously.
      *
      * @param signedState the signed state in question
      */
@@ -65,6 +77,12 @@ public class SavedStateController {
         // if a null reason is returned, then there isn't anything to do, since the state shouldn't be saved
     }
 
+    /**
+     * Notifies the controller that a signed state was received from another node during reconnect. The controller save
+     * its timestamp and pass it on to be written to disk.
+     *
+     * @param signedState the signed state that was received from another node during reconnect
+     */
     public synchronized void reconnectStateReceived(@NonNull final SignedState signedState) {
         saveToDisk(signedState.reserve("saving to disk after reconnect"), RECONNECT);
     }
@@ -74,11 +92,11 @@ public class SavedStateController {
      *
      * @param signedState the signed state that was read from file at boot time
      */
-    public synchronized void registerSignedStateFromDisk(final SignedState signedState) {
+    public synchronized void registerSignedStateFromDisk(@NonNull final SignedState signedState) {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
     }
 
-    private void saveToDisk(@NonNull final ReservedSignedState state, final StateToDiskReason reason) {
+    private void saveToDisk(@NonNull final ReservedSignedState state, @NonNull final StateToDiskReason reason) {
         final SignedState signedState = state.get();
         logger.info(
                 STATE_TO_DISK.getMarker(),

@@ -71,7 +71,6 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
-import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
@@ -471,9 +470,7 @@ public class SwirldsPlatform implements Platform {
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        /*
-         * Manages the pipeline of signed states to be written to disk
-         */
+        // Manages the pipeline of signed states to be written to disk
         final SignedStateFileManager signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 new SignedStateMetrics(platformContext.getMetrics()),
@@ -481,7 +478,7 @@ public class SwirldsPlatform implements Platform {
                 actualMainClassName,
                 selfId,
                 swirldName);
-        //TODO move wiring
+        //FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
@@ -491,9 +488,10 @@ public class SwirldsPlatform implements Platform {
                 .cast();
         final SignedStateFileManagerWiring signedStateFileManagerWiring = new SignedStateFileManagerWiring(savedStateScheduler);
         signedStateFileManagerWiring.bind(signedStateFileManager);
+        signedStateFileManagerWiring.solderPces(preconsensusEventWriter);
         signedStateFileManagerWiring.solderStatusManager(platformStatusManager::submitStatusAction);
-        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent::stateToDiskAttempt);
-        signedStateFileManagerWiring.solderPces(preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
+        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent::stateSavedToDisk);
+
 
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);

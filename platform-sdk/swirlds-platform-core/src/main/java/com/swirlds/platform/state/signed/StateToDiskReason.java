@@ -51,6 +51,9 @@ public enum StateToDiskReason {
      * The state was written because the PCES recovery process has been completed
      */
     PCES_RECOVERY_COMPLETE("pces-recovery"),
+    /**
+     * If the reason at the point of saving is not known, this value will be used
+     */
     UNKNOWN("unknown");
 
     /**

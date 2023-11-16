@@ -22,13 +22,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CountDownLatch;
 
 /**
+ * A request to dump a signed state to disk because of an unexpected occurrence.
+ *
  * @param reservedSignedState the reserved signed state to be written to disk
  * @param finishedCallback    called after state writing is complete
+ * @param waitForFinished     called to wait for state writing to complete
  */
 public record StateDumpRequest(
         @NonNull ReservedSignedState reservedSignedState,
         @NonNull Runnable finishedCallback,
         @NonNull Runnable waitForFinished) {
+
+    /**
+     * Create a new state dump request.
+     *
+     * @param reservedSignedState the reserved signed state to be written to disk
+     * @return the new state dump request
+     */
     public static StateDumpRequest create(@NonNull final ReservedSignedState reservedSignedState) {
         final CountDownLatch latch = new CountDownLatch(1);
         final InterruptableRunnable await = latch::await;

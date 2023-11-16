@@ -63,8 +63,9 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
 
     /**
      * Create a new instance
+     *
      * @param notificationEngine the notification engine
-     * @param context the platform context
+     * @param context            the platform context
      */
     public AppCommunicationComponent(
             @NonNull final NotificationEngine notificationEngine, @NonNull final PlatformContext context) {
@@ -86,8 +87,12 @@ public class AppCommunicationComponent implements PlatformComponent, NewLatestCo
                 .build();
     }
 
-    public void stateToDiskAttempt(@NonNull final StateSavingResult stateSavingResult) {
-        // Synchronous notification, no need to take an extra reservation
+    /**
+     * Notify the application that a state has been saved to disk successfully
+     *
+     * @param stateSavingResult the result of the state saving operation
+     */
+    public void stateSavedToDisk(@NonNull final StateSavingResult stateSavingResult) {
         notificationEngine.dispatch(
                 StateWriteToDiskCompleteListener.class,
                 new StateWriteToDiskCompleteNotification(

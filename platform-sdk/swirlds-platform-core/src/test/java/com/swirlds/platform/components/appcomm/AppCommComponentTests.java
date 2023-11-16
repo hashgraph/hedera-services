@@ -79,7 +79,7 @@ public class AppCommComponentTests {
         });
 
         final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
-        component.stateToDiskAttempt(result);
+        component.stateSavedToDisk(result);
 
         assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
     }

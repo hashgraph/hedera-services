@@ -123,6 +123,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param newLatestCompleteStateConsumer     consumer to invoke when there is a new latest complete signed state
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      * @param platformStatusGetter               gets the current platform status
+     * @param savedStateController               controls which states are saved to disk
+     * @param stateDumpConsumer                  consumer to invoke when a state is requested to be dumped to disk
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,

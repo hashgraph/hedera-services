@@ -65,7 +65,6 @@ import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -371,7 +370,7 @@ class SignedStateFileManagerTests {
 
                 assertEquals(
                         oldestMetadata.minimumGenerationNonAncient(),
-                        lastResult.get().minGen());
+                        lastResult.get().oldestMinimumGenerationOnDisk());
 
                 assertTrue(
                         currentStatesOnDisk.size() <= statesOnDisk,
