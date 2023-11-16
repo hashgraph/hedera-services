@@ -74,8 +74,8 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
 
     /**
      * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
-     * be called early on in the transaction handling process in order to avoid processing earlier transactions that have
-     * arrived out of order.
+     * be called early on in the transaction handling process in order to avoid assigning the same consensus timestamp
+     * to multiple transactions.
      * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
      */
     void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
