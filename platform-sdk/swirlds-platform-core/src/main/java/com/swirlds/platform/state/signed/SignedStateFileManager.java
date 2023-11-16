@@ -32,6 +32,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.event.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -67,8 +68,9 @@ public class SignedStateFileManager {
      * Metrics provider
      */
     private final SignedStateMetrics metrics;
-
+    /** the configuration */
     private final Configuration configuration;
+    /** the platform context */
     private final PlatformContext platformContext;
 
     /**
@@ -104,12 +106,16 @@ public class SignedStateFileManager {
     }
 
     /**
-     * Method to be called when a state has been successfully written to disk in-band. An "in-band" write is part of
-     * normal platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
+     * Method to be called when a state needs to be written to disk in-band. An "in-band" write is part of normal
+     * platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
      * <p>
      * This method shouldn't be called if the state was written out-of-band.
+     *
+     * @param reservedSignedState the state to be written to disk. it is expected that the state is reserved prior to
+     *                            this method call and this method will release the reservation when it is done
+     * @return the result of the state saving operation, or null if the state was not saved
      */
-    public StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
+    public @Nullable StateSavingResult saveStateTask(@NonNull final ReservedSignedState reservedSignedState) {
         final long start = time.nanoTime();
         final StateSavingResult stateSavingResult;
 
@@ -141,6 +147,13 @@ public class SignedStateFileManager {
         return stateSavingResult;
     }
 
+    /**
+     * Method to be called when a state needs to be written to disk out-of-band. An "in-band" write is part of normal
+     * platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
+     *
+     * @param request a request to dump a state to disk. it is expected that the state inside the request is reserved
+     *                prior to this method call and this method will release the reservation when it is done
+     */
     public void dumpStateTask(@NonNull final StateDumpRequest request) {
         // the state is reserved before it is handed to this method, and it is released when we are done
         try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
@@ -158,10 +171,7 @@ public class SignedStateFileManager {
     private StateToDiskReason getReason(@NonNull final SignedState state) {
         return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
-
-    /**
-     * A save state task
-     */
+    
     private boolean saveStateTask(@NonNull final SignedState state, final Path directory) {
         try {
             SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, getReason(state));
@@ -191,8 +201,8 @@ public class SignedStateFileManager {
         logger.error(
                 EXCEPTION.getMarker(),
                 new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
-                                + "Collected signatures representing %d/%d weight. "
-                                + "Total unsigned disk states so far: %d.")
+                        + "Collected signatures representing %d/%d weight. "
+                        + "Total unsigned disk states so far: %d.")
                         .formatted(
                                 reservedState.getRound(),
                                 reservedState.getSigningWeight(),
