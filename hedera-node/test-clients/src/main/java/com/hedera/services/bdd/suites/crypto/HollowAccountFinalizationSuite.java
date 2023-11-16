@@ -766,7 +766,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
     private HapiSpec hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
-        return defaultHapiSpec("hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction")
+        return defaultHapiSpec("hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ecdsaKey2).shape(SECP_256K1_SHAPE),
