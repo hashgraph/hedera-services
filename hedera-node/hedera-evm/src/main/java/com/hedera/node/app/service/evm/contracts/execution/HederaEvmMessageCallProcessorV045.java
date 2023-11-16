@@ -24,7 +24,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -116,14 +115,6 @@ public class HederaEvmMessageCallProcessorV045 extends MessageCallProcessor {
                     .setCreationCustomizerForSponsor(frame.getSenderAddress());
 
             super.start(frame, operationTracer);
-            final var newlyCreatedEntity = frame.getWorldUpdater().getAccount(frame.getContractAddress());
-            if (newlyCreatedEntity.getBalance().getAsBigInteger().equals(BigInteger.ZERO)
-                    && frame.getWorldUpdater()
-                                    .getAccount(frame.getContractAddress())
-                                    .getCode()
-                            == Bytes.EMPTY) {
-                frame.getWorldUpdater().deleteAccount(frame.getContractAddress());
-            }
         }
     }
 

@@ -42,6 +42,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -117,19 +118,32 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
         final var curAccounts = trackingAccounts();
         final var newMutable = new UpdateTrackingAccount<A>(address, new UpdateAccountTrackerImpl(curAccounts));
+        final var isTemporaryAccount = balance.getAsBigInteger().equals(BigInteger.ZERO)
+                && this.customizerForPendingCreation()
+                        .accountCustomizer()
+                        .getChanges()
+                        .get(AccountProperty.IS_SMART_CONTRACT)
+                        .equals(Boolean.FALSE);
         if (trackingLedgers.areMutable()) {
             final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
-            curAccounts.create(newAccountId);
+            if (!isTemporaryAccount) {
+                curAccounts.create(newAccountId);
+            }
             if (curAliases.isInUse(addressOrAlias)) {
                 curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
             }
-            customizerForPendingCreation().customize(newAccountId, curAccounts);
+            if (!isTemporaryAccount) {
+                customizerForPendingCreation().customize(newAccountId, curAccounts);
+            }
         }
 
-        newMutable.setNonce(nonce);
-        newMutable.setBalance(balance);
+        if (!isTemporaryAccount) {
+            newMutable.setNonce(nonce);
+            newMutable.setBalance(balance);
+            return track(newMutable);
+        }
 
-        return track(newMutable);
+        return newMutable;
     }
 
     @Override
