@@ -116,10 +116,21 @@ public class SignedStateFileManager {
         // the state is reserved before it is handed to this method, and it is released when we are done
         try (reservedSignedState) {
             final SignedState signedState = reservedSignedState.get();
-            final boolean success = saveStateTask(signedState, false);
+            if (signedState.hasStateBeenSavedToDisk()) {
+                logger.info(
+                        STATE_TO_DISK.getMarker(),
+                        "Not saving signed state for round {} to disk because it has already been saved.",
+                        signedState.getRound());
+                return null;
+            }
+            if (!signedState.isComplete()) {
+                stateLacksSignatures(signedState);
+            }
+            final boolean success = saveStateTask(signedState, getSignedStateDir(signedState.getRound()));
             if (!success) {
                 return null;
             }
+            signedState.stateSavedToDisk();
             final long minGen = deleteOldStates();
             stateSavingResult = new StateSavingResult(
                     signedState.getRound(), signedState.isFreezeState(), signedState.getConsensusTimestamp(), minGen);
@@ -133,43 +144,25 @@ public class SignedStateFileManager {
     public void dumpStateTask(@NonNull final StateDumpRequest request) {
         // the state is reserved before it is handed to this method, and it is released when we are done
         try (final ReservedSignedState reservedSignedState = request.reservedSignedState()) {
-            saveStateTask(reservedSignedState.get(), true);
+            final SignedState signedState = reservedSignedState.get();
+            // states requested to be written out-of-band are always written to disk
+            saveStateTask(reservedSignedState.get(), getSignedStatesBaseDirectory()
+                    .resolve(getReason(signedState).getDescription())
+                    .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())));
         }
         request.finishedCallback().run();
+    }
+
+    private StateToDiskReason getReason(@NonNull final SignedState state){
+        return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
 
     /**
      * A save state task
      */
-    private boolean saveStateTask(@NonNull final SignedState state, final boolean outOfBand) {
-        final StateToDiskReason reason =
-                Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
-        final Path directory = outOfBand
-                ? getSignedStatesBaseDirectory()
-                        .resolve(reason.getDescription())
-                        .resolve(String.format("node%d_round%d", selfId.id(), state.getRound()))
-                : getSignedStateDir(state.getRound());
+    private boolean saveStateTask(@NonNull final SignedState state, final Path directory) {
         try {
-            if (outOfBand) {
-                // states requested to be written out-of-band are always written to disk
-                SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, reason);
-                return true;
-            }
-            if (state.hasStateBeenSavedToDisk()) {
-                logger.info(
-                        STATE_TO_DISK.getMarker(),
-                        "Not saving signed state for round {} to disk because it has already been saved.",
-                        state.getRound());
-                return false;
-            }
-            if (!state.isComplete()) {
-                stateLacksSignatures(state);
-            }
-
-            SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, reason);
-
-            state.stateSavedToDisk();
-
+            SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, getReason(state));
             return true;
         } catch (final Throwable e) {
             logger.error(
