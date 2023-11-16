@@ -86,8 +86,7 @@ jobs:
       - name: Reset Network
         id: reset-network
         run: |
-          BUILD_VERSION=${{ needs.release-adhoc.outputs.build-version }}
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${BUILD_VERSION}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ needs.release-adhoc.outputs.build-version }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
           echo "Sleep 10 minutes for network reset"
           sleep 10m
 
