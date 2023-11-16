@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -81,10 +82,11 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchChildTransaction(MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchScheduledChildTransaction(
+                        MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.dispatchChildTransaction(
+                () -> subject.dispatchScheduledChildTransaction(
                         MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest));
     }
 
@@ -93,10 +95,11 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
-        subject.dispatchChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchScheduledChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
+        subject.dispatchScheduledChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
         verify(subject)
-                .dispatchChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest, PAYER_ID);
+                .dispatchChildTransaction(
+                        WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest, PAYER_ID, SCHEDULED);
     }
 
     @Test
