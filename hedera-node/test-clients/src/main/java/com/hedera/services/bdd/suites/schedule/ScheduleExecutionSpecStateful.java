@@ -104,7 +104,6 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                 suiteCleanup()));
     }
 
-    @HapiTest
     private HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))

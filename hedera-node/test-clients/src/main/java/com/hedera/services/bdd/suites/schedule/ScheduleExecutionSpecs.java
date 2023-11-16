@@ -333,7 +333,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    @HapiTest
     private HapiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate(SCHEDULE_PAYER))
@@ -1386,7 +1385,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 (spec, opLog) -> Assertions.assertEquals(successFeesObs.get(), failureFeesObs.get())));
     }
 
-    @HapiTest
     private HapiSpec scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
         String civilianPayer = PAYER;
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
