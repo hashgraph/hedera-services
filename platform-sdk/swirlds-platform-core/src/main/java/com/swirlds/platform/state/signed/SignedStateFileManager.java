@@ -171,7 +171,7 @@ public class SignedStateFileManager {
     private StateToDiskReason getReason(@NonNull final SignedState state) {
         return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
-    
+
     private boolean saveStateTask(@NonNull final SignedState state, final Path directory) {
         try {
             SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, getReason(state));
@@ -201,8 +201,8 @@ public class SignedStateFileManager {
         logger.error(
                 EXCEPTION.getMarker(),
                 new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
-                        + "Collected signatures representing %d/%d weight. "
-                        + "Total unsigned disk states so far: %d.")
+                                + "Collected signatures representing %d/%d weight. "
+                                + "Total unsigned disk states so far: %d.")
                         .formatted(
                                 reservedState.getRound(),
                                 reservedState.getSigningWeight(),
