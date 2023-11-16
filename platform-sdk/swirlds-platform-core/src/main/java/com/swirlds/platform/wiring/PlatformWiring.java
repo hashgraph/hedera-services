@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.SolderType.INJECT;
+import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -24,8 +24,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;

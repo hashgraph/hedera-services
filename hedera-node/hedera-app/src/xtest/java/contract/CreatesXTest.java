@@ -42,6 +42,7 @@ import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -98,7 +99,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleTokenV1"));
 
         // should successfully create fungible token v2
         runHtsCallAndExpectOnSuccess(
@@ -106,7 +107,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleTokenV2"));
 
         // should successfully create fungible token v3
         runHtsCallAndExpectOnSuccess(
@@ -114,7 +115,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleTokenV3"));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -134,7 +135,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleTokenV1 - sans keys"));
 
         // should revert on missing expiry
 
@@ -156,7 +157,8 @@ public class CreatesXTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                INVALID_ADMIN_KEY);
+                INVALID_ADMIN_KEY,
+                "createFungibleTokenV1 - invalid admin key");
 
         // should revert with autoRenewPeriod less than 2592000
         runHtsCallAndExpectRevert(
@@ -176,7 +178,8 @@ public class CreatesXTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                INVALID_RENEWAL_PERIOD);
+                INVALID_RENEWAL_PERIOD,
+                "createFungibleTokenV1 - invalid renewal period");
 
         // should successfully create fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
@@ -191,7 +194,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleWithCustomFeesV1"));
 
         // should successfully create fungible token with custom fees v2
         runHtsCallAndExpectOnSuccess(
@@ -206,7 +209,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleWithCustomFeesV2"));
 
         // should successfully create fungible token with custom fees v3
         runHtsCallAndExpectOnSuccess(
@@ -221,7 +224,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess());
+                assertSuccess("createFungibleWithCustomFeesV3"));
 
         // should successfully create non-fungible token without custom fees v1
         runHtsCallAndExpectOnSuccess(
@@ -229,7 +232,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
                         .array()),
-                assertSuccess());
+                assertSuccess("createNonFungibleTokenV1"));
 
         // should successfully create non-fungible token without custom fees v2
         runHtsCallAndExpectOnSuccess(
@@ -237,7 +240,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
                         .array()),
-                assertSuccess());
+                assertSuccess("createNonFungibleTokenV2"));
 
         // should successfully create non-fungible token without custom fees v3
         runHtsCallAndExpectOnSuccess(
@@ -245,7 +248,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
                         .array()),
-                assertSuccess());
+                assertSuccess("createNonFungibleTokenV3"));
 
         // should successfully create non-fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
@@ -253,7 +256,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                assertSuccess());
+                assertSuccess("createNonFungibleWithCustomFeesV1"));
 
         // should successfully create non-fungible token with custom fees v2
         runHtsCallAndExpectOnSuccess(
@@ -261,7 +264,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                assertSuccess());
+                assertSuccess("createNonFungibleWithCustomFeesV2"));
 
         // should successfully create non-fungible token with custom fees v3
         runHtsCallAndExpectOnSuccess(
@@ -269,7 +272,7 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                assertSuccess());
+                assertSuccess("createNonFungibleWithCustomFeesV3"));
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
@@ -278,7 +281,8 @@ public class CreatesXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                "createFungibleTokenV1 - invalid treasury account");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
@@ -293,7 +297,8 @@ public class CreatesXTest extends AbstractContractXTest {
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                "createFungibleWithCustomFeesV1 - invalid treasury account");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
@@ -301,7 +306,8 @@ public class CreatesXTest extends AbstractContractXTest {
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN)
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                "createNonFungibleTokenV1 - invalid treasury account");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
@@ -310,7 +316,8 @@ public class CreatesXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 INVALID_ACCOUNT_ID_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                "createNonFungibleWithCustomFeesV1 - invalid treasury account");
     }
 
     @Override
@@ -320,9 +327,9 @@ public class CreatesXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        final var aliases = withSenderAlias(new HashMap<>());
         aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
@@ -335,14 +342,14 @@ public class CreatesXTest extends AbstractContractXTest {
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
+        final Map<AccountID, Account> accounts = new HashMap<>();
         accounts.put(
                 SENDER_ID,
                 Account.newBuilder()
-                        .accountId(OWNER_ID)
+                        .accountId(SENDER_ID)
                         .alias(SENDER_ADDRESS)
-                        .smartContract(true)
-                        .key(SENDER_CONTRACT_ID_KEY)
+                        .key(AN_ED25519_KEY)
+                        .tinybarBalance(100 * ONE_HBAR)
                         .build());
         accounts.put(
                 OWNER_ID,

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
