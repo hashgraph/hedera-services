@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CO
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_ALIAS;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.TYPICAL_SENDER_ACCOUNT;
@@ -67,7 +68,6 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
@@ -140,6 +140,11 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     protected Map<ProtoBytes, AccountID> withSenderAlias(final Map<ProtoBytes, AccountID> aliases) {
         aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        return aliases;
+    }
+
+    protected Map<ProtoBytes, AccountID> withSenderAddress(final Map<ProtoBytes, AccountID> aliases) {
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
@@ -236,7 +241,11 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                     Optional.ofNullable(context).orElse("An unspecified operation") + " should have reverted");
             final var actualReason =
                     ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
-            assertEquals(status, actualReason);
+            assertEquals(
+                    status,
+                    actualReason,
+                    "'" + Optional.ofNullable(context).orElse("An unspecified operation")
+                            + "' should have reverted with " + status + " but instead reverted with " + actualReason);
         }));
     }
 
@@ -331,12 +340,6 @@ public abstract class AbstractContractXTest extends AbstractXTest {
     protected Consumer<Response> assertingCallLocalResultIsBuffer(
             @NonNull final ByteBuffer expectedResult, @NonNull final String orElseMessage) {
         return response -> {
-            System.out.println("Expected result: " + CommonUtils.hex(expectedResult.array()));
-            System.out.println("Actual result: "
-                    + CommonUtils.hex(response.contractCallLocalOrThrow()
-                            .functionResultOrThrow()
-                            .contractCallResult()
-                            .toByteArray()));
             assertThat(expectedResult.array())
                     .withFailMessage(orElseMessage)
                     .isEqualTo(response.contractCallLocalOrThrow()

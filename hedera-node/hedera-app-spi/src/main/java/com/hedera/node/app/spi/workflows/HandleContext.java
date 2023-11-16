@@ -519,7 +519,7 @@ public interface HandleContext {
     <T> T dispatchChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> callback,
+            @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull TransactionCategory childCategory);
 
