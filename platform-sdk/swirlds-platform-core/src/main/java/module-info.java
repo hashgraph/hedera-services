@@ -140,6 +140,7 @@ module com.swirlds.platform.core {
     requires transitive org.apache.logging.log4j;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.swirlds.config.extensions;
     requires com.swirlds.fchashmap;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
