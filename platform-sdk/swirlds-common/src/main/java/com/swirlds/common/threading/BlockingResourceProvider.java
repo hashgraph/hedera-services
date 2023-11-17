@@ -67,6 +67,16 @@ public class BlockingResourceProvider<T> {
     }
 
     /**
+     * Try to acquire the provide permit bypassing the check to see if the consumer is waiting for the resource, this
+     * will block the providers until {@link #releaseProvidePermit()} is called
+     *
+     * @return true if the permit has been acquired
+     */
+    public boolean tryBlockProvidePermit() {
+        return providePermit.tryAcquire();
+    }
+
+    /**
      * Release a previously acquired provide permit
      */
     public void releaseProvidePermit() {

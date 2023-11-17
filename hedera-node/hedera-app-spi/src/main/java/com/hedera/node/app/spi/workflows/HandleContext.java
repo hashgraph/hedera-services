@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 
 import com.hedera.hapi.node.base.*;
@@ -68,7 +69,9 @@ public interface HandleContext {
         PRECEDING,
 
         /** A child transaction that is executed as part of a user transaction. */
-        CHILD
+        CHILD,
+        /** A transaction executed via the schedule service. */
+        SCHEDULED
     }
 
     /**
@@ -359,12 +362,13 @@ public interface HandleContext {
      * changes have been introduced by the user transaction (either by storing state or by calling a child
      * transaction).
      *
-     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
-     * any of the {@code verificationFor} methods.
+     * <p>If non-null, the provided {@link Predicate} callback will be called to enforce signing requirements; or to
+     * verify simple keys when the child transaction calls any of the {@code verificationFor} methods. If the callback
+     * is null, no signing requirements will be enforced.
      *
      * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param verifier           if signing requirements should be enforced, a {@link Predicate} that will be used to validate primitive keys
      * @param syntheticPayer    the payer of the transaction
      * @return the record builder of the transaction
      * @throws NullPointerException     if {@code txBody} is {@code null}
@@ -376,7 +380,7 @@ public interface HandleContext {
     <T> T dispatchPrecedingTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> verifier,
+            @Nullable Predicate<Key> verifier,
             AccountID syntheticPayer);
 
     /**
@@ -446,7 +450,7 @@ public interface HandleContext {
      *
      * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param verifier           if non-null, a {@link Predicate} that will be used to validate primitive keys
      * @param syntheticPayer    the payer of the transaction
      * @return the record builder of the transaction
      * @throws NullPointerException     if {@code txBody} is {@code null}
@@ -458,7 +462,7 @@ public interface HandleContext {
     <T> T dispatchRemovablePrecedingTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> verifier,
+            @Nullable Predicate<Key> verifier,
             AccountID syntheticPayer);
 
     /**
@@ -499,24 +503,27 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayerId   the payer of the child transaction
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId the payer of the child transaction
+     * @param childCategory the category of the child transaction
      * @return the record builder of the child transaction
-     * @throws NullPointerException     if any of the arguments is {@code null}
+     * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> callback,
-            @NonNull AccountID syntheticPayerId);
+            @Nullable Predicate<Key> callback,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull TransactionCategory childCategory);
 
     /**
-     * Dispatches a child transaction that already has a transaction ID.
+     * Dispatches a child transaction that already has a transaction ID due to
+     * its construction in the schedule service.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
@@ -526,21 +533,22 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
     @NonNull
-    default <T> T dispatchChildTransaction(
+    default <T> T dispatchScheduledChildTransaction(
             @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
         throwIfMissingPayerId(txBody);
         return dispatchChildTransaction(
                 txBody,
                 recordBuilderClass,
                 callback,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
+                txBody.transactionIDOrThrow().accountIDOrThrow(),
+                SCHEDULED);
     }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)}.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID, TransactionCategory)}.
      * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
@@ -562,7 +570,7 @@ public interface HandleContext {
     <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> callback,
+            @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull ExternalizedRecordCustomizer customizer);
 

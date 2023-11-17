@@ -357,7 +357,7 @@ public class CreateDecoder {
                 isFungible,
                 tokenName,
                 tokenSymbol,
-                tokenTreasury.accountNum() != 0 ? tokenTreasury : null,
+                tokenTreasury.accountNumOrElse(0L) != 0 ? tokenTreasury : null,
                 memo,
                 isSupplyTypeFinite,
                 initSupply,
@@ -366,7 +366,7 @@ public class CreateDecoder {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
-        tokenCreateWrapper.setAllInheritedKeysTo(nativeOperations.getAccountKey(senderId.accountNum()));
+        tokenCreateWrapper.setAllInheritedKeysTo(nativeOperations.getAccountKey(senderId.accountNumOrThrow()));
         return tokenCreateWrapper;
     }
 

@@ -186,6 +186,9 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         if (dataItemSerializer.isVariableSize()) {
             // read header to get size
             final ByteBuffer serializedHeader = read(byteOffset, dataItemSerializer.getHeaderSize());
+            if (serializedHeader == null) {
+                return null;
+            }
             final DataItemHeader header = dataItemSerializer.deserializeHeader(serializedHeader);
             bytesToRead = header.getSizeBytes();
         } else {
@@ -376,6 +379,11 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         for (int retries = 3; retries > 0; retries--) {
             final int fcIndex = leaseFileChannel();
             final FileChannel fileChannel = fileChannels.get(fcIndex);
+            if (fileChannel == null) {
+                // On rare occasions, if we have a race condition with compaction, the file channel
+                // may be closed. We need to return null, so that the caller can retry with a new reader
+                return null;
+            }
             try {
                 buffer.position(0);
                 buffer.limit(bytesToRead);
