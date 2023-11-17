@@ -47,6 +47,17 @@ public abstract class HapiSuite {
     public static final String DEFAULT_SHARD_REALM = "0.0.";
     public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
+    public static final String TOKEN_UNDER_TEST = "TokenUnderTest";
+    protected static String ALICE = "ALICE";
+    protected static String BOB = "BOB";
+    protected static String CAROL = "CAROL";
+    protected static String RED_PARTITION = "RED_PARTITION";
+    protected static String BLUE_PARTITION = "BLUE_PARTITION";
+    protected static String GREEN_PARTITION = "GREEN_PARTITION";
+    protected static String CIVILIAN_PAYER = "CIVILIAN_PAYER";
+    public static long FUNGIBLE_INITIAL_SUPPLY = 1_000_000_000L;
+    public static long NON_FUNGIBLE_INITIAL_SUPPLY = 10L;
+    public static long FUNGIBLE_INITIAL_BALANCE = FUNGIBLE_INITIAL_SUPPLY / 100;
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
 
     public enum FinalOutcome {

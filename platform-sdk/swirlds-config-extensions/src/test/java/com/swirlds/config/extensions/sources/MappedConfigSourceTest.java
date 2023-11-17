@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.NoSuchElementException;
