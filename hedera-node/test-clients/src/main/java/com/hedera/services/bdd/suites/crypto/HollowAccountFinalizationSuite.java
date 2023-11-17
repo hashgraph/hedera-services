@@ -446,7 +446,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest // will be fixed after calculateFees is implemented in ContractCreate
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithContractCreate() {
         final var CONTRACT = "CreateTrivial";
         return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
