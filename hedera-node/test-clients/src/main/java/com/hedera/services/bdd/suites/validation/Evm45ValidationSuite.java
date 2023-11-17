@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hedera.services.bdd.suites.utils.contracts.ErrorMessageResult.errorMessageResult;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -138,7 +140,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                 internalSendToExistingMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -send-> NonExistingNonMirror, expect revert
                 // todo this one fails. What status should we expect?
-                internalSendToNonExistingNonMirrorAddressResultsInRevert(),
+                internalSendToNonExistingNonMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -send-> ExistingNonMirror, expect success
                 internalSendToExistingNonMirrorAddressResultsInSuccess()
 
@@ -428,18 +430,27 @@ public class Evm45ValidationSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 1)));
     }
 
-    private HapiSpec internalSendToNonExistingNonMirrorAddressResultsInRevert() {
-
-        return defaultHapiSpec("internalSendToNonExistingNonMirrorAddressResultsInRevert")
+    private HapiSpec internalSendToNonExistingNonMirrorAddressResultsInSuccess() {
+        long nonMirrorAddressNum = new Random().nextLong();
+        return defaultHapiSpec("internalSendToNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(contractCall(
-                                INTERNAL_CALLER_CONTRACT, SEND_TO_FUNCTION, nonMirrorAddrWith(new Random().nextLong()))
-                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                        .via(INNER_TXN)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
+                        contractCall(INTERNAL_CALLER_CONTRACT, SEND_TO_FUNCTION, nonMirrorAddrWith(nonMirrorAddressNum))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        getTxnRecord(INNER_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
+                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)),
+                        getAccountInfo(asAccountString(AccountID.newBuilder()
+                                        .setAccountNum(nonMirrorAddressNum)
+                                        .build()))
+                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
     private HapiSpec internalSendToExistingNonMirrorAddressResultsInSuccess() {
