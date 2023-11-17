@@ -779,62 +779,65 @@ public class HandleWorkflow {
         // Need to add payer key first in the list of required hollow accounts here, because this order
         // determines the order of hollow account finalization records. The payer key must be finalized first.
         // to easily compare results in differential testing
-        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
-        final var payerKey = payer.key();
-        if (isHollow(payer)) {
-            context.requireSignatureForHollowAccount(payer);
-        }
+        try {
+            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
+            final var payerKey = payer.key();
+            if (isHollow(payer)) {
+                context.requireSignatureForHollowAccount(payer);
+            }
 
-        dispatcher.dispatchPreHandle(context);
+            dispatcher.dispatchPreHandle(context);
+            // re-expand keys only if any of the keys have changed
+            final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+            final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
+            final var anyKeyChanged = haveKeyChanges(previousResult, context);
+            // If none of the keys changed then non need to re-expand all signatures.
+            if (!anyKeyChanged) {
+                return previousResult;
+            }
+            // prepare signature verification
+            final var verifications = new HashMap<Key, SignatureVerificationFuture>();
 
-        // re-expand keys only if any of the keys have changed
-        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
-        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
-        final var anyKeyChanged = haveKeyChanges(previousResult, context);
-        // If none of the keys changed then non need to re-expand all signatures.
-        if (!anyKeyChanged) {
+            // expand all keys
+            final var expanded = new HashSet<ExpandedSignaturePair>();
+            signatureExpander.expand(sigPairs, expanded);
+            if (payerKey != null && !isHollow(payer)) {
+                signatureExpander.expand(payerKey, sigPairs, expanded);
+            }
+
+            signatureExpander.expand(currentRequiredNonPayerKeys, sigPairs, expanded);
+            signatureExpander.expand(currentOptionalNonPayerKeys, sigPairs, expanded);
+
+            // remove all keys that were already verified
+            for (final var it = expanded.iterator(); it.hasNext(); ) {
+                final var entry = it.next();
+                final var oldVerification = previousResult.verificationResults().get(entry.key());
+                if (oldVerification != null) {
+                    verifications.put(oldVerification.key(), oldVerification);
+                    it.remove();
+                }
+            }
+
+            // start verification for remaining keys
+            if (!expanded.isEmpty()) {
+                verifications.putAll(signatureVerifier.verify(signedBytes, expanded));
+            }
+
+            return new PreHandleResult(
+                    previousResult.payer(),
+                    payerKey,
+                    previousResult.status(),
+                    previousResult.responseCode(),
+                    previousResult.txInfo(),
+                    context.requiredNonPayerKeys(),
+                    context.optionalNonPayerKeys(),
+                    context.requiredHollowAccounts(),
+                    verifications,
+                    previousResult.innerResult(),
+                    previousResult.configVersion());
+        } catch (final PreCheckException e) {
             return previousResult;
         }
-        // prepare signature verification
-        final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-
-        // expand all keys
-        final var expanded = new HashSet<ExpandedSignaturePair>();
-        signatureExpander.expand(sigPairs, expanded);
-        if (payerKey != null && !isHollow(payer)) {
-            signatureExpander.expand(payerKey, sigPairs, expanded);
-        }
-
-        signatureExpander.expand(currentRequiredNonPayerKeys, sigPairs, expanded);
-        signatureExpander.expand(currentOptionalNonPayerKeys, sigPairs, expanded);
-
-        // remove all keys that were already verified
-        for (final var it = expanded.iterator(); it.hasNext(); ) {
-            final var entry = it.next();
-            final var oldVerification = previousResult.verificationResults().get(entry.key());
-            if (oldVerification != null) {
-                verifications.put(oldVerification.key(), oldVerification);
-                it.remove();
-            }
-        }
-
-        // start verification for remaining keys
-        if (!expanded.isEmpty()) {
-            verifications.putAll(signatureVerifier.verify(signedBytes, expanded));
-        }
-
-        return new PreHandleResult(
-                previousResult.payer(),
-                payerKey,
-                previousResult.status(),
-                previousResult.responseCode(),
-                previousResult.txInfo(),
-                context.requiredNonPayerKeys(),
-                context.optionalNonPayerKeys(),
-                context.requiredHollowAccounts(),
-                verifications,
-                previousResult.innerResult(),
-                previousResult.configVersion());
     }
 
     /**
