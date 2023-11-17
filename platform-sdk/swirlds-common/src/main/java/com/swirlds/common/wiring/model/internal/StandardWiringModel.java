@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.model.internal;
 
-import com.swirlds.base.state.Startable;
-import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.model.CycleFinder;
-import com.swirlds.common.wiring.model.DirectSchedulerChecks;
-import com.swirlds.common.wiring.model.ModelEdge;
-import com.swirlds.common.wiring.model.ModelVertex;
-import com.swirlds.common.wiring.model.WiringFlowchart;
+import com.swirlds.common.wiring.model.ModelGroup;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
-import com.swirlds.common.wiring.utility.ModelGroup;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,7 +43,7 @@ import java.util.Set;
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
  * of a system and to generate diagrams.
  */
-public class WiringModel implements Startable, Stoppable {
+public class StandardWiringModel implements WiringModel {
 
     private final PlatformContext platformContext;
     private final Time time;
@@ -74,124 +69,96 @@ public class WiringModel implements Startable, Stoppable {
     private final List<SequentialThreadTaskScheduler<?>> threadSchedulers = new ArrayList<>();
 
     /**
+     * Input wires that have been created.
+     */
+    private final Set<InputWireDescriptor> inputWires = new HashSet<>();
+
+    /**
+     * Input wires that have been bound to a handler.
+     */
+    private final Set<InputWireDescriptor> boundInputWires = new HashSet<>();
+
+    /**
      * Constructor.
      *
      * @param platformContext the platform context
      * @param time            provides wall clock time
      */
-    private WiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+    public StandardWiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.time = Objects.requireNonNull(time);
     }
 
     /**
-     * Build a new wiring model instance.
-     *
-     * @param platformContext the platform context
-     * @param time            provides wall clock time
-     * @return a new wiring model instance
+     * {@inheritDoc}
      */
     @NonNull
-    public static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        return new WiringModel(platformContext, time);
-    }
-
-    /**
-     * Get a new task scheduler builder.
-     *
-     * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
-     *             alphanumeric characters and underscores.
-     * @return a new wire builder
-     */
-    @NonNull
+    @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
         return new TaskSchedulerBuilder<>(this, name);
     }
 
     /**
-     * Get a new task scheduler metrics builder. Can be passed to
-     * {@link TaskSchedulerBuilder#withMetricsBuilder(TaskSchedulerMetricsBuilder)} to add metrics to the task
-     * scheduler.
-     *
-     * @return a new task scheduler metrics builder
+     * {@inheritDoc}
      */
     @NonNull
+    @Override
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
         return new TaskSchedulerMetricsBuilder(platformContext.getMetrics(), time);
     }
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
-     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
-     *               are not supported.
-     * @return the output wire
-     * @throws IllegalStateException if the heartbeat has already started
+     * {@inheritDoc}
      */
     @NonNull
+    @Override
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
         return getHeartbeatScheduler().buildHeartbeatWire(period);
     }
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
-     *                  and so frequencies greater than 1000hz are not supported.
-     * @return the output wire
+     * {@inheritDoc}
      */
+    @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
 
     /**
-     * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,
-     * and so it should be avoided at all costs.
-     *
-     * <p>
-     * If this method finds cyclical backpressure, it will log a message that will fail standard platform tests.
-     *
-     * @return true if there is cyclical backpressure, false otherwise
+     * {@inheritDoc}
      */
+    @Override
     public boolean checkForCyclicalBackpressure() {
         return CycleFinder.checkForCyclicalBackPressure(vertices.values());
     }
 
     /**
-     * Task schedulers using the {@link TaskSchedulerType#DIRECT} strategy have very strict rules about how data can be
-     * added to input wires. This method checks to see if these rules are being followed.
-     *
-     * <p>
-     * If this method finds illegal direct scheduler usage, it will log a message that will fail standard platform
-     * tests.
-     *
-     * @return true if there is illegal direct scheduler usage, false otherwise
+     * {@inheritDoc}
      */
+    @Override
     public boolean checkForIllegalDirectSchedulerUsage() {
         return DirectSchedulerChecks.checkForIllegalDirectSchedulerUse(vertices.values());
     }
 
     /**
-     * Generate a mermaid style wiring diagram.
-     *
-     * @param groups optional groupings of vertices
-     * @return a mermaid style wiring diagram
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean checkForUnboundInputWires() {
+        return InputWireChecks.checkForUnboundInputWires(inputWires, boundInputWires);
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @NonNull
+    @Override
     public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
         return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
     }
 
     /**
-     * Reserved for framework use. Do not call this method directly.
-     * <p>
      * Register a task scheduler with the wiring model.
-     * </p>
      *
      * @param scheduler the task scheduler to register
      */
@@ -203,8 +170,6 @@ public class WiringModel implements Startable, Stoppable {
     }
 
     /**
-     * Reserved for internal framework use. Do not call this method directly.
-     * <p>
      * Register a vertex in the wiring model. These are either task schedulers or wire transformers.
      *
      * @param vertexName          the name of the vertex
@@ -224,8 +189,6 @@ public class WiringModel implements Startable, Stoppable {
     }
 
     /**
-     * Reserved for internal framework use. Do not call this method directly.
-     * <p>
      * Register an edge between two vertices.
      *
      * @param originVertex      the origin vertex
@@ -256,10 +219,57 @@ public class WiringModel implements Startable, Stoppable {
     }
 
     /**
+     * Register an input wire with the wiring model. For every input wire registered via this method, the model expects
+     * to see exactly one registration via {@link #registerInputWireBinding(String, String)}.
+     *
+     * @param taskSchedulerName the name of the task scheduler that the input wire is associated with
+     * @param inputWireName     the name of the input wire
+     */
+    public void registerInputWireCreation(
+            @NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        final boolean unique = inputWires.add(new InputWireDescriptor(taskSchedulerName, inputWireName));
+        if (!unique) {
+            throw new IllegalStateException(
+                    "Duplicate input wire " + inputWireName + " for scheduler " + taskSchedulerName);
+        }
+    }
+
+    /**
+     * Register an input wire binding with the wiring model. For every input wire registered via
+     * {@link #registerInputWireCreation(String, String)}, the model expects to see exactly one registration via this
+     * method.
+     *
+     * @param taskSchedulerName the name of the task scheduler that the input wire is associated with
+     * @param inputWireName     the name of the input wire
+     */
+    public void registerInputWireBinding(@NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        final InputWireDescriptor descriptor = new InputWireDescriptor(taskSchedulerName, inputWireName);
+
+        final boolean registered = inputWires.contains(descriptor);
+        if (!registered) {
+            throw new IllegalStateException(
+                    "Input wire " + inputWireName + " for scheduler " + taskSchedulerName + " was not registered");
+        }
+
+        final boolean unique = boundInputWires.add(descriptor);
+        if (!unique) {
+            throw new IllegalStateException("Input wire " + inputWireName + " for scheduler " + taskSchedulerName
+                    + " should not be bound more than once");
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public void start() {
+
+        // We don't have to do anything with the output of these sanity checks.
+        // The methods below will log errors if they find problems.
+        checkForCyclicalBackpressure();
+        checkForIllegalDirectSchedulerUsage();
+        checkForUnboundInputWires();
+
         if (heartbeatScheduler != null) {
             heartbeatScheduler.start();
         }
