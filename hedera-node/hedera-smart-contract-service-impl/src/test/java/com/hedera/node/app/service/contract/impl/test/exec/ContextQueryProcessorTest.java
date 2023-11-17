@@ -34,7 +34,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.util.Map;
@@ -74,7 +73,6 @@ class ContextQueryProcessorTest {
 
     @Test
     void callsComponentInfraAsExpectedForValidQuery() {
-        final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
         final var processors = Map.of(VERSION_038, processor);
 
         final var subject = new ContextQueryProcessor(
@@ -93,7 +91,8 @@ class ContextQueryProcessorTest {
                         HEVM_CREATION, proxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
         final var protoResult = SUCCESS_RESULT.asQueryResult();
-        final var expectedResult = new CallOutcome(protoResult, SUCCESS, SUCCESS_RESULT.gasPrice());
+        final var expectedResult =
+                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
         assertEquals(expectedResult, subject.call());
     }
 }

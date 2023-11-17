@@ -438,7 +438,8 @@ public class ConversionUtils {
      */
     public static void throwIfUnsuccessful(@NonNull final ResponseCodeEnum status) {
         if (status != SUCCESS) {
-            throw new HandleException(status);
+            // We don't want to rollback the root updater here since it contains gas charges
+            throw new HandleException(status, HandleException.ShouldRollbackStack.NO);
         }
     }
 

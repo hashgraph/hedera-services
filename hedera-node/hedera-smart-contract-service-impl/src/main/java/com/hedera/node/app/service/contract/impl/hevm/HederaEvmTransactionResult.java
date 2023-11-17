@@ -199,16 +199,20 @@ public record HederaEvmTransactionResult(
      * Create a result for a transaction that failed.
      *
      * @param gasUsed the gas used by the transaction
+     * @param recipientId if known, the Hedera contract ID of the recipient of the transaction
      * @return the result
      */
     public static HederaEvmTransactionResult failureFrom(
-            final long gasUsed, @NonNull final AccountID senderId, @NonNull final MessageFrame frame) {
+            final long gasUsed,
+            @NonNull final AccountID senderId,
+            @NonNull final MessageFrame frame,
+            @Nullable final ContractID recipientId) {
         requireNonNull(frame);
         return new HederaEvmTransactionResult(
                 gasUsed,
                 frame.getGasPrice().toLong(),
                 requireNonNull(senderId),
-                null,
+                recipientId,
                 null,
                 Bytes.EMPTY,
                 frame.getExceptionalHaltReason().orElse(null),

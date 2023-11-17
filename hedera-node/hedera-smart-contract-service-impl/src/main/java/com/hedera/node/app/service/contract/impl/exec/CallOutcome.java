@@ -33,7 +33,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param tinybarGasPrice the tinybar-denominated gas price used for the call
  */
 public record CallOutcome(
-        @NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum status, long tinybarGasPrice) {
+        @NonNull ContractFunctionResult result,
+        @NonNull ResponseCodeEnum status,
+        @Nullable ContractID recipientId,
+        long tinybarGasPrice) {
 
     public CallOutcome {
         requireNonNull(result);
@@ -47,15 +50,6 @@ public record CallOutcome(
      */
     public boolean isSuccess() {
         return status == SUCCESS;
-    }
-
-    /**
-     * Returns the ID of the contract that was called, or null if no call could be attempted.
-     *
-     * @return the ID of the contract that was called, or null if no call could be attempted
-     */
-    public @Nullable ContractID recipientIdIfCalled() {
-        return result.contractID();
     }
 
     /**

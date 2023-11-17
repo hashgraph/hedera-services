@@ -105,6 +105,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             return new CallOutcome(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
                     result.finalStatus(),
+                    result.recipientId(),
                     result.gasPrice());
         } catch (HandleException abort) {
             // try to resolve the sender if it is an alias
@@ -114,6 +115,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             return new CallOutcome(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater),
                     result.finalStatus(),
+                    result.recipientId(),
                     result.gasPrice());
         }
     }

@@ -54,7 +54,8 @@ public enum SnapshotMatchMode {
     /**
      * In mono-service when a CryptoTransfer with auto-creation fails, we are re-claiming pendingAliases but not reclaiming ids.
      * So when we compare the snapshot records, we will have different ids in the transaction receipt. This mode allows for
-     * fuzzy-matching of records that have different ids.
+     * fuzzy-matching of records that have different ids. Also, when auto-creation fails the charged fee to payer is not re-claimed
+     * in mono-service. So the  transaction fee differs a lot.
      */
     ALLOW_SKIPPED_ENTITY_IDS
 }

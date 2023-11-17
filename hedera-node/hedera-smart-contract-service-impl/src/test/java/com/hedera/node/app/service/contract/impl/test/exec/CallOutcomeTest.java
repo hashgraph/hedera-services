@@ -41,20 +41,23 @@ class CallOutcomeTest {
     @Test
     void recognizesCreatedIdWhenEvmAddressIsSet() {
         given(updater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
-        final var outcome = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, NETWORK_GAS_PRICE);
+        final var outcome = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, null, NETWORK_GAS_PRICE);
         assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCreated());
     }
 
     @Test
     void recognizesNoCreatedIdWhenEvmAddressNotSet() {
-        final var outcome = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, NETWORK_GAS_PRICE);
+        final var outcome = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS, null, NETWORK_GAS_PRICE);
         assertNull(outcome.recipientIdIfCreated());
     }
 
     @Test
     void calledIdIsFromResult() {
         final var outcome = new CallOutcome(
-                SUCCESS_RESULT.asProtoResultOf(updater), INVALID_CONTRACT_ID, SUCCESS_RESULT.gasPrice());
-        assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCalled());
+                SUCCESS_RESULT.asProtoResultOf(updater),
+                INVALID_CONTRACT_ID,
+                CALLED_CONTRACT_ID,
+                SUCCESS_RESULT.gasPrice());
+        assertEquals(CALLED_CONTRACT_ID, outcome.recipientId());
     }
 }

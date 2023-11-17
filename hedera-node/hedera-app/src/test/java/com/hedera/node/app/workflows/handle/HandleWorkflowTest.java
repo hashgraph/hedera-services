@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -87,6 +88,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -128,6 +130,7 @@ class HandleWorkflowTest extends AppTestBase {
                 status,
                 code,
                 new TransactionScenarioBuilder().txInfo(),
+                Set.of(),
                 Set.of(),
                 Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
@@ -825,6 +828,7 @@ class HandleWorkflowTest extends AppTestBase {
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
                     Set.of(),
+                    Set.of(),
                     Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                     null,
                     CONFIG_VERSION - 1L);
@@ -940,6 +944,7 @@ class HandleWorkflowTest extends AppTestBase {
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
                     Set.of(),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -993,6 +998,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     Set.of(),
                     verificationResults,
                     null,
@@ -1123,11 +1129,13 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(bobsKey),
                     Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+            doReturn(ALICE.account()).when(solvencyPreCheck).getPayerAccount(any(), eq(ALICE.accountID()));
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -1177,10 +1185,12 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(bobsKey),
                     Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
+            doReturn(ALICE.account()).when(solvencyPreCheck).getPayerAccount(any(), eq(ALICE.accountID()));
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
@@ -1340,6 +1350,7 @@ class HandleWorkflowTest extends AppTestBase {
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(erinsKey),
                     Set.of(),
+                    Set.of(),
                     preHandleVerificationResults,
                     null,
                     CONFIG_VERSION);
@@ -1472,8 +1483,15 @@ class HandleWorkflowTest extends AppTestBase {
         @EnumSource(names = {"INVALID_ACCOUNT_ID", "ACCOUNT_DELETED"})
         @DisplayName("Reject transaction, if the payer account is not valid")
         void testInvalidPayerAccountFails(final ResponseCodeEnum responseCode) throws PreCheckException {
+            final var numInvocations = new AtomicLong();
             // given
-            doThrow(new PreCheckException(responseCode))
+            doAnswer(invocation -> {
+                        if (numInvocations.incrementAndGet() == 1L) {
+                            return ALICE.account();
+                        } else {
+                            throw new PreCheckException(responseCode);
+                        }
+                    })
                     .when(solvencyPreCheck)
                     .getPayerAccount(any(), eq(ALICE.accountID()));
 

@@ -680,15 +680,25 @@ public class UtilVerbs {
             final String parentTxnId,
             final ResponseCodeEnum parentalStatus,
             final TransactionRecordAsserts... childRecordAsserts) {
+        return childRecordsCheck(parentTxnId, parentalStatus, parentRecordAsserts -> {}, childRecordAsserts);
+    }
+
+    public static HapiSpecOperation childRecordsCheck(
+            final String parentTxnId,
+            final ResponseCodeEnum parentalStatus,
+            final Consumer<TransactionRecordAsserts> parentRecordAssertsSpec,
+            final TransactionRecordAsserts... childRecordAsserts) {
         return withOpContext((spec, opLog) -> {
             final var lookup = getTxnRecord(parentTxnId);
             allRunFor(spec, lookup);
             final var parentId = lookup.getResponseRecord().getTransactionID();
+            final var parentRecordAsserts = recordWith().status(parentalStatus).txnId(parentId);
+            parentRecordAssertsSpec.accept(parentRecordAsserts);
             allRunFor(
                     spec,
                     getTxnRecord(parentTxnId)
                             .andAllChildRecords()
-                            .hasPriority(recordWith().status(parentalStatus).txnId(parentId))
+                            .hasPriority(parentRecordAsserts)
                             .hasChildRecords(parentId, childRecordAsserts)
                             .logged());
         });

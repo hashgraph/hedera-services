@@ -30,11 +30,33 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * {@link IllegalArgumentException} as appropriate.
  */
 public class HandleException extends RuntimeException {
+    private final ShouldRollbackStack shouldRollbackStack;
     private final ResponseCodeEnum status;
+    /**
+     * Whether the stack should be rolled back. In case of a ContractCall if it reverts, the gas charged
+     * should not be rolled back
+     */
+    public enum ShouldRollbackStack {
+        YES,
+        NO
+    }
 
     public HandleException(final ResponseCodeEnum status) {
+        this(status, ShouldRollbackStack.YES);
+    }
+
+    public HandleException(final ResponseCodeEnum status, final ShouldRollbackStack shouldRollbackStack) {
         super(status.protoName());
         this.status = status;
+        this.shouldRollbackStack = shouldRollbackStack;
+    }
+
+    /**
+     * Returns whether the stack should be rolled back. In case of a ContractCall if it reverts, the gas charged
+     * should not be rolled back
+     */
+    public boolean shouldRollbackStack() {
+        return shouldRollbackStack == ShouldRollbackStack.YES;
     }
 
     /**
