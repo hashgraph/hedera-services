@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.nonMirrorAddrWith;
+import static com.hedera.services.bdd.suites.utils.contracts.ErrorMessageResult.errorMessageResult;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -55,7 +56,8 @@ public class Evm45ValidationSuite extends HapiSuite {
     private static final String NON_EXISTING_NON_MIRROR_ADDRESS = "1234561234561234561234561234568888123456";
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
-    private static final String INNER_TXN = "innerTx";
+    private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
+    private static final String REVERT_WITHOUT_REVERT_REASON_FUNCTION = "revertWithoutRevertReason";
     private static final String CALL_NON_EXISTING_FUNCTION = "callNonExisting";
     private static final String CALL_EXTERNAL_FUNCTION = "callExternalFunction";
     private static final String CALL_REVERT_WITH_REVERT_REASON_FUNCTION = "callRevertWithRevertReason";
@@ -63,6 +65,9 @@ public class Evm45ValidationSuite extends HapiSuite {
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
     private static final String SEND_TO_FUNCTION = "sendTo";
     private static final String CALL_WITH_VALUE_TO_FUNCTION = "callWithValueTo";
+    private static final String INNER_TXN = "innerTx";
+    private static final Long INTRINSIC_GAS_COST = 21000L;
+    private static final Long GAS_LIMIT_FOR_CALL = 25000L;
 
     public static void main(String... args) {
         new Evm45ValidationSuite().runSuiteAsync();
@@ -81,6 +86,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                 directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp(),
                 // EOA -calls-> NonExistingNonMirror, expect noop success
                 directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp(),
+                // EOA -calls-> Reverting, expect revert
+                directCallToRevertingContractRevertsWithCorrectRevertReason(),
 
                 // Internal calls:
                 // EOA -calls-> InternalCaller -calls-> NonExistingMirror, expect noop success
@@ -89,8 +96,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                 internalCallToExistingMirrorAddressResultsInSuccessfulCall(),
                 // EOA -calls-> InternalCaller -calls-> NonExistingNonMirror, expect noop success
                 internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess(),
-                // todo EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
-//                internalCallToExistingRevertingWithoutMessageResultsInRevert(),
+                // EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
+                internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn(),
                 // todo EOA -calls-> InternalCaller -calls-> ExistingNonMirror, expect successful call
 
                 // Internal transfers:
@@ -130,12 +137,12 @@ public class Evm45ValidationSuite extends HapiSuite {
                                                 com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
                                                 NAME,
                                                 ERC_721_ABI))
-                                .gas(24_000L)
+                                .gas(GAS_LIMIT_FOR_CALL)
                                 .via("directCallToNonExistingMirrorAddress"))))
                 .then(getTxnRecord("directCallToNonExistingMirrorAddress")
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
-                                .contractCallResult(resultWith().gasUsed(21000))));
+                                .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))));
     }
 
     private HapiSpec directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
@@ -154,12 +161,33 @@ public class Evm45ValidationSuite extends HapiSuite {
                                                 com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
                                                 NAME,
                                                 ERC_721_ABI))
-                                .gas(24_000L)
+                                .gas(GAS_LIMIT_FOR_CALL)
                                 .via("directCallToNonExistingNonMirrorAddress"))))
                 .then(getTxnRecord("directCallToNonExistingNonMirrorAddress")
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
-                                .contractCallResult(resultWith().gasUsed(21000))));
+                                .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))));
+    }
+
+    private HapiSpec directCallToRevertingContractRevertsWithCorrectRevertReason() {
+
+        return defaultHapiSpec("directCallToRevertingContractRevertsWithCorrectRevertReason")
+                .given(uploadInitCode(INTERNAL_CALLEE_CONTRACT), contractCreate(INTERNAL_CALLEE_CONTRACT))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCall(INTERNAL_CALLEE_CONTRACT, REVERT_WITH_REVERT_REASON_FUNCTION)
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via(INNER_TXN)
+                                .hasKnownStatusFrom(CONTRACT_REVERT_EXECUTED))))
+                .then(getTxnRecord(INNER_TXN)
+                        .logged()
+                        .hasPriority(recordWith()
+                                .status(CONTRACT_REVERT_EXECUTED)
+                                .contractCallResult(resultWith()
+                                        .gasUsed(21408)
+                                        .error(errorMessageResult("RevertReasоn")
+                                                .getBytes()
+                                                .toString()))));
     }
 
     private HapiSpec internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
@@ -172,7 +200,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_NON_EXISTING_FUNCTION,
                                 mirrorAddrWith(new Random().nextLong()))
-                        .gas(25000)
+                        .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN))
                 .then(getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
@@ -193,7 +221,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
-                                .gas(50000)
+                                .gas(GAS_LIMIT_FOR_CALL * 2)
                                 .via(INNER_TXN))))
                 .then(getTxnRecord(INNER_TXN)
                         .logged()
@@ -215,7 +243,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_NON_EXISTING_FUNCTION,
                                 nonMirrorAddrWith(new Random().nextLong()))
-                        .gas(25000)
+                        .gas(GAS_LIMIT_FOR_CALL)
                         .via(INNER_TXN))
                 .then(getTxnRecord(INNER_TXN)
                         .hasPriority(recordWith()
@@ -224,11 +252,11 @@ public class Evm45ValidationSuite extends HapiSuite {
                                         resultWith().createdContractIdsCount(0).gasUsed(24618))));
     }
 
-    private HapiSpec internalCallToExistingRevertingWithoutMessageResultsInRevert() {
+    private HapiSpec internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn() {
 
         final AtomicLong calleeNum = new AtomicLong();
 
-        return defaultHapiSpec("internalCallToExistingRevertingWithoutMessageResultsInRevert")
+        return defaultHapiSpec("internalCallToExistingRevertingWithoutMessageResultsInSuccessfulTopLevelTxn")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
@@ -236,16 +264,13 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(
-                        INTERNAL_CALLER_CONTRACT,
-                        CALL_REVERT_WITHOUT_REVERT_REASON_FUNCTION,
-                        mirrorAddrWith(calleeNum.get()))
-                        .gas(25000)
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_REVERT_WITH_REVERT_REASON_FUNCTION,
+                                        mirrorAddrWith(calleeNum.get()))
+                                .gas(GAS_LIMIT_FOR_CALL * 8)
                                 .hasKnownStatus(SUCCESS)
-                        .via(INNER_TXN))))
-                .then(getTxnRecord(INNER_TXN).logged()
-//                        .hasPriority(recordWith()
-//                                .status(CONTRACT_REVERT_EXECUTED)
-                        );
+                                .via(INNER_TXN))))
+                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)));
     }
 
     private HapiSpec internalTransferToNonExistingMirrorAddressResultsInRevert() {
@@ -256,7 +281,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(contractCall(
                                 INTERNAL_CALLER_CONTRACT, TRANSFER_TO_FUNCTION, mirrorAddrWith(new Random().nextLong()))
-                        .gas(100000)
+                        .gas(GAS_LIMIT_FOR_CALL * 4)
                         .via(INNER_TXN)
                         .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
                 .then(
