@@ -30,6 +30,7 @@ import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.schedulers.ConcurrentTaskScheduler;
 import com.swirlds.common.wiring.schedulers.DirectTaskScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialTaskScheduler;
+import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -323,43 +324,57 @@ public class TaskSchedulerBuilder<O> {
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
-        return switch (type) {
-            case CONCURRENT -> new ConcurrentTaskScheduler<>(
-                    model,
-                    name,
-                    pool,
-                    buildUncaughtExceptionHandler(),
-                    counters.onRamp(),
-                    counters.offRamp(),
-                    flushingEnabled,
-                    insertionIsBlocking);
-            case SEQUENTIAL -> new SequentialTaskScheduler<>(
-                    model,
-                    name,
-                    pool,
-                    buildUncaughtExceptionHandler(),
-                    counters.onRamp(),
-                    counters.offRamp(),
-                    busyFractionTimer,
-                    flushingEnabled,
-                    insertionIsBlocking);
-            case SEQUENTIAL_THREAD -> throw new UnsupportedOperationException("SEQUENTIAL_THREAD not yet implemented");
-            case DIRECT -> new DirectTaskScheduler<>(
-                    model,
-                    name,
-                    buildUncaughtExceptionHandler(),
-                    counters.onRamp(),
-                    counters.offRamp(),
-                    busyFractionTimer,
-                    false);
-            case DIRECT_STATELESS -> new DirectTaskScheduler<>(
-                    model,
-                    name,
-                    buildUncaughtExceptionHandler(),
-                    counters.onRamp(),
-                    counters.offRamp(),
-                    busyFractionTimer,
-                    true);
-        };
+        final TaskScheduler<O> scheduler =
+                switch (type) {
+                    case CONCURRENT -> new ConcurrentTaskScheduler<>(
+                            model,
+                            name,
+                            pool,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            flushingEnabled,
+                            insertionIsBlocking);
+                    case SEQUENTIAL -> new SequentialTaskScheduler<>(
+                            model,
+                            name,
+                            pool,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            flushingEnabled,
+                            insertionIsBlocking);
+                    case SEQUENTIAL_THREAD -> new SequentialThreadTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            sleepDuration,
+                            flushingEnabled,
+                            insertionIsBlocking);
+                    case DIRECT -> new DirectTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            false);
+                    case DIRECT_STATELESS -> new DirectTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            true);
+                };
+
+        model.registerScheduler(scheduler);
+
+        return scheduler;
     }
 }

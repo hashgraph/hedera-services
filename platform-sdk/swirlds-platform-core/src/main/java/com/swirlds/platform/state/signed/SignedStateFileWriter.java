@@ -19,6 +19,7 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
@@ -62,6 +63,14 @@ import org.apache.logging.log4j.Logger;
 public final class SignedStateFileWriter {
 
     private static final Logger logger = LogManager.getLogger(SignedStateFileWriter.class);
+
+    /**
+     * The number of times to attempt to copy the last PCES file. Access to this file is not really coordinated between
+     * this logic and the code responsible for managing PCES file lifecycle, and so there is a small chance that the
+     * file moves when we attempt to make a copy. However, this probability is fairly small, and it is very unlikely
+     * that we will be unable to snatch a copy in time with a few retries.
+     */
+    private static final int COPY_PCES_MAX_RETRIES = 10;
 
     private SignedStateFileWriter() {}
 
@@ -166,11 +175,37 @@ public final class SignedStateFileWriter {
         writeSettingsUsed(directory, platformContext.getConfiguration());
 
         if (selfId != null) {
-            copyPreconsensusEventStreamFiles(
+            copyPreconsensusEventStreamFilesRetryOnFailure(
                     platformContext,
                     selfId,
                     directory,
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+        }
+    }
+
+    private static void copyPreconsensusEventStreamFilesRetryOnFailure(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final NodeId selfId,
+            @NonNull final Path destinationDirectory,
+            final long minimumGenerationNonAncient)
+            throws IOException {
+
+        int triesRemaining = COPY_PCES_MAX_RETRIES;
+        while (triesRemaining > 0) {
+            triesRemaining--;
+            try {
+                copyPreconsensusEventStreamFiles(
+                        platformContext, selfId, destinationDirectory, minimumGenerationNonAncient);
+                return;
+            } catch (final PreconsensusEventFileRenamed e) {
+                if (triesRemaining == 0) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "Unable to copy the last PCES file after {} retries. "
+                                    + "PCES files will not be written into the state.",
+                            COPY_PCES_MAX_RETRIES);
+                }
+            }
         }
     }
 
@@ -345,14 +380,19 @@ public final class SignedStateFileWriter {
                 "Copying {} preconsensus event files to state snapshot directory",
                 filesToCopy.size());
 
+        // The last file might be in the process of being written, so we need to do a deep copy of it.
+        // Unlike the other files we are going to copy which have a long lifespan and are expected to
+        // be stable, the last file is actively in flux. It's possible that the last file will be
+        // renamed by the time we get to it, which may cause this copy operation to fail. Attempt
+        // to copy this file first, so that if we fail we can abort and retry without other side
+        // effects.
+        deepCopyPreconsensusFile(filesToCopy.get(filesToCopy.size() - 1), pcesDestination);
+
         // Although the last file may be currently in the process of being written, all previous files will
         // be closed and immutable and so it's safe to hard link them.
         for (int index = 0; index < filesToCopy.size() - 1; index++) {
             hardLinkPreconsensusFile(filesToCopy.get(index), pcesDestination);
         }
-
-        // The last file might be in the process of being written, so we need to do a deep copy of it.
-        deepCopyPreconsensusFile(filesToCopy.get(filesToCopy.size() - 1), pcesDestination);
 
         logger.info(
                 STATE_TO_DISK.getMarker(),
@@ -382,7 +422,7 @@ public final class SignedStateFileWriter {
     }
 
     /**
-     * Deep copy a PCES file.
+     * Attempt to deep copy a PCES file.
      *
      * @param file            the file to copy
      * @param pcesDestination the directory where the file should be copied into
@@ -392,7 +432,8 @@ public final class SignedStateFileWriter {
         try {
             Files.copy(file.getPath(), pcesDestination.resolve(file.getFileName()));
         } catch (final IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Exception when copying preconsensus event file", e);
+            logger.info(STARTUP.getMarker(), "unable to copy last PCES file (file was likely renamed), will retry");
+            throw new PreconsensusEventFileRenamed(e);
         }
     }
 
