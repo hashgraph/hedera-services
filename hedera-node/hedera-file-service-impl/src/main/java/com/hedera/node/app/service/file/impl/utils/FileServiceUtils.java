@@ -63,23 +63,20 @@ public class FileServiceUtils {
     }
 
     /**
-     * The function validates that the fileId is non-null, not a reserved system Id, and matches a file in the store.
+     * The function validates that the fileId is not a reserved system Id and that it matches a file in the store.
      *
      * @param fileId the file id to validate and to fetch the metadata
      * @param fileStore the file store to fetch the metadata of specified file id
+     * @param context the prehandle context for the transaction
      * @throws PreCheckException if the file id is invalid or the file does not exist
      */
     public static void preValidate(
-            @Nullable final FileID fileId,
+            @NonNull final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
-            @NonNull final PreHandleContext context,
-            boolean isDelete)
+            @NonNull final PreHandleContext context)
             throws PreCheckException {
         requireNonNull(context);
-
-        if (fileId == null) {
-            throw new PreCheckException(INVALID_FILE_ID);
-        }
+        requireNonNull(fileId);
 
         final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
 

@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
@@ -573,15 +574,14 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @Test
         void testAllKeysForTransactionWithFailingPreHandle() throws PreCheckException {
-            // given
             doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
                     .when(dispatcher)
                     .dispatchPreHandle(any());
 
-            // when
+            // gathering keys should not throw exceptions except for inability to read a key.
             assertThatThrownBy(() -> context.allKeysForTransaction(defaultTransactionBody(), ERIN.accountID()))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE));
+                    .has(responseCode(UNRESOLVABLE_REQUIRED_SIGNERS));
         }
     }
 
