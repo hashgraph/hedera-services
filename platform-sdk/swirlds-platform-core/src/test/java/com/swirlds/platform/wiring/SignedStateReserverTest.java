@@ -33,6 +33,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -49,21 +50,22 @@ class SignedStateReserverTest {
                 false);
 
         final WiringModel model = TestWiringModelBuilder.create();
-        final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
                 .cast();
         final OutputWire<ReservedSignedState> outputWire = taskScheduler.getOutputWire()
-                .buildAdvancedTransformer("test", new SignedStateReserver("test"));
+                .buildAdvancedTransformer(new SignedStateReserver("reserver"));
         final InputWire<ReservedSignedState, ReservedSignedState> inputWire = taskScheduler.buildInputWire("in")
                 .withInputType(ReservedSignedState.class);
-        inputWire.bind(s->s);
+        inputWire.bind(s -> s);
 
         final List<ValueReference<ReservedSignedState>> consumers = Stream.generate(
                         ValueReference<ReservedSignedState>::new)
                 .limit(numConsumers)
                 .toList();
-        consumers.forEach(c -> outputWire.solderTo("name", c::setValue));
+        IntStream.range(0, consumers.size())
+                .forEach(i -> outputWire.solderTo("name_" + i, consumers.get(i)::setValue));
 
         final ReservedSignedState state = signedState.reserve("main");
         assertFalse(state.isClosed(), "we just reserved it, so it should not be closed");

@@ -18,6 +18,7 @@ package com.swirlds.test.framework.context;
 
 import static com.swirlds.common.config.ConfigUtils.scanAndRegisterAllConfigTypes;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -35,13 +36,19 @@ public final class TestPlatformContextBuilder {
     private static final Metrics defaultMetrics = new NoOpMetrics();
     private static final Configuration defaultConfig =
             scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
-    private static final Cryptography defaultCryptography = CryptographyHolder.get();
+    private static final Cryptography defaultCryptography;
 
     private Configuration configuration;
     private Metrics metrics;
     private Cryptography cryptography;
 
-    private TestPlatformContextBuilder() {}
+    static {
+        ConfigurationHolder.getInstance().setConfiguration(defaultConfig);
+        defaultCryptography = CryptographyHolder.get();
+    }
+
+    private TestPlatformContextBuilder() {
+    }
 
     /**
      * Creates a new builder instance

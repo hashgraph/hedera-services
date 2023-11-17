@@ -19,7 +19,6 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Manages reservations of a signed state when it needs to be passed to one or more consumers. Whenever a state is
@@ -27,14 +26,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * releasing it. The state is passed to downstream consumers with the same assumption: each consumer will get a state
  * with a reservation for itself, and it is responsible for releasing it.
  */
-public class SignedStateReserver implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
-    private final String name;
-
-    public SignedStateReserver(final String name) {
-        this.name = name;
-    }
-
-    @Nullable
+public record SignedStateReserver(String name) implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
+    @NonNull
     @Override
     public ReservedSignedState transform(@NonNull final ReservedSignedState reservedSignedState) {
         return reservedSignedState.getAndReserve(name);
@@ -43,5 +36,11 @@ public class SignedStateReserver implements AdvancedTransformation<ReservedSigne
     @Override
     public void cleanup(@NonNull final ReservedSignedState reservedSignedState) {
         reservedSignedState.close();
+    }
+
+    @NonNull
+    @Override
+    public String getName() {
+        return name;
     }
 }
