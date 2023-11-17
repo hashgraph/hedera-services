@@ -24,9 +24,9 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.DeleteNotExi
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.UpdateNotExistentAccount;
 
-import com.swirlds.base.utility.Triple;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
+import com.swirlds.demo.platform.Triple;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateSmartContract;
 import com.swirlds.demo.platform.fs.stresstest.proto.DeleteAccount;

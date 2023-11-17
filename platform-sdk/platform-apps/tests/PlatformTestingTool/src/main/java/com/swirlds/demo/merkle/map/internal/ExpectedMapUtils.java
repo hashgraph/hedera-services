@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
-import com.swirlds.base.utility.Triple;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -25,6 +24,7 @@ import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.SuperConfig;
+import com.swirlds.demo.platform.Triple;
 import com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;

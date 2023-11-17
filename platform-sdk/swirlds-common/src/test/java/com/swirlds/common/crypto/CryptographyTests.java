@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.utility.Triple;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.test.fixtures.crypto.EcdsaSignedTxnPool;
 import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
@@ -131,9 +130,9 @@ class CryptographyTests {
 
         for (int i = 0; i < signatures.length; i++) {
             signatures[i] = ed25519SignaturePool.next();
-            final Triple<byte[], byte[], byte[]> components = extractComponents(signatures[i]);
+            final SignatureComponents components = extractComponents(signatures[i]);
             final Future<Boolean> future = cryptography.verifyAsync(
-                    components.left(), components.middle(), components.right(), SignatureType.ED25519);
+                    components.data(), components.publicKey(), components.signatureBytes(), SignatureType.ED25519);
             assertNotNull(future, "Future should not be null");
             assertTrue(future.get(), "Future should return computed result");
         }
@@ -149,9 +148,12 @@ class CryptographyTests {
 
         for (int i = 0; i < signatures.length; i++) {
             signatures[i] = ecdsaSignaturePool.next();
-            final Triple<byte[], byte[], byte[]> components = extractComponents(signatures[i]);
+            final SignatureComponents components = extractComponents(signatures[i]);
             final Future<Boolean> future = cryptography.verifyAsync(
-                    components.left(), components.middle(), components.right(), SignatureType.ECDSA_SECP256K1);
+                    components.data(),
+                    components.publicKey(),
+                    components.signatureBytes(),
+                    SignatureType.ECDSA_SECP256K1);
             assertNotNull(future);
             assertTrue(future.get());
         }
@@ -166,9 +168,9 @@ class CryptographyTests {
 
         for (int i = 0; i < signatures.length; i++) {
             signatures[i] = ed25519SignaturePool.next();
-            final Triple<byte[], byte[], byte[]> components = extractComponents(signatures[i]);
+            final SignatureComponents components = extractComponents(signatures[i]);
             assertTrue(cryptography.verifySync(
-                    components.left(), components.middle(), components.right(), SignatureType.ED25519));
+                    components.data(), components.publicKey(), components.signatureBytes(), SignatureType.ED25519));
         }
     }
 
@@ -181,10 +183,13 @@ class CryptographyTests {
 
         for (int i = 0; i < signatures.length; i++) {
             signatures[i] = ecdsaSignaturePool.next();
-            final Triple<byte[], byte[], byte[]> components = extractComponents(signatures[i]);
+            final SignatureComponents components = extractComponents(signatures[i]);
             assertTrue(
                     cryptography.verifySync(
-                            components.left(), components.middle(), components.right(), SignatureType.ECDSA_SECP256K1),
+                            components.data(),
+                            components.publicKey(),
+                            components.signatureBytes(),
+                            SignatureType.ECDSA_SECP256K1),
                     "Signature should be valid");
         }
     }
@@ -194,13 +199,13 @@ class CryptographyTests {
     void verifySyncInvalidEcdsaSecp256k1() {
         ecdsaSignaturePool = new EcdsaSignedTxnPool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 64);
         final TransactionSignature signature = ecdsaSignaturePool.next();
-        final Triple<byte[], byte[], byte[]> components = extractComponents(signature);
+        final SignatureComponents components = extractComponents(signature);
         Configurator.setAllLevels("", Level.ALL);
         assertFalse(
                 cryptography.verifySync(
-                        components.left(),
-                        Arrays.copyOfRange(components.middle(), 0, components.middle().length - 1),
-                        components.right(),
+                        components.data(),
+                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
+                        components.signatureBytes(),
                         SignatureType.ECDSA_SECP256K1),
                 "Fails for invalid signature");
     }
@@ -210,13 +215,13 @@ class CryptographyTests {
     void verifySyncInvalidEd25519() {
         ed25519SignaturePool = new SignaturePool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 100, true);
         final TransactionSignature signature = ed25519SignaturePool.next();
-        final Triple<byte[], byte[], byte[]> components = extractComponents(signature);
+        final SignatureComponents components = extractComponents(signature);
         Configurator.setAllLevels("", Level.ALL);
         assertFalse(
                 cryptography.verifySync(
-                        components.left(),
-                        Arrays.copyOfRange(components.middle(), 0, components.middle().length - 1),
-                        components.right(),
+                        components.data(),
+                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
+                        components.signatureBytes(),
                         SignatureType.ED25519),
                 "Fails for invalid signature");
     }
@@ -233,9 +238,9 @@ class CryptographyTests {
         for (int i = 0; i < signatures.length; i++) {
             signatures[i] = useEcdsa ? ecdsaSignaturePool.next() : ed25519SignaturePool.next();
             final SignatureType type = useEcdsa ? SignatureType.ECDSA_SECP256K1 : SignatureType.ED25519;
-            final Triple<byte[], byte[], byte[]> components = extractComponents(signatures[i]);
-            final Future<Boolean> future =
-                    cryptography.verifyAsync(components.left(), components.middle(), components.right(), type);
+            final SignatureComponents components = extractComponents(signatures[i]);
+            final Future<Boolean> future = cryptography.verifyAsync(
+                    components.data(), components.publicKey(), components.signatureBytes(), type);
             assertNotNull(future, "Future should not be null");
             assertTrue(future.get(), "Future should return computed result");
             useEcdsa = !useEcdsa;
@@ -257,7 +262,9 @@ class CryptographyTests {
         assertTrue(cryptography.verifySync(signature), "Should be a valid signature");
     }
 
-    private Triple<byte[], byte[], byte[]> extractComponents(final TransactionSignature signature) {
+    private record SignatureComponents(byte[] data, byte[] publicKey, byte[] signatureBytes) {}
+
+    private SignatureComponents extractComponents(final TransactionSignature signature) {
         final ByteBuffer buffer = ByteBuffer.wrap(signature.getContentsDirect());
         final byte[] data = new byte[signature.getMessageLength()];
         final byte[] publicKey = new byte[signature.getPublicKeyLength()];
@@ -270,7 +277,7 @@ class CryptographyTests {
                 .position(signature.getSignatureOffset())
                 .get(signatureBytes);
 
-        return Triple.of(data, signatureBytes, publicKey);
+        return new SignatureComponents(data, signatureBytes, publicKey);
     }
 
     private void checkMessages(final Message... messages) throws ExecutionException, InterruptedException {

@@ -33,7 +33,6 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.base.utility.Triple;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.system.Platform;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
@@ -42,6 +41,7 @@ import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
 import com.swirlds.demo.platform.PttTransactionPool;
 import com.swirlds.demo.platform.TransactionSubmitter;
+import com.swirlds.demo.platform.Triple;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
 import com.swirlds.demo.platform.fs.stresstest.proto.AssortedAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.AssortedFCQ;

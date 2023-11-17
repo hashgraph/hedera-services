@@ -41,7 +41,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.base.utility.Triple;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
