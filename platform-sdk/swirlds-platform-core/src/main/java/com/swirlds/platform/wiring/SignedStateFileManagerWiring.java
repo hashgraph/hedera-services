@@ -19,7 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
@@ -38,8 +38,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record SignedStateFileManagerWiring(
         @NonNull OutputWire<StateSavingResult> outputWire,
-        @NonNull InputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
-        @NonNull InputWire<StateDumpRequest, Void> dumpStateToDisk) {
+        @NonNull BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
+        @NonNull BindableInputWire<StateDumpRequest, Void> dumpStateToDisk) {
     /**
      * Create a new instance of the wiring
      *
