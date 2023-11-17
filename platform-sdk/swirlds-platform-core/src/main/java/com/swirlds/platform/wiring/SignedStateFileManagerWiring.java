@@ -67,9 +67,9 @@ public record SignedStateFileManagerWiring(
      * @param preconsensusEventWriter the pre-consensus event writer
      */
     public void solderPces(@NonNull final PreconsensusEventWriter preconsensusEventWriter) {
-        outputWire.buildTransformer(
-                        "extract oldestMinimumGenerationOnDisk",
-                        StateSavingResult::oldestMinimumGenerationOnDisk)
+        outputWire
+                .buildTransformer(
+                        "extract oldestMinimumGenerationOnDisk", StateSavingResult::oldestMinimumGenerationOnDisk)
                 .solderTo(
                         "PCES minimum generation to store",
                         preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
@@ -80,12 +80,9 @@ public record SignedStateFileManagerWiring(
      * @param statusManager the platform status manager
      */
     public void solderStatusManager(@NonNull final PlatformStatusManager statusManager) {
-        outputWire.buildTransformer(
-                "to StateWrittenToDiskAction",
-                        ssr -> new StateWrittenToDiskAction(ssr.round()))
-                .solderTo(
-                        "status manager",
-                        statusManager::submitStatusAction);
+        outputWire
+                .buildTransformer("to StateWrittenToDiskAction", ssr -> new StateWrittenToDiskAction(ssr.round()))
+                .solderTo("status manager", statusManager::submitStatusAction);
     }
 
     /**
@@ -93,8 +90,6 @@ public record SignedStateFileManagerWiring(
      * @param appCommunicationComponent the app communication component
      */
     public void solderAppCommunication(@NonNull final AppCommunicationComponent appCommunicationComponent) {
-        outputWire.solderTo(
-                "app communication",
-                appCommunicationComponent::stateSavedToDisk);
+        outputWire.solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
     }
 }

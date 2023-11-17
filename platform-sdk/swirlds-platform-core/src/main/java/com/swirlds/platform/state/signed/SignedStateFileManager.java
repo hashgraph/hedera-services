@@ -172,7 +172,7 @@ public class SignedStateFileManager {
         return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
 
-    private boolean saveStateTask(@NonNull final SignedState state,@NonNull final Path directory) {
+    private boolean saveStateTask(@NonNull final SignedState state, @NonNull final Path directory) {
         try {
             SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, getReason(state));
             return true;
