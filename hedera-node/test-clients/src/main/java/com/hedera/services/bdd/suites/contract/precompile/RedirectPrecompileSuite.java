@@ -106,6 +106,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                         .gasUsed(100L))));
     }
 
+    @HapiTest
     private HapiSpec redirectToInvalidToken() {
         return defaultHapiSpec("redirectToInvalidToken")
                 .given(

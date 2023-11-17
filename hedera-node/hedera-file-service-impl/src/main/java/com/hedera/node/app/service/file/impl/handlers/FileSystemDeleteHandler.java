@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -56,6 +57,19 @@ public class FileSystemDeleteHandler implements TransactionHandler {
     }
 
     /**
+     * Performs checks independent of state or context
+     * @param txn the transaction to check
+     */
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var transactionBody = txn.systemDeleteOrThrow();
+
+        if (transactionBody.fileID() == null) {
+            throw new PreCheckException(INVALID_FILE_ID);
+        }
+    }
+
+    /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Determines signatures needed for deleting a system file
@@ -71,7 +85,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final var transactionBody = context.body().systemDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var transactionFileId = requireNonNull(transactionBody.fileID());
-        preValidate(transactionFileId, fileStore, context, true);
+        preValidate(transactionFileId, fileStore, context);
     }
 
     @Override
