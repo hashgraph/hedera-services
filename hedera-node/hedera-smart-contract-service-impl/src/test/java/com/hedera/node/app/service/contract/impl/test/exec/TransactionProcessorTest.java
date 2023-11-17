@@ -58,6 +58,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
@@ -136,12 +137,15 @@ class TransactionProcessorTest {
     @Mock
     private CustomGasCharging gasCharging;
 
+    @Mock
+    private FeatureFlags featureFlags;
+
     private TransactionProcessor subject;
 
     @BeforeEach
     void setUp() {
         subject = new TransactionProcessor(
-                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor, featureFlags);
     }
 
     @Test
@@ -204,6 +208,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
@@ -259,6 +264,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
@@ -287,6 +293,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas());
@@ -331,6 +338,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
@@ -357,6 +365,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas());
@@ -398,6 +407,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
@@ -424,6 +434,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas());
@@ -469,6 +480,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
@@ -515,6 +527,7 @@ class TransactionProcessorTest {
                         worldUpdater,
                         context,
                         config,
+                        featureFlags,
                         EIP_1014_ADDRESS,
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))

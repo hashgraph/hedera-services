@@ -89,9 +89,10 @@ public interface V038Module {
             @NonNull final FrameRunner frameRunner,
             @ServicesV038 @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @ServicesV038 @NonNull final ContractCreationProcessor contractCreationProcessor,
-            @NonNull final CustomGasCharging gasCharging) {
+            @NonNull final CustomGasCharging gasCharging,
+            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
         return new TransactionProcessor(
-                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor, featureFlags);
     }
 
     @Provides
@@ -154,8 +155,10 @@ public interface V038Module {
     @IntoSet
     @ServicesV038
     static Operation provideBalanceOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV038 @NonNull final AddressChecks addressChecks) {
-        return new CustomBalanceOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV038 @NonNull final AddressChecks addressChecks,
+            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+        return new CustomBalanceOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -259,8 +262,10 @@ public interface V038Module {
     @IntoSet
     @ServicesV038
     static Operation provideExtCodeHashOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV038 @NonNull final AddressChecks addressChecks) {
-        return new CustomExtCodeHashOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV038 @NonNull final AddressChecks addressChecks,
+            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+        return new CustomExtCodeHashOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -268,8 +273,10 @@ public interface V038Module {
     @IntoSet
     @ServicesV038
     static Operation provideExtCodeSizeOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV038 @NonNull final AddressChecks addressChecks) {
-        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV038 @NonNull final AddressChecks addressChecks,
+            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -277,8 +284,10 @@ public interface V038Module {
     @IntoSet
     @ServicesV038
     static Operation provideExtCodeCopyOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV038 @NonNull final AddressChecks addressChecks) {
-        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV038 @NonNull final AddressChecks addressChecks,
+            @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides

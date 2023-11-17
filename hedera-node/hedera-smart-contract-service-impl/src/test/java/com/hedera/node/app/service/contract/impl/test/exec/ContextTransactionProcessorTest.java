@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_045;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -75,7 +75,7 @@ class ContextTransactionProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForValidEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_045, processor);
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS),
                 context,
@@ -103,7 +103,7 @@ class ContextTransactionProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForNonEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_045, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -131,7 +131,7 @@ class ContextTransactionProcessorTest {
     @Test
     void failsImmediatelyIfEthTxInvalid() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_045, processor);
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION),
                 context,

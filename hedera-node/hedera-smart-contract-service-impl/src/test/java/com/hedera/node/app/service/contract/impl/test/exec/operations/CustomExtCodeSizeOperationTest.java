@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeSizeOperation;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -54,11 +55,14 @@ class CustomExtCodeSizeOperationTest {
     @Mock
     private EVM evm;
 
+    @Mock
+    FeatureFlags featureFlags;
+
     private CustomExtCodeSizeOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
+        subject = new CustomExtCodeSizeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Test

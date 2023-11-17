@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -79,8 +80,10 @@ public class CustomCallOperation extends CallOperation {
         if (impliesLazyCreation(frame, toAddress) && featureFlags.isImplicitCreationEnabled(frame)) {
             return false;
         }
-        // Let system accounts through so the message call processor can fail in a more legible way
-        return !addressChecks.isSystemAccount(toAddress);
+        // Let system accounts calls or if configured to allow calls to non-existing contract address calls
+        // go through so the message call processor can fail in a more legible way
+        return !addressChecks.isSystemAccount(toAddress)
+                && !featureFlags.isAllowCallsToNonContractAccountsEnabled(configOf(frame));
     }
 
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -35,11 +36,15 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
     private final AddressChecks addressChecks;
+    private final FeatureFlags featureFlags;
 
     public CustomExtCodeSizeOperation(
-            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks,
+            @NonNull final FeatureFlags featureFlags) {
         super(Objects.requireNonNull(gasCalculator));
         this.addressChecks = Objects.requireNonNull(addressChecks);
+        this.featureFlags = Objects.requireNonNull(featureFlags);
     }
 
     @Override

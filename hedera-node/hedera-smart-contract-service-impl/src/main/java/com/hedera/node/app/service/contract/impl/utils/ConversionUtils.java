@@ -665,4 +665,19 @@ public class ConversionUtils {
     public static @NonNull BigInteger fromAToB(@NonNull final BigInteger aAmount, final int bEquiv, final int aEquiv) {
         return aAmount.multiply(BigInteger.valueOf(bEquiv)).divide(BigInteger.valueOf(aEquiv));
     }
+
+    /**
+     * Given a {@link ContractID} return the corresponding Besu {@link Address}
+     * Importantly, this method does NOT check for the existence of the contract in the ledger
+     *
+     * @param contractId
+     * @return the equivalent Besu address
+     */
+    public static @NonNull Address contractIDToBesuAddress(final ContractID contractId) {
+        if (contractId.hasEvmAddress()) {
+            return pbjToBesuAddress(contractId.evmAddress());
+        } else {
+            return asLongZeroAddress(contractId.contractNumOrThrow());
+        }
+    }
 }

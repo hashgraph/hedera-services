@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TR
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -80,6 +81,7 @@ public class FrameBuilder {
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final Configuration config,
+            @NonNull final FeatureFlags featureFlags,
             @NonNull final Address from,
             @NonNull final Address to,
             final long intrinsicGas) {
@@ -105,7 +107,12 @@ public class FrameBuilder {
         if (transaction.isCreate()) {
             return finishedAsCreate(to, builder, transaction);
         } else {
-            return finishedAsCall(to, worldUpdater, builder, transaction);
+            return finishedAsCall(
+                    to,
+                    worldUpdater,
+                    builder,
+                    transaction,
+                    featureFlags.isAllowCallsToNonContractAccountsEnabled(config));
         }
     }
 
@@ -148,10 +155,11 @@ public class FrameBuilder {
             @NonNull final Address to,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final MessageFrame.Builder builder,
-            @NonNull final HederaEvmTransaction transaction) {
+            @NonNull final HederaEvmTransaction transaction,
+            final boolean isAllowCallsToNonContractAccountsEnabled) {
         final var account = worldUpdater.getHederaAccount(to);
         Code code = CodeV0.EMPTY_CODE;
-        if (account == null) {
+        if (account == null && !isAllowCallsToNonContractAccountsEnabled) {
             validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
         } else {
             code = account.getEvmCode();

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_045;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,7 +75,7 @@ class ContextQueryProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForValidQuery() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_038, processor);
+        final var processors = Map.of(VERSION_045, processor);
 
         final var subject = new ContextQueryProcessor(
                 context,

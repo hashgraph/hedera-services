@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeCopyOperation;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -56,11 +57,14 @@ class CustomExtCodeCopyOperationTest {
     @Mock
     private EVM evm;
 
+    @Mock
+    FeatureFlags featureFlags;
+
     private CustomExtCodeCopyOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
+        subject = new CustomExtCodeCopyOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Test

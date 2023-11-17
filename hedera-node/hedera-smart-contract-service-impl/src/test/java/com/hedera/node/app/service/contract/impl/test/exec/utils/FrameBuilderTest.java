@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -66,6 +67,9 @@ class FrameBuilderTest {
     @Mock
     private HederaWorldUpdater stackedUpdater;
 
+    @Mock
+    private FeatureFlags featureFlags;
+
     private final FrameBuilder subject = new FrameBuilder();
 
     @Test
@@ -85,6 +89,7 @@ class FrameBuilderTest {
                 worldUpdater,
                 wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
+                featureFlags,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
@@ -130,6 +135,7 @@ class FrameBuilderTest {
                 worldUpdater,
                 wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
+                featureFlags,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
@@ -172,6 +178,7 @@ class FrameBuilderTest {
                 worldUpdater,
                 wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
+                featureFlags,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
@@ -214,6 +221,7 @@ class FrameBuilderTest {
                 worldUpdater,
                 wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
+                featureFlags,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
