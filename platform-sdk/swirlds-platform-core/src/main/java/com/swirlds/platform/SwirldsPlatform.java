@@ -480,6 +480,7 @@ public class SwirldsPlatform implements Platform {
                 swirldName);
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
+        components.add(model);
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                 .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())

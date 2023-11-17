@@ -100,8 +100,7 @@ public class SavedStateController {
         final SignedState signedState = state.get();
         logger.info(
                 STATE_TO_DISK.getMarker(),
-                "Signed state from round {} created, "
-                        + "will eventually be written to disk once sufficient signatures are collected, for reason: {}",
+                "Signed state from round {} created, will eventually be written to disk, for reason: {}",
                 signedState.getRound(),
                 reason);
 
