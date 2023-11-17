@@ -9,9 +9,11 @@ module com.hedera.node.config {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.hapi;
+    requires transitive org.hyperledger.besu.datatypes;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires tuweni.bytes;
 }
