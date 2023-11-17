@@ -23,11 +23,11 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import javax.inject.Inject;
@@ -43,7 +43,6 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     private static final Logger logger = LogManager.getLogger(StakingPeriodTimeHook.class);
 
     private final EndOfStakingPeriodUpdater stakingCalculator;
-    private Instant consensusTimeOfLastHandledTxn;
 
     @Inject
     public StakingPeriodTimeHook(@NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator) {
@@ -62,25 +61,24 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     @Override
     public void process(@NonNull final TokenContext context) {
         requireNonNull(context, "context must not be null");
+        final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
+        final var consensusTimeOfLastHandledTxn = blockStore.getLastBlockInfo().consTimeOfLastHandledTxn();
+
         final var consensusTime = context.consensusTime();
         if (consensusTimeOfLastHandledTxn == null
-                || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.getEpochSecond()
-                        && isNextStakingPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
+                || (consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.seconds()
+                        && isNextStakingPeriod(
+                                consensusTime,
+                                Instant.ofEpochSecond(
+                                        consensusTimeOfLastHandledTxn.seconds(), consensusTimeOfLastHandledTxn.nanos()),
+                                context))) {
             // Handle the daily staking distributions and updates
             try {
                 stakingCalculator.updateNodes(context);
             } catch (final Exception e) {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
             }
-
-            // Advance the last consensus time to the given consensus time
-            consensusTimeOfLastHandledTxn = consensusTime;
         }
-    }
-
-    @VisibleForTesting
-    void setLastConsensusTime(@Nullable final Instant lastConsensusTime) {
-        consensusTimeOfLastHandledTxn = lastConsensusTime;
     }
 
     @VisibleForTesting

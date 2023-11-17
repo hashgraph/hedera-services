@@ -28,6 +28,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -54,6 +55,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -434,7 +436,28 @@ public final class Hedera implements SwirldMain {
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
+
+        // Now that the migrations have happened, we need to give the node a chance to publish any records that need to
+        // be created as a result of the migration. We'll do this by unsetting the `migrationRecordsStreamed` flag.
+        // Then, when the handle workflow has its first consensus timestamp, it will handle publishing these records (if
+        // needed), and re-set this flag to prevent duplicate publishing.
+        unmarkMigrationRecordsStreamed(state);
+
         logger.info("Migration complete");
+    }
+
+    /**
+     * Unsets the `migrationRecordsStreamed` flag in state, giving the handle workflow an opportunity
+     * to publish any necessary records from the node's startup migration.
+     */
+    private void unmarkMigrationRecordsStreamed(HederaState state) {
+        final var blockServiceState = state.createWritableStates(BlockRecordService.NAME);
+        final var blockInfoState = blockServiceState.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        final var currentBlockInfo = requireNonNull(blockInfoState.get());
+        final var nextBlockInfo =
+                currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
+        blockInfoState.put(nextBlockInfo);
+        ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 
     /*==================================================================================================================

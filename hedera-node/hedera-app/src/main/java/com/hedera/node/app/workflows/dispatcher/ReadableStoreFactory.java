@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -93,6 +95,9 @@ public class ReadableStoreFactory {
         newMap.put(ReadableFreezeStore.class, new StoreEntry(FreezeService.NAME, ReadableFreezeStoreImpl::new));
         // Contracts
         newMap.put(ContractStateStore.class, new StoreEntry(ContractService.NAME, ReadableContractStateStore::new));
+        // Block Records
+        newMap.put(
+                ReadableBlockRecordStore.class, new StoreEntry(BlockRecordService.NAME, ReadableBlockRecordStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 

@@ -24,10 +24,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import java.time.Instant;
@@ -63,6 +66,9 @@ class GenesisRecordsConsensusHookTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private TokenContext context;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableBlockRecordStore blockStore;
+
     @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
 
@@ -70,9 +76,12 @@ class GenesisRecordsConsensusHookTest {
 
     @BeforeEach
     void setup() {
+        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
         given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
+
+        given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
         subject = new GenesisRecordsConsensusHook();
     }
@@ -190,11 +199,19 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesNoRecordsAfterRunning() {
-        subject.setLastConsensusTime(CONSENSUS_NOW);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(defaultStartupBlockInfo()
+                        .copyBuilder()
+                        .consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                                .seconds(CONSENSUS_NOW.getEpochSecond())
+                                .nanos(CONSENSUS_NOW.getNano()))
+                        .build());
         // Add a single account, so we know the subject isn't skipping processing because there's no data
         subject.stakingAccounts(
                 Map.of(Account.newBuilder().accountId(ACCOUNT_ID_1).build(), ACCT_1_CREATE.copyBuilder()));
+
         subject.process(context);
+
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
@@ -241,6 +258,13 @@ class GenesisRecordsConsensusHookTest {
     private static Transaction asCryptoCreateTxn(CryptoCreateTransactionBody body) {
         return Transaction.newBuilder()
                 .body(TransactionBody.newBuilder().cryptoCreateAccount(body))
+                .build();
+    }
+
+    private static BlockInfo defaultStartupBlockInfo() {
+        return BlockInfo.newBuilder()
+                .consTimeOfLastHandledTxn((Timestamp) null)
+                .migrationRecordsStreamed(false)
                 .build();
     }
 }

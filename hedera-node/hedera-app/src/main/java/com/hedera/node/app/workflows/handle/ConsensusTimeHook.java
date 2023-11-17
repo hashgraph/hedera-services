@@ -20,7 +20,7 @@ import com.hedera.node.app.service.token.records.TokenContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Interface responsible for running any actions that need to happen at the end of
+ * Interface responsible for running any actions that need to happen at the beginning of
  * transaction handling. The reason it's called a consensus time hook is because
  * the actions are (possibly) triggered by checking the previous transaction's
  * consensus time against the consensus time of the current transaction.

@@ -49,7 +49,7 @@ final class BlockRecordServiceTest {
     @Test
     void testGetServiceName() {
         BlockRecordService blockRecordService = new BlockRecordService();
-        assertEquals("BlockRecordService", blockRecordService.getServiceName());
+        assertEquals(BlockRecordService.NAME, blockRecordService.getServiceName());
     }
 
     @Test
