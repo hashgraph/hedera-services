@@ -5,10 +5,7 @@ module com.swirlds.common {
     exports com.swirlds.common.bloom;
     exports com.swirlds.common.bloom.hasher;
     exports com.swirlds.common.config;
-    exports com.swirlds.common.config.export;
-    exports com.swirlds.common.config.reflection;
     exports com.swirlds.common.config.singleton;
-    exports com.swirlds.common.config.validators;
     exports com.swirlds.common.constructable;
     exports com.swirlds.common.constructable.internal;
     exports com.swirlds.common.context;
@@ -175,6 +172,7 @@ module com.swirlds.common {
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
     requires com.sun.jna;
+    requires com.swirlds.config.extensions;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
     requires java.desktop;
