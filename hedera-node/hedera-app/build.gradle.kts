@@ -41,6 +41,7 @@ testModuleInfo {
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    requires("org.junitpioneer")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requires("uk.org.webcompere.systemstubs.core")
