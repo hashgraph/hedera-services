@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -63,7 +64,7 @@ public class UpdateDecoder {
                             return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
                         }
                     }
-                } else if (code == INVALID_SIGNATURE) {
+                } else if (code == INVALID_SIGNATURE || code == INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE) {
                     final var op = body.tokenUpdateOrThrow();
                     final var tokenStore = enhancement.nativeOperations().readableTokenStore();
                     if (isKnownImmutable(tokenStore.get(op.tokenOrElse(TokenID.DEFAULT)))) {

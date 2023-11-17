@@ -182,18 +182,20 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .transferList(TransferList.newBuilder()
-                        .accountAmounts(
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_1212_ID)
-                                        .amount(-amountToTransfer)
-                                        .build(),
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_3434_ID)
-                                        .amount(amountToTransfer)
-                                        .build())
-                        .build());
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .transferList(TransferList.newBuilder()
+                            .accountAmounts(
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_1212_ID)
+                                            .amount(-amountToTransfer)
+                                            .build(),
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_3434_ID)
+                                            .amount(amountToTransfer)
+                                            .build())
+                            .build());
+        });
     }
 
     @Test
@@ -222,19 +224,21 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .transferList(TransferList.newBuilder()
-                        .accountAmounts(
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_1212_ID)
-                                        .amount(-acct1212Change)
-                                        .build(),
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_3434_ID)
-                                        .amount(acct1212Change)
-                                        .build())
-                        // There shouldn't be any entry for account 5656 because its balance didn't change
-                        .build());
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .transferList(TransferList.newBuilder()
+                            .accountAmounts(
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_1212_ID)
+                                            .amount(-acct1212Change)
+                                            .build(),
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_3434_ID)
+                                            .amount(acct1212Change)
+                                            .build())
+                            // There shouldn't be any entry for account 5656 because its balance didn't change
+                            .build());
+        });
     }
 
     @Test
@@ -314,19 +318,21 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
-                        .token(TOKEN_321)
-                        .transfers(
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_1212_ID)
-                                        .amount(-fungibleAmountToTransfer)
-                                        .build(),
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_3434_ID)
-                                        .amount(fungibleAmountToTransfer)
-                                        .build())
-                        .build()));
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                            .token(TOKEN_321)
+                            .transfers(
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_1212_ID)
+                                            .amount(-fungibleAmountToTransfer)
+                                            .build(),
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_3434_ID)
+                                            .amount(fungibleAmountToTransfer)
+                                            .build())
+                            .build()));
+        });
     }
 
     @Test
@@ -405,36 +411,38 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .tokenTransferLists(List.of(
-                        TokenTransferList.newBuilder()
-                                .token(token1Id)
-                                .transfers(
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_1212_ID)
-                                                .amount(-token1AmountTransferred)
-                                                .isApproval(false)
-                                                .build(),
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_3434_ID)
-                                                .amount(token1AmountTransferred)
-                                                .isApproval(false)
-                                                .build())
-                                .build(),
-                        TokenTransferList.newBuilder()
-                                .token(token2Id)
-                                .transfers(
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_3434_ID)
-                                                .amount(-token2AmountTransferred)
-                                                .isApproval(false)
-                                                .build(),
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_5656_ID)
-                                                .amount(token2AmountTransferred)
-                                                .isApproval(false)
-                                                .build())
-                                .build()));
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .tokenTransferLists(List.of(
+                            TokenTransferList.newBuilder()
+                                    .token(token1Id)
+                                    .transfers(
+                                            AccountAmount.newBuilder()
+                                                    .accountID(ACCOUNT_1212_ID)
+                                                    .amount(-token1AmountTransferred)
+                                                    .isApproval(false)
+                                                    .build(),
+                                            AccountAmount.newBuilder()
+                                                    .accountID(ACCOUNT_3434_ID)
+                                                    .amount(token1AmountTransferred)
+                                                    .isApproval(false)
+                                                    .build())
+                                    .build(),
+                            TokenTransferList.newBuilder()
+                                    .token(token2Id)
+                                    .transfers(
+                                            AccountAmount.newBuilder()
+                                                    .accountID(ACCOUNT_3434_ID)
+                                                    .amount(-token2AmountTransferred)
+                                                    .isApproval(false)
+                                                    .build(),
+                                            AccountAmount.newBuilder()
+                                                    .accountID(ACCOUNT_5656_ID)
+                                                    .amount(token2AmountTransferred)
+                                                    .isApproval(false)
+                                                    .build())
+                                    .build()));
+        });
     }
 
     @Test
@@ -468,15 +476,17 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
-                        .token(TOKEN_321)
-                        .nftTransfers(NftTransfer.newBuilder()
-                                .serialNumber(1)
-                                .senderAccountID(ACCOUNT_1212_ID)
-                                .receiverAccountID(ACCOUNT_3434_ID)
-                                .build())
-                        .build()));
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                            .token(TOKEN_321)
+                            .nftTransfers(NftTransfer.newBuilder()
+                                    .serialNumber(1)
+                                    .senderAccountID(ACCOUNT_1212_ID)
+                                    .receiverAccountID(ACCOUNT_3434_ID)
+                                    .build())
+                            .build()));
+        });
     }
 
     @Test
@@ -504,15 +514,17 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.configuration()).willReturn(configuration);
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
-                        .token(TOKEN_321)
-                        .nftTransfers(NftTransfer.newBuilder()
-                                .serialNumber(1)
-                                .senderAccountID(AccountID.newBuilder().accountNum(0))
-                                .receiverAccountID(ACCOUNT_3434_ID)
-                                .build())
-                        .build()));
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                            .token(TOKEN_321)
+                            .nftTransfers(NftTransfer.newBuilder()
+                                    .serialNumber(1)
+                                    .senderAccountID(AccountID.newBuilder().accountNum(0))
+                                    .receiverAccountID(ACCOUNT_3434_ID)
+                                    .build())
+                            .build()));
+        });
     }
 
     @Test
@@ -575,39 +587,41 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        // The transfer list should be sorted by token ID, then by serial number
-        BDDMockito.verify(recordBuilder)
-                .tokenTransferLists(List.of(
-                        // Expected transfer list for token246
-                        TokenTransferList.newBuilder()
-                                .token(token246Id)
-                                .nftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .serialNumber(222)
-                                                .senderAccountID(ACCOUNT_3434_ID)
-                                                .receiverAccountID(ACCOUNT_1212_ID)
-                                                .build(),
-                                        NftTransfer.newBuilder()
-                                                .serialNumber(223)
-                                                .senderAccountID(ACCOUNT_3434_ID)
-                                                .receiverAccountID(ACCOUNT_1212_ID)
-                                                .build())
-                                .build(),
-                        // Expected transfer list for TOKEN_531
-                        TokenTransferList.newBuilder()
-                                .token(TOKEN_321)
-                                .nftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .serialNumber(111)
-                                                .senderAccountID(ACCOUNT_1212_ID)
-                                                .receiverAccountID(ACCOUNT_3434_ID)
-                                                .build(),
-                                        NftTransfer.newBuilder()
-                                                .serialNumber(112)
-                                                .senderAccountID(ACCOUNT_1212_ID)
-                                                .receiverAccountID(ACCOUNT_3434_ID)
-                                                .build())
-                                .build()));
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            // The transfer list should be sorted by token ID, then by serial number
+            BDDMockito.verify(childRecord)
+                    .tokenTransferLists(List.of(
+                            // Expected transfer list for token246
+                            TokenTransferList.newBuilder()
+                                    .token(token246Id)
+                                    .nftTransfers(
+                                            NftTransfer.newBuilder()
+                                                    .serialNumber(222)
+                                                    .senderAccountID(ACCOUNT_3434_ID)
+                                                    .receiverAccountID(ACCOUNT_1212_ID)
+                                                    .build(),
+                                            NftTransfer.newBuilder()
+                                                    .serialNumber(223)
+                                                    .senderAccountID(ACCOUNT_3434_ID)
+                                                    .receiverAccountID(ACCOUNT_1212_ID)
+                                                    .build())
+                                    .build(),
+                            // Expected transfer list for TOKEN_531
+                            TokenTransferList.newBuilder()
+                                    .token(TOKEN_321)
+                                    .nftTransfers(
+                                            NftTransfer.newBuilder()
+                                                    .serialNumber(111)
+                                                    .senderAccountID(ACCOUNT_1212_ID)
+                                                    .receiverAccountID(ACCOUNT_3434_ID)
+                                                    .build(),
+                                            NftTransfer.newBuilder()
+                                                    .serialNumber(112)
+                                                    .senderAccountID(ACCOUNT_1212_ID)
+                                                    .receiverAccountID(ACCOUNT_3434_ID)
+                                                    .build())
+                                    .build()));
+        });
 
         subject.finalizeChildRecord(context);
     }
@@ -665,40 +679,42 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeChildRecord(context);
 
-        BDDMockito.verify(recordBuilder)
-                .transferList(TransferList.newBuilder()
-                        .accountAmounts(
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_1212_ID)
-                                        .amount(-hbar1212Change)
-                                        .build(),
-                                AccountAmount.newBuilder()
-                                        .accountID(ACCOUNT_3434_ID)
-                                        .amount(hbar1212Change)
-                                        .build())
-                        .build());
-        BDDMockito.verify(recordBuilder)
-                .tokenTransferLists(List.of(
-                        TokenTransferList.newBuilder()
-                                .token(TOKEN_321)
-                                .transfers(
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_3434_ID)
-                                                .amount(-fungible321Change)
-                                                .build(),
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_5656_ID)
-                                                .amount(fungible321Change)
-                                                .build())
-                                .build(),
-                        TokenTransferList.newBuilder()
-                                .token(token654Id)
-                                .nftTransfers(NftTransfer.newBuilder()
-                                        .serialNumber(2)
-                                        .senderAccountID(ACCOUNT_5656_ID)
-                                        .receiverAccountID(ACCOUNT_1212_ID)
-                                        .build())
-                                .build()));
+        context.forLastChildRecord(CryptoTransferRecordBuilder.class, childRecord -> {
+            BDDMockito.verify(childRecord)
+                    .transferList(TransferList.newBuilder()
+                            .accountAmounts(
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_1212_ID)
+                                            .amount(-hbar1212Change)
+                                            .build(),
+                                    AccountAmount.newBuilder()
+                                            .accountID(ACCOUNT_3434_ID)
+                                            .amount(hbar1212Change)
+                                            .build())
+                            .build());
+            BDDMockito.verify(recordBuilder)
+                    .tokenTransferLists(List.of(
+                            TokenTransferList.newBuilder()
+                                    .token(TOKEN_321)
+                                    .transfers(
+                                            AccountAmount.newBuilder()
+                                                    .accountID(ACCOUNT_3434_ID)
+                                                    .amount(-fungible321Change)
+                                                    .build(),
+                                            AccountAmount.newBuilder()
+                                                    .accountID(ACCOUNT_5656_ID)
+                                                    .amount(fungible321Change)
+                                                    .build())
+                                    .build(),
+                            TokenTransferList.newBuilder()
+                                    .token(token654Id)
+                                    .nftTransfers(NftTransfer.newBuilder()
+                                            .serialNumber(2)
+                                            .senderAccountID(ACCOUNT_5656_ID)
+                                            .receiverAccountID(ACCOUNT_1212_ID)
+                                            .build())
+                                    .build()));
+        });
     }
 
     private FinalizeContext mockContext() {
