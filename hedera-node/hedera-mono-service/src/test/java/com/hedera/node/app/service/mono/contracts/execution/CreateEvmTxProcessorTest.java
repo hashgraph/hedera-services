@@ -325,7 +325,7 @@ class CreateEvmTxProcessorTest {
     @Test
     void throwsWhenGasLimitTimesGasPriceOverflows() {
         given(worldState.updater()).willReturn(updater);
-        given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0,0,1010).asEvmAddress());
+        given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
         var evmAccount = mock(MutableAccount.class);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
@@ -345,9 +345,9 @@ class CreateEvmTxProcessorTest {
                 .willReturn(gasPriceToOverflowWith);
 
         assertFailsWith(
-                () -> createEvmTxProcessor.execute(sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY, consensusTime),
-                INSUFFICIENT_PAYER_BALANCE
-        );
+                () -> createEvmTxProcessor.execute(
+                        sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY, consensusTime),
+                INSUFFICIENT_PAYER_BALANCE);
     }
 
     private void givenInvalidMock() {

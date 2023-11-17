@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,7 +40,6 @@ import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -194,8 +192,8 @@ class CallLocalEvmTxProcessorTest {
         assertEquals(sender.getId().asEvmAddress(), buildMessageFrame.getSenderAddress());
         assertEquals(oneWei, buildMessageFrame.getApparentValue());
     }
-    @Test
 
+    @Test
     void succeedsEvenWithVeryHighGasLimitBecauseItCannotOverflowAndItIsntChargedAnyway() {
         givenValidMock();
 
@@ -209,7 +207,8 @@ class CallLocalEvmTxProcessorTest {
 
         final long gasLimitToOverflowWith = 0x7FFF_FFFF_FFFF_FFFFL;
 
-        var result = callLocalEvmTxProcessor.execute(sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY);
+        var result =
+                callLocalEvmTxProcessor.execute(sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY);
         assertTrue(result.isSuccessful());
     }
 
