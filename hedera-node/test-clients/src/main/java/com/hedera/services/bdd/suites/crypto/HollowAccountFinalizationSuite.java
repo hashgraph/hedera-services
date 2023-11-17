@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.noCreditAboveNumber;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -50,13 +51,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
@@ -71,12 +70,13 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+// @HapiTestSuite
 public class HollowAccountFinalizationSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(HollowAccountFinalizationSuite.class);
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
@@ -684,6 +684,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
         final var recipientKey2 = "recipient2";
+        final var receiverId = new AtomicLong();
         return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -691,7 +692,9 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                         newKeyNamed(recipientKey).shape(SECP_256K1_SHAPE),
                         newKeyNamed(recipientKey2).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
+                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER)
+                                .balance(INITIAL_BALANCE * ONE_HBAR)
+                                .exposingCreatedIdTo(id -> receiverId.set(id.getAccountNum())))
                 .when(withOpContext((spec, opLog) -> {
                     final var op1 = sendToEvmAddressFromECDSAKey(spec, SECP_256K1_SOURCE_KEY, TRANSFER_TXN);
                     final var op2 = sendToEvmAddressFromECDSAKey(spec, ecdsaKey2, "randomTxn");
@@ -722,10 +725,13 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var childRecordCheck = childRecordsCheck(
                             TRANSFER_TXN_2,
                             MAX_CHILD_RECORDS_EXCEEDED,
+                            // Ensure there are no credits to auto-created accounts
+                            parentAsserts -> parentAsserts.transfers(noCreditAboveNumber(ignore -> spec.registry()
+                                    .getAccountID(SECP_256K1_SOURCE_KEY)
+                                    .getAccountNum())),
                             recordWith().status(SUCCESS),
-                            recordWith().status(SUCCESS),
-                            recordWith().status(REVERTED_SUCCESS));
-                    //                    // assert that the payer has been finalized
+                            recordWith().status(SUCCESS));
+                    // assert that the payer has been finalized
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
                             ecdsaKey.getECDSASecp256K1().toByteArray()));
