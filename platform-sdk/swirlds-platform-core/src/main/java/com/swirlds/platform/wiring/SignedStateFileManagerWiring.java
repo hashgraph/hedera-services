@@ -16,26 +16,28 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Consumer;
 
 /**
  * The wiring for the {@link SignedStateFileManager}
  *
- * @param scheduler       the task scheduler
+ * @param outputWire      the output wire
  * @param saveStateToDisk the input wire for saving the state to disk
  * @param dumpStateToDisk the input wire for dumping the state to disk
  */
 public record SignedStateFileManagerWiring(
-        @NonNull TaskScheduler<StateSavingResult> scheduler,
+        @NonNull OutputWire<StateSavingResult> outputWire,
         @NonNull InputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
         @NonNull InputWire<StateDumpRequest, Void> dumpStateToDisk) {
     /**
@@ -45,7 +47,7 @@ public record SignedStateFileManagerWiring(
      */
     public SignedStateFileManagerWiring(@NonNull final TaskScheduler<StateSavingResult> scheduler) {
         this(
-                scheduler,
+                scheduler.getOutputWire(),
                 scheduler.buildInputWire("save state to disk"),
                 scheduler.buildInputWire("dump state to disk").cast());
     }
@@ -65,23 +67,34 @@ public record SignedStateFileManagerWiring(
      * @param preconsensusEventWriter the pre-consensus event writer
      */
     public void solderPces(@NonNull final PreconsensusEventWriter preconsensusEventWriter) {
-        scheduler
-                .getOutputWire()
-                .buildTransformer(
-                        "extract oldestMinimumGenerationOnDisk", StateSavingResult::oldestMinimumGenerationOnDisk)
+        outputWire.buildTransformer(
+                        "extract oldestMinimumGenerationOnDisk",
+                        StateSavingResult::oldestMinimumGenerationOnDisk)
                 .solderTo(
                         "PCES minimum generation to store",
                         preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
     }
 
-    public void solderStatusManager(@NonNull final Consumer<StateWrittenToDiskAction> statusConsumer) {
-        scheduler
-                .getOutputWire()
-                .buildTransformer("to status", ssr -> new StateWrittenToDiskAction(ssr.round()))
-                .solderTo("status manager", statusConsumer);
+    /**
+     * Solder the {@link SignedStateFileManager} to the platform status manager
+     * @param statusManager the platform status manager
+     */
+    public void solderStatusManager(@NonNull final PlatformStatusManager statusManager) {
+        outputWire.buildTransformer(
+                "to StateWrittenToDiskAction",
+                        ssr -> new StateWrittenToDiskAction(ssr.round()))
+                .solderTo(
+                        "status manager",
+                        statusManager::submitStatusAction);
     }
 
-    public void solderAppCommunication(@NonNull final Consumer<StateSavingResult> stateSavingResultConsumer) {
-        scheduler.getOutputWire().solderTo("app comm", stateSavingResultConsumer);
+    /**
+     * Solder the {@link SignedStateFileManager} to the app communication component
+     * @param appCommunicationComponent the app communication component
+     */
+    public void solderAppCommunication(@NonNull final AppCommunicationComponent appCommunicationComponent) {
+        outputWire.solderTo(
+                "app communication",
+                appCommunicationComponent::stateSavedToDisk);
     }
 }

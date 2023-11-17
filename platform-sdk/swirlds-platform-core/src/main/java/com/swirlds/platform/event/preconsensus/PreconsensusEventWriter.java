@@ -78,7 +78,7 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
             setMinimumGenerationToStore(minimumGenerationToStore);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-            logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation non-ancient");
+            logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation to store");
         }
     }
 

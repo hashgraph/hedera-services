@@ -78,7 +78,7 @@ public class SavedStateController {
     }
 
     /**
-     * Notifies the controller that a signed state was received from another node during reconnect. The controller save
+     * Notifies the controller that a signed state was received from another node during reconnect. The controller saves
      * its timestamp and pass it on to be written to disk.
      *
      * @param signedState the signed state that was received from another node during reconnect

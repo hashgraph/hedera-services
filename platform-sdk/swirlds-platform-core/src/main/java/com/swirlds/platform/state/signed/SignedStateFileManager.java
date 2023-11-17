@@ -168,11 +168,11 @@ public class SignedStateFileManager {
         request.finishedCallback().run();
     }
 
-    private StateToDiskReason getReason(@NonNull final SignedState state) {
+    private static @NonNull StateToDiskReason getReason(@NonNull final SignedState state) {
         return Optional.ofNullable(state.getStateToDiskReason()).orElse(UNKNOWN);
     }
 
-    private boolean saveStateTask(@NonNull final SignedState state, final Path directory) {
+    private boolean saveStateTask(@NonNull final SignedState state,@NonNull final Path directory) {
         try {
             SignedStateFileWriter.writeSignedStateToDisk(platformContext, selfId, directory, state, getReason(state));
             return true;
@@ -222,6 +222,7 @@ public class SignedStateFileManager {
 
     /**
      * Purge old states on the disk.
+     * @return the minimum generation non-ancient of the oldest state that was not deleted
      */
     private long deleteOldStates() {
         final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);

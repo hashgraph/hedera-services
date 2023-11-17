@@ -39,7 +39,7 @@ public record StateDumpRequest(
      * @param reservedSignedState the reserved signed state to be written to disk
      * @return the new state dump request
      */
-    public static StateDumpRequest create(@NonNull final ReservedSignedState reservedSignedState) {
+    public static @NonNull StateDumpRequest create(@NonNull final ReservedSignedState reservedSignedState) {
         final CountDownLatch latch = new CountDownLatch(1);
         final InterruptableRunnable await = latch::await;
         return new StateDumpRequest(

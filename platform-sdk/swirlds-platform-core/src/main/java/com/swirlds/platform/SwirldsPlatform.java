@@ -483,15 +483,14 @@ public class SwirldsPlatform implements Platform {
         final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
                 .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                 .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
-                .withExternalBackPressure(false)
                 .build()
                 .cast();
         final SignedStateFileManagerWiring signedStateFileManagerWiring =
                 new SignedStateFileManagerWiring(savedStateScheduler);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         signedStateFileManagerWiring.solderPces(preconsensusEventWriter);
-        signedStateFileManagerWiring.solderStatusManager(platformStatusManager::submitStatusAction);
-        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent::stateSavedToDisk);
+        signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
+        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
 
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
