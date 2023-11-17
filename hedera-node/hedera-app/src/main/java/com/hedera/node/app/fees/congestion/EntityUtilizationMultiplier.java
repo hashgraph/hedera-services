@@ -25,20 +25,13 @@ import static com.hedera.node.app.service.mono.context.properties.EntityType.TOK
 import static com.hedera.node.app.service.mono.context.properties.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableNftStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.token.*;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
@@ -115,12 +108,12 @@ public class EntityUtilizationMultiplier {
         final var maxNumOfAccounts =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
 
-        final var writableAccountStoreFactory = new WritableStoreFactory(state, TokenService.NAME);
-        final var accountsStore = writableAccountStoreFactory.getStore(WritableAccountStore.class);
+        final var readableAccountStoreFactory = new ReadableStoreFactory(state);
+        final var accountsStore = readableAccountStoreFactory.getStore(ReadableAccountStore.class);
         final var numAccountsAndContracts = accountsStore.sizeOfAccountState();
 
-        final var writableContractStoreFactory = new WritableStoreFactory(state, ContractService.NAME);
-        final var contractsStore = writableContractStoreFactory.getStore(WritableContractStateStore.class);
+        final var readableContractStoreFactory = new ReadableStoreFactory(state);
+        final var contractsStore = readableContractStoreFactory.getStore(ContractStateStore.class);
         final var numContracts = contractsStore.getNumBytecodes();
         final var numAccounts = numAccountsAndContracts - numContracts;
 
@@ -132,8 +125,8 @@ public class EntityUtilizationMultiplier {
         final var maxNumOfContracts =
                 configuration.getConfigData(ContractsConfig.class).maxNumber();
 
-        final var writableContractStoreFactory = new WritableStoreFactory(state, ContractService.NAME);
-        final var contractsStore = writableContractStoreFactory.getStore(WritableContractStateStore.class);
+        final var readableContractStoreFactory = new ReadableStoreFactory(state);
+        final var contractsStore = readableContractStoreFactory.getStore(ContractStateStore.class);
         final var numContracts = contractsStore.getNumBytecodes();
 
         return maxNumOfContracts == 0 ? 100 : (int) ((100 * numContracts) / maxNumOfContracts);
@@ -143,8 +136,8 @@ public class EntityUtilizationMultiplier {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfFiles = configuration.getConfigData(FilesConfig.class).maxNumber();
 
-        final var writableFileStoreFactory = new WritableStoreFactory(state, FileService.NAME);
-        final var fileStore = writableFileStoreFactory.getStore(WritableFileStore.class);
+        final var readableFileStoreFactory = new ReadableStoreFactory(state);
+        final var fileStore = readableFileStoreFactory.getStore(ReadableFileStore.class);
         final var numOfFiles = fileStore.sizeOfState();
 
         return maxNumOfFiles == 0 ? 100 : (int) ((100 * numOfFiles) / maxNumOfFiles);
@@ -154,8 +147,8 @@ public class EntityUtilizationMultiplier {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfNfts = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
 
-        final var writableNftStoreFactory = new WritableStoreFactory(state, TokenService.NAME);
-        final var nftStore = writableNftStoreFactory.getStore(WritableNftStore.class);
+        final var readableNftStoreFactory = new ReadableStoreFactory(state);
+        final var nftStore = readableNftStoreFactory.getStore(ReadableNftStore.class);
         final var numOfNfts = nftStore.sizeOfState();
 
         return maxNumOfNfts == 0 ? 100 : (int) ((100 * numOfNfts) / maxNumOfNfts);
@@ -166,8 +159,8 @@ public class EntityUtilizationMultiplier {
         final var maxNumOfTokens =
                 configuration.getConfigData(TokensConfig.class).maxNumber();
 
-        final var writableTokenStoreFactory = new WritableStoreFactory(state, TokenService.NAME);
-        final var tokenStore = writableTokenStoreFactory.getStore(WritableTokenStore.class);
+        final var readableTokenStoreFactory = new ReadableStoreFactory(state);
+        final var tokenStore = readableTokenStoreFactory.getStore(ReadableTokenStore.class);
         final var numOfTokens = tokenStore.sizeOfState();
 
         return maxNumOfTokens == 0 ? 100 : (int) ((100 * numOfTokens) / maxNumOfTokens);
@@ -178,8 +171,8 @@ public class EntityUtilizationMultiplier {
         final var maxNumOfTokenRels =
                 configuration.getConfigData(TokensConfig.class).maxAggregateRels();
 
-        final var writableTokenRelsStoreFactory = new WritableStoreFactory(state, TokenService.NAME);
-        final var tokenRelStore = writableTokenRelsStoreFactory.getStore(WritableTokenRelationStore.class);
+        final var readableTokenRelsStoreFactory = new ReadableStoreFactory(state);
+        final var tokenRelStore = readableTokenRelsStoreFactory.getStore(ReadableTokenRelationStore.class);
         final var numOfTokensRels = tokenRelStore.sizeOfState();
 
         return maxNumOfTokenRels == 0 ? 100 : (int) ((100 * numOfTokensRels) / maxNumOfTokenRels);
@@ -190,8 +183,8 @@ public class EntityUtilizationMultiplier {
         final var maxNumberOfTopics =
                 configuration.getConfigData(TopicsConfig.class).maxNumber();
 
-        final var writableTopicsStoreFactory = new WritableStoreFactory(state, ConsensusService.NAME);
-        final var topicStore = writableTopicsStoreFactory.getStore(WritableTopicStore.class);
+        final var readableTopicsStoreFactory = new ReadableStoreFactory(state);
+        final var topicStore = readableTopicsStoreFactory.getStore(ReadableTopicStore.class);
         final var numOfTopics = topicStore.sizeOfState();
 
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);

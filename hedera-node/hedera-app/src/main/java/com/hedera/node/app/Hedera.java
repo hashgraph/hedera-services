@@ -704,7 +704,7 @@ public final class Hedera implements SwirldMain {
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
         logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager);
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers, state);
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -791,7 +791,7 @@ public final class Hedera implements SwirldMain {
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
         logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager);
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers, state);
 
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass

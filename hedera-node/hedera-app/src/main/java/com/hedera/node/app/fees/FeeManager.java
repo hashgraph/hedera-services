@@ -17,6 +17,7 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
@@ -29,7 +30,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,9 +79,16 @@ public final class FeeManager {
     /** The exchange rate manager to use for the current rate */
     private final ExchangeRateManager exchangeRateManager;
 
+    private final CongestionMultipliers congestionMultipliers;
+
+    private final HederaState state;
+
     @Inject
-    public FeeManager(@NonNull final ExchangeRateManager exchangeRateManager) {
+    public FeeManager(@NonNull final ExchangeRateManager exchangeRateManager,
+                      @NonNull CongestionMultipliers congestionMultipliers, @NonNull HederaState state) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.congestionMultipliers = requireNonNull(congestionMultipliers);
+        this.state = state;
     }
 
     /**
@@ -183,7 +193,9 @@ public final class FeeManager {
                 signatureMapSize,
                 feeData,
                 exchangeRateManager.activeRate(consensusTime),
-                isInternalDispatch);
+                isInternalDispatch,
+                congestionMultipliers,
+                this.state);
     }
 
     @NonNull
@@ -193,7 +205,7 @@ public final class FeeManager {
         final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
 
         // Create the fee calculator
-        return new FeeCalculatorImpl(feeData, exchangeRateManager.activeRate(consensusTime));
+        return new FeeCalculatorImpl(feeData, exchangeRateManager.activeRate(consensusTime), congestionMultipliers, this.state, functionality);
     }
 
     /**
