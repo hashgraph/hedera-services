@@ -279,6 +279,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 .including(TOKEN_USAGE, TOKEN_TREASURY, -1))));
     }
 
+    @HapiTest
     private HapiSpec delegateCallForBurnWithContractKey() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -326,6 +327,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 2));
     }
 
+    @HapiTest
     private HapiSpec delegateCallForMintWithContractKey() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 

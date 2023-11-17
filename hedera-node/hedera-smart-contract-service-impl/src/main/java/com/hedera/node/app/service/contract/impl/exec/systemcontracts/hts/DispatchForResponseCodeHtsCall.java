@@ -28,6 +28,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -179,9 +181,24 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
 
+        // refactor me
+        // success vs error encoding
         if (TokenUpdateRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
             var output = ReturnTypes.encodedRc(standardized(recordBuilder.status()));
             ((TokenUpdateRecordBuilder) recordBuilder)
+                    .contractCallResult(ContractFunctionResult.newBuilder()
+                            .contractCallResult(Bytes.wrap(output.array()))
+                            .build());
+        } else if (TokenBurnRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
+            var output = ReturnTypes.encodedRcBurn(standardized(recordBuilder.status()));
+            ((TokenBurnRecordBuilder) recordBuilder)
+                    .contractCallResult(ContractFunctionResult.newBuilder()
+                            .contractCallResult(Bytes.wrap(output.array()))
+                            .build());
+
+        } else if (TokenMintRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
+            var output = ReturnTypes.encodedRcMint(standardized(recordBuilder.status()));
+            ((TokenMintRecordBuilder) recordBuilder)
                     .contractCallResult(ContractFunctionResult.newBuilder()
                             .contractCallResult(Bytes.wrap(output.array()))
                             .build());

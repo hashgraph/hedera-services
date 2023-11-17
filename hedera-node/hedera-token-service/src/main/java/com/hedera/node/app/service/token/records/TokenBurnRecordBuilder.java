@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -45,4 +47,7 @@ public interface TokenBurnRecordBuilder extends SingleTransactionRecordBuilder {
      */
     @NonNull
     TokenBurnRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+
+    @NonNull
+    CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }
