@@ -21,9 +21,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * <p>
  * Manages reservations of a signed state when it needs to be passed to one or more input wires.
- * </p>
  * <p>
  * The contract for managing reservations across vertexes in the wiring is as follows:
  * <ul>
@@ -32,12 +30,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * </ul>
  * The reserver enforces this contract by reserving the state for each input wire, and then releasing the reservation
  * made for the reserver.
- * </p>
  * <p>
  * For each input wire, {@link #transform(ReservedSignedState)} will be called once, reserving the state for that input
  * wire. After a reservation is made for each input wire, {@link #cleanup(ReservedSignedState)} will be called once to
  * release the original reservation.
- * </p>
  *
  * @param name the name of the reserver
  */
