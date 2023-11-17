@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updat
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder.FAILURE_CUSTOMIZER;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
@@ -57,7 +58,8 @@ public class UpdateKeysTranslator extends AbstractHtsCallTranslator {
                 attempt,
                 decoder.decodeTokenUpdateKeys(attempt),
                 SingleTransactionRecordBuilder.class,
-                UpdateKeysTranslator::gasRequirement);
+                UpdateKeysTranslator::gasRequirement,
+                FAILURE_CUSTOMIZER);
     }
 
     public static long gasRequirement(

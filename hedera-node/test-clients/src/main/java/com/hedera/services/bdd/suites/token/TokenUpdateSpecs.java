@@ -177,6 +177,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     private HapiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
@@ -661,6 +662,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;
