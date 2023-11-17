@@ -21,10 +21,25 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Manages reservations of a signed state when it needs to be passed to one or more consumers. Whenever a state is
- * passed to this instance, the assumption will be that it reserved for the reserver, and it is responsible for
- * releasing it. The state is passed to downstream consumers with the same assumption: each consumer will get a state
- * with a reservation for itself, and it is responsible for releasing it.
+ * <p>
+ * Manages reservations of a signed state when it needs to be passed to one or more input wires.
+ * </p>
+ * <p>
+ * The contract for managing reservations across vertexes in the wiring is as follows:
+ * <ul>
+ *     <li>Each vertex, on input, will receive a state reserved for that vertex</li>
+ *     <li>The vertex which should either release that state, or return it</li>
+ * </ul>
+ * The reserver enforces this contract by reserving the state for each input wire, and then releasing the reservation
+ * made for the reserver.
+ * </p>
+ * <p>
+ * For each input wire, {@link #transform(ReservedSignedState)} will be called once, reserving the state for that input
+ * wire. After a reservation is made for each input wire, {@link #cleanup(ReservedSignedState)} will be called once to
+ * release the original reservation.
+ * </p>
+ *
+ * @param name the name of the reserver
  */
 public record SignedStateReserver(String name)
         implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
