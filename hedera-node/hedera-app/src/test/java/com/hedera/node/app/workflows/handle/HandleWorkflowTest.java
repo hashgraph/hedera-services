@@ -239,8 +239,7 @@ class HandleWorkflowTest extends AppTestBase {
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
-        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()), eq(false)))
-                .thenReturn(ALICE.account());
+        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
 
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);
@@ -1463,7 +1462,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(solvencyPreCheck)
-                    .getPayerAccount(any(), eq(ALICE.accountID()), eq(false));
+                    .getPayerAccount(any(), eq(ALICE.accountID()));
 
             // when
             workflow.handleRound(state, dualState, round);

@@ -621,7 +621,7 @@ public class HandleWorkflow {
         // Check the status and solvency of the payer
 
         try {
-            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID, false);
+            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
             solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
             isPayerHollow = isHollow(payer);
         } catch (final InsufficientServiceFeeException e) {
@@ -658,11 +658,9 @@ public class HandleWorkflow {
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
-        if (preHandleResult.payerKey() != null) {
-            final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
-            if (!isPayerHollow && payerKeyVerification.failed()) {
-                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
-            }
+        final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
+        if (!isPayerHollow && payerKeyVerification.failed()) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
         }
 
         // verify all the keys
@@ -774,7 +772,7 @@ public class HandleWorkflow {
 
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer(), false);
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
         final var payerKey = payer.key();
 
         // expand all keys

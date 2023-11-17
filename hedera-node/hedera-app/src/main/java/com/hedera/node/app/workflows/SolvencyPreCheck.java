@@ -83,14 +83,10 @@ public class SolvencyPreCheck {
      *
      * @param storeFactory the {@link ReadableStoreFactory} used to access readable state
      * @param accountID the {@link AccountID} of the payer
-     * @param ingestCheck if true, the check is being performed during an ingest workflow.
      * @throws PreCheckException if the payer account is invalid
      */
     @NonNull
-    public Account getPayerAccount(
-            @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final AccountID accountID,
-            final boolean ingestCheck)
+    public Account getPayerAccount(@NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
             throws PreCheckException {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(accountID);
@@ -100,11 +96,7 @@ public class SolvencyPreCheck {
         }
 
         if (account.deleted()) {
-            if (ingestCheck) {
-                throw new PreCheckException(ResponseCodeEnum.ACCOUNT_DELETED);
-            } else {
-                throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_DELETED);
-            }
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_DELETED);
         }
 
         if (account.smartContract()) {

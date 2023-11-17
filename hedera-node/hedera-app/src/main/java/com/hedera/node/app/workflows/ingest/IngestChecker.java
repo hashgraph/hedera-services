@@ -173,7 +173,7 @@ public final class IngestChecker {
 
         // 5. Get payer account
         final var storeFactory = new ReadableStoreFactory(state);
-        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID(), true);
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID());
         final var payerKey = payer.key();
         // There should, absolutely, be a key for this account. If there isn't, then something is wrong in
         // state. So we will log this with a warning. We will also have to do something about the fact that
