@@ -22,12 +22,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -53,10 +51,9 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleMint = body.tokenBurnOrThrow().serialNumbers().isEmpty();
-        return new DispatchForResponseCodeHtsCall<>(
+        return new BurnCall(
                 attempt,
                 body,
-                TokenBurnRecordBuilder.class,
                 isFungibleMint ? BurnTranslator::fungibleBurnGasRequirement : BurnTranslator::nftBurnGasRequirement);
     }
 

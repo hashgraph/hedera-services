@@ -910,6 +910,14 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Gets the newly generate serial numbers
+     * @return the newly generate serial numbers
+     */
+    public List<Long> getSerialNumbers() {
+        return this.serialNumbers;
+    }
+
+    /**
      * Sets the receipt serialNumbers.
      *
      * @param serialNumbers the serialNumbers for the receipt

@@ -39,6 +39,12 @@ public interface TokenMintRecordBuilder extends SingleTransactionRecordBuilder {
     TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 
     /**
+     * Gets the newly generate serial numbers
+     * @return the newly generate serial numbers
+     */
+    List<Long> getSerialNumbers();
+
+    /**
      * Sets the new total supply of a token
      * @param newTotalSupply the new total supply of a token
      */
@@ -51,5 +57,5 @@ public interface TokenMintRecordBuilder extends SingleTransactionRecordBuilder {
     long getNewTotalSupply();
 
     @NonNull
-    CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+    TokenMintRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }

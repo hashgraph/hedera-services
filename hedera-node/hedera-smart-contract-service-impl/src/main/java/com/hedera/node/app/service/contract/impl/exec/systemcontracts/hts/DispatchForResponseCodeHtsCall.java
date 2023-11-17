@@ -17,23 +17,15 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -163,46 +155,11 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     }
 
     public @NonNull PricedResult execute(MessageFrame frame) {
-        T recordBuilder;
-
-        if (frame.isStatic() && !isTokenProxyRedirect(frame.getInputData()) && !isViewFunction(frame.getInputData())) {
-            recordBuilder = systemContractOperations()
-                    .dispatchRemovable(
-                            syntheticBody,
-                            verificationStrategy,
-                            senderId,
-                            recordBuilderType,
-                            ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
-        } else {
-            recordBuilder = systemContractOperations()
-                    .dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
-        }
+        final var recordBuilder =
+                systemContractOperations().dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
 
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
-
-        // refactor me
-        // success vs error encoding
-        if (TokenUpdateRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
-            var output = ReturnTypes.encodedRc(standardized(recordBuilder.status()));
-            ((TokenUpdateRecordBuilder) recordBuilder)
-                    .contractCallResult(ContractFunctionResult.newBuilder()
-                            .contractCallResult(Bytes.wrap(output.array()))
-                            .build());
-        } else if (TokenBurnRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
-            var output = ReturnTypes.encodedRcBurn(standardized(recordBuilder.status()));
-            ((TokenBurnRecordBuilder) recordBuilder)
-                    .contractCallResult(ContractFunctionResult.newBuilder()
-                            .contractCallResult(Bytes.wrap(output.array()))
-                            .build());
-
-        } else if (TokenMintRecordBuilder.class.isAssignableFrom(recordBuilderType)) {
-            var output = ReturnTypes.encodedRcMint(standardized(recordBuilder.status()));
-            ((TokenMintRecordBuilder) recordBuilder)
-                    .contractCallResult(ContractFunctionResult.newBuilder()
-                            .contractCallResult(Bytes.wrap(output.array()))
-                            .build());
-        }
 
         var status = recordBuilder.status();
         if (status != SUCCESS) {

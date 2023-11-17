@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -25,7 +24,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.FixedFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 /**
@@ -178,17 +176,5 @@ public class ReturnTypes {
      */
     public static ByteBuffer encodedRc(@NonNull final ResponseCodeEnum status) {
         return RC_ENCODER.encodeElements((long) status.protoOrdinal());
-    }
-
-    public static ByteBuffer encodedRcBurn(@NonNull final ResponseCodeEnum status) {
-        TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-        Tuple tuple = Tuple.of(status.protoOrdinal(), BigInteger.valueOf(0));
-        return burnReturnType.encode(tuple);
-    }
-
-    public static ByteBuffer encodedRcMint(@NonNull final ResponseCodeEnum status) {
-        TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-        Tuple tuple = Tuple.of(status.protoOrdinal(), BigInteger.valueOf(0), new long[0]);
-        return mintReturnType.encode(tuple);
     }
 }

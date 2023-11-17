@@ -698,6 +698,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
+    @HapiTest
     private HapiSpec callForMintWithContractKey() {
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
@@ -751,6 +752,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TYPE_OF_TOKEN, amount));
     }
 
+    @HapiTest
     private HapiSpec callForMintWithDelegateContractKey() {
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
