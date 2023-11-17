@@ -19,6 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.internal.EventImpl;
@@ -28,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Wiring for the {@link LinkedEventIntakeScheduler}.
  */
 public class LinkedEventIntakeScheduler {
-    private final InputWire<EventImpl, Void> eventInput;
+    private final BindableInputWire<EventImpl, Void> eventInput;
 
     /**
      * Constructor.
@@ -53,7 +54,7 @@ public class LinkedEventIntakeScheduler {
      * @return the event input wire
      */
     @NonNull
-    public InputWire<EventImpl, Void> getEventInput() {
+    public InputWire<EventImpl> getEventInput() {
         return eventInput;
     }
 

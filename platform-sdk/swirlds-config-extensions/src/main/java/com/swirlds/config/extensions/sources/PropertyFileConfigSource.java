@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
 
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -58,7 +58,7 @@ public class PropertyFileConfigSource extends AbstractConfigSource {
      * @throws IOException if the file can not loaded or parsed
      */
     public PropertyFileConfigSource(@NonNull final Path filePath, final int ordinal) throws IOException {
-        this.filePath = CommonUtils.throwArgNull(filePath, "filePath");
+        this.filePath = Objects.requireNonNull(filePath, "filePath can not be null");
         this.ordinal = ordinal;
         this.internalProperties = new HashMap<>();
         try (final BufferedReader reader = Files.newBufferedReader(filePath)) {
