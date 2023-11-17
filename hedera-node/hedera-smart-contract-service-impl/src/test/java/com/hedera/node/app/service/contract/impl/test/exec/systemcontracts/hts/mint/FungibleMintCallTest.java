@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator.MINT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -88,12 +89,16 @@ class FungibleMintCallTest extends HtsCallTestBase {
                         eq(TokenMintRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(recordBuilder.getNewTotalSupply()).willReturn(1L);
         subject = subjectForMint(1);
 
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(asBytesResult(MINT.getOutputs().encodeElements(BigInteger.valueOf(22))), result.getOutput());
+        assertEquals(
+                asBytesResult(MINT.getOutputs()
+                        .encodeElements((long) SUCCESS.protoOrdinal(), BigInteger.valueOf(1), new long[] {})),
+                result.getOutput());
     }
 
     @Test
@@ -112,8 +117,14 @@ class FungibleMintCallTest extends HtsCallTestBase {
 
         final var result = subject.execute().fullResult().result();
 
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(Bytes.wrap(INSUFFICIENT_ACCOUNT_BALANCE.protoName().getBytes()), result.getOutput());
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(MINT.getOutputs()
+                        .encodeElements(
+                                (long) INSUFFICIENT_ACCOUNT_BALANCE.protoOrdinal(),
+                                BigInteger.valueOf(0),
+                                new long[] {})),
+                result.getOutput());
     }
 
     private FungibleMintCall subjectForMint(final long amount) {
