@@ -658,9 +658,11 @@ public class HandleWorkflow {
         }
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
-        final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
-        if (!isPayerHollow && payerKeyVerification.failed()) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
+        if (preHandleResult.payerKey() != null) {
+            final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
+            if (!isPayerHollow && payerKeyVerification.failed()) {
+                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
+            }
         }
 
         // verify all the keys
