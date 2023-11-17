@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,19 +48,19 @@ class TaskSchedulerTransformersTests {
 
         final TaskScheduler<List<Integer>> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();
-        final InputWire<Integer, List<Integer>> wireAIn = taskSchedulerA.buildInputWire("A in");
+        final BindableInputWire<Integer, List<Integer>> wireAIn = taskSchedulerA.buildInputWire("A in");
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").build().cast();
-        final InputWire<Integer, Void> wireBIn = taskSchedulerB.buildInputWire("B in");
+        final BindableInputWire<Integer, Void> wireBIn = taskSchedulerB.buildInputWire("B in");
 
         final TaskScheduler<Void> taskSchedulerC =
                 model.schedulerBuilder("C").build().cast();
-        final InputWire<Integer, Void> wireCIn = taskSchedulerC.buildInputWire("C in");
+        final BindableInputWire<Integer, Void> wireCIn = taskSchedulerC.buildInputWire("C in");
 
         final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").build().cast();
-        final InputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
+        final BindableInputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
         final OutputWire<Integer> splitter = taskSchedulerA.getOutputWire().buildSplitter();
         splitter.solderTo(wireBIn);
@@ -119,15 +119,15 @@ class TaskSchedulerTransformersTests {
 
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();
-        final InputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("A in");
+        final BindableInputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("A in");
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").build().cast();
-        final InputWire<Integer, Void> inB = taskSchedulerB.buildInputWire("B in");
+        final BindableInputWire<Integer, Void> inB = taskSchedulerB.buildInputWire("B in");
 
         final TaskScheduler<Void> taskSchedulerC =
                 model.schedulerBuilder("C").build().cast();
-        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
+        final BindableInputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
 
         final AtomicInteger countA = new AtomicInteger(0);
         final AtomicInteger countB = new AtomicInteger(0);
@@ -181,19 +181,19 @@ class TaskSchedulerTransformersTests {
 
         final TaskScheduler<TestData> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();
-        final InputWire<TestData, TestData> inA = taskSchedulerA.buildInputWire("A in");
+        final BindableInputWire<TestData, TestData> inA = taskSchedulerA.buildInputWire("A in");
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").build().cast();
-        final InputWire<TestData, Void> inB = taskSchedulerB.buildInputWire("B in");
+        final BindableInputWire<TestData, Void> inB = taskSchedulerB.buildInputWire("B in");
 
         final TaskScheduler<Void> taskSchedulerC =
                 model.schedulerBuilder("C").build().cast();
-        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
+        final BindableInputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
 
         final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").build().cast();
-        final InputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
+        final BindableInputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
 
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
@@ -260,19 +260,19 @@ class TaskSchedulerTransformersTests {
 
         final TaskScheduler<TestData> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();
-        final InputWire<TestData, TestData> inA = taskSchedulerA.buildInputWire("A in");
+        final BindableInputWire<TestData, TestData> inA = taskSchedulerA.buildInputWire("A in");
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").build().cast();
-        final InputWire<TestData, Void> inB = taskSchedulerB.buildInputWire("B in");
+        final BindableInputWire<TestData, Void> inB = taskSchedulerB.buildInputWire("B in");
 
         final TaskScheduler<Void> taskSchedulerC =
                 model.schedulerBuilder("C").build().cast();
-        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
+        final BindableInputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
 
         final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").build().cast();
-        final InputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
+        final BindableInputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
 
         taskSchedulerA.getOutputWire().solderTo(inB);
         taskSchedulerA
@@ -391,7 +391,7 @@ class TaskSchedulerTransformersTests {
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
+        final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved =
                 outA.buildAdvancedTransformer("reserve FooBar", FooBar::copyAndReserve, FooBar::release);
@@ -400,19 +400,19 @@ class TaskSchedulerTransformersTests {
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
+        final BindableInputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
+        final BindableInputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
 
         final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
+        final BindableInputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
 
         outAReserved.solderTo(inB);
         outAReserved.solderTo(inC);
@@ -504,7 +504,7 @@ class TaskSchedulerTransformersTests {
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
+        final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved =
                 outA.buildAdvancedTransformer("reserve FooBar", new FooBarTransformer());
@@ -513,19 +513,19 @@ class TaskSchedulerTransformersTests {
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
+        final BindableInputWire<FooBar, Void> inB = taskSchedulerB.buildInputWire("B in");
 
         final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
+        final BindableInputWire<FooBar, Void> inC = taskSchedulerC.buildInputWire("C in");
 
         final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
                 .withUncaughtExceptionHandler(exceptionHandler)
                 .build()
                 .cast();
-        final InputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
+        final BindableInputWire<FooBar, Void> inD = taskSchedulerD.buildInputWire("D in");
 
         outAReserved.solderTo(inB);
         outAReserved.solderTo(inC);

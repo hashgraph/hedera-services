@@ -16,9 +16,9 @@
 
 package com.swirlds.config.impl.validators.annotation;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.validation.ConfigViolationException;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

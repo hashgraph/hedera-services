@@ -21,8 +21,8 @@
  * {@link com.swirlds.config.api.ConfigurationBuilder#withSource(com.swirlds.config.api.source.ConfigSource)}). By
  * default no config source is added.
  * <p>
- * The {@link com.swirlds.common.config.sources.ConfigSourceOrdinalConstants} class provide some constants for the
+ * The {@link com.swirlds.config.extensions.sources.ConfigSourceOrdinalConstants} class provide some constants for the
  * ordinals
  * of the given config sources.
  */
-package com.swirlds.common.config.sources;
+package com.swirlds.config.extensions.sources;
