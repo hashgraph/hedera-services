@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -575,6 +576,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     public T feeUsd(double price) {
         usdFee = OptionalDouble.of(price);
         return self();
+    }
+
+    public T signedByPayerAnd(String... keys) {
+        final String[] copy = new String[keys.length + 1];
+        copy[0] = DEFAULT_PAYER;
+        System.arraycopy(keys, 0, copy, 1, keys.length);
+        return signedBy(copy);
     }
 
     public T signedBy(String... keys) {

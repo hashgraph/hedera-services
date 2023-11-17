@@ -93,6 +93,8 @@ include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-config-benchmark", "platform-sdk/swirlds-config-benchmark")
 
+include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
+
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
 
 include(":swirlds-fcqueue", "platform-sdk/swirlds-fcqueue")
