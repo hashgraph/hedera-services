@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Tag;
  * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
  * */
 @HapiTestSuite
-@Tag(CRYPTO)
+@Tag(TOKEN)
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 

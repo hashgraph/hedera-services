@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -84,7 +84,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
-@Tag(CRYPTO)
+@Tag(TOKEN)
 public class HollowAccountFinalizationSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(HollowAccountFinalizationSuite.class);
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";

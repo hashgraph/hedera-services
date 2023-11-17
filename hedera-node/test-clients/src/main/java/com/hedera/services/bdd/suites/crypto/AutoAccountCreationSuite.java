@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
@@ -118,7 +118,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
-@Tag(CRYPTO)
+@Tag(TOKEN)
 public class AutoAccountCreationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
