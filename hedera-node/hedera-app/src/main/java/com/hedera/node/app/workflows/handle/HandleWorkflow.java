@@ -296,6 +296,10 @@ public class HandleWorkflow {
         }
         // @future('7836'): update the exchange rate and call from here
 
+        // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
+        // the user transaction
+        blockRecordManager.advanceConsensusClock(consensusNow, state);
+
         TransactionBody txBody = null;
         AccountID payer = null;
         Fees fees = null;
