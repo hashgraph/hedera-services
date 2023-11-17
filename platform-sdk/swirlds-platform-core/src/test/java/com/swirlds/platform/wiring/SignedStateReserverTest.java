@@ -25,7 +25,7 @@ import com.swirlds.common.utility.ValueReference;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -56,7 +56,7 @@ class SignedStateReserverTest {
                 .cast();
         final OutputWire<ReservedSignedState> outputWire =
                 taskScheduler.getOutputWire().buildAdvancedTransformer(new SignedStateReserver("reserver"));
-        final InputWire<ReservedSignedState, ReservedSignedState> inputWire =
+        final BindableInputWire<ReservedSignedState, ReservedSignedState> inputWire =
                 taskScheduler.buildInputWire("in").withInputType(ReservedSignedState.class);
         inputWire.bind(s -> s);
 
