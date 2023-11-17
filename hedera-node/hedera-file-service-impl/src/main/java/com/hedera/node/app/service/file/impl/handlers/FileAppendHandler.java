@@ -77,9 +77,6 @@ public class FileAppendHandler implements TransactionHandler {
         if (transactionBody.fileID() == null) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
-        if (transactionBody.contents() == null || transactionBody.contents().length() == 0) {
-            throw new PreCheckException(FILE_CONTENT_EMPTY);
-        }
     }
 
     /**
