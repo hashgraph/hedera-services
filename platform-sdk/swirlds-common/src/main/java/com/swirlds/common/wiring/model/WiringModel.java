@@ -53,7 +53,8 @@ public interface WiringModel extends Startable, Stoppable {
      *
      * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
      *             alphanumeric characters and underscores.
-     * @return a new wire builder
+     * @param <O>  the data type of the scheduler's primary output wire
+     * @return a new task scheduler builder
      */
     @NonNull
     <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name);

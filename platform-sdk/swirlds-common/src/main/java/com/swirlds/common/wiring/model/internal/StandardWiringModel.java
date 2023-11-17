@@ -245,8 +245,8 @@ public class StandardWiringModel implements WiringModel {
     public void registerInputWireBinding(@NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
         final InputWireDescriptor descriptor = new InputWireDescriptor(taskSchedulerName, inputWireName);
 
-        final boolean registerd = inputWires.contains(descriptor);
-        if (!registerd) {
+        final boolean registered = inputWires.contains(descriptor);
+        if (!registered) {
             throw new IllegalStateException(
                     "Input wire " + inputWireName + " for scheduler " + taskSchedulerName + " was not registered");
         }

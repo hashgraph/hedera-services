@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +59,7 @@ public final class InputWireChecks {
             }
         }
 
-        logger.error(sb.toString());
+        logger.error(EXCEPTION.getMarker(), sb.toString());
 
         return true;
     }
