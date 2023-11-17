@@ -61,7 +61,7 @@ public abstract class AbstractHtsCall implements HtsCall {
         return gasOnly(revertResult(standardized(status), gasRequirement));
     }
 
-    private ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
+    protected ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
         return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 }

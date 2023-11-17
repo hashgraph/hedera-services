@@ -329,6 +329,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";

@@ -354,8 +354,7 @@ public class HandleHederaOperations implements HederaOperations {
 
     private void addContractDeleteChildRecord(final ContractID contractId) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractDeleteRecordBuilder.class);
-        childRecordBuilder.contractID(contractId)
-                .transaction(Transaction.DEFAULT);
+        childRecordBuilder.contractID(contractId).transaction(Transaction.DEFAULT);
     }
 
     private ExternalizedRecordCustomizer contractBodyCustomizerFor(@NonNull final ContractCreateTransactionBody op) {
