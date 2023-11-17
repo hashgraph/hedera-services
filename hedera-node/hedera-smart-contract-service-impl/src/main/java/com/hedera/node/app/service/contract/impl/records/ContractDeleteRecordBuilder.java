@@ -36,5 +36,5 @@ public interface ContractDeleteRecordBuilder extends DeleteCapableTransactionRec
     ContractDeleteRecordBuilder contractID(@Nullable ContractID contractId);
 
     @NonNull
-    ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
+    ContractDeleteRecordBuilder transaction(@NonNull final Transaction txn);
 }
