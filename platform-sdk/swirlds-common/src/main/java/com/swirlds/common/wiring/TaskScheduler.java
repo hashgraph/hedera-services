@@ -20,8 +20,12 @@ import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.input.TaskSchedulerInput;
+import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -39,12 +43,14 @@ import java.util.function.Consumer;
  *
  * @param <OUT> the output type of the primary output wire (use {@link Void} if no output is needed)
  */
-public abstract class TaskScheduler<OUT> {
+public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     private final boolean flushEnabled;
     private final WiringModel model;
     private final String name;
-    private final OutputWire<OUT> primaryOutputWire;
+    private final TaskSchedulerType type;
+    private final StandardOutputWire<OUT> primaryOutputWire;
+    private final boolean insertionIsBlocking;
 
     /**
      * Constructor.
@@ -65,22 +71,23 @@ public abstract class TaskScheduler<OUT> {
 
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
+        this.type = Objects.requireNonNull(type);
         this.flushEnabled = flushEnabled;
-        primaryOutputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, type, insertionIsBlocking);
+        primaryOutputWire = new StandardOutputWire<>(model, name);
+        this.insertionIsBlocking = insertionIsBlocking;
     }
 
     /**
      * Build an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound
-     * via {@link InputWire#bind(Consumer)}.
+     * via {@link BindableInputWire#bind(Consumer)}.
      *
      * @param name the name of the input wire
      * @param <I>  the type of data that is inserted via this input wire
      * @return the input wire
      */
     @NonNull
-    public final <I> InputWire<I, OUT> buildInputWire(@NonNull final String name) {
-        return new InputWire<>(this, name);
+    public final <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
+        return new BindableInputWire<>(this, name);
     }
 
     /**
@@ -108,10 +115,10 @@ public abstract class TaskScheduler<OUT> {
      * @return the secondary output wire
      */
     @NonNull
-    public <T> OutputWire<T> buildSecondaryOutputWire() {
+    public <T> StandardOutputWire<T> buildSecondaryOutputWire() {
         // Intentionally do not register this with the model. Connections using this output wire will be represented
         // in the model in the same way as connections to the primary output wire.
-        return new OutputWire<>(model, name);
+        return new StandardOutputWire<>(model, name);
     }
 
     /**
@@ -122,6 +129,25 @@ public abstract class TaskScheduler<OUT> {
     @NonNull
     public String getName() {
         return name;
+    }
+
+    /**
+     * Get the type of this task scheduler.
+     *
+     * @return the type of this task scheduler
+     */
+    @NonNull
+    public TaskSchedulerType getType() {
+        return type;
+    }
+
+    /**
+     * Get whether or not this task scheduler can block when data is inserted into it.
+     *
+     * @return true if this task scheduler can block when data is inserted into it, false otherwise
+     */
+    public boolean isInsertionBlocking() {
+        return insertionIsBlocking;
     }
 
     /**
@@ -143,7 +169,8 @@ public abstract class TaskScheduler<OUT> {
 
     /**
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
-     * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
+     * handler method (i.e. the one given to {@link BindableInputWire#bind(Consumer)}) and that handler method has
+     * returned.
      * <p>
      * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed
      * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return
@@ -174,34 +201,6 @@ public abstract class TaskScheduler<OUT> {
     public abstract void flush();
 
     /**
-     * Add a task to the scheduler. May block if back pressure is enabled.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the task scheduler
-     */
-    protected abstract void put(@NonNull Consumer<Object> handler, @Nullable Object data);
-
-    /**
-     * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this
-     * method will not accept the data.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the scheduler
-     * @return true if the data was accepted, false otherwise
-     */
-    protected abstract boolean offer(@NonNull Consumer<Object> handler, @Nullable Object data);
-
-    /**
-     * Inject data into the scheduler, doing so even if it causes the number of unprocessed tasks to exceed the capacity
-     * specified by configured back pressure. If backpressure is disabled, this operation is logically equivalent to
-     * {@link #put(Consumer, Object)}.
-     *
-     * @param handler handles the provided data
-     * @param data    the data to be processed by the scheduler
-     */
-    protected abstract void inject(@NonNull Consumer<Object> handler, @Nullable Object data);
-
-    /**
      * Throw an {@link UnsupportedOperationException} if flushing is not enabled.
      */
     protected final void throwIfFlushDisabled() {
@@ -211,12 +210,10 @@ public abstract class TaskScheduler<OUT> {
     }
 
     /**
-     * Pass data to this scheduler's primary output wire.
-     * <p>
-     * This method is implemented here to allow classes in this package to call forward(), which otherwise would not be
-     * visible.
+     * {@inheritDoc}
      */
-    protected final void forward(@NonNull final OUT data) {
+    @Override
+    protected void forward(@NonNull final OUT data) {
         primaryOutputWire.forward(data);
     }
 }

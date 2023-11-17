@@ -21,7 +21,6 @@ import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
-import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
@@ -82,7 +81,7 @@ public class PausesXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_1234.serialNumber())
                         .array()),
-                assertSuccess());
+                assertSuccess("Pre-pause transfer failed"));
 
         // PAUSE
         runHtsCallAndExpectOnSuccess(
@@ -90,7 +89,7 @@ public class PausesXTest extends AbstractContractXTest {
                 Bytes.wrap(PausesTranslator.PAUSE
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS)
                         .array()),
-                assertSuccess());
+                assertSuccess("Pause failed"));
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should fail with TOKEN_IS_PAUSED
         runHtsCallAndExpectOnSuccess(
@@ -150,7 +149,7 @@ public class PausesXTest extends AbstractContractXTest {
                         .tokenId(ERC721_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                        .pauseKey(AN_ED25519_KEY)
+                        .pauseKey(SENDER_CONTRACT_ID_KEY)
                         .build());
         return tokens;
     }
@@ -185,14 +184,7 @@ public class PausesXTest extends AbstractContractXTest {
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(OWNER_ID)
-                        .alias(SENDER_ADDRESS)
-                        .smartContract(true)
-                        .build());
+        final var accounts = withSenderContractAccount(new HashMap<>());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

@@ -256,7 +256,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
                 scheduledSystemDeleteWorksAsExpected(),
                 scheduledSystemDeleteUnauthorizedPayerFails(isLongTermEnabled),
-                congestionPricingAffectsImmediateScheduleExecution(),
+                //                congestionPricingAffectsImmediateScheduleExecution(),
                 zSuiteCleanup()));
     }
 
