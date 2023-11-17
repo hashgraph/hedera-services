@@ -138,6 +138,15 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
             checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
+            context.attributeValidator()
+                    .validateMemo(provisionalSchedule.scheduledTransaction().memo());
+            if (provisionalSchedule.hasAdminKey()) {
+                try {
+                    context.attributeValidator().validateKey(provisionalSchedule.adminKeyOrThrow());
+                } catch (HandleException e) {
+                    throw new HandleException(ResponseCodeEnum.INVALID_ADMIN_KEY);
+                }
+            }
             final ResponseCodeEnum validationResult =
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
@@ -164,8 +173,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 }
                 scheduleStore.put(finalSchedule);
                 final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
-                scheduleRecords.scheduleID(finalSchedule.scheduleId());
-                scheduleRecords.scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
+                scheduleRecords
+                        .scheduleID(finalSchedule.scheduleId())
+                        .scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
             } else {
                 throw new HandleException(validationResult);
             }
