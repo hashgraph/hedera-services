@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -226,6 +227,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
                 var tokenId = asTokenId(tokenBalance.getKey(), spec);
                 String[] expectedParts = tokenBalance.getValue().split("-");
+                assertNotEquals(expectedParts[0], "");
                 Long expectedBalance = Long.valueOf(expectedParts[0]);
                 assertEquals(
                         expectedBalance,
