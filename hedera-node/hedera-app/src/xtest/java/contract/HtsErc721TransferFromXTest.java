@@ -16,8 +16,8 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ADDRESS;
@@ -29,6 +29,7 @@ import static contract.HtsErc721TransferXTestConstants.OPERATOR_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_BESU_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
@@ -89,7 +90,8 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
                         ERC721_TOKEN_ID),
-                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                INVALID_ACCOUNT_ID,
+                "Owner priority address must be used");
         // Unauthorized spender cannot transfer owner's SN1234 NFT
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -99,7 +101,8 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
                         ERC721_TOKEN_ID),
-                SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+                SPENDER_DOES_NOT_HAVE_ALLOWANCE,
+                "Spender does not have allowance for SN1234");
         // Approved spender for owner's SN1234 NFT cannot transfer the SN2345 NFT
         runHtsCallAndExpectRevert(
                 APPROVED_BESU_ADDRESS,
@@ -109,7 +112,8 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_2345.serialNumber())),
                         ERC721_TOKEN_ID),
-                SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+                SPENDER_DOES_NOT_HAVE_ALLOWANCE,
+                "SN1234 spender does not have allowance for SN2345");
         // Approved spender can spend owner's SN1234 NFT
         runHtsCallAndExpectOnSuccess(
                 APPROVED_BESU_ADDRESS,
@@ -119,7 +123,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber())),
                         ERC721_TOKEN_ID),
-                output -> assertEquals(Bytes.EMPTY, output));
+                output -> assertEquals(Bytes.EMPTY, output, "Approved spender should succeed"));
         // Operator can spend owner's SN2345 NFT
         runHtsCallAndExpectOnSuccess(
                 OPERATOR_BESU_ADDRESS,
@@ -129,7 +133,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_2345.serialNumber())),
                         ERC721_TOKEN_ID),
-                output -> assertEquals(Bytes.EMPTY, output));
+                output -> assertEquals(Bytes.EMPTY, output, "Operator should succeed"));
     }
 
     @Override
@@ -217,6 +221,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(OWNER_ID)
                         .alias(OWNER_ADDRESS)
+                        .key(AN_ED25519_KEY)
                         .approveForAllNftAllowances(List.of(AccountApprovalForAllAllowance.newBuilder()
                                 .spenderId(OPERATOR_ID)
                                 .tokenId(ERC721_TOKEN_ID)
@@ -226,21 +231,26 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
                 UNAUTHORIZED_SPENDER_ID,
                 Account.newBuilder()
                         .accountId(UNAUTHORIZED_SPENDER_ID)
+                        .key(AN_ED25519_KEY)
                         .alias(UNAUTHORIZED_SPENDER_ADDRESS)
                         .build());
         accounts.put(
                 APPROVED_ID,
                 Account.newBuilder()
                         .accountId(APPROVED_ID)
+                        .key(AN_ED25519_KEY)
                         .alias(APPROVED_ADDRESS)
                         .build());
         accounts.put(
                 OPERATOR_ID,
                 Account.newBuilder()
                         .accountId(OPERATOR_ID)
+                        .key(AN_ED25519_KEY)
                         .alias(OPERATOR_ADDRESS)
                         .build());
-        accounts.put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
+        accounts.put(
+                RECEIVER_ID,
+                Account.newBuilder().accountId(RECEIVER_ID).key(AN_ED25519_KEY).build());
         return accounts;
     }
 }

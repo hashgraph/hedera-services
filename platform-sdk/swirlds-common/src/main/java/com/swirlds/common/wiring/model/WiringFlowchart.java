@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.model;
 
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -33,7 +34,8 @@ public final class WiringFlowchart {
     private WiringFlowchart() {}
 
     private static final String INDENTATION = "    ";
-    private static final String COMPONENT_COLOR = "362";
+    private static final String SCHEDULER_COLOR = "362";
+    private static final String DIRECT_SCHEDULER_COLOR = "666";
     private static final String GROUP_COLOR = "555";
 
     /**
@@ -88,6 +90,42 @@ public final class WiringFlowchart {
     }
 
     /**
+     * Modify the shape of the vertex on the graph (e.g. should this vertex be drawn with a box, a circle, etc.).
+     *
+     * @param sb     a string builder where the mermaid file is being assembled
+     * @param vertex the vertex to modify
+     */
+    private static void modifyVertexShape(@NonNull final StringBuilder sb, @NonNull final ModelVertex vertex) {
+        if (vertex.getType() == TaskSchedulerType.CONCURRENT) {
+            sb.append("[[").append(vertex.getName()).append("]]");
+        } else if (vertex.getType() == TaskSchedulerType.DIRECT) {
+            sb.append("((").append(vertex.getName()).append("))");
+        } else if (vertex.getType() == TaskSchedulerType.DIRECT_STATELESS) {
+            sb.append("(((").append(vertex.getName()).append(")))");
+        }
+    }
+
+    /**
+     * Based on the type of vertex, determine the appropriate color.
+     *
+     * @param vertex the vertex to get the color for
+     * @return the color
+     */
+    private static String getVertexColor(@NonNull final ModelVertex vertex) {
+        final TaskSchedulerType type = vertex.getType();
+
+        return switch (type) {
+            case SEQUENTIAL:
+            case SEQUENTIAL_THREAD:
+            case CONCURRENT:
+                yield SCHEDULER_COLOR;
+            case DIRECT:
+            case DIRECT_STATELESS:
+                yield DIRECT_SCHEDULER_COLOR;
+        };
+    }
+
+    /**
      * Draw a vertex.
      *
      * @param sb                 a string builder where the mermaid file is being assembled
@@ -103,12 +141,15 @@ public final class WiringFlowchart {
             final int indentLevel) {
 
         if (!collapsedVertexMap.containsKey(vertex)) {
-            sb.append(INDENTATION.repeat(indentLevel)).append(vertex.getName()).append("\n");
+            sb.append(INDENTATION.repeat(indentLevel)).append(vertex.getName());
+            modifyVertexShape(sb, vertex);
+            sb.append("\n");
+
             sb.append(INDENTATION.repeat(indentLevel))
                     .append("style ")
                     .append(vertex.getName())
                     .append(" fill:#")
-                    .append(COMPONENT_COLOR)
+                    .append(getVertexColor(vertex))
                     .append(",stroke:#000,stroke-width:2px,color:#fff\n");
         }
     }
@@ -123,7 +164,7 @@ public final class WiringFlowchart {
 
         final String color;
         if (group.collapse()) {
-            color = COMPONENT_COLOR;
+            color = SCHEDULER_COLOR;
         } else {
             color = GROUP_COLOR;
         }
