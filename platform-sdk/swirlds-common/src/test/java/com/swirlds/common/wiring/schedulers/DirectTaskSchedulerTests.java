@@ -21,9 +21,9 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;

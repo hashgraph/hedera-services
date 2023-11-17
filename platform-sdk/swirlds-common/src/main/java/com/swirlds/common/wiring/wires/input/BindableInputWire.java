@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.wires.input;
 
 import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -31,16 +32,26 @@ import java.util.function.Function;
 public class BindableInputWire<IN, OUT> extends InputWire<IN> {
 
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
+    private final String taskSchedulerName;
+    private final StandardWiringModel model;
 
     /**
      * Constructor.
      *
+     * @param model         the wiring model containing this input wire
      * @param taskScheduler the scheduler to insert data into
      * @param name          the name of the input wire
      */
-    public BindableInputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
+    public BindableInputWire(
+            @NonNull final StandardWiringModel model,
+            @NonNull final TaskScheduler<OUT> taskScheduler,
+            @NonNull final String name) {
         super(taskScheduler, name);
+        this.model = Objects.requireNonNull(model);
         taskSchedulerInput = Objects.requireNonNull(taskScheduler);
+        taskSchedulerName = taskScheduler.getName();
+
+        model.registerInputWireCreation(taskSchedulerName, name);
     }
 
     /**
@@ -87,6 +98,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> {
     public BindableInputWire<IN, OUT> bind(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
         setHandler((Consumer<Object>) handler);
+        model.registerInputWireBinding(taskSchedulerName, getName());
 
         return this;
     }

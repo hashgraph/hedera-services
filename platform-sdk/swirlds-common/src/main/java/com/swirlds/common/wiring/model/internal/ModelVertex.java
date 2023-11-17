@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model;
+package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;

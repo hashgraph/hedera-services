@@ -22,9 +22,9 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
@@ -74,7 +74,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      *                                 available?
      */
     public SequentialThreadTaskScheduler(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,

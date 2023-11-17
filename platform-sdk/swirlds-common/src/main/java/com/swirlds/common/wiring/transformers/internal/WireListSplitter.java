@@ -16,8 +16,8 @@
 
 package com.swirlds.common.wiring.transformers.internal;
 
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +38,7 @@ public class WireListSplitter<T> implements Consumer<List<T>> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output channel
      */
-    public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
+    public WireListSplitter(@NonNull final StandardWiringModel model, @NonNull final String name) {
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
         outputWire = new StandardOutputWire<>(model, name);
     }

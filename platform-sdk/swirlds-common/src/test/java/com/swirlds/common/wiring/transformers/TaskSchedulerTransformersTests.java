@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;

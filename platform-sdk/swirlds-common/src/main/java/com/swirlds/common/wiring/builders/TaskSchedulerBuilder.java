@@ -21,12 +21,12 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.ConcurrentTaskScheduler;
 import com.swirlds.common.wiring.schedulers.DirectTaskScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialTaskScheduler;
@@ -52,7 +52,7 @@ public class TaskSchedulerBuilder<O> {
 
     public static final long UNLIMITED_CAPACITY = -1;
 
-    private final WiringModel model;
+    private final StandardWiringModel model;
 
     private TaskSchedulerType type = TaskSchedulerType.SEQUENTIAL;
     private final String name;
@@ -73,7 +73,7 @@ public class TaskSchedulerBuilder<O> {
      * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
      *             alphanumeric characters and underscores.
      */
-    public TaskSchedulerBuilder(@NonNull final WiringModel model, @NonNull final String name) {
+    public TaskSchedulerBuilder(@NonNull final StandardWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics

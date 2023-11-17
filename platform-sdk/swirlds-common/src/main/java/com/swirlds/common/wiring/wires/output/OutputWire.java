@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
 import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
 import com.swirlds.common.wiring.transformers.internal.WireFilter;
@@ -38,7 +38,7 @@ import java.util.function.Predicate;
  */
 public abstract class OutputWire<OUT> {
 
-    private final WiringModel model;
+    private final StandardWiringModel model;
     private final String name;
 
     /**
@@ -47,7 +47,7 @@ public abstract class OutputWire<OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    public OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
+    public OutputWire(@NonNull final StandardWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
     }

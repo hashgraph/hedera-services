@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.schedulers;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +42,7 @@ class HeartbeatTask extends TimerTask {
      * @param period the period of the heartbeat
      */
     public HeartbeatTask(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final Time time,
             @NonNull final Duration period) {

@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.input.TaskSchedulerInput;
@@ -46,7 +47,7 @@ import java.util.function.Consumer;
 public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     private final boolean flushEnabled;
-    private final WiringModel model;
+    private final StandardWiringModel model;
     private final String name;
     private final TaskSchedulerType type;
     private final StandardOutputWire<OUT> primaryOutputWire;
@@ -63,7 +64,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      *                            available?
      */
     protected TaskScheduler(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
@@ -87,7 +88,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      */
     @NonNull
     public final <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
-        return new BindableInputWire<>(this, name);
+        return new BindableInputWire<>(model, this, name);
     }
 
     /**

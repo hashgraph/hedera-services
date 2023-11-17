@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model;
+package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.utility.ModelGroup;
+import com.swirlds.common.wiring.model.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
