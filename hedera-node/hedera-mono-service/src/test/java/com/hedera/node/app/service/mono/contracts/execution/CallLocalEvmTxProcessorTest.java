@@ -73,9 +73,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CallLocalEvmTxProcessorTest {
     private static final int MAX_STACK_SIZE = 1024;
-    public static final long ONE_HBAR = 100_000_000L;
-    private final int MAX_GAS_LIMIT = 10_000_000;
-    private final Instant consensusTime = Instant.now();
 
     @Mock
     private LivePricesSource livePricesSource;

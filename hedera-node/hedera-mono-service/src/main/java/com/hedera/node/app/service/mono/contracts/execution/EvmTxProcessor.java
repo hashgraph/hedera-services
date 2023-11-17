@@ -113,12 +113,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final long maxGasAllowanceInTinybars,
             final Account relayer) {
 
-        Wei gasCost;
-        {
-            final Wei wGasLimit = Wei.of(gasLimit);
-            final Wei wGasPrice = Wei.of(gasPrice);
-            gasCost = wGasLimit.multiply(wGasPrice);
-        }
+        final Wei gasCost = Wei.of(gasLimit).multiply(gasPrice);
         final Wei upfrontCost = gasCost.add(value);
 
         super.setupFields(contractCreation);
