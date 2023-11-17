@@ -23,25 +23,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Describes a (potential) update to the effective roster. Note that a roster update is sent once per round even if
  * there is not change in the roster.
  *
- * @param round               the current round
- * @param effectiveRoster     the roster that was effective in the specified round (i.e. the roster that was used to
- *                            compute consensus for the round)
- * @param effectiveRosterDiff describes the difference between this round's effective roster and the previous round's
- *                            effective roster
- * @param createdRoster       the roster that was created in the specified round
- * @param createdRosterDiff   describes the difference between this round's created roster and the previous round's
- *                            created roster
- * @param roundsNonAncient    the number of non-ancient rounds for the current round
- * @param rosterOffset        the roster offset for the current round, describes the number of rounds ago when the
- *                            effective roster was created. For example, a roster offset of 3 means that the current
- *                            effective roster was created 3 rounds ago.
+ * @param pendingConsensusRound the current round that the hashgraph is working on (i.e. the round that will reach
+ *                              consensus next). This is equivalent to the round in which {@link #effectiveRoster}
+ *                              becomes effective.
+ * @param effectiveRoster       the roster that is being used to compute consensus for {@link #pendingConsensusRound}
+ * @param effectiveRosterDiff   describes the difference between the new effective roster and the previous effective
+ *                              roster
  */
 public record RosterUpdate(
-        long round,
+        long pendingConsensusRound,
+        long minimumRoundNonAncient,
         @NonNull AddressBook effectiveRoster,
-        @NonNull RosterDiff effectiveRosterDiff,
-        @NonNull AddressBook createdRoster,
-        @NonNull RosterDiff createdRosterDiff,
-        int roundsNonAncient,
-        int rosterOffset) {
+        @NonNull RosterDiff effectiveRosterDiff) {
+
 }
