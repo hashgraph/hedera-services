@@ -117,6 +117,27 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     }
 
     /**
+     * Try to get another reservation on the signed state. If the signed state is not closed, then a new reservation
+     * will be returned. If the signed state is closed, then null will be returned.
+     *
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return a new wrapper around the state that holds a new reservation, or null if the signed state is closed
+     */
+    public @Nullable ReservedSignedState tryGetAndReserve(@NonNull final String reason) {
+        if (signedState == null) {
+            return new ReservedSignedState();
+        }
+        if (!signedState.tryIncrementReservationCount(reason, reservationId)) {
+            return null;
+        }
+        final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason);
+        // the constructor will increment the reservation count again, so we need to decrement it here
+        signedState.decrementReservationCount(reason, reservationId);
+        return reservedSignedState;
+    }
+
+    /**
      * Get the signed state. Does not take any reservations on the signed state, this is the responsibility of the
      * caller. Do not keep a reference to this signed state outside the scope of this wrapper object without properly
      * reserving it.
