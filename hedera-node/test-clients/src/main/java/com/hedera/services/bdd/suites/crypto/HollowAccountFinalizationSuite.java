@@ -685,6 +685,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
         final var recipientKey2 = "recipient2";
+        final var receiverId = new AtomicLong();
         return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
