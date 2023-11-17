@@ -54,18 +54,17 @@ class SignedStateReserverTest {
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
                 .cast();
-        final OutputWire<ReservedSignedState> outputWire = taskScheduler.getOutputWire()
-                .buildAdvancedTransformer(new SignedStateReserver("reserver"));
-        final InputWire<ReservedSignedState, ReservedSignedState> inputWire = taskScheduler.buildInputWire("in")
-                .withInputType(ReservedSignedState.class);
+        final OutputWire<ReservedSignedState> outputWire =
+                taskScheduler.getOutputWire().buildAdvancedTransformer(new SignedStateReserver("reserver"));
+        final InputWire<ReservedSignedState, ReservedSignedState> inputWire =
+                taskScheduler.buildInputWire("in").withInputType(ReservedSignedState.class);
         inputWire.bind(s -> s);
 
         final List<ValueReference<ReservedSignedState>> consumers = Stream.generate(
                         ValueReference<ReservedSignedState>::new)
                 .limit(numConsumers)
                 .toList();
-        IntStream.range(0, consumers.size())
-                .forEach(i -> outputWire.solderTo("name_" + i, consumers.get(i)::setValue));
+        IntStream.range(0, consumers.size()).forEach(i -> outputWire.solderTo("name_" + i, consumers.get(i)::setValue));
 
         final ReservedSignedState state = signedState.reserve("main");
         assertFalse(state.isClosed(), "we just reserved it, so it should not be closed");

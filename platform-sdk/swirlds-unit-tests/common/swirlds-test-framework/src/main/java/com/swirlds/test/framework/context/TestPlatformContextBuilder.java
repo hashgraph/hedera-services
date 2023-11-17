@@ -47,8 +47,7 @@ public final class TestPlatformContextBuilder {
         defaultCryptography = CryptographyHolder.get();
     }
 
-    private TestPlatformContextBuilder() {
-    }
+    private TestPlatformContextBuilder() {}
 
     /**
      * Creates a new builder instance

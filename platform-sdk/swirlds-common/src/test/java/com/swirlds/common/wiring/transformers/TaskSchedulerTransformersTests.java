@@ -512,8 +512,7 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final InputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
-        final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer(new FooBarTransformer("reserve FooBar"));
+        final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new FooBarTransformer("reserve FooBar"));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)

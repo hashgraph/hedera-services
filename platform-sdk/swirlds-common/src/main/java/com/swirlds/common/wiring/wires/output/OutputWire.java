@@ -223,7 +223,8 @@ public abstract class OutputWire<OUT> {
      * @return the output wire of the transformer
      */
     @NonNull
-    public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(@NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
+    public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
+            @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
         return buildAdvancedTransformer(transformer.getName(), transformer::transform, transformer::cleanup);
     }
 

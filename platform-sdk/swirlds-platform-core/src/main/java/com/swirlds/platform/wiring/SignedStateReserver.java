@@ -26,7 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * releasing it. The state is passed to downstream consumers with the same assumption: each consumer will get a state
  * with a reservation for itself, and it is responsible for releasing it.
  */
-public record SignedStateReserver(String name) implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
+public record SignedStateReserver(String name)
+        implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
     @NonNull
     @Override
     public ReservedSignedState transform(@NonNull final ReservedSignedState reservedSignedState) {
