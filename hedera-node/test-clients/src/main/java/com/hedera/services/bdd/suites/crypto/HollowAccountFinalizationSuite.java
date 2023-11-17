@@ -21,9 +21,9 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.noCreditAboveNumber;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
@@ -53,7 +52,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -725,53 +723,49 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
                 }))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            // send a crypto transfer from the hollow payer
-                            // also sending hbars from the other hollow account
-                            final var op3 = cryptoTransfer(
-                                            tinyBarsFromTo(
-                                                    evmAddressFromECDSAKey(spec, ecdsaKey2),
-                                                    evmAddressFromECDSAKey(spec, recipientKey),
-                                                    ONE_HBAR / 4),
-                                            tinyBarsFromTo(
-                                                    evmAddressFromECDSAKey(spec, ecdsaKey2),
-                                                    evmAddressFromECDSAKey(spec, recipientKey2),
-                                                    ONE_HBAR / 4))
-                                    .payingWith(SECP_256K1_SOURCE_KEY)
-                                    .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
-                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
-                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
-                                    .via(TRANSFER_TXN_2);
-                            final var childRecordCheck = childRecordsCheck(
-                                    TRANSFER_TXN_2,
-                                    MAX_CHILD_RECORDS_EXCEEDED,
-                                    recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS));
-                            // assert that the payer has been finalized
-                            final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                            final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
-                                    ecdsaKey.getECDSASecp256K1().toByteArray()));
-                            final var op4 = getAliasedAccountInfo(payerEvmAddress)
-                                    .has(accountWith()
-                                            .key(SECP_256K1_SOURCE_KEY)
-                                            .noAlias()
-                                            .evmAddress(payerEvmAddress));
-                            // assert that the other hollow account has been finalized
-                            final var otherEcdsaKey = spec.registry().getKey(ecdsaKey2);
-                            final var otherEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
-                                    otherEcdsaKey.getECDSASecp256K1().toByteArray()));
-                            final var op5 = getAliasedAccountInfo(otherEvmAddress)
-                                    .has(accountWith().key(ecdsaKey2).noAlias().evmAddress(otherEvmAddress));
-                            allRunFor(spec, op3, childRecordCheck, op4, op5);
-                        }),
-                        // Confirm neither auto-creation occurred
-                        sourcing(() -> getAccountInfo("0.0." + (receiverId.get() + 3))
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
-                                .logged()),
-                        sourcing(() -> getAccountInfo("0.0." + (receiverId.get() + 4))
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
-                                .logged()));
+                .then(withOpContext((spec, opLog) -> {
+                    // send a crypto transfer from the hollow payer
+                    // also sending hbars from the other hollow account
+                    final var op3 = cryptoTransfer(
+                                    tinyBarsFromTo(
+                                            evmAddressFromECDSAKey(spec, ecdsaKey2),
+                                            evmAddressFromECDSAKey(spec, recipientKey),
+                                            ONE_HBAR / 4),
+                                    tinyBarsFromTo(
+                                            evmAddressFromECDSAKey(spec, ecdsaKey2),
+                                            evmAddressFromECDSAKey(spec, recipientKey2),
+                                            ONE_HBAR / 4))
+                            .payingWith(SECP_256K1_SOURCE_KEY)
+                            .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
+                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
+                            .via(TRANSFER_TXN_2);
+                    final var childRecordCheck = childRecordsCheck(
+                            TRANSFER_TXN_2,
+                            MAX_CHILD_RECORDS_EXCEEDED,
+                            // Ensure there are no credits to auto-created accounts
+                            parentAsserts -> parentAsserts.transfers(noCreditAboveNumber(ignore -> spec.registry()
+                                    .getAccountID(SECP_256K1_SOURCE_KEY)
+                                    .getAccountNum())),
+                            recordWith().status(SUCCESS),
+                            recordWith().status(SUCCESS));
+                    // assert that the payer has been finalized
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
+                            ecdsaKey.getECDSASecp256K1().toByteArray()));
+                    final var op4 = getAliasedAccountInfo(payerEvmAddress)
+                            .has(accountWith()
+                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .noAlias()
+                                    .evmAddress(payerEvmAddress));
+                    // assert that the other hollow account has been finalized
+                    final var otherEcdsaKey = spec.registry().getKey(ecdsaKey2);
+                    final var otherEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
+                            otherEcdsaKey.getECDSASecp256K1().toByteArray()));
+                    final var op5 = getAliasedAccountInfo(otherEvmAddress)
+                            .has(accountWith().key(ecdsaKey2).noAlias().evmAddress(otherEvmAddress));
+                    allRunFor(spec, op3, childRecordCheck, op4, op5);
+                }));
     }
 
     @HapiTest
