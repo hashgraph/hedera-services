@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.state.signed;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,19 +29,21 @@ import org.mockito.Mockito;
 
 class SignedStateNexusTest {
     @Test
-    void basicUsage(){
+    void basicUsage() {
         final ReservedSignedState original = new SignedState(
-                new TestConfigBuilder(StateConfig.class).getOrCreateConfig().getConfigData(StateConfig.class),
-                Mockito.mock(State.class),
-                "create",
-                false)
+                        new TestConfigBuilder(StateConfig.class)
+                                .getOrCreateConfig()
+                                .getConfigData(StateConfig.class),
+                        Mockito.mock(State.class),
+                        "create",
+                        false)
                 .reserve("test");
         final SignedStateNexus nexus = new SignedStateNexus();
 
         assertNull(nexus.get("reason"), "Should be null when initialized");
         nexus.set(original);
 
-        try(final ReservedSignedState get = nexus.get("reason")){
+        try (final ReservedSignedState get = nexus.get("reason")) {
             assertNotNull(get, "Should not be null");
             assertNotSame(original, get, "Should be a different instance");
         }
@@ -39,7 +57,7 @@ class SignedStateNexusTest {
     }
 
     @Test
-    void closedStateTest(){
+    void closedStateTest() {
         final SignedStateNexus nexus = new SignedStateNexus();
         nexus.set(Mockito.mock(ReservedSignedState.class));
         assertNull(nexus.get("reason"), "The nexus has a state, but it cannot be reserved, so it should return null");
@@ -56,13 +74,11 @@ class SignedStateNexusTest {
         final ReservedSignedState state1 = Mockito.mock(ReservedSignedState.class);
         final CountDownLatch unblockThread = new CountDownLatch(1);
         final CountDownLatch threadWaiting = new CountDownLatch(1);
-        Mockito.when(state1.tryGetAndReserve(Mockito.any())).then(
-          i->{
-              threadWaiting.countDown();
-              unblockThread.await();
-              return null;
-          }
-        );
+        Mockito.when(state1.tryGetAndReserve(Mockito.any())).then(i -> {
+            threadWaiting.countDown();
+            unblockThread.await();
+            return null;
+        });
         final ReservedSignedState state2 = Mockito.mock(ReservedSignedState.class);
         final ReservedSignedState state2child = Mockito.mock(ReservedSignedState.class);
         Mockito.when(state2.tryGetAndReserve(Mockito.any())).thenReturn(state2child);
@@ -73,10 +89,11 @@ class SignedStateNexusTest {
         // the nexus should have state1 initially
         nexus.set(state1);
         // the background thread will try to reserve state1, but will be blocked the unblockThread latch
-        new Thread(()->{
-            threadGetResult.set(nexus.get("reason"));
-            threadDone.countDown();
-        }).start();
+        new Thread(() -> {
+                    threadGetResult.set(nexus.get("reason"));
+                    threadDone.countDown();
+                })
+                .start();
 
         // wait for the thread to start trying to reserve the state, fail if it takes too long
         assertTrue(threadWaiting.await(5, TimeUnit.SECONDS), "The thread should be waiting for the state");
