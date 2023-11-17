@@ -29,7 +29,6 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -1292,7 +1291,7 @@ class ModelTests {
         final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        final InputWire<Instant> heartbeatInputB = taskSchedulerB.buildInputWire("heartbeatInputB");
+        taskSchedulerB.buildHeartbeatInputWire("heartbeat", 100);
 
         final TaskScheduler<Integer> taskSchedulerC =
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
@@ -1302,14 +1301,10 @@ class ModelTests {
                 model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        final OutputWire<Instant> heartbeatWire = model.buildHeartbeatWire(100);
-
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
         taskSchedulerD.getOutputWire().solderTo(inputA);
-
-        heartbeatWire.solderTo(heartbeatInputB);
 
         validateModel(model, true, false);
     }
