@@ -391,7 +391,9 @@ public final class RecordListBuilder {
             final SingleTransactionRecordBuilderImpl recordBuilder = childRecordBuilders.get(i);
             // Only create a new transaction ID for child records is one is not provided
             if (recordBuilder.transactionID() == null || TransactionID.DEFAULT.equals(recordBuilder.transactionID())) {
-                recordBuilder.transactionID(idBuilder.nonce(nextNonce++).build());
+                recordBuilder
+                        .transactionID(idBuilder.nonce(nextNonce++).build())
+                        .syncBodyIdFromRecordId();
             }
             records.add(recordBuilder.build());
         }
