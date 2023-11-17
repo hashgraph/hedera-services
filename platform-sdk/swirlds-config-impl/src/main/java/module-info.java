@@ -8,6 +8,7 @@ module com.swirlds.config.impl {
     requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.config.extensions;
     requires static com.github.spotbugs.annotations;
 
     provides ConfigurationBuilderFactory with

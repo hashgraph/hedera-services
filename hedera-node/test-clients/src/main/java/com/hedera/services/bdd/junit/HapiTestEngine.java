@@ -229,6 +229,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         /** Whether a separate cluster of nodes should be created for this test class (or reset the normal cluster) */
         private final boolean isolated;
 
+        private final Set<TestTag> testTags;
+
         /** Creates a new descriptor for the given test class. */
         public ClassTestDescriptor(Class<?> testClass, TestDescriptor parent, EngineDiscoveryRequest discoveryRequest) {
             super(
@@ -236,6 +238,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     testClass.getSimpleName(),
                     ClassSource.from(testClass));
             this.testClass = testClass;
+            this.testTags = getTagsIfAny(testClass);
             setParent(parent);
 
             // Currently we support only ASC MethodOrderer.OrderAnnotation sorting
@@ -268,6 +271,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             final var annotation =
                     findAnnotation(testClass, HapiTestSuite.class).orElseThrow();
             this.isolated = annotation.isolated();
+        }
+
+        @Override
+        public Set<TestTag> getTags() {
+            return this.testTags;
         }
 
         @Override
@@ -331,26 +339,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     MethodSource.from(testMethod));
             this.testMethod = testMethod;
             this.testTags = getTagsIfAny(testMethod);
+            this.testTags.addAll(parent.getTags());
             setParent(parent);
-        }
-
-        private Set<TestTag> getTagsIfAny(Method testMethod) {
-            // When a method has a single @Tag annotation, we retrieve it by filtering for Tag.class.
-            // In cases where a method has multiple @Tag annotations, we use Tags.class to access all of them.
-            // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
-            // but the current implementation does not support this.
-            final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
-            final var tagAnnotation = testMethod.getAnnotation(Tag.class);
-
-            final var tags = new HashSet<TestTag>();
-            if (tagsAnnotation != null) {
-                tags.addAll(Arrays.stream(tagsAnnotation.value())
-                        .map(t -> TestTag.create(t.value()))
-                        .toList());
-            } else if (tagAnnotation != null) {
-                tags.add(TestTag.create(tagAnnotation.value()));
-            }
-            return tags;
         }
 
         @Override
@@ -408,5 +398,40 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public Set<TestTag> getTags() {
             return this.testTags;
         }
+    }
+
+    private static Set<TestTag> getTagsIfAny(Class<?> testClass) {
+        // When a class has a single @Tag annotation, we retrieve it by filtering for Tag.class.
+        // In cases where a class has multiple @Tag annotations, we use Tags.class to access all of them.
+        // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
+        // but the current implementation does not support this.
+        final var tagsAnnotation = testClass.getAnnotation(Tags.class);
+        final var tagAnnotation = testClass.getAnnotation(Tag.class);
+
+        return extractTags(tagsAnnotation, tagAnnotation);
+    }
+
+    private static Set<TestTag> getTagsIfAny(Method testMethod) {
+        // When a method has a single @Tag annotation, we retrieve it by filtering for Tag.class.
+        // In cases where a method has multiple @Tag annotations, we use Tags.class to access all of them.
+        // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
+        // but the current implementation does not support this.
+        final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
+        final var tagAnnotation = testMethod.getAnnotation(Tag.class);
+
+        return extractTags(tagsAnnotation, tagAnnotation);
+    }
+
+    // A helper method that extracts the value from either a @Tags annotation or a @Tag annotation
+    private static Set<TestTag> extractTags(Tags tagsAnnotation, Tag tagAnnotation) {
+        final var tags = new HashSet<TestTag>();
+        if (tagsAnnotation != null) {
+            tags.addAll(Arrays.stream(tagsAnnotation.value())
+                    .map(t -> TestTag.create(t.value()))
+                    .toList());
+        } else if (tagAnnotation != null) {
+            tags.add(TestTag.create(tagAnnotation.value()));
+        }
+        return tags;
     }
 }
