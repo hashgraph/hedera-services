@@ -212,14 +212,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(OWNER_ID)
-                        .alias(SENDER_ADDRESS)
-                        .smartContract(true)
-                        .build());
+        final var accounts = withSenderContractAccount(new HashMap<>());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

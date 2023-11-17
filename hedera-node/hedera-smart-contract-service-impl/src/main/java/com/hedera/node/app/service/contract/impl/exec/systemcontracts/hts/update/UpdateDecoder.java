@@ -16,21 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +48,30 @@ import javax.inject.Singleton;
 
 @Singleton
 public class UpdateDecoder {
-
+    /**
+     * A customizer that refines {@link com.hedera.hapi.node.base.ResponseCodeEnum#INVALID_ACCOUNT_ID} and
+     * {@link com.hedera.hapi.node.base.ResponseCodeEnum#INVALID_SIGNATURE} response codes.
+     */
+    public static final DispatchForResponseCodeHtsCall.FailureCustomizer FAILURE_CUSTOMIZER =
+            (body, code, enhancement) -> {
+                if (code == INVALID_ACCOUNT_ID) {
+                    final var op = body.tokenUpdateOrThrow();
+                    if (op.hasTreasury()) {
+                        final var accountStore = enhancement.nativeOperations().readableAccountStore();
+                        final var maybeTreasury = accountStore.getAccountById(op.treasuryOrThrow());
+                        if (maybeTreasury == null) {
+                            return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+                        }
+                    }
+                } else if (code == INVALID_SIGNATURE) {
+                    final var op = body.tokenUpdateOrThrow();
+                    final var tokenStore = enhancement.nativeOperations().readableTokenStore();
+                    if (isKnownImmutable(tokenStore.get(op.tokenOrElse(TokenID.DEFAULT)))) {
+                        return TOKEN_IS_IMMUTABLE;
+                    }
+                }
+                return code;
+            };
     // below values correspond to  tuples' indexes
     private static final int TOKEN_ADDRESS = 0;
     private static final int HEDERA_TOKEN = 1;
@@ -58,6 +90,10 @@ public class UpdateDecoder {
 
     @Inject
     public UpdateDecoder() {}
+
+    private static boolean isKnownImmutable(@Nullable final Token token) {
+        return token != null && IMMUTABILITY_SENTINEL_KEY.equals(token.adminKeyOrElse(IMMUTABILITY_SENTINEL_KEY));
+    }
 
     /**
      * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION} into a synthetic {@link TransactionBody}.

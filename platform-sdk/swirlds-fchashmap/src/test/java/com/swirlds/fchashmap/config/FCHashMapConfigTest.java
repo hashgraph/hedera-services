@@ -16,10 +16,10 @@
 
 package com.swirlds.fchashmap.config;
 
-import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.config.extensions.sources.ThreadCountPropertyConfigSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

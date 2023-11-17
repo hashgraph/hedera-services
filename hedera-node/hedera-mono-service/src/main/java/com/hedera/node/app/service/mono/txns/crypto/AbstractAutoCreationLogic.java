@@ -175,7 +175,7 @@ public abstract class AbstractAutoCreationLogic {
         customizer.maxAutomaticAssociations(maxAutoAssociations);
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
-            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);
             customizer.key(EMPTY_KEY);
             memo = LAZY_MEMO;
         } else {
