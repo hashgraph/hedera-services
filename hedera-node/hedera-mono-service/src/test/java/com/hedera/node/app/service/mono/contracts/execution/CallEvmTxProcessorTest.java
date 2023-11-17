@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.E
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -478,6 +479,32 @@ class CallEvmTxProcessorTest {
                 () -> callEvmTxProcessor.execute(
                         sender, receiverAddress, MAX_GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime),
                 INSUFFICIENT_GAS);
+    }
+
+    @Test
+    void throwsWhenGasLimitTimesGasPriceOverflows() {
+        given(worldState.updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0,0,1010).asEvmAddress());
+
+        var evmAccount = mock(MutableAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
+
+        final var wrappedSenderAccount = mock(MutableAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+        given(wrappedSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(MAX_GAS_LIMIT + 1L);
+
+        final long gasPriceToOverflowWith = 0x2_0000_0000L;
+        final long gasLimitToOverflowWith = 0x3_0000_0000L;
+
+        given(livePricesSource.currentGasPrice(consensusTime, HederaFunctionality.ContractCall))
+                .willReturn(gasPriceToOverflowWith);
+
+        assertFailsWith(
+                () -> callEvmTxProcessor.execute(sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY, consensusTime),
+                INSUFFICIENT_PAYER_BALANCE
+        );
     }
 
     @Test

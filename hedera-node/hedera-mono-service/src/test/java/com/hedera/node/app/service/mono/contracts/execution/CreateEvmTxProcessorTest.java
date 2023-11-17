@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,6 +72,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CreateEvmTxProcessorTest {
     private static final int MAX_STACK_SIZE = 1024;
+    public static final long ONE_HBAR = 100_000_000L;
 
     @Mock
     private LivePricesSource livePricesSource;
@@ -293,8 +295,6 @@ class CreateEvmTxProcessorTest {
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
-
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
 
         Address receiver = this.receiver.getId().asEvmAddress();
@@ -320,6 +320,34 @@ class CreateEvmTxProcessorTest {
         assertFailsWith(
                 () -> createEvmTxProcessor.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
                 INSUFFICIENT_GAS);
+    }
+
+    @Test
+    void throwsWhenGasLimitTimesGasPriceOverflows() {
+        given(worldState.updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0,0,1010).asEvmAddress());
+
+        var evmAccount = mock(MutableAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
+
+        final var wrappedSenderAccount = mock(MutableAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+        given(wrappedSenderAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+
+        final Address receiverAddress = receiver.getId().asEvmAddress();
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(MAX_GAS_LIMIT + 1L);
+
+        final long gasPriceToOverflowWith = 0x2_0000_0000L;
+        final long gasLimitToOverflowWith = 0x3_0000_0000L;
+
+        given(livePricesSource.currentGasPrice(consensusTime, HederaFunctionality.ContractCreate))
+                .willReturn(gasPriceToOverflowWith);
+
+        assertFailsWith(
+                () -> createEvmTxProcessor.execute(sender, receiverAddress, gasLimitToOverflowWith, 1234L, Bytes.EMPTY, consensusTime),
+                INSUFFICIENT_PAYER_BALANCE
+        );
     }
 
     private void givenInvalidMock() {
