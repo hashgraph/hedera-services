@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.utility;
+package com.swirlds.demo.platform;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
