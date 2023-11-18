@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
