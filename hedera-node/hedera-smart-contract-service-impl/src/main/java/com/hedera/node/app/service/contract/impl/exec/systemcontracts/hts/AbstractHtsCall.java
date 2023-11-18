@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -62,20 +64,21 @@ public abstract class AbstractHtsCall implements HtsCall {
     }
 
     protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(successResult(ReturnTypes.encodedRc(ReturnTypes.standardized(status)), gasRequirement), status, isViewCall);
+        return gasOnly(successResult(encodedRc(standardized(status)), gasRequirement), status, isViewCall);
     }
 
     protected PricedResult completionWith(
             final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+        recordBuilder.status(standardized(recordBuilder.status()));
         return gasOnly(
                 FullResult.completionResult(
-                        ReturnTypes.encodedRc(ReturnTypes.standardized(recordBuilder.status())), gasRequirement, recordBuilder),
+                        encodedRc(recordBuilder.status()), gasRequirement, recordBuilder),
                 recordBuilder.status(),
                 isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(revertResult(ReturnTypes.standardized(status), gasRequirement), status, isViewCall);
+        return gasOnly(revertResult(standardized(status), gasRequirement), status, isViewCall);
     }
 
     protected PricedResult reversionWith(

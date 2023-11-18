@@ -31,6 +31,9 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -63,6 +66,7 @@ import java.util.Objects;
  * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
 public final class RecordListBuilder {
+    private static final Logger logger = LogManager.getLogger(RecordListBuilder.class);
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
     private static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
             ResponseCodeEnum.OK,
@@ -299,6 +303,9 @@ public final class RecordListBuilder {
         if (precedingTxnRecordBuilders == null) {
             precedingTxnRecordBuilders = new ArrayList<>();
         }
+        logger.info("Reverting children due to {} (preceding #={}, following #={})",
+                recordBuilder.status(), precedingTxnRecordBuilders.size(), childRecordBuilders.size());
+
 
         // Find the index into the list of records from which to revert. If the record builder is the user transaction,
         // then we start at index 0, which is the first child transaction after the user transaction. If the record
@@ -337,6 +344,7 @@ public final class RecordListBuilder {
         int into = index; // The position in the array into which we should put the next remaining child
         for (int i = index; i < count; i++) {
             final var child = childRecordBuilders.get(i);
+            logger.info("Considering child at {} w/ behavior {}", i, child.reversingBehavior());
             if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
@@ -359,6 +367,9 @@ public final class RecordListBuilder {
         for (int i = count - 1; i >= into; i--) {
             childRecordBuilders.remove(i);
         }
+
+        logger.info("Post reversion - preceding #={}, following #={}", precedingTxnRecordBuilders.size(),
+                childRecordBuilders.size());
     }
 
     /**
@@ -387,12 +398,15 @@ public final class RecordListBuilder {
 
         int nextNonce = count + 1; // Initialize to be 1 more than the number of preceding items
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
+        logger.info("Building with {} child records", count);
         for (int i = 0; i < count; i++) {
             final var recordBuilder = childRecordBuilders.get(i);
             records.add(recordBuilder
                     .transactionID(idBuilder.nonce(nextNonce++).build())
                     .syncBodyIdFromRecordId()
                     .build());
+            logger.info("Added child record ? -> {}",
+                    records.get(records.size() - 1).transactionRecord());
         }
 
         return new Result(userTxnRecord, unmodifiableList(records));

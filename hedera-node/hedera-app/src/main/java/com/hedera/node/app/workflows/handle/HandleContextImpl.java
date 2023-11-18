@@ -158,7 +158,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
-     * @param childRecordFinalizer
+     * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -670,6 +670,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     dispatchNeedsHapiPayerChecks(category));
         } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
+            logger.info("Synthetic transaction {} failed pre-checks: {}", txBody, e.getMessage());
             return;
         }
 

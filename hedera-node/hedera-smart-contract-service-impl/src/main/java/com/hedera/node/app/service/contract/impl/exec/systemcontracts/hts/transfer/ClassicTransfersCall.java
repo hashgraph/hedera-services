@@ -19,7 +19,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.logSuccessfulFungibleTransfer;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -43,6 +44,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -61,6 +65,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * But the basic pattern of constructing and dispatching a synthetic {@link CryptoTransferTransactionBody} remains.
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
+    private static final Logger logger = LogManager.getLogger(ClassicTransfersCall.class);
 
     private final byte[] selector;
     private final AccountID spenderId;
@@ -113,6 +118,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             // TODO - externalize the unsupported synthetic transfer without dispatching it
             return completionWith(NOT_SUPPORTED, gasRequirement);
         }
+        logger.info("\n\nDispatching: {}\n\n", syntheticTransfer);
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
                         .copyBuilder()
@@ -126,7 +132,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
         if (recordBuilder.status() == SUCCESS) {
-            maybeEmitLogsFor(transferToDispatch.cryptoTransferOrThrow(), frame);
+            maybeEmitErcLogsFor(transferToDispatch.cryptoTransferOrThrow(), frame);
         }
         return completionWith(gasRequirement, recordBuilder);
     }
@@ -225,12 +231,19 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 && !configuration.getConfigData(ContractsConfig.class).precompileAtomicCryptoTransferEnabled();
     }
 
-    private void maybeEmitLogsFor(@NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
+    private void maybeEmitErcLogsFor(@NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
         if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
             final var fungibleTransfers = op.tokenTransfersOrThrow().get(0);
             logSuccessfulFungibleTransfer(
                     fungibleTransfers.tokenOrThrow(),
                     fungibleTransfers.transfersOrThrow(),
+                    readableAccountStore(),
+                    frame);
+        } else if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector(), selector)) {
+            final var nftTransfers = op.tokenTransfersOrThrow().get(0);
+            logSuccessfulNftTransfer(
+                    nftTransfers.tokenOrThrow(),
+                    nftTransfers.nftTransfersOrThrow().get(0),
                     readableAccountStore(),
                     frame);
         }

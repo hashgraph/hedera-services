@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -182,16 +183,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             throw new IllegalStateException("No such snapshot");
         }
         final var snapshot = maybeSnapshot.get();
-        final var items = snapshot.parsedItems();
-        try (var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"))) {
-            for (int i = 0, n = items.size(); i < n; i++) {
-                final var item = items.get(i);
-                dumpLoc.write("--- Item #" + i + " ---\n");
-                dumpLoc.write(item.itemBody() + "\n\n");
-                dumpLoc.write("➡️\n\n");
-                dumpLoc.write(item.itemRecord() + "\n\n");
-            }
-        }
+        writeReadableItemsToTxt(snapshotFileMeta.toString(), snapshot.parsedItems());
     }
 
     /**
@@ -345,6 +337,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         final var itemsFromSnapshot = snapshotToMatchAgainst.parsedItems();
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
         final var snapshotPlaceholderNum = snapshotToMatchAgainst.getPlaceholderNum();
+        if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
+            log.warn("Mismatched item counts between snapshot and post-placeholder records - "
+                    + "snapshot had {} items, but post-placeholder had {} items", itemsFromSnapshot.size(),
+                    postPlaceholderItems.size());
+            writeReadableItemsToTxt("expected", itemsFromSnapshot);
+            writeReadableItemsToTxt("actual", postPlaceholderItems);
+        }
         for (int i = 0; i < minItems; i++) {
             final var fromSnapshot = itemsFromSnapshot.get(i);
             final var fromStream = postPlaceholderItems.get(i);
@@ -739,8 +738,25 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // It is unlikely we have _any_ tests with nondeterministic logs but deterministic
             // call results, so we just use the same match mode for both
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
+        } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
+            return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
+        }
+    }
+
+    private static void writeReadableItemsToTxt(@NonNull final String name, @NonNull final List<ParsedItem> items) {
+        try (final var fout = Files.newBufferedWriter(Paths.get(name + ".txt"))) {
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                fout.write("--- Item #" + i + " ---\n");
+                fout.write(item.itemBody() + "\n\n");
+                fout.write("➡️\n\n");
+                fout.write(item.itemRecord() + "\n\n");
+            }
+        } catch (IOException e) {
+            log.error("Could not write readable items to txt", e);
+            throw new UncheckedIOException(e);
         }
     }
 }
