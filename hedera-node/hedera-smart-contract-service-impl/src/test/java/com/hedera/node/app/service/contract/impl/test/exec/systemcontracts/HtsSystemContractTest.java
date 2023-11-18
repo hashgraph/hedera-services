@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
@@ -31,6 +31,7 @@ import static org.mockito.Mockito.lenient;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -53,6 +54,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HtsSystemContractTest {
     @Mock
     private HtsCall call;
+
+    @Mock
+    private HtsCallAttempt attempt;
 
     @Mock
     private MessageFrame frame;
@@ -99,7 +103,7 @@ class HtsSystemContractTest {
 
     @Test
     void invalidCallAttemptHaltsAndConsumesRemainingGas() {
-        given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
+        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
@@ -131,6 +135,7 @@ class HtsSystemContractTest {
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
         lenient().when(updater.enhancement()).thenReturn(enhancement);
         lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
-        given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willReturn(call);
+        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willReturn(attempt);
+        given(attempt.asExecutableCall()).willReturn(call);
     }
 }

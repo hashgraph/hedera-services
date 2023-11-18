@@ -26,17 +26,15 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -106,8 +104,10 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
-            // TODO - externalize the invalid synthetic transfer without dispatching it
-            return reversionWith(INVALID_RECEIVING_NODE_ACCOUNT, gasRequirement);
+            return reversionWith(
+                    gasRequirement,
+                    systemContractOperations()
+                            .externalizePreemptedDispatch(syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT));
         }
         if (executionIsNotSupported()) {
             // TODO - externalize the unsupported synthetic transfer without dispatching it
@@ -124,27 +124,11 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                         .build()
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
-                .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
-
-        var output = ReturnTypes.encodedRc(recordBuilder.status());
-        recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
-                .contractCallResult(Bytes.wrap(output.array()))
-                .build());
-
-        if (recordBuilder.status() == SUCCESS
-                && Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
-            final var fungibleTransfers = transferToDispatch
-                    .cryptoTransferOrThrow()
-                    .tokenTransfersOrThrow()
-                    .get(0);
-            logSuccessfulFungibleTransfer(
-                    fungibleTransfers.tokenOrThrow(),
-                    fungibleTransfers.transfersOrThrow(),
-                    enhancement.nativeOperations().readableAccountStore(),
-                    frame);
+                .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
+        if (recordBuilder.status() == SUCCESS) {
+            maybeEmitLogsFor(transferToDispatch.cryptoTransferOrThrow(), frame);
         }
-
-        return completionWith(recordBuilder.status(), gasRequirement);
+        return completionWith(gasRequirement, recordBuilder);
     }
 
     /**
@@ -239,5 +223,16 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     private boolean executionIsNotSupported() {
         return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 && !configuration.getConfigData(ContractsConfig.class).precompileAtomicCryptoTransferEnabled();
+    }
+
+    private void maybeEmitLogsFor(@NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
+        if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
+            final var fungibleTransfers = op.tokenTransfersOrThrow().get(0);
+            logSuccessfulFungibleTransfer(
+                    fungibleTransfers.tokenOrThrow(),
+                    fungibleTransfers.transfersOrThrow(),
+                    readableAccountStore(),
+                    frame);
+        }
     }
 }

@@ -296,7 +296,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
 
-        final var call = callAttemptFactory.createCallFrom(input, frame);
+        final var call = callAttemptFactory.createCallAttemptFrom(input, frame);
 
         final var pricedResult = call.execute(frame);
         resultAssertions.accept(pricedResult);

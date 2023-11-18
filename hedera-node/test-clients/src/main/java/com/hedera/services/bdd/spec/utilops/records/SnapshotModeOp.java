@@ -34,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEnv;
@@ -419,7 +420,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Mismatched field names ('" + expectedName + "' vs '" + actualName + "' between expected "
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
-            if (shouldSkip(expectedName)) {
+            if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
                 continue;
             }
             matchValues(
@@ -560,7 +561,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // Transaction fees can vary by based on the size of the sig map
             final var maxVariation = feeVariation(matchModes);
             if ("transactionFee".equals(fieldName)) {
-                ;
                 Assertions.assertTrue(
                         Math.abs((long) expected - (long) actual) <= maxVariation,
                         "Transaction fees '" + expected + "' and '" + actual
@@ -689,15 +689,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return Optional.empty();
     }
 
-    private static RecordSnapshot loadSnapshotFor(
-            @NonNull final String snapshotLoc, @NonNull final SnapshotFileMeta snapshotFileMeta) throws IOException {
-        final var om = new ObjectMapper();
-        final var inputLoc = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
-        final var fin = Files.newInputStream(inputLoc);
-        log.info("Loading snapshot of {} post-placeholder records from {}", snapshotFileMeta.specName(), inputLoc);
-        return om.reader().readValue(fin, RecordSnapshot.class);
-    }
-
     private void computePlaceholderNum(
             @NonNull final List<String> recordLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec) {
         this.recordLocs = recordLocs;
@@ -731,12 +722,17 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return locs;
     }
 
-    private boolean shouldSkip(@NonNull final String expectedName) {
+    private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
         requireNonNull(expectedName);
-        if ("contractCallResult".equals(expectedName)) {
+        requireNonNull(expectedType);
+        if ("contractCallResult".equals(expectedName) && ByteString.class.equals(expectedType)) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
+        } else if ("topic".equals(expectedName)) {
+            // It is unlikely we have _any_ tests with nondeterministic logs but deterministic
+            // call results, so we just use the same match mode for both
+            return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }

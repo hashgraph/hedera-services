@@ -86,15 +86,6 @@ class QuerySystemContractOperationsTest {
     void doesNotSupportAnyMutations() {
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.getNftAndExternalizeResult(nftID, 1L, nftResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.getTokenAndExternalizeResult(1L, 2L, tokenResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.getAccountAndExternalizeResult(1L, 2L, accountResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
                 () -> subject.dispatch(
                         TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY, AccountID.DEFAULT, Object.class));
         assertThrows(

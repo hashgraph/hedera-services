@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,7 +28,6 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -43,7 +41,6 @@ import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,13 +78,6 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void getNftNotImplementedYet() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.getNftAndExternalizeResult(NftID.DEFAULT, 1L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
     @SuppressWarnings("unchecked")
     void dispatchesRespectingGivenStrategy() {
         final var captor = ArgumentCaptor.forClass(Predicate.class);
@@ -115,16 +105,6 @@ class HandleSystemContractOperationsTest {
         assertTrue(test.test(AN_ED25519_KEY));
         assertFalse(test.test(TestHelpers.A_SECP256K1_KEY));
         assertFalse(test.test(TestHelpers.B_SECP256K1_KEY));
-    }
-
-    @Test
-    void getTokenNotImplementedYet() {
-        assertThrows(AssertionError.class, () -> subject.getTokenAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
-    void getAccountNotImplementedYet() {
-        assertThrows(AssertionError.class, () -> subject.getAccountAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
     }
 
     @Test

@@ -38,6 +38,14 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
     ContractCallRecordBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
+     * Returns final status of this contract call's record.
+     *
+     * @return the final status of this contract call
+     */
+    @NonNull
+    ResponseCodeEnum status();
+
+    /**
      * Tracks the contract id called.
      *
      * @param contractId the {@link ContractID} called

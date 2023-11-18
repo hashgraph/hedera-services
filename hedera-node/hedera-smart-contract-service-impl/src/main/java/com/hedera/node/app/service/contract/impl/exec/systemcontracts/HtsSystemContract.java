@@ -17,16 +17,18 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -42,14 +44,14 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
-    private static final String HTS_PRECOMPILE_NAME = "HTS";
-    public static final String HTS_PRECOMPILE_ADDRESS = "0x167";
-    private static final ContractID contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+    private static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
+    public static final String HTS_EVM_ADDRESS = "0x167";
+    private static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
     private final HtsCallFactory callFactory;
 
     @Inject
     public HtsSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
-        super(HTS_PRECOMPILE_NAME, gasCalculator);
+        super(HTS_SYSTEM_CONTRACT_NAME, gasCalculator);
         this.callFactory = requireNonNull(callFactory);
     }
 
@@ -61,22 +63,35 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         }
         final HtsCall call;
+        final HtsCallAttempt attempt;
         try {
-            call = callFactory.createCallFrom(input, frame);
+            attempt = callFactory.createCallAttemptFrom(input, frame);
+            call = requireNonNull(attempt.asExecutableCall());
             log.info("Created call {}", call.getClass().getSimpleName());
         } catch (final RuntimeException e) {
             log.debug("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
 
-        return resultOfExecuting(call, input, frame);
+        return resultOfExecuting(attempt, call, input, frame);
     }
 
     private static FullResult resultOfExecuting(
-            @NonNull final HtsCall call, @NonNull final Bytes input, @NonNull final MessageFrame frame) {
+            @NonNull final HtsCallAttempt attempt,
+            @NonNull final HtsCall call,
+            @NonNull final Bytes input,
+            @NonNull final MessageFrame frame) {
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute(frame);
+            final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
+            if (dispatchedRecordBuilder != null) {
+                dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(
+                        attempt.senderId(),
+                        HTS_CONTRACT_ID,
+                        ConversionUtils.tuweniToPbjBytes(input),
+                        frame.getRemainingGas()));
+            }
             if (pricedResult.isViewCall()) {
                 final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);
                 final var enhancement = proxyWorldUpdater.enhancement();
@@ -88,7 +103,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(), output, contractID),
+                                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
                                     responseCode);
                 } else {
                     enhancement
@@ -97,7 +112,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                                     contractFunctionResultFailedFor(
                                             pricedResult.fullResult().gasRequirement(),
                                             responseCode.toString(),
-                                            contractID),
+                                            HTS_CONTRACT_ID),
                                     responseCode);
                 }
             }

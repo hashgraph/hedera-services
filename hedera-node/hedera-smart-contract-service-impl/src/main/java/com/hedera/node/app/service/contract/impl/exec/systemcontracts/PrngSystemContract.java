@@ -82,20 +82,22 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             // create a child record
             createSuccessfulRecord(frame, randomNum, contractID);
 
-            return new FullResult(result, gasRequirement);
+            return new FullResult(result, gasRequirement, null);
         } catch (InvalidTransactionException e) {
             // This error is caused by the user sending in the wrong selector
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return new FullResult(
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
-                    gasRequirement);
+                    gasRequirement,
+                    null);
         } catch (NullPointerException e) {
             // Log a warning as this error will be caused by insufficient entropy
             log.warn("Internal precompile failure", e);
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return new FullResult(
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
-                    gasRequirement);
+                    gasRequirement,
+                    null);
         }
     }
 
