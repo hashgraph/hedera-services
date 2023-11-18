@@ -57,5 +57,4 @@ public interface ReadableNftStore {
      * @return the number of nfts in the state.
      */
     long sizeOfState();
-
 }

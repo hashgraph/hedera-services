@@ -58,5 +58,4 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
     public long sizeOfState() {
         return nftState.size();
     }
-
 }
