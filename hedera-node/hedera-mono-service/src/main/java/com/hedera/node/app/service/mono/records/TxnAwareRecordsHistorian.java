@@ -216,6 +216,11 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
+    public boolean canTrackPrecedingChildRecords(final int n) {
+        return consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + (long) n);
+    }
+
+    @Override
     public void trackPrecedingChildRecord(
             final int sourceId,
             final TransactionBody.Builder syntheticTxn,
