@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.infrastructure;
 
+import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.service.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
@@ -23,6 +24,7 @@ import java.util.Objects;
 
 public record ChannelStubs(
         @NonNull ManagedChannel channel,
+        @NonNull NodeConnectInfo node,
         @NonNull ConsensusServiceGrpc.ConsensusServiceBlockingStub consSvcStubs,
         @NonNull FileServiceGrpc.FileServiceBlockingStub fileSvcStubs,
         @NonNull TokenServiceGrpc.TokenServiceBlockingStub tokenSvcStubs,
@@ -35,6 +37,7 @@ public record ChannelStubs(
 
     public ChannelStubs {
         Objects.requireNonNull(channel);
+        Objects.requireNonNull(node);
         Objects.requireNonNull(consSvcStubs);
         Objects.requireNonNull(fileSvcStubs);
         Objects.requireNonNull(tokenSvcStubs);
@@ -50,9 +53,10 @@ public record ChannelStubs(
         channel.shutdown();
     }
 
-    public static ChannelStubs from(final ManagedChannel channel) {
+    public static ChannelStubs from(final ManagedChannel channel, final NodeConnectInfo node) {
         return new ChannelStubs(
                 channel,
+                node,
                 ConsensusServiceGrpc.newBlockingStub(channel),
                 FileServiceGrpc.newBlockingStub(channel),
                 TokenServiceGrpc.newBlockingStub(channel),

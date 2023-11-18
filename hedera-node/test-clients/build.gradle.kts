@@ -162,3 +162,12 @@ tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
 }
+
+tasks.register<Test>("runGoawayTest") {
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform()
+
+    include("**/HapiApiClientsTest*")
+}

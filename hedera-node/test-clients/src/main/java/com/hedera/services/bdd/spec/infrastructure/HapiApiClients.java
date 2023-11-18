@@ -90,6 +90,8 @@ public class HapiApiClients {
      */
     private static final int MAX_DESIRED_CHANNELS_PER_NODE = 50;
 
+    private int retries = 3;
+
     private ManagedChannel createNettyChannel(boolean useTls, final String host, final int port, final int tlsPort) {
         try {
             ManagedChannel channel;
@@ -124,7 +126,7 @@ public class HapiApiClients {
         final var existingPool = channelPools.computeIfAbsent(uri, COPY_ON_WRITE_LIST_SUPPLIER);
         if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
             final var channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
-            existingPool.add(ChannelStubs.from(channel));
+            existingPool.add(ChannelStubs.from(channel, node));
         }
         stubSequences.putIfAbsent(uri, new AtomicInteger());
     }
@@ -140,6 +142,32 @@ public class HapiApiClients {
         this.defaultNode = defaultNode;
     }
 
+    public void setRetries(int retries) {
+        this.retries = retries;
+    }
+
+    public ChannelStubs recreateChannelAndStub(ChannelStubs stub, boolean useTls) {
+        var channel = stub.channel();
+        if (!channel.isShutdown()) {
+            channel.shutdown();
+        }
+
+        final var node = stub.node();
+        final var uri = useTls ? node.tlsUri() : node.uri();
+
+        final var existingPool = channelPools.computeIfAbsent(uri, COPY_ON_WRITE_LIST_SUPPLIER);
+        boolean found;
+        do {
+            found = existingPool.remove(stub);
+        } while(found);
+
+        final var newChannel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
+        final var newStub = ChannelStubs.from(newChannel, node);
+        existingPool.add(newStub);
+        stubSequences.putIfAbsent(uri, new AtomicInteger());
+        return newStub;
+    }
+
     public static HapiApiClients clientsFor(HapiSpecSetup setup) {
         return new HapiApiClients(setup.nodes(), setup.defaultNode());
     }
@@ -153,7 +181,8 @@ public class HapiApiClients {
     }
 
     public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls)).cryptoSvcStubs();
+        final var stub = nextStubsFromPool(stubId(nodeId, useTls));
+        return stub.cryptoSvcStubs().withInterceptors(new RetryInterceptor(this, stub, useTls, retries));
     }
 
     public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls) {
@@ -184,6 +213,11 @@ public class HapiApiClients {
         return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
     }
 
+    // Need this for a unit test.
+    public ManagedChannel getChannel(AccountID nodeId, boolean useTls) {
+        return nextStubsFromPool(stubId(nodeId, useTls)).channel();
+    }
+
     private static ChannelStubs nextStubsFromPool(@NonNull final String stubId) {
         Objects.requireNonNull(stubId);
         final List<ChannelStubs> stubs = channelPools.get(stubId);
@@ -194,7 +228,10 @@ public class HapiApiClients {
         if (currentSequence == null) {
             throw new IllegalArgumentException("Should have assigned a sequence counter to the pool");
         }
-        return stubs.get(currentSequence.getAndIncrement() % stubs.size());
+        final var stub = stubs.get(currentSequence.getAndIncrement() % stubs.size());
+//        stub.networkSvcStubs()
+//        stub.channel().
+        return stub;
     }
 
     @Override
