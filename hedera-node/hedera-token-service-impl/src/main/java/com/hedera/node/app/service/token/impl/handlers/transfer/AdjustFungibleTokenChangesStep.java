@@ -39,11 +39,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Puts all fungible token changes from CryptoTransfer into state's modifications map.
  */
 public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements TransferStep {
+    private static final Logger logger = LogManager.getLogger(AdjustFungibleTokenChangesStep.class);
     // The CryptoTransferTransactionBody here is obtained by replacing aliases with their
     // corresponding accountIds.
     private final CryptoTransferTransactionBody op;
@@ -110,8 +113,10 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             }
         }
 
-        modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
+        logger.info("Aggregated fungible token changes: {}", aggregatedFungibleTokenChanges);
+        logger.info("Aggregated allowance transfers: {}", allowanceTransfers);
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
+        modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
     }
 
     /**

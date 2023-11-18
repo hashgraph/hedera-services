@@ -515,6 +515,11 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    @Override
+    public List<TokenTransferList> tokenTransferLists() {
+        return tokenTransferLists;
+    }
+
     /**
      * Adds a tokenTransferList.
      *

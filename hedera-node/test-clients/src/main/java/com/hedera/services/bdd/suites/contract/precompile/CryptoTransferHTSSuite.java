@@ -78,6 +78,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
@@ -94,7 +95,7 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// @HapiTestSuite
+@HapiTestSuite
 public class CryptoTransferHTSSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
@@ -163,6 +164,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";

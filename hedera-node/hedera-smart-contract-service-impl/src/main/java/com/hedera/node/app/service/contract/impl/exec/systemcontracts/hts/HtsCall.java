@@ -56,7 +56,9 @@ public interface HtsCall {
      * @return the result, the gas requirement, and any non-gas cost
      */
     @NonNull
-    PricedResult execute();
+    default PricedResult execute() {
+        throw new UnsupportedOperationException("Prefer an explicit execute(MessageFrame) override");
+    }
 
     @NonNull
     default PricedResult execute(MessageFrame frame) {

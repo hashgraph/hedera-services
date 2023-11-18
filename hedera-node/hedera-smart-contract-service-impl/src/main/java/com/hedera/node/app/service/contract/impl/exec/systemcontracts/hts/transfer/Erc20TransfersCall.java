@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.priorityAddressOf;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -40,12 +41,14 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.math.BigInteger;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
@@ -53,6 +56,7 @@ import org.hyperledger.besu.evm.log.Log;
  * Implements the ERC-20 {@code transfer()} and {@code transferFrom()} calls of the HTS contract.
  */
 public class Erc20TransfersCall extends AbstractHtsCall {
+    private static final Logger logger = LogManager.getLogger(Erc20TransfersCall.class);
 
     private final long amount;
 
@@ -95,6 +99,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
+        logger.info("execute");
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
@@ -128,36 +133,56 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         final var result = execute();
 
         if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
-            final var tokenAddress = asLongZeroAddress(tokenId.tokenNum());
-            List<TokenTransferList> tokenTransferLists =
-                    syntheticTransferOrTransferFrom(senderId).cryptoTransfer().tokenTransfers();
+            final var tokenTransferLists = syntheticTransferOrTransferFrom(senderId)
+                    .cryptoTransferOrThrow()
+                    .tokenTransfersOrThrow();
+            logger.info("tokenTransferLists: {}", tokenTransferLists);
             for (final var fungibleTransfers : tokenTransferLists) {
-                frame.addLog(getLogForFungibleTransfer(tokenAddress, fungibleTransfers.transfers()));
+                logSuccessfulFungibleTransfer(
+                        requireNonNull(tokenId),
+                        fungibleTransfers.transfersOrThrow(),
+                        enhancement.nativeOperations().readableAccountStore(),
+                        frame);
             }
         }
         return result;
     }
 
-    private Log getLogForFungibleTransfer(
-            final org.hyperledger.besu.datatypes.Address logger, List<AccountAmount> transfers) {
-        AccountID sender = AccountID.DEFAULT;
-        AccountID receiver = AccountID.DEFAULT;
-        BigInteger amount = BigInteger.ZERO;
-
-        for (final var accountAmount : transfers) {
-            if (accountAmount.amount() > 0) {
-                receiver = accountAmount.accountID();
-                amount = BigInteger.valueOf(accountAmount.amount());
+    static void logSuccessfulFungibleTransfer(
+            @NonNull final TokenID tokenId,
+            @NonNull final List<AccountAmount> adjusts,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final MessageFrame frame) {
+        final var tokenAddress = asLongZeroAddress(requireNonNull(tokenId).tokenNum());
+        requireNonNull(frame);
+        requireNonNull(adjusts);
+        org.hyperledger.besu.datatypes.Address senderAddress = null;
+        org.hyperledger.besu.datatypes.Address receiverAddress = null;
+        long amount = 0L;
+        for (final var adjust : adjusts) {
+            amount = Math.abs(adjust.amount());
+            if (adjust.amount() > 0) {
+                receiverAddress =
+                        priorityAddressOf(requireNonNull(accountStore.getAccountById(adjust.accountIDOrThrow())));
             } else {
-                sender = accountAmount.accountID();
+                senderAddress =
+                        priorityAddressOf(requireNonNull(accountStore.getAccountById(adjust.accountIDOrThrow())));
             }
         }
+        frame.addLog(logForFungibleTransfer(
+                tokenAddress, requireNonNull(senderAddress), requireNonNull(receiverAddress), amount));
+    }
 
+    private static Log logForFungibleTransfer(
+            @NonNull final org.hyperledger.besu.datatypes.Address logger,
+            @NonNull final org.hyperledger.besu.datatypes.Address senderAddress,
+            @NonNull final org.hyperledger.besu.datatypes.Address receiverAddress,
+            final long amount) {
         return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.TRANSFER_EVENT)
-                .forIndexedArgument(asLongZeroAddress(sender.accountNum()))
-                .forIndexedArgument(asLongZeroAddress(receiver.accountNum()))
+                .forIndexedArgument(senderAddress)
+                .forIndexedArgument(receiverAddress)
                 .forDataItem(amount)
                 .build();
     }

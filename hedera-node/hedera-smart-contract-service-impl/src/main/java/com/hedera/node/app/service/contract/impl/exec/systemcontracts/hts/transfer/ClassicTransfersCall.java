@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall.logSuccessfulFungibleTransfer;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -43,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implements the "classic" HTS transfer calls, which differ from the ERC redirects in three notable ways:
@@ -99,7 +102,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
@@ -127,6 +130,19 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         recordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
                 .contractCallResult(Bytes.wrap(output.array()))
                 .build());
+
+        if (recordBuilder.status() == SUCCESS
+                && Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
+            final var fungibleTransfers = transferToDispatch
+                    .cryptoTransferOrThrow()
+                    .tokenTransfersOrThrow()
+                    .get(0);
+            logSuccessfulFungibleTransfer(
+                    fungibleTransfers.tokenOrThrow(),
+                    fungibleTransfers.transfersOrThrow(),
+                    enhancement.nativeOperations().readableAccountStore(),
+                    frame);
+        }
 
         return completionWith(recordBuilder.status(), gasRequirement);
     }

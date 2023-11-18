@@ -26,19 +26,22 @@ import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.records.ChildFinalizeContext;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.records.FinalizeContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This is a special handler that is used to "finalize" hbar and token transfers for the child transaction record.
  */
 @Singleton
 public class FinalizeChildRecordHandler extends RecordFinalizerBase implements ChildRecordFinalizer {
+    private static final Logger logger = LogManager.getLogger(FinalizeChildRecordHandler.class);
 
     @Inject
     public FinalizeChildRecordHandler() {
@@ -46,7 +49,7 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
     }
 
     @Override
-    public void finalizeChildRecord(@NonNull final FinalizeContext context) {
+    public void finalizeChildRecord(@NonNull final ChildFinalizeContext context) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -71,9 +74,11 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
+        logger.info("Finalizing child record for fungible token transfers");
         final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
+        logger.info("Finalized child record for fungible token transfers - {}", tokenTransferLists);
 
         // ---------- nft transfers -------------------------
         final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
