@@ -12,9 +12,9 @@ module com.hedera.node.config {
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.config.extensions;
-    requires transitive tuweni.bytes;
+    requires transitive org.hyperledger.besu.datatypes;
     requires com.swirlds.common;
     requires org.apache.logging.log4j;
+    requires tuweni.bytes;
     requires static com.github.spotbugs.annotations;
-    requires org.hyperledger.besu.datatypes;
 }
