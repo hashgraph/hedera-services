@@ -448,6 +448,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)));
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";

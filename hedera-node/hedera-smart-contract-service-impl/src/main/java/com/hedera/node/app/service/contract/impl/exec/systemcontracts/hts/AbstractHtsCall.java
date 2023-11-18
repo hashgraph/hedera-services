@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -64,28 +62,24 @@ public abstract class AbstractHtsCall implements HtsCall {
     }
 
     protected PricedResult completionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(successResult(ReturnTypes.encodedRc(standardized(status)), gasRequirement), status, isViewCall);
+        return gasOnly(successResult(ReturnTypes.encodedRc(ReturnTypes.standardized(status)), gasRequirement), status, isViewCall);
     }
 
     protected PricedResult completionWith(
             final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
         return gasOnly(
                 FullResult.completionResult(
-                        ReturnTypes.encodedRc(standardized(recordBuilder.status())), gasRequirement, recordBuilder),
+                        ReturnTypes.encodedRc(ReturnTypes.standardized(recordBuilder.status())), gasRequirement, recordBuilder),
                 recordBuilder.status(),
                 isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return gasOnly(revertResult(standardized(status), gasRequirement), status, isViewCall);
+        return gasOnly(revertResult(ReturnTypes.standardized(status), gasRequirement), status, isViewCall);
     }
 
     protected PricedResult reversionWith(
             final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
         return gasOnly(revertResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
-    }
-
-    private ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
-        return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 }

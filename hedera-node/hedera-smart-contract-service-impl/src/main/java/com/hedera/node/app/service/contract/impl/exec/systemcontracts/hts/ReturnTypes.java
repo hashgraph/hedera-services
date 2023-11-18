@@ -24,7 +24,13 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.FixedFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes;
+
 import java.nio.ByteBuffer;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Literal representations of output types used by HTS system contract functions.
@@ -168,6 +174,10 @@ public class ReturnTypes {
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
 
+    public static Bytes tuweniEncodedRc(@NonNull final ResponseCodeEnum status) {
+        return Bytes.wrap(encodedRc(status).array());
+    }
+
     /**
      * Encodes the given {@code status} as a return value for a classic transfer call.
      *
@@ -176,5 +186,9 @@ public class ReturnTypes {
      */
     public static ByteBuffer encodedRc(@NonNull final ResponseCodeEnum status) {
         return RC_ENCODER.encodeElements((long) status.protoOrdinal());
+    }
+
+    public static ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
+        return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 }
