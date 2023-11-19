@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -67,7 +66,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        ReturnTypes.tuweniEncodedRc(standardized(recordBuilder.status()))),
+                        ReturnTypes.tuweniEncodedRc(recordBuilder.status())),
                 gasRequirement,
                 recordBuilder);
     }

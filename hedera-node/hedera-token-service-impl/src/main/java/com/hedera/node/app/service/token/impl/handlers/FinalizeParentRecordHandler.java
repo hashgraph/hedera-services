@@ -129,13 +129,11 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             final var childHbarChangesFromRecord = childRecord.transferList();
             logger.info(" - child hbar changes: {}", childHbarChangesFromRecord);
             for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
-                final var childHbarChangeAccountId = childChange.accountID();
-                final var childHbarChangeAmount = childChange.amount();
-                if (hbarChanges.containsKey(childHbarChangeAccountId)) {
-                    final var newAdjust =
-                            hbarChanges.merge(childHbarChangeAccountId, -childHbarChangeAmount, Long::sum);
+                final var accountId = childChange.accountID();
+                if (hbarChanges.containsKey(accountId)) {
+                    final var newAdjust = hbarChanges.merge(accountId, -childChange.amount(), Long::sum);
                     if (newAdjust == 0) {
-                        hbarChanges.remove(childHbarChangeAccountId);
+                        hbarChanges.remove(accountId);
                     }
                 }
             }

@@ -251,7 +251,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             exchangeRateManager,
             DEFAULT_CONSENSUS_NOW,
             authorizer,
-            solvencyPreCheck
+            solvencyPreCheck,
+            childRecordFinalizer
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
