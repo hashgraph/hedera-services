@@ -44,7 +44,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -231,7 +230,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 && !configuration.getConfigData(ContractsConfig.class).precompileAtomicCryptoTransferEnabled();
     }
 
-    private void maybeEmitErcLogsFor(@NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
+    private void maybeEmitErcLogsFor(
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
         if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
             final var fungibleTransfers = op.tokenTransfersOrThrow().get(0);
             logSuccessfulFungibleTransfer(

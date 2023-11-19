@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -150,8 +151,8 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      */
     @Override
     public @NonNull PricedResult execute() {
-        final var recordBuilder =
-                systemContractOperations().dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
+        final var recordBuilder = systemContractOperations()
+                .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();
@@ -159,6 +160,6 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
             status = failureCustomizer.customize(syntheticBody, status, enhancement);
             recordBuilder.status(status);
         }
-        return completionWith(status, gasRequirement);
+        return completionWith(gasRequirement, recordBuilder);
     }
 }

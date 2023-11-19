@@ -31,14 +31,13 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -303,9 +302,11 @@ public final class RecordListBuilder {
         if (precedingTxnRecordBuilders == null) {
             precedingTxnRecordBuilders = new ArrayList<>();
         }
-        logger.info("Reverting children due to {} (preceding #={}, following #={})",
-                recordBuilder.status(), precedingTxnRecordBuilders.size(), childRecordBuilders.size());
-
+        logger.info(
+                "Reverting children due to {} (preceding #={}, following #={})",
+                recordBuilder.status(),
+                precedingTxnRecordBuilders.size(),
+                childRecordBuilders.size());
 
         // Find the index into the list of records from which to revert. If the record builder is the user transaction,
         // then we start at index 0, which is the first child transaction after the user transaction. If the record
@@ -368,7 +369,9 @@ public final class RecordListBuilder {
             childRecordBuilders.remove(i);
         }
 
-        logger.info("Post reversion - preceding #={}, following #={}", precedingTxnRecordBuilders.size(),
+        logger.info(
+                "Post reversion - preceding #={}, following #={}",
+                precedingTxnRecordBuilders.size(),
                 childRecordBuilders.size());
     }
 
@@ -405,7 +408,8 @@ public final class RecordListBuilder {
                     .transactionID(idBuilder.nonce(nextNonce++).build())
                     .syncBodyIdFromRecordId()
                     .build());
-            logger.info("Added child record ? -> {}",
+            logger.info(
+                    "Added child record ? -> {}",
                     records.get(records.size() - 1).transactionRecord());
         }
 

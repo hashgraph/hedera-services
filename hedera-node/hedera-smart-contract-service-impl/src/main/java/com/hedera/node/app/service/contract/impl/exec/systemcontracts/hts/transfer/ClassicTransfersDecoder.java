@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
@@ -29,7 +32,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,15 +39,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 
 @Singleton
 public class ClassicTransfersDecoder {
@@ -96,10 +94,10 @@ public class ClassicTransfersDecoder {
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.decodeCall(encoded);
         return bodyOf(tokenTransfers(convertTokenTransfers(
-                call.get(1),
-                this::convertingMaybeApprovedAdjustments,
-                this::convertingMaybeApprovedOwnershipChanges,
-                addressIdConverter))
+                        call.get(1),
+                        this::convertingMaybeApprovedAdjustments,
+                        this::convertingMaybeApprovedOwnershipChanges,
+                        addressIdConverter))
                 .transfers(convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter)));
     }
 
@@ -230,12 +228,12 @@ public class ClassicTransfersDecoder {
         return allImpliedTransfers;
     }
 
-    private CryptoTransferTransactionBody.Builder tokenTransfers(
-            @NonNull TokenTransferList... tokenTransferLists) {
+    private CryptoTransferTransactionBody.Builder tokenTransfers(@NonNull TokenTransferList... tokenTransferLists) {
         if (repeatsTokenId(tokenTransferLists)) {
             final Map<TokenID, TokenTransferList> consolidatedTokenTransfers = new LinkedHashMap<>();
             for (final var tokenTransferList : tokenTransferLists) {
-                consolidatedTokenTransfers.merge(tokenTransferList.tokenOrThrow(), tokenTransferList, this::mergeTokenTransferLists);
+                consolidatedTokenTransfers.merge(
+                        tokenTransferList.tokenOrThrow(), tokenTransferList, this::mergeTokenTransferLists);
             }
             tokenTransferLists = consolidatedTokenTransfers.values().toArray(TokenTransferList[]::new);
         }
@@ -243,15 +241,16 @@ public class ClassicTransfersDecoder {
     }
 
     private TokenTransferList mergeTokenTransferLists(
-            @NonNull final TokenTransferList from,
-            @NonNull final TokenTransferList to) {
+            @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
         return from.copyBuilder()
                 .transfers(mergeTransfers(from.transfersOrElse(emptyList()), to.transfersOrElse(emptyList())))
-                .nftTransfers(mergeNftTransfers(from.nftTransfersOrElse(emptyList()), to.nftTransfersOrElse(emptyList())))
+                .nftTransfers(
+                        mergeNftTransfers(from.nftTransfersOrElse(emptyList()), to.nftTransfersOrElse(emptyList())))
                 .build();
     }
 
-    private List<AccountAmount> mergeTransfers(@NonNull final List<AccountAmount> from, @NonNull final List<AccountAmount> to) {
+    private List<AccountAmount> mergeTransfers(
+            @NonNull final List<AccountAmount> from, @NonNull final List<AccountAmount> to) {
         requireNonNull(from);
         requireNonNull(to);
         final Map<AccountID, AccountAmount> consolidated = new LinkedHashMap<>();
@@ -261,16 +260,13 @@ public class ClassicTransfersDecoder {
     }
 
     private void consolidateInto(
-            @NonNull final Map<AccountID, AccountAmount> consolidated,
-            @NonNull final List<AccountAmount> transfers) {
+            @NonNull final Map<AccountID, AccountAmount> consolidated, @NonNull final List<AccountAmount> transfers) {
         for (final var transfer : transfers) {
             consolidated.merge(transfer.accountID(), transfer, this::mergeAdjusts);
         }
     }
 
-    private AccountAmount mergeAdjusts(
-            @NonNull final AccountAmount from,
-            @NonNull final AccountAmount to) {
+    private AccountAmount mergeAdjusts(@NonNull final AccountAmount from, @NonNull final AccountAmount to) {
         return from.copyBuilder()
                 .amount(from.amount() + to.amount())
                 .isApproval(from.isApproval() || to.isApproval())
@@ -278,8 +274,7 @@ public class ClassicTransfersDecoder {
     }
 
     private List<NftTransfer> mergeNftTransfers(
-            @NonNull final List<NftTransfer> from,
-            @NonNull final List<NftTransfer> to) {
+            @NonNull final List<NftTransfer> from, @NonNull final List<NftTransfer> to) {
         final Set<NftTransfer> present = new HashSet<>();
         final List<NftTransfer> consolidated = new ArrayList<>();
         consolidateInto(present, consolidated, from);
@@ -299,9 +294,12 @@ public class ClassicTransfersDecoder {
     }
 
     private boolean repeatsTokenId(@NonNull final TokenTransferList[] tokenTransferList) {
-        return tokenTransferList.length > 1 && Arrays.stream(tokenTransferList)
-                .map(TokenTransferList::token)
-                .collect(Collectors.toSet()).size() < tokenTransferList.length;
+        return tokenTransferList.length > 1
+                && Arrays.stream(tokenTransferList)
+                                .map(TokenTransferList::token)
+                                .collect(Collectors.toSet())
+                                .size()
+                        < tokenTransferList.length;
     }
 
     private TokenTransferList adjustingUnits(

@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -38,15 +37,10 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
-import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.log.Log;
 
 /**
  * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
@@ -126,7 +120,12 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         if (status != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
-            final var nftTransfer = syntheticTransfer.cryptoTransferOrThrow().tokenTransfersOrThrow().get(0).nftTransfersOrThrow().get(0);
+            final var nftTransfer = syntheticTransfer
+                    .cryptoTransferOrThrow()
+                    .tokenTransfersOrThrow()
+                    .get(0)
+                    .nftTransfersOrThrow()
+                    .get(0);
             logSuccessfulNftTransfer(tokenId, nftTransfer, readableAccountStore(), frame);
             return gasOnly(
                     successResult(

@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -70,7 +69,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -176,7 +174,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         final var snapshotFileMeta = new SnapshotFileMeta(
                 "HollowAccountFinalization", "txnWith2CompletionsAndAnother2PrecedingChildRecords");
         final var maybeSnapshot = suiteSnapshotsFrom(
-                resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
+                        resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
                         suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
         if (maybeSnapshot.isEmpty()) {
@@ -289,8 +287,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     continue;
                 }
                 if (spec.setup()
-                        .streamlinedIngestChecks()
-                        .contains(parsedItem.itemRecord().getReceipt().getStatus())
+                                .streamlinedIngestChecks()
+                                .contains(parsedItem.itemRecord().getReceipt().getStatus())
                         && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
                     // There are no records written in mono-service when a transaction fails in ingest.
                     // But in modular service we write them. While validating fuzzy records, we always skip the records
@@ -338,8 +336,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
         final var snapshotPlaceholderNum = snapshotToMatchAgainst.getPlaceholderNum();
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
-            log.warn("Mismatched item counts between snapshot and post-placeholder records - "
-                    + "snapshot had {} items, but post-placeholder had {} items", itemsFromSnapshot.size(),
+            log.warn(
+                    "Mismatched item counts between snapshot and post-placeholder records - "
+                            + "snapshot had {} items, but post-placeholder had {} items",
+                    itemsFromSnapshot.size(),
                     postPlaceholderItems.size());
             writeReadableItemsToTxt("expected", itemsFromSnapshot);
             writeReadableItemsToTxt("actual", postPlaceholderItems);
@@ -422,10 +422,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
             if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
-//                System.out.println("YES");
+                //                System.out.println("YES");
                 continue;
             }
-//            System.out.println("NO");
+            //            System.out.println("NO");
             matchValues(
                     expectedName,
                     expectedField.getValue(),
@@ -728,9 +728,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
-//        System.out.println("Should skip? " + expectedName + " " + expectedType);
+        //        System.out.println("Should skip? " + expectedName + " " + expectedType);
         if ("contractCallResult".equals(expectedName) && ByteString.class.isAssignableFrom(expectedType)) {
-//        if ("contractCallResult".equals(expectedName) && ByteString.class.equals(expectedType)) {
+            //        if ("contractCallResult".equals(expectedName) && ByteString.class.equals(expectedType)) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
