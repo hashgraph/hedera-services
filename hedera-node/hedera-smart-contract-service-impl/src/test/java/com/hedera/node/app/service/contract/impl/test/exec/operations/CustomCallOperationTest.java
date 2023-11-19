@@ -143,12 +143,27 @@ class CustomCallOperationTest {
     }
 
     @Test
-    void withNoValueRejectsMissingAddress() {
+    void withNoValueRejectsMissingAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
             frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
 
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
+            final var actual = subject.execute(frame, evm);
+
+            assertSameResult(expected, actual);
+        }
+    }
+
+    @Test
+    void delegateToParentMissingAddressIfAllowCallFeatureFlagOn() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            given(frame.getStackItem(1)).willReturn(TestHelpers.EIP_1014_ADDRESS);
+            given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2l)));
+            given(featureFlags.isAllowCallsToNonContractAccountsEnabled(config)).willReturn(true);
+            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+
+            final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
             final var actual = subject.execute(frame, evm);
 
             assertSameResult(expected, actual);

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -57,7 +58,8 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
             }
-            if (!addressChecks.isPresent(address, frame)) {
+            if (!featureFlags.isAllowCallsToNonContractAccountsEnabled(configOf(frame))
+                    && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);

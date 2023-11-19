@@ -92,12 +92,27 @@ class CustomBalanceOperationTest {
     }
 
     @Test
-    void rejectsMissingUserAddress() {
+    void rejectsMissingUserAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
             final var expected = new Operation.OperationResult(3L, INVALID_SOLIDITY_ADDRESS);
+            final var actual = subject.execute(frame, evm);
+            assertSameResult(expected, actual);
+        }
+    }
+
+    @Test
+    void delegatesToSuperIfAllowCallFeatureFlagOn() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            setupWarmGasCost();
+            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            given(featureFlags.isAllowCallsToNonContractAccountsEnabled(config)).willReturn(true);
+            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
             final var actual = subject.execute(frame, evm);
             assertSameResult(expected, actual);
         }

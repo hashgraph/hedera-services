@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -66,7 +67,8 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
                 return new OperationResult(cost(frame, memOffset, numBytes, true), null);
             }
             // Otherwise the address must be present
-            if (!addressChecks.isPresent(address, frame)) {
+            if (!featureFlags.isAllowCallsToNonContractAccountsEnabled(configOf(frame))
+                    && !addressChecks.isPresent(address, frame)) {
                 return new OperationResult(
                         cost(frame, memOffset, numBytes, true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
