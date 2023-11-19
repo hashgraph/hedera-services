@@ -44,14 +44,6 @@ public interface SingleTransactionRecordBuilder {
     SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * Sets the transaction.
-     *
-     * @param transaction the transaction
-     * @return this builder
-     */
-    SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction);
-
-    /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
      *
      * @param body the transaction body
