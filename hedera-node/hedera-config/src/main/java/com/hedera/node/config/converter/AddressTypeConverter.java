@@ -17,34 +17,28 @@
 package com.hedera.node.config.converter;
 
 import com.swirlds.config.api.converter.ConfigConverter;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Implementation of {@link ConfigConverter} that supports {@link Address} as data type for the config.
  */
-public class AddressTypeConverter implements ConfigConverter<Set<Address>> {
+public class AddressTypeConverter implements ConfigConverter<Address> {
 
     @Override
-    public Set<Address> convert(final String value) throws IllegalArgumentException, NullPointerException {
+    public Address convert(final String value) throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("Value must not be null");
         }
-        return Arrays.stream(value.split(","))
-                .filter(string -> !string.isBlank())
-                .map(AddressTypeConverter::asLongZeroAddressFromString)
-                .collect(Collectors.toSet());
-    }
-
-    private static Address asLongZeroAddressFromString(final String value) {
         final var longFromString = Long.parseLong(value);
         if (longFromString <= 0) {
             throw new IllegalArgumentException("Value must be greater than 0");
         }
-        return Address.wrap(Bytes.wrap(asEvmAddress(longFromString)));
+        return asLongZeroAddress(longFromString);
+    }
+
+    private static Address asLongZeroAddress(final long num) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(num)));
     }
 
     private static byte[] asEvmAddress(final long num) {

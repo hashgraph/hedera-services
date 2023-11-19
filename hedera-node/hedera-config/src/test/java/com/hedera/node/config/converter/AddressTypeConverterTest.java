@@ -19,10 +19,11 @@ package com.hedera.node.config.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class AddressTypeConverterTest {
 
@@ -50,46 +51,25 @@ class AddressTypeConverterTest {
 
     @Test
     void testInvalidSetParam() {
-        assertThatThrownBy(() -> subjectConverter.convert("1062781,,10627811,111062787,invalid,1062787"))
+        assertThatThrownBy(() -> subjectConverter.convert("1062781,10627811"))
                 .isInstanceOf(NumberFormatException.class);
     }
 
-    @Test
-    void testValidParam() {
-        // when
-        final var besuAddress = subjectConverter.convert("1062787");
-        // then
-        assertThat(besuAddress).isEqualTo(Set.of(Address.fromHexString("0x0000000000000000000000000000000000103783")));
-    }
-
-    @Test
-    void testValidParamSet() {
-        // given
-        final var value = "1062787,1062788";
-
+    @ParameterizedTest
+    @CsvSource({
+        "1062787, 0x0000000000000000000000000000000000103783",
+        "1062786, 0x0000000000000000000000000000000000103782",
+        "1072789, 0x0000000000000000000000000000000000105e95",
+        "1061780, 0x0000000000000000000000000000000000103394",
+        "1014787, 0x00000000000000000000000000000000000f7c03",
+        "1052787, 0x0000000000000000000000000000000000101073",
+        "1032787, 0x00000000000000000000000000000000000fc253",
+    })
+    void testValidParamSet(final String value, final String expectedOutput) {
         // when
         final var besuAddress = subjectConverter.convert(value);
 
         // then
-        final var expectedSet = Set.of(
-                Address.fromHexString("0x0000000000000000000000000000000000103783"),
-                Address.fromHexString("0x0000000000000000000000000000000000103784"));
-        assertThat(besuAddress).isEqualTo(expectedSet);
-    }
-
-    @Test
-    void testValidParamSetWithBlank() {
-        // given
-        final var value = "1062789, ,10627890, ,1062791";
-
-        // when
-        final var besuAddress = subjectConverter.convert(value);
-
-        // then
-        final var expectedSet = Set.of(
-                Address.fromHexString("0x0000000000000000000000000000000000103785"),
-                Address.fromHexString("0x0000000000000000000000000000000000a22b32"),
-                Address.fromHexString("0x0000000000000000000000000000000000103787"));
-        assertThat(besuAddress).isEqualTo(expectedSet);
+        assertThat(besuAddress).isEqualTo(Address.fromHexString(expectedOutput));
     }
 }
