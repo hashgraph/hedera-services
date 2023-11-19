@@ -69,7 +69,6 @@ public abstract class AbstractHtsCall implements HtsCall {
 
     protected PricedResult completionWith(
             final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
-        recordBuilder.status(standardized(recordBuilder.status()));
         return gasOnly(
                 FullResult.completionResult(encodedRc(recordBuilder.status()), gasRequirement, recordBuilder),
                 recordBuilder.status(),

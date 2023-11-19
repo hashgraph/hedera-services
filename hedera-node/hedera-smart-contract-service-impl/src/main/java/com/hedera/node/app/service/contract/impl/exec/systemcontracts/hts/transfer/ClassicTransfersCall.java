@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static java.util.Collections.emptyList;
@@ -132,6 +133,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, ContractCallRecordBuilder.class);
         if (recordBuilder.status() == SUCCESS) {
             maybeEmitErcLogsFor(transferToDispatch.cryptoTransferOrThrow(), frame);
+        } else {
+            recordBuilder.status(standardized(recordBuilder.status()));
         }
         return completionWith(gasRequirement, recordBuilder);
     }

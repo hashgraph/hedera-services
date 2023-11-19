@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -37,7 +38,14 @@ import java.util.Objects;
  * @param <T> the type of the record builder to expect from the dispatch
  */
 public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
-    private static final FailureCustomizer NOOP_FAILURE_CODE_CUSTOMIZER = (body, code, enhancement) -> code;
+    /**
+     * The "standard" failure customizer that replaces {@link ResponseCodeEnum#INVALID_SIGNATURE} with
+     * {@link ResponseCodeEnum#INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE}. (Note this code no longer
+     * makes sense after the security model change that revoked use of top-level signatures; but for
+     * now it is retained for backwards compatibility.)
+     */
+    private static final FailureCustomizer STANDARD_FAILURE_CUSTOMIZER =
+            (body, code, enhancement) -> standardized(code);
 
     private final AccountID senderId;
     private final TransactionBody syntheticBody;
@@ -51,6 +59,8 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      */
     @FunctionalInterface
     public interface FailureCustomizer {
+        FailureCustomizer NOOP_CUSTOMIZER = (body, code, enhancement) -> code;
+
         /**
          * Customizes the failure status of a dispatch.
          *
@@ -87,7 +97,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 recordBuilderType,
                 attempt.defaultVerificationStrategy(),
                 dispatchGasCalculator,
-                NOOP_FAILURE_CODE_CUSTOMIZER);
+                STANDARD_FAILURE_CUSTOMIZER);
     }
 
     /**

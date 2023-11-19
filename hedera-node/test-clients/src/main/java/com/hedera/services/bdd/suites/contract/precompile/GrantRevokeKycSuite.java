@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -207,54 +206,34 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                 "RevokeKycAccountWithoutKeyTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .statusFrom(INVALID_SIGNATURE, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResultFrom(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(INVALID_SIGNATURE),
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "GrantKycAccountWithoutKeyTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .statusFrom(INVALID_SIGNATURE, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResultFrom(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(INVALID_SIGNATURE),
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "GrantKycAccountKeyNotMatchingTokenKeyTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .statusFrom(INVALID_SIGNATURE, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResultFrom(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(INVALID_SIGNATURE),
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "RevokeKycAccountKeyNotMatchingTokenKeyTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .statusFrom(INVALID_SIGNATURE, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResultFrom(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(INVALID_SIGNATURE),
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "GrantKycTokenWithoutKeyTx",
                                 CONTRACT_REVERT_EXECUTED,
