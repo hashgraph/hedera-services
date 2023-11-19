@@ -134,17 +134,19 @@ public class FeeCalculatorImpl implements FeeCalculator {
         this.congestionMultipliers = congestionMultipliers;
         this.state = state;
         try {
-            this.txInfo = new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody));
-        }catch (UnknownHederaFunctionality e) {
-            throw new IllegalStateException(
-                    "Invalid transaction body " + txBody, e);
+            this.txInfo = new TransactionInfo(
+                    Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody));
+        } catch (UnknownHederaFunctionality e) {
+            throw new IllegalStateException("Invalid transaction body " + txBody, e);
         }
     }
 
-    public FeeCalculatorImpl(@Nullable final FeeData feeData,
-                             @NonNull final ExchangeRate currentRate,
-                             final CongestionMultipliers congestionMultipliers,
-                             final HederaState state, final HederaFunctionality functionality) {
+    public FeeCalculatorImpl(
+            @Nullable final FeeData feeData,
+            @NonNull final ExchangeRate currentRate,
+            final CongestionMultipliers congestionMultipliers,
+            final HederaState state,
+            final HederaFunctionality functionality) {
         if (feeData == null) {
             this.feeData = null;
             this.usage = null;
@@ -161,10 +163,17 @@ public class FeeCalculatorImpl implements FeeCalculator {
         this.congestionMultipliers = congestionMultipliers;
         this.state = state;
 
-        //used only for access query functionality (in congestionMultipliers)
-        this.txInfo = new TransactionInfo(Transaction.DEFAULT,
-                TransactionBody.newBuilder().transactionID(TransactionID.newBuilder().accountID(AccountID.DEFAULT).build()).build(),
-                SignatureMap.DEFAULT, Bytes.EMPTY, functionality);
+        // used only for access query functionality (in congestionMultipliers)
+        this.txInfo = new TransactionInfo(
+                Transaction.DEFAULT,
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(AccountID.DEFAULT)
+                                .build())
+                        .build(),
+                SignatureMap.DEFAULT,
+                Bytes.EMPTY,
+                functionality);
     }
 
     @Override
@@ -235,7 +244,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
         // Use the "hapi-fees" module to calculate the fees, and convert to one of our "Fees" objects.
         final var overflowCalc = new OverflowCheckingCalc();
 
-        final var feeObject = overflowCalc.fees(usage, feeData, currentRate, congestionMultipliers.maxCurrentMultiplier(txInfo, state));
+        final var feeObject = overflowCalc.fees(
+                usage, feeData, currentRate, congestionMultipliers.maxCurrentMultiplier(txInfo, state));
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
     }
 

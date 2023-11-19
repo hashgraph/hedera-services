@@ -17,7 +17,6 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
@@ -84,8 +83,10 @@ public final class FeeManager {
     private final HederaState state;
 
     @Inject
-    public FeeManager(@NonNull final ExchangeRateManager exchangeRateManager,
-                      @NonNull CongestionMultipliers congestionMultipliers, @NonNull HederaState state) {
+    public FeeManager(
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull CongestionMultipliers congestionMultipliers,
+            @NonNull HederaState state) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.congestionMultipliers = requireNonNull(congestionMultipliers);
         this.state = state;
@@ -205,7 +206,12 @@ public final class FeeManager {
         final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
 
         // Create the fee calculator
-        return new FeeCalculatorImpl(feeData, exchangeRateManager.activeRate(consensusTime), congestionMultipliers, this.state, functionality);
+        return new FeeCalculatorImpl(
+                feeData,
+                exchangeRateManager.activeRate(consensusTime),
+                congestionMultipliers,
+                this.state,
+                functionality);
     }
 
     /**
