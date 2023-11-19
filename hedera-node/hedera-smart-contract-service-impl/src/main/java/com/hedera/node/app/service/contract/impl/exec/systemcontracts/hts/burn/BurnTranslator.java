@@ -32,9 +32,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.INT64_INT64;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnDecoder.BURN_OUTPUT_FN;
+
 public class BurnTranslator extends AbstractHtsCallTranslator {
-    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT);
-    public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", ReturnTypes.INT);
+    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", INT64_INT64);
+    public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", INT64_INT64);
 
     BurnDecoder decoder;
 
@@ -57,7 +60,8 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
                 attempt,
                 body,
                 SingleTransactionRecordBuilder.class,
-                isFungibleMint ? BurnTranslator::fungibleBurnGasRequirement : BurnTranslator::nftBurnGasRequirement);
+                isFungibleMint ? BurnTranslator::fungibleBurnGasRequirement : BurnTranslator::nftBurnGasRequirement,
+                BURN_OUTPUT_FN);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

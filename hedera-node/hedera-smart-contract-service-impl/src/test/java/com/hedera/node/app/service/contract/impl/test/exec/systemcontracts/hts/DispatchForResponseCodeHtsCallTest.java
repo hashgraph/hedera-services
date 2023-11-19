@@ -61,9 +61,8 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
                 AccountID.DEFAULT,
                 TransactionBody.DEFAULT,
                 SingleTransactionRecordBuilder.class,
-                verificationStrategy,
-                dispatchGasCalculator,
-                failureCustomizer);
+                verificationStrategy, dispatchGasCalculator, failureCustomizer, outputFn
+        );
     }
 
     @Test

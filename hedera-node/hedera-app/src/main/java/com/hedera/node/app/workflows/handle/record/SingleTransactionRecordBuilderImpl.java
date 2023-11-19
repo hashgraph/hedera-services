@@ -925,6 +925,11 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    @Override
+    public List<Long> serialNumbers() {
+        return serialNumbers;
+    }
+
     /**
      * Adds a serialNumber to the receipt.
      *

@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,6 +69,18 @@ public record FullResult(
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
                         ReturnTypes.tuweniEncodedRc(recordBuilder.status())),
+                gasRequirement,
+                recordBuilder);
+    }
+
+    public static FullResult haltResult(
+            @NonNull final ContractCallRecordBuilder recordBuilder, final long gasRequirement) {
+        requireNonNull(recordBuilder);
+        final var reason = recordBuilder.status() == NOT_SUPPORTED
+                ? CustomExceptionalHaltReason.NOT_SUPPORTED
+                : CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(reason)),
                 gasRequirement,
                 recordBuilder);
     }

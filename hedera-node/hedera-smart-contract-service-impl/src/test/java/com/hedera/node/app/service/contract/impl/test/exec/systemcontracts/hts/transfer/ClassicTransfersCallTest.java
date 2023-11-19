@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -36,6 +37,7 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
@@ -46,6 +48,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -150,14 +154,17 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void unsupportedV2transferCompletesWithNotSupportedResponseCode() {
+    void unsupportedV2transferHaltsWithNotSupportedReason() {
         givenV2SubjectWithV2Disabled();
+        given(systemContractOperations.externalizePreemptedDispatch(
+                any(TransactionBody.class), eq(NOT_SUPPORTED)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(NOT_SUPPORTED);
 
         final var result = subject.execute(frame).fullResult().result();
 
-        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(
-                asBytesResult(INT64_ENCODER.encodeElements((long) NOT_SUPPORTED.protoOrdinal())), result.getOutput());
+        assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
+        assertEquals(Optional.of(CustomExceptionalHaltReason.NOT_SUPPORTED), result.getHaltReason());
     }
 
     @Test

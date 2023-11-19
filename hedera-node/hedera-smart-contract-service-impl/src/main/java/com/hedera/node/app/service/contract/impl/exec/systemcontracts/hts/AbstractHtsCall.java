@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.completionResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -27,11 +29,12 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.nio.ByteBuffer;
 
 /**
  * Minimal implementation support for an {@link HtsCall} that needs an {@link HederaWorldUpdater.Enhancement}
@@ -68,9 +71,13 @@ public abstract class AbstractHtsCall implements HtsCall {
     }
 
     protected PricedResult completionWith(
-            final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+            final long gasRequirement,
+            @NonNull final ContractCallRecordBuilder recordBuilder,
+            @NonNull final ByteBuffer output) {
+        requireNonNull(output);
+        requireNonNull(recordBuilder);
         return gasOnly(
-                FullResult.completionResult(encodedRc(recordBuilder.status()), gasRequirement, recordBuilder),
+                completionResult(output, gasRequirement, recordBuilder),
                 recordBuilder.status(),
                 isViewCall);
     }
@@ -82,5 +89,10 @@ public abstract class AbstractHtsCall implements HtsCall {
     protected PricedResult reversionWith(
             final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
         return gasOnly(revertResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
+    }
+
+    protected PricedResult haltWith(
+            final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+        return gasOnly(haltResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
     }
 }

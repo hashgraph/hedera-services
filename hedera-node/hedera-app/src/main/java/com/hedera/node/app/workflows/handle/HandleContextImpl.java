@@ -707,6 +707,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childRecordFinalizer.finalizeChildRecord(finalizeContext);
             childStack.commitFullStack();
         } catch (final HandleException e) {
+            logger.info("Synthetic transaction {} failed handle: {}", txBody, e.getMessage());
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
         }
