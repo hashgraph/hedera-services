@@ -310,7 +310,7 @@ class CustomMessageCallProcessorTest {
     private void givenPrngCall(long gasRequirement) {
         givenCallWithCode(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
         given(frame.getInputData()).willReturn(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
-        given(prngPrecompile.computeFully(any(), any())).willReturn(new FullResult(result, gasRequirement));
+        given(prngPrecompile.computeFully(any(), any())).willReturn(new FullResult(result, gasRequirement, null));
         given(result.getOutput()).willReturn(OUTPUT_DATA);
     }
 
