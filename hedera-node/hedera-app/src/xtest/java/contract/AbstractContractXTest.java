@@ -26,6 +26,7 @@ import static contract.XTestConstants.SENDER_ALIAS;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.TYPICAL_SENDER_ACCOUNT;
 import static contract.XTestConstants.TYPICAL_SENDER_CONTRACT;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -80,6 +81,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -296,9 +298,10 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
 
-        final var call = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var call = attempt.asExecutableCall();
 
-        final var pricedResult = call.execute(frame);
+        final var pricedResult = requireNonNull(call).execute(frame);
         resultAssertions.accept(pricedResult);
         // Note that committing a reverted calls should have no effect on state
         ((SavepointStackImpl) context.savepointStack()).commitFullStack();
