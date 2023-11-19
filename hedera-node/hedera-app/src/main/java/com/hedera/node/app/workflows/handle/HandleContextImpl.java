@@ -204,7 +204,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.userTransactionConsensusTime =
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
-        this.childRecordFinalizer = childRecordFinalizer;
+        this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
@@ -670,7 +670,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     dispatchNeedsHapiPayerChecks(category));
         } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
-            logger.info("Synthetic transaction {} failed pre-checks: {}", txBody, e.getMessage());
             return;
         }
 
@@ -707,7 +706,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childRecordFinalizer.finalizeChildRecord(finalizeContext);
             childStack.commitFullStack();
         } catch (final HandleException e) {
-            logger.info("Synthetic transaction {} failed handle: {}", txBody, e.getMessage());
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
         }

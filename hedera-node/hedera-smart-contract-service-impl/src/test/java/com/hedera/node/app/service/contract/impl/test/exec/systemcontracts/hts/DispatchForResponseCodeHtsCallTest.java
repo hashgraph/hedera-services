@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.OutputFn.STANDARD_OUTPUT_FN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -64,7 +65,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
                 verificationStrategy,
                 dispatchGasCalculator,
                 failureCustomizer,
-                outputFn);
+                STANDARD_OUTPUT_FN);
     }
 
     @Test
@@ -98,7 +99,10 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
                 .willReturn(123L);
-        given(recordBuilder.status()).willReturn(INVALID_ACCOUNT_ID).willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        given(recordBuilder.status())
+                .willReturn(INVALID_ACCOUNT_ID)
+                .willReturn(INVALID_ACCOUNT_ID)
+                .willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         given(failureCustomizer.customize(TransactionBody.DEFAULT, INVALID_ACCOUNT_ID, mockEnhancement()))
                 .willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
