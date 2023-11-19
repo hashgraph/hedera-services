@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.INT64_INT64;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnDecoder.BURN_OUTPUT_FN;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -25,15 +28,11 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
-
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.INT64_INT64;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnDecoder.BURN_OUTPUT_FN;
 
 public class BurnTranslator extends AbstractHtsCallTranslator {
     public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", INT64_INT64);

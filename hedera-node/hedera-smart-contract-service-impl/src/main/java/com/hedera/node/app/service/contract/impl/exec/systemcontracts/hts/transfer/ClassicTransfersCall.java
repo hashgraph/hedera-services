@@ -35,7 +35,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -118,8 +117,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         if (executionIsNotSupported()) {
             return haltWith(
                     gasRequirement,
-                    systemContractOperations()
-                            .externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
+                    systemContractOperations().externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
         }
         logger.info("\n\nDispatching: {}\n\n", syntheticTransfer);
         final var transferToDispatch = shouldRetryWithApprovals()

@@ -18,6 +18,9 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.unqualifiedDelegateDetected;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
@@ -44,6 +47,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
+    private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
     public static final String HTS_EVM_ADDRESS = "0x167";
     private static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
@@ -59,7 +63,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     public FullResult computeFully(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
-        if (FrameUtils.unqualifiedDelegateDetected(frame)) {
+        if (unqualifiedDelegateDetected(frame)) {
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         }
         final HtsCall call;
@@ -67,6 +71,10 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         try {
             attempt = callFactory.createCallAttemptFrom(input, frame);
             call = requireNonNull(attempt.asExecutableCall());
+            if (frame.isStatic() && !call.allowsStaticFrame()) {
+                return revertResult(
+                        STATIC_CALL_REVERT_REASON, contractsConfigOf(frame).precompileHtsDefaultGasCost());
+            }
             log.info("Created call {}", call.getClass().getSimpleName());
         } catch (final RuntimeException e) {
             log.debug("Failed to create HTS call from input {}", input, e);

@@ -84,4 +84,13 @@ public interface HtsCall {
     default PricedResult execute(MessageFrame frame) {
         return execute();
     }
+
+    /**
+     * Returns whether this call allows a static frame. Default is false for safety.
+     *
+     * @return whether this call allows a static frame
+     */
+    default boolean allowsStaticFrame() {
+        return false;
+    }
 }

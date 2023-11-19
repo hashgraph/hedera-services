@@ -31,12 +31,11 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
@@ -118,7 +117,8 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
                 recordBuilderType,
-                attempt.defaultVerificationStrategy(), dispatchGasCalculator,
+                attempt.defaultVerificationStrategy(),
+                dispatchGasCalculator,
                 STANDARD_FAILURE_CUSTOMIZER,
                 STANDARD_OUTPUT_FN);
     }
@@ -169,7 +169,8 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
                 recordBuilderType,
-                attempt.defaultVerificationStrategy(), dispatchGasCalculator,
+                attempt.defaultVerificationStrategy(),
+                dispatchGasCalculator,
                 STANDARD_FAILURE_CUSTOMIZER,
                 outputFn);
     }
@@ -208,17 +209,17 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
         this.failureCustomizer = Objects.requireNonNull(failureCustomizer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public @NonNull PricedResult execute() {
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
-        logger.info("Dispatched synthetic body {} with result {} (gas requirement={})",
-                syntheticBody, recordBuilder.status(), gasRequirement);
+        logger.info(
+                "Dispatched synthetic body {} with result {} (gas requirement={})",
+                syntheticBody,
+                recordBuilder.status(),
+                gasRequirement);
         var status = recordBuilder.status();
         if (status != SUCCESS) {
             status = failureCustomizer.customize(syntheticBody, status, enhancement);

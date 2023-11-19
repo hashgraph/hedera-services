@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -76,10 +75,7 @@ public abstract class AbstractHtsCall implements HtsCall {
             @NonNull final ByteBuffer output) {
         requireNonNull(output);
         requireNonNull(recordBuilder);
-        return gasOnly(
-                completionResult(output, gasRequirement, recordBuilder),
-                recordBuilder.status(),
-                isViewCall);
+        return gasOnly(completionResult(output, gasRequirement, recordBuilder), recordBuilder.status(), isViewCall);
     }
 
     protected PricedResult reversionWith(@NonNull final ResponseCodeEnum status, final long gasRequirement) {
@@ -91,8 +87,7 @@ public abstract class AbstractHtsCall implements HtsCall {
         return gasOnly(revertResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
     }
 
-    protected PricedResult haltWith(
-            final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+    protected PricedResult haltWith(final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
         return gasOnly(haltResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
     }
 }

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
@@ -31,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     protected final Token token;
 
-    public AbstractTokenViewCall(
+    protected AbstractTokenViewCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token) {
@@ -48,8 +49,13 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
         }
     }
 
+    @Override
+    public boolean allowsStaticFrame() {
+        return true;
+    }
+
     protected PricedResult externalizeSuccessfulResult() {
-        return gasOnly(resultOfViewingToken(token), SUCCESS, true);
+        return gasOnly(resultOfViewingToken(requireNonNull(token)), SUCCESS, true);
     }
 
     protected PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {

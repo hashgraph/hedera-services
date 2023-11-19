@@ -48,7 +48,6 @@ public class ReturnTypes {
     public static final Fraction ZERO_FRACTION = new Fraction(0, 1);
     public static final FixedFee ZERO_FIXED_FEE = new FixedFee(0, null);
 
-
     public static final String INT = "(int)";
     public static final String INT_64 = "(int64)";
     public static final String INT64_INT64 = "(int64,int64)";

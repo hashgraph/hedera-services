@@ -27,7 +27,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -48,7 +47,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -156,8 +154,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     @Test
     void unsupportedV2transferHaltsWithNotSupportedReason() {
         givenV2SubjectWithV2Disabled();
-        given(systemContractOperations.externalizePreemptedDispatch(
-                any(TransactionBody.class), eq(NOT_SUPPORTED)))
+        given(systemContractOperations.externalizePreemptedDispatch(any(TransactionBody.class), eq(NOT_SUPPORTED)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(NOT_SUPPORTED);
 
