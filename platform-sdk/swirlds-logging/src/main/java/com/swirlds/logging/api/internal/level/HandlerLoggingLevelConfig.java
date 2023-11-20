@@ -70,7 +70,7 @@ public class HandlerLoggingLevelConfig {
     /**
      * The cache for the markers.
      */
-    private final Map<String, MarkerDecision> markerCache;
+    private final Map<String, MarkerState> markerCache;
 
     /**
      * The configuration properties.
@@ -160,16 +160,16 @@ public class HandlerLoggingLevelConfig {
     }
 
     @NonNull
-    private Map<String, MarkerDecision> readMarkers(
+    private Map<String, MarkerState> readMarkers (
             @NonNull final String prefix, @NonNull final Configuration configuration) {
-        final Map<String, MarkerDecision> result = new HashMap<>();
+        final Map<String, MarkerState> result = new HashMap<>();
         final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
 
         configuration.getPropertyNames().filter(n -> n.startsWith(fullPrefix)).forEach(configPropertyName -> {
             final String name = configPropertyName.substring(fullPrefix.length());
-            final MarkerDecision markerDecision =
-                    configuration.getValue(configPropertyName, MarkerDecision.class, MarkerDecision.INHERIT);
-            result.put(name, markerDecision);
+            final MarkerState markerState =
+                    configuration.getValue(configPropertyName, MarkerState.class, MarkerState.UNDEFINED);
+            result.put(name, markerState);
         });
 
         return result;
@@ -220,15 +220,15 @@ public class HandlerLoggingLevelConfig {
         }
         if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
-            final List<MarkerDecision> markerDecisions = allMarkerNames.stream()
-                    .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerDecision.INHERIT))
-                    .filter(markerDecision -> markerDecision != MarkerDecision.INHERIT)
-                    .toList();
-            if (!markerDecisions.isEmpty()) {
-                if (markerDecisions.stream().anyMatch(markerDecision -> markerDecision == MarkerDecision.ENABLED)) {
+            final List<MarkerState> markerStates = allMarkerNames.stream()
+                                                                 .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
+                                                                 .filter(markerState -> markerState != MarkerState.UNDEFINED)
+                                                                 .toList();
+            if (! markerStates.isEmpty()) {
+                if (markerStates.stream().anyMatch(markerState -> markerState == MarkerState.ENABLED)) {
                     return true;
-                } else if (markerDecisions.stream()
-                        .allMatch(markerDecision -> markerDecision == MarkerDecision.DISABLED)) {
+                } else if (markerStates.stream()
+                                       .allMatch(markerState -> markerState == MarkerState.DISABLED)) {
                     return false;
                 }
             }

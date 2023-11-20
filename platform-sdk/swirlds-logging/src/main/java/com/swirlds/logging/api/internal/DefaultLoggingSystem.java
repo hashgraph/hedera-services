@@ -29,7 +29,7 @@ import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
 import com.swirlds.logging.api.extensions.provider.LogProvider;
 import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
-import com.swirlds.logging.api.internal.configuration.MarkerDecisionConverter;
+import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -115,7 +115,7 @@ public class DefaultLoggingSystem {
             final ConfigSource configSource = new PropertyFileConfigSource(configFilePath);
             return ConfigurationBuilder.create()
                                        .withSource(configSource)
-                                       .withConverter(new MarkerDecisionConverter())
+                                       .withConverter(new MarkerStateConverter())
                                        .withConverter(new ConfigLevelConverter())
                                        .build();
         } catch (IOException e) {

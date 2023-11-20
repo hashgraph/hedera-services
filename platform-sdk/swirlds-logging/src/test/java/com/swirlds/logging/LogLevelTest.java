@@ -22,7 +22,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
-import com.swirlds.logging.api.internal.configuration.MarkerDecisionConverter;
+import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
@@ -37,7 +37,7 @@ public class LogLevelTest {
     private SystemErrProvider systemErrProvider;
 
     private TestConfigBuilder createDefaultBuilder() {
-        return new TestConfigBuilder().withConverter(new MarkerDecisionConverter()).withConverter(new ConfigLevelConverter());
+        return new TestConfigBuilder().withConverter(new MarkerStateConverter()).withConverter(new ConfigLevelConverter());
     }
 
     @Test
