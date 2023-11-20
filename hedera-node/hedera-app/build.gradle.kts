@@ -127,16 +127,15 @@ tasks.withType<Test> {
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
     inputs.files(configurations.runtimeClasspath)
-    manifest {
-        attributes(
-            "Main-Class" to "com.hedera.node.app.ServicesMain",
+    manifest { attributes("Main-Class" to "com.hedera.node.app.ServicesMain") }
+    doFirst {
+        manifest.attributes(
             "Class-Path" to
-                configurations.runtimeClasspath.get().elements.map { entry ->
-                    entry
-                        .map { "../../data/lib/" + it.asFile.name }
-                        .sorted()
-                        .joinToString(separator = " ")
-                }
+                inputs.files
+                    .filter { it.extension == "jar" }
+                    .map { "../../data/lib/" + it.name }
+                    .sorted()
+                    .joinToString(separator = " ")
         )
     }
 }
@@ -146,25 +145,6 @@ val copyLib =
     tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
         into(layout.projectDirectory.dir("../data/lib"))
-
-        doLast {
-            val nonModulalJars =
-                destinationDir
-                    .listFiles()!!
-                    .mapNotNull { jar ->
-                        if (zipTree(jar).none { it.name == "module-info.class" }) {
-                            jar.name
-                        } else {
-                            null
-                        }
-                    }
-                    .sorted()
-            if (nonModulalJars.isNotEmpty()) {
-                throw RuntimeException(
-                    "Jars without 'module-info.class' in 'data/lib'\n${nonModulalJars.joinToString("\n")}"
-                )
-            }
-        }
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar

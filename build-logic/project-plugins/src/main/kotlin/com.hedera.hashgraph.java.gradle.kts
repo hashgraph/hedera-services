@@ -70,6 +70,33 @@ sourceSets.all {
     }
 }
 
+val writeGitProperties =
+    tasks.register<WriteProperties>("writeGitProperties") {
+        property("git.build.version", project.version)
+        @Suppress("UnstableApiUsage")
+        property(
+            "git.commit.id",
+            providers
+                .exec { commandLine("git", "rev-parse", "HEAD") }
+                .standardOutput
+                .asText
+                .map { it.trim() }
+        )
+        @Suppress("UnstableApiUsage")
+        property(
+            "git.commit.id.abbrev",
+            providers
+                .exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+                .standardOutput
+                .asText
+                .map { it.trim() }
+        )
+
+        destinationFile.set(layout.buildDirectory.file("generated/git/git.properties"))
+    }
+
+tasks.processResources { from(writeGitProperties) }
+
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true

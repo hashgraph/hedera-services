@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import net.swiftzer.semver.SemVer
-import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import java.io.OutputStream
@@ -32,14 +30,8 @@ class Utils {
             file("version.txt").let { if (it.asFile.exists()) it else this.dir("..").versionTxt() }
 
         @JvmStatic
-        fun updateVersion(project: Project, newVersion: SemVer) {
-            project.layout.projectDirectory.versionTxt().asFile.writeText(newVersion.toString())
-        }
-
-        @JvmStatic
-        fun generateProjectVersionReport(rootProject: Project, ostream: OutputStream) {
+        fun generateProjectVersionReport(version: String, ostream: OutputStream) {
             val writer = PrintStream(ostream, false, Charsets.UTF_8)
-            val version = rootProject.layout.projectDirectory.versionTxt().asFile.readText().trim()
 
             ostream.use {
                 writer.use {
