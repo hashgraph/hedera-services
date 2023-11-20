@@ -19,7 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.config.PlatformSchedulersConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

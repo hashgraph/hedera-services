@@ -24,9 +24,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -51,9 +50,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
 
-    private final boolean cyclicalBackpressurePresent;
-    private final boolean illegalDirectSchedulerUsagePresent;
-
     /**
      * Constructor.
      *
@@ -75,14 +71,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
 
         wire();
-
-        // Logs if there is cyclical back pressure.
-        // Do not throw -- in theory we might survive this, so no need to crash.
-        cyclicalBackpressurePresent = model.checkForCyclicalBackpressure();
-
-        // Logs if there is illegal direct scheduler usage.
-        // Do not throw -- in theory we might survive this, so no need to crash.
-        illegalDirectSchedulerUsagePresent = model.checkForIllegalDirectSchedulerUsage();
     }
 
     /**
@@ -93,24 +81,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public WiringModel getModel() {
         return model;
-    }
-
-    /**
-     * Check if cyclical backpressure is present in the model.
-     *
-     * @return true if cyclical backpressure is present, false otherwise
-     */
-    public boolean isCyclicalBackpressurePresent() {
-        return cyclicalBackpressurePresent;
-    }
-
-    /**
-     * Check if illegal direct scheduler usage is present in the model.
-     *
-     * @return true if illegal direct scheduler usage is present, false otherwise
-     */
-    public boolean isIllegalDirectSchedulerUsagePresent() {
-        return illegalDirectSchedulerUsagePresent;
     }
 
     /**
