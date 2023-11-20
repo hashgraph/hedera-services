@@ -75,12 +75,13 @@ public class SubmissionManager {
 
     /** The {@link Platform} to which transactions will be submitted */
     private final Platform platform;
-    /** Whether this node is running in production mode. We hope to remove this logic in the future.  */
-    private final boolean isProduction;
+
     /** Metrics related to submissions */
     private final SpeedometerMetric platformTxnRejections;
     /** The {@link DeduplicationCache} that keeps track of transactions that have been submitted */
     private final DeduplicationCache submittedTxns;
+
+    private final ConfigProvider configProvider;
 
     /**
      * Create a new {@code SubmissionManager} instance.
@@ -98,9 +99,7 @@ public class SubmissionManager {
             @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
         this.submittedTxns = requireNonNull(deduplicationCache);
-
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        this.isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;
+        this.configProvider = requireNonNull(configProvider);
 
         final var statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
         this.platformTxnRejections =
@@ -130,7 +129,9 @@ public class SubmissionManager {
         // FUTURE This should be deprecated and removed. We do not want this in our production system.
         if (txBody.hasUncheckedSubmit()) {
             // We do NOT allow this call in production!
-            if (isProduction) {
+            // check profile dynamically, this way we allow profile overriding in Hapi tests
+            final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+            if (Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD) {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
 
