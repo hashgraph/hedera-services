@@ -105,7 +105,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleWorkflowTest extends AppTestBase {
 
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
-    private static final Instant TX_CONSENSUS_NOW = CONSENSUS_NOW.minusNanos(1000 + 3);
+    private static final Instant TX_CONSENSUS_NOW = CONSENSUS_NOW.minusNanos(1000 - 3);
 
     private static final long CONFIG_VERSION = 11L;
 
