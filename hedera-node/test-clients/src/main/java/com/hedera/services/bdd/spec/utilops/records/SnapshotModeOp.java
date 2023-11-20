@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_EXTRA_TRANSACTION_FEE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -737,6 +738,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
+        } else if("transactionFee".equals(expectedName)){
+            return matchModes.contains(ALLOW_EXTRA_TRANSACTION_FEE);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }
