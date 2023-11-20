@@ -1,6 +1,6 @@
 #!/bin/bash -x
 #
-
+# Launch test client for nightly service performance test
 Usage() {
     echo " "
     echo "Usage: <test-config>"

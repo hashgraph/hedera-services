@@ -106,9 +106,4 @@ jobs:
       - name: Call Test Script
         id: call-test-script
         run: |
-          printf "Work space : \t\t${{ github.workspace }}"
-          printf "Script : \t\t${{ env.TEST_SCRIPT }}"
-          printf "User : \t\t${{ env.USERNAME }}"
-          printf "Password : \t\t${{ env.PASSWORD }}"
-          printf "Server : \t\t${{ env.SERVER }}"
           bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ env.VERSION_SERVICE }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
