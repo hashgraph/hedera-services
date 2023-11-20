@@ -192,4 +192,11 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
             throw new ReferenceCountException("This ReservedSignedState has been closed.");
         }
     }
+
+    /**
+     * Check if this reservation has been closed.
+     */
+    public boolean isClosed() {
+        return closed;
+    }
 }
