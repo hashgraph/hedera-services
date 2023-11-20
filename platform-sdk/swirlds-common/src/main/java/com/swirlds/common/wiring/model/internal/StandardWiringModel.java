@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
@@ -45,7 +46,7 @@ import java.util.Set;
  */
 public class StandardWiringModel implements WiringModel {
 
-    private final PlatformContext platformContext;
+    private final Metrics metrics;
     private final Time time;
 
     /**
@@ -81,11 +82,11 @@ public class StandardWiringModel implements WiringModel {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
+     * @param metrics        provides metrics
      * @param time            provides wall clock time
      */
-    public StandardWiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        this.platformContext = Objects.requireNonNull(platformContext);
+    public StandardWiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
+        this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
     }
 
@@ -104,7 +105,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
-        return new TaskSchedulerMetricsBuilder(platformContext.getMetrics(), time);
+        return new TaskSchedulerMetricsBuilder(metrics, time);
     }
 
     /**
