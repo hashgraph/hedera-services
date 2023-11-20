@@ -174,9 +174,15 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         Account.newBuilder()
                                 .accountId(OWNER_ID)
                                 .alias(OWNER_ADDRESS)
+                                .key(AN_ED25519_KEY)
                                 .tinybarBalance(100_000_000L)
                                 .build());
-                put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
+                put(
+                        RECEIVER_ID,
+                        Account.newBuilder()
+                                .accountId(RECEIVER_ID)
+                                .key(AN_ED25519_KEY)
+                                .build());
             }
         };
     }

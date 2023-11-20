@@ -19,10 +19,10 @@ package com.hedera.node.config.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.RetentionPolicy;
 import org.junit.jupiter.api.Test;

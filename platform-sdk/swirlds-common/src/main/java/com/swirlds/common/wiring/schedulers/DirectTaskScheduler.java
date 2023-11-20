@@ -18,11 +18,10 @@ package com.swirlds.common.wiring.schedulers;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -51,7 +50,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param stateless                true if the work scheduled by this object is stateless
      */
     public DirectTaskScheduler(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
@@ -86,7 +85,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         handleAndOffRamp(handler, data);
     }
@@ -95,7 +94,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
@@ -108,7 +107,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         handleAndOffRamp(handler, data);
     }
@@ -119,7 +118,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param handler the handler
      * @param data    the data
      */
-    private void handleAndOffRamp(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    private void handleAndOffRamp(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         busyTimer.activate();
         try {
             handler.accept(data);

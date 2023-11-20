@@ -82,6 +82,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import org.assertj.core.api.Assertions;
@@ -116,6 +117,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             @Override
             public long getNewTotalSupply() {
                 return newTotalSupply;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
+                return this;
             }
 
             @NotNull
