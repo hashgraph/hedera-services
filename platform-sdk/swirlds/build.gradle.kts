@@ -32,17 +32,18 @@ tasks.copyApp {
 
 tasks.jar {
     // Gradle fails to track 'configurations.runtimeClasspath' as an input to the task if it is
-    // only used in the 'mainfest.attributes'. Hence, we explicitly add it as input.
+    // only used in the 'manifest.attributes'. Hence, we explicitly add it as input.
     inputs.files(configurations.runtimeClasspath)
-    manifest {
-        attributes(
-            "Class-Path" to
-                configurations.runtimeClasspath.get().elements.map { entry ->
-                    entry
-                        .map { "data/lib/" + it.asFile.name }
+    doFirst {
+        manifest {
+            attributes(
+                "Class-Path" to
+                    inputs.files
+                        .filter { it.extension == "jar" }
+                        .map { "data/lib/" + it.name }
                         .sorted()
                         .joinToString(separator = " ")
-                }
-        )
+            )
+        }
     }
 }
