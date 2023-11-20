@@ -21,7 +21,6 @@ import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.GAUGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
@@ -80,7 +79,7 @@ class DurationGaugeTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(GAUGE);
+        assertThat(sut.getMetricType()).isEqualTo("GAUGE");
     }
 
     @Test

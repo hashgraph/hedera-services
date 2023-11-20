@@ -21,7 +21,6 @@ import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.RUNNING_AVERAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
@@ -80,7 +79,7 @@ class RunningAverageMetricTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(RUNNING_AVERAGE);
+        assertThat(sut.getMetricType()).isEqualTo("RUNNING_AVERAGE");
     }
 
     @Test

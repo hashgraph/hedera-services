@@ -21,7 +21,6 @@ import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.SPEEDOMETER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +82,7 @@ class SpeedometerMetricTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(SPEEDOMETER);
+        assertThat(sut.getMetricType()).isEqualTo("SPEEDOMETER");
     }
 
     @Test

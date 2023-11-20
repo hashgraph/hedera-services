@@ -20,7 +20,6 @@ import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.STAT_ENTRY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
@@ -178,7 +177,7 @@ class StatEntryTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(STAT_ENTRY);
+        assertThat(sut.getMetricType()).isEqualTo("STAT_ENTRY");
     }
 
     @Test
