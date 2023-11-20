@@ -36,9 +36,9 @@ public record EthTxData(
         EthTransactionType type,
         byte[] chainId,
         long nonce,
-        byte[] gasPrice,
-        byte[] maxPriorityGas,
-        byte[] maxGas,
+        byte[] gasPrice, // weibar
+        byte[] maxPriorityGasPrice, // weibar
+        byte[] maxGasPrice, // weibar
         long gasLimit,
         byte[] to,
         BigInteger value,
@@ -49,7 +49,7 @@ public record EthTxData(
         byte[] r,
         byte[] s) {
 
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    public static final BigInteger ONE_TINYBAR_AS_WEIBARS = BigInteger.valueOf(10_000_000_000L);
 
     // Copy of constants from besu-native, remove when next besu-native publishes
     static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
@@ -82,8 +82,8 @@ public record EthTxData(
                 chainId,
                 nonce,
                 gasPrice,
-                maxPriorityGas,
-                maxGas,
+                maxPriorityGasPrice,
+                maxGasPrice,
                 gasLimit,
                 to,
                 value,
@@ -103,8 +103,8 @@ public record EthTxData(
                 chainId,
                 nonce,
                 replacementGasPrice.toByteArray(),
-                maxPriorityGas,
-                maxGas,
+                maxPriorityGasPrice,
+                maxGasPrice,
                 gasLimit,
                 to,
                 value,
@@ -124,8 +124,8 @@ public record EthTxData(
                 chainId,
                 nonce,
                 gasPrice,
-                maxPriorityGas,
-                maxGas,
+                maxPriorityGasPrice,
+                maxGasPrice,
                 gasLimit,
                 to,
                 replacementValue,
@@ -171,8 +171,8 @@ public record EthTxData(
                     List.of(
                             chainId,
                             Integers.toBytes(nonce),
-                            maxPriorityGas,
-                            maxGas,
+                            maxPriorityGasPrice,
+                            maxGasPrice,
                             Integers.toBytes(gasLimit),
                             to,
                             Integers.toBytesUnsigned(value),
@@ -185,13 +185,13 @@ public record EthTxData(
     }
 
     public long getAmount() {
-        return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
+        return value.divide(ONE_TINYBAR_AS_WEIBARS).longValueExact();
     }
 
-    public BigInteger getMaxGasAsBigInteger() {
+    public BigInteger getMaxGasPriceAsBigInteger() {
         return switch (type) {
             case LEGACY_ETHEREUM, EIP2930 -> new BigInteger(1, gasPrice);
-            case EIP1559 -> new BigInteger(1, maxGas);
+            case EIP1559 -> new BigInteger(1, maxGasPrice);
         };
     }
 
@@ -206,7 +206,7 @@ public record EthTxData(
      */
     public long effectiveOfferedGasPriceInTinybars() {
         return BigInteger.valueOf(Long.MAX_VALUE / gasLimit)
-                .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
+                .min(getMaxGasPriceAsBigInteger().divide(ONE_TINYBAR_AS_WEIBARS))
                 .longValueExact();
     }
 
@@ -221,7 +221,7 @@ public record EthTxData(
      */
     public long effectiveTinybarValue() {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(value.divide(WEIBARS_TO_TINYBARS))
+                .min(value.divide(ONE_TINYBAR_AS_WEIBARS))
                 .longValueExact();
     }
 
@@ -249,8 +249,8 @@ public record EthTxData(
                 && (type == ethTxData.type)
                 && (Arrays.equals(chainId, ethTxData.chainId))
                 && (Arrays.equals(gasPrice, ethTxData.gasPrice))
-                && (Arrays.equals(maxPriorityGas, ethTxData.maxPriorityGas))
-                && (Arrays.equals(maxGas, ethTxData.maxGas))
+                && (Arrays.equals(maxPriorityGasPrice, ethTxData.maxPriorityGasPrice))
+                && (Arrays.equals(maxGasPrice, ethTxData.maxGasPrice))
                 && (Arrays.equals(to, ethTxData.to))
                 && (Objects.equals(value, ethTxData.value))
                 && (Arrays.equals(callData, ethTxData.callData))
@@ -267,8 +267,8 @@ public record EthTxData(
         result = 31 * result + Arrays.hashCode(chainId);
         result = 31 * result + (int) (nonce ^ (nonce >>> 32));
         result = 31 * result + Arrays.hashCode(gasPrice);
-        result = 31 * result + Arrays.hashCode(maxPriorityGas);
-        result = 31 * result + Arrays.hashCode(maxGas);
+        result = 31 * result + Arrays.hashCode(maxPriorityGasPrice);
+        result = 31 * result + Arrays.hashCode(maxGasPrice);
         result = 31 * result + (int) (gasLimit ^ (gasLimit >>> 32));
         result = 31 * result + Arrays.hashCode(to);
         result = 31 * result + (value != null ? value.hashCode() : 0);
@@ -289,8 +289,10 @@ public record EthTxData(
                 .add("chainId", chainId == null ? null : Hex.encodeHexString(chainId))
                 .add("nonce", nonce)
                 .add("gasPrice", gasPrice == null ? null : Hex.encodeHexString(gasPrice))
-                .add("maxPriorityGas", maxPriorityGas == null ? null : Hex.encodeHexString(maxPriorityGas))
-                .add("maxGas", maxGas == null ? null : Hex.encodeHexString(maxGas))
+                .add(
+                        "maxPriorityGasPrice",
+                        maxPriorityGasPrice == null ? null : Hex.encodeHexString(maxPriorityGasPrice))
+                .add("maxGasPrice", maxGasPrice == null ? null : Hex.encodeHexString(maxGasPrice))
                 .add("gasLimit", gasLimit)
                 .add("to", to == null ? null : Hex.encodeHexString(to))
                 .add("value", value)
@@ -323,8 +325,8 @@ public record EthTxData(
                 chainId,
                 nonce,
                 gasPrice,
-                maxPriorityGas,
-                maxGas,
+                maxPriorityGasPrice,
+                maxGasPrice,
                 gasLimit,
                 to,
                 value,
@@ -361,8 +363,8 @@ public record EthTxData(
                 chainId,
                 rlpList.get(0).asLong(), // nonce
                 rlpList.get(1).asBytes(), // gasPrice
-                null, // maxPriorityGas
-                null, // maxGas
+                null, // maxPriorityGasPrice
+                null, // maxGasPrice
                 rlpList.get(2).asLong(), // gasLimit
                 rlpList.get(3).data(), // to
                 rlpList.get(4).asBigInt(), // value
@@ -396,8 +398,8 @@ public record EthTxData(
                 rlpList.get(0).data(), // chainId
                 rlpList.get(1).asLong(), // nonce
                 null, // gasPrice
-                rlpList.get(2).data(), // maxPriorityGas
-                rlpList.get(3).data(), // maxGas
+                rlpList.get(2).data(), // maxPriorityGasPrice
+                rlpList.get(3).data(), // maxGasPrice
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
                 rlpList.get(6).asBigInt(), // value
@@ -431,8 +433,8 @@ public record EthTxData(
                 rlpList.get(0).data(), // chainId
                 rlpList.get(1).asLong(), // nonce
                 rlpList.get(2).data(), // gasPrice
-                null, // maxPriorityGas
-                null, // maxGas
+                null, // maxPriorityGasPrice
+                null, // maxGasPrice
                 rlpList.get(3).asLong(), // gasLimit
                 rlpList.get(4).data(), // to
                 rlpList.get(5).asBigInt(), // value

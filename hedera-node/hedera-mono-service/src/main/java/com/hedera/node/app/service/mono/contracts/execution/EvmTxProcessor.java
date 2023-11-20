@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.ONE_TINYBAR_AS_WEIBARS;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -285,13 +285,13 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableRelayer.decrementBalance(gasCost);
                     allowanceCharged = gasCost;
-                } else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice))
+                } else if (userOfferedGasPrice.divide(ONE_TINYBAR_AS_WEIBARS).compareTo(BigInteger.valueOf(gasPrice))
                         < 0) {
                     // If sender gas price < current gas price, pay the difference from gas
                     // allowance
                     final var senderFee = Wei.of(userOfferedGasPrice
                             .multiply(BigInteger.valueOf(gasLimit))
-                            .divide(WEIBARS_TO_TINYBARS));
+                            .divide(ONE_TINYBAR_AS_WEIBARS));
                     validateTrue(senderAccount.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     final var remainingFee = gasCost.subtract(senderFee);
                     validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);

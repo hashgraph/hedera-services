@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.ONE_TINYBAR_AS_WEIBARS;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -567,7 +567,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -617,7 +617,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -704,7 +704,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -744,7 +744,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -784,7 +784,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -815,7 +815,7 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long offeredGasPrice = 10L;
         final int gasLimit = 1000;
-        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS);
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -848,7 +848,7 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long offeredGasPrice = 10L;
         final int gasLimit = 1000;
-        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS);
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -882,7 +882,7 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long offeredGasPrice = 10L;
         final int gasLimit = 1000;
-        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS);
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -926,7 +926,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -953,7 +953,7 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long offeredGasPrice = 0L;
         final int gasLimit = 1000;
-        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS);
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -988,7 +988,7 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long offeredGasPrice = 0L;
         final int gasLimit = 1000;
-        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS);
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -1031,7 +1031,7 @@ class CallEvmTxProcessorTest {
                 1234L,
                 Bytes.EMPTY,
                 consensusTime,
-                BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS),
+                BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS),
                 relayer,
                 10 * ONE_HBAR);
 
@@ -1060,7 +1060,7 @@ class CallEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long offeredGasPrice = 50L;
         final int gasLimit = 1000;
-        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(ONE_TINYBAR_AS_WEIBARS);
 
         assertThrows(
                 InvalidTransactionException.class,

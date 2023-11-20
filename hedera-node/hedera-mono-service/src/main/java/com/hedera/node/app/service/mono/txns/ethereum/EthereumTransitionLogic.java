@@ -121,7 +121,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
                 INVALID_ETHEREUM_TRANSACTION);
         final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
         final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
-        final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
+        final var userOfferedGasPrice = ethTxData.getMaxGasPriceAsBigInteger();
 
         // Revoke the relayer's key for Ethereum operations
         txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());

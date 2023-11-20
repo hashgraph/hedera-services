@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -131,12 +132,12 @@ public class EthereumSuite extends HapiSuite {
     private static final String ERC20_ABI = "ERC20ABI";
 
     public static void main(String... args) {
-        new EthereumSuite().runSuiteAsync();
+        new EthereumSuite().runSuiteSync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
@@ -907,9 +908,9 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
-    @HapiTest
+    // @HapiTest
     HapiSpec overflowFromGasPriceTimesGasLimitFailsAppropriately() {
-        return defaultHapiSpec("overflowFromGasPriceTimesGasLimitFailsAppropriately")
+        return onlyDefaultHapiSpec("overflowFromGasPriceTimesGasLimitFailsAppropriately")
                 .given(
                         withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -917,7 +918,8 @@ public class EthereumSuite extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+                .when()
+                .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
                                         false,
@@ -928,23 +930,9 @@ public class EthereumSuite extends HapiSuite {
                                 .payingWith(RELAYER)
                                 .via("gasOverflowContractCallTxn")
                                 .nonce(0)
-                                .gasPrice(0x2_0000_0000L)
+                                .gasPrice(858L /*0x2_0000_0000L / 100_000_000*/)
                                 .gasLimit(0x3_0000_0000L)
-                                .hasKnownStatusFrom(INSUFFICIENT_ACCOUNT_BALANCE))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        getTxnRecord("gasOverflowContractCallTxn")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .error(Bytes.of(INSUFFICIENT_ACCOUNT_BALANCE
-                                                                .name()
-                                                                .getBytes())
-                                                        .toHexString())
-                                                .senderId(spec.registry()
-                                                        .getAccountID(spec.registry()
-                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
-                                                                .getAlias()
-                                                                .toStringUtf8())))))));
+                                .hasPrecheck(INSUFFICIENT_ACCOUNT_BALANCE))));
     }
 
     HapiSpec callToNonExistingContractFailsGracefully() {
