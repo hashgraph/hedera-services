@@ -81,8 +81,8 @@ public class StandardWiringModel implements WiringModel {
     /**
      * Constructor.
      *
-     * @param metrics        provides metrics
-     * @param time            provides wall clock time
+     * @param metrics provides metrics
+     * @param time    provides wall clock time
      */
     public StandardWiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
         this.metrics = Objects.requireNonNull(metrics);
