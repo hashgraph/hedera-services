@@ -56,7 +56,6 @@ import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -318,12 +317,8 @@ public interface ContractsV_0_45Module {
             final @V_0_45 Provider<MessageCallProcessor> mcp,
             final @V_0_45 Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_45Module.EVM_VERSION_0_45, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_45Module.EVM_VERSION_0_45, ccp);
         return () -> new HederaCallLocalEvmTxProcessorV045(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, aliasManager);
     }
 
     @Provides
@@ -348,18 +343,14 @@ public interface ContractsV_0_45Module {
             final @V_0_45 Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_45Module.EVM_VERSION_0_45, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_45Module.EVM_VERSION_0_45, ccp);
         return () -> new HederaCallEvmTxProcessorV045(
                 worldState,
                 livePricesSource,
                 codeCache,
                 dynamicProperties,
                 gasCalculator,
-                mcps,
-                ccps,
+                mcp,
+                ccp,
                 aliasManager,
                 blockMetaSource);
     }
