@@ -26,6 +26,7 @@ import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,11 @@ public class LogLevelTest {
         return new TestConfigBuilder()
                 .withConverter(new MarkerStateConverter())
                 .withConverter(new ConfigLevelConverter());
+    }
+
+    @AfterEach
+    void flushSystemError() {
+        systemErrProvider.getLines().forEach(System.err::println);
     }
 
     @Test
