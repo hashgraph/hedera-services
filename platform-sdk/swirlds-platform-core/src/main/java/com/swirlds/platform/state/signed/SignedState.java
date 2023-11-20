@@ -310,6 +310,19 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
+     * Try to increment the reservation count.
+     */
+    boolean tryIncrementReservationCount(@NonNull final String reason, final long reservationId) {
+        if (!reservations.tryReserve()) {
+            return false;
+        }
+        if (history != null) {
+            history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        }
+        return true;
+    }
+
+    /**
      * Decrement reservation count.
      */
     void decrementReservationCount(@NonNull final String reason, final long reservationId) {
