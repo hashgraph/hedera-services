@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -27,6 +28,7 @@ import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -46,6 +48,7 @@ import java.util.concurrent.Future;
  * @param txInfo Information about the transaction that is being handled. If the transaction was not parseable, then
  *               this will be null, and an appropriate error status will be set.
  * @param requiredKeys The set of cryptographic keys that are required to be present.
+ * @param optionalKeys The set of cryptographic keys that are optional to be present.
  * @param hollowAccounts The set of required hollow accounts to be finalized
  * @param verificationResults A map of {@link Future<SignatureVerificationFuture>} yielding the
  *                            {@link SignatureVerificationFuture} for a given cryptographic key. Ony cryptographic keys
@@ -60,10 +63,27 @@ public record PreHandleResult(
         @NonNull ResponseCodeEnum responseCode,
         @Nullable TransactionInfo txInfo,
         @Nullable Set<Key> requiredKeys,
+        @Nullable Set<Key> optionalKeys,
         @Nullable Set<Account> hollowAccounts,
         @Nullable Map<Key, SignatureVerificationFuture> verificationResults,
         @Nullable PreHandleResult innerResult,
         long configVersion) {
+
+    public Set<Key> getRequiredKeys() {
+        return requiredKeys == null ? Collections.emptySet() : requiredKeys;
+    }
+
+    public Set<Key> getOptionalKeys() {
+        return optionalKeys == null ? Collections.emptySet() : optionalKeys;
+    }
+
+    public Key getPayerKey() {
+        return payerKey == null ? IMMUTABILITY_SENTINEL_KEY : payerKey;
+    }
+
+    public Set<Account> getHollowAccounts() {
+        return hollowAccounts == null ? Collections.emptySet() : hollowAccounts;
+    }
 
     /**
      * An enumeration of all possible types of pre-handle results.
@@ -109,7 +129,7 @@ public record PreHandleResult(
     @NonNull
     public static PreHandleResult unknownFailure() {
         return new PreHandleResult(
-                null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, null, null, UNKNOWN_VERSION);
+                null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, null, null, null, UNKNOWN_VERSION);
     }
 
     /**
@@ -138,6 +158,7 @@ public record PreHandleResult(
                 null,
                 null,
                 null,
+                null,
                 UNKNOWN_VERSION);
     }
 
@@ -159,6 +180,7 @@ public record PreHandleResult(
             @NonNull final ResponseCodeEnum responseCode,
             @NonNull final TransactionInfo txInfo,
             @Nullable Set<Key> requiredKeys,
+            @Nullable Set<Key> optionalKeys,
             @Nullable Set<Account> hollowAccounts,
             @Nullable Map<Key, SignatureVerificationFuture> verificationResults) {
         return new PreHandleResult(
@@ -168,6 +190,7 @@ public record PreHandleResult(
                 responseCode,
                 txInfo,
                 requiredKeys,
+                optionalKeys,
                 hollowAccounts,
                 verificationResults,
                 null,
