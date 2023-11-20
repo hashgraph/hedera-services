@@ -33,8 +33,6 @@ import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_34;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallEvmTxProcessorV030;
-import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV030;
 import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
@@ -56,7 +54,6 @@ import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -304,12 +301,8 @@ public interface ContractsV_0_34Module {
             final @V_0_34 Provider<MessageCallProcessor> mcp,
             final @V_0_34 Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_34Module.EVM_VERSION_0_34, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_34Module.EVM_VERSION_0_34, ccp);
-        return () -> new HederaCallLocalEvmTxProcessorV030(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+        return () -> new CallLocalEvmTxProcessor(
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, aliasManager);
     }
 
     @Provides
@@ -334,18 +327,14 @@ public interface ContractsV_0_34Module {
             final @V_0_34 Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        final var mcps = new HashMap<String, Provider<MessageCallProcessor>>();
-        mcps.put(ContractsV_0_34Module.EVM_VERSION_0_34, mcp);
-        final var ccps = new HashMap<String, Provider<ContractCreationProcessor>>();
-        ccps.put(ContractsV_0_34Module.EVM_VERSION_0_34, ccp);
-        return () -> new HederaCallEvmTxProcessorV030(
+        return () -> new CallEvmTxProcessor(
                 worldState,
                 livePricesSource,
                 codeCache,
                 dynamicProperties,
                 gasCalculator,
-                mcps,
-                ccps,
+                mcp,
+                ccp,
                 aliasManager,
                 blockMetaSource);
     }
