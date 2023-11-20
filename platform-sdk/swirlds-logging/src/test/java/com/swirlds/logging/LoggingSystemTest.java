@@ -25,6 +25,7 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggerImpl;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
@@ -233,6 +234,7 @@ public class LoggingSystemTest {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("logging.level", "ERROR")
                 .withValue("logging.level.test", "TRACE")
+                .withConverter(new ConfigLevelConverter())
                 .getOrCreateConfig();
 
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);

@@ -16,8 +16,6 @@
 
 package com.swirlds.logging;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.swirlds.base.test.fixtures.io.SystemErrProvider;
 import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
@@ -29,6 +27,8 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @WithSystemError
 public class LogLevelTest {
@@ -80,7 +80,7 @@ public class LogLevelTest {
                 // Markers
                 .withValue("logging.marker.baz", "ENABLED")
                 .withValue("logging.marker.bum", "DISABLED")
-                .withValue("logging.marker.peng", "INHERIT")
+                .withValue("logging.marker.peng", "UNDEFINED")
                 // Handler Markers
                 .withValue("logging.handler.HANDLER1.marker.peng", "DISABLED")
                 .withValue("logging.handler.HANDLER2.marker.peng", "ENABLED")
@@ -154,7 +154,7 @@ public class LogLevelTest {
         final Configuration configuration = createDefaultBuilder()
                 .withValue("logging.level", "OFF")
                 .withValue("logging.handler.HANDLER1.marker.M", "ENABLED")
-                .withValue("logging.handler.HANDLER2.marker.M", "INHERIT")
+                .withValue("logging.handler.HANDLER2.marker.M", "UNDEFINED")
                 .getOrCreateConfig();
 
         final HandlerLoggingLevelConfig config1 = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
