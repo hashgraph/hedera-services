@@ -19,8 +19,8 @@ package com.swirlds.common.wiring.schedulers;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -35,7 +35,7 @@ import java.util.Timer;
  */
 public class HeartbeatScheduler implements Startable, Stoppable {
 
-    private final WiringModel model;
+    private final StandardWiringModel model;
     private final Time time;
     private final String name;
     private final Timer timer = new Timer();
@@ -49,7 +49,8 @@ public class HeartbeatScheduler implements Startable, Stoppable {
      * @param time  provides wall clock time
      * @param name  the name of the heartbeat scheduler
      */
-    public HeartbeatScheduler(@NonNull final WiringModel model, @NonNull final Time time, @NonNull final String name) {
+    public HeartbeatScheduler(
+            @NonNull final StandardWiringModel model, @NonNull final Time time, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
         this.time = Objects.requireNonNull(time);
         this.name = Objects.requireNonNull(name);
