@@ -56,6 +56,7 @@ public interface TransactionConfigModule {
     static EntitiesConfig provideEntitiesConfig(@NonNull final Configuration configuration) {
         return requireNonNull(configuration).getConfigData(EntitiesConfig.class);
     }
+
     @Provides
     @TransactionScope
     static TokensConfig provideTokensConfig(@NonNull final Configuration configuration) {

@@ -96,7 +96,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         createdContractIds = contractChangeSummary.newContractIds();
 
         // If nonces externalization is enabled, we need to capture the updated nonces
-        if(contractsConfig.noncesExternalizationEnabled()) {
+        if (contractsConfig.noncesExternalizationEnabled()) {
             updatedContractNonces = contractChangeSummary.updatedContractNonces();
         }
 
