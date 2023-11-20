@@ -458,8 +458,6 @@ public class SwirldsPlatform implements Platform {
                 roundToIgnore));
 
         components.add(new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 selfId,
                 platformStatusManager,
@@ -1275,8 +1273,6 @@ public class SwirldsPlatform implements Platform {
                 new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg),
                 StackTrace.getStackTrace().toString(),
                 throwable);
-        // Let the state management component attempt to handle the fatal error
-        stateManagementComponent.onFatalError();
 
         SystemExitUtils.exitSystem(exitCode, msg);
     }
