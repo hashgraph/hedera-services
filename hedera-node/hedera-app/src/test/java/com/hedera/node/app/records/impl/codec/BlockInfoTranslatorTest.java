@@ -33,6 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class BlockInfoTranslatorTest {
+    private static final Timestamp CONSENSUS_TIME =
+            Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build();
 
     private com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext subject;
 
@@ -50,39 +52,54 @@ class BlockInfoTranslatorTest {
 
     @Test
     void createBlockInfoFromMerkleNetworkContext() throws IOException {
-
         final BlockInfo blockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(subject);
 
-        assertEquals(getExpectedBlockInfo(), blockInfo);
+        assertEquals(getBaseExpectedBlockInfo().build(), blockInfo);
     }
 
     @Test
     void createBlockInfoFromMerkleNetworkContextWithEmptyTime() throws IOException {
-
         subject.setFirstConsTimeOfCurrentBlock(null);
         final BlockInfo blockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(subject);
 
-        assertEquals(getExpectedBlockInfoWithoutTime(), blockInfo);
+        assertEquals(getExpectedBlockInfoWithoutTime().build(), blockInfo);
     }
 
-    private BlockInfo getExpectedBlockInfo() {
+    @Test
+    void createBlockInfoFromMerkleNetworkContextWithLastHandledTime() throws IOException {
+        subject.setConsensusTimeOfLastHandledTxn(
+                Instant.ofEpochSecond(CONSENSUS_TIME.seconds(), CONSENSUS_TIME.nanos()));
+        final BlockInfo blockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(subject);
+
+        assertEquals(
+                getBaseExpectedBlockInfo()
+                        .consTimeOfLastHandledTxn(CONSENSUS_TIME)
+                        .build(),
+                blockInfo);
+    }
+
+    @Test
+    void createBlockInfoFromMerkleNetworkContextWithMigrationRecordsStreamed() throws IOException {
+        subject.setMigrationRecordsStreamed(true);
+        final BlockInfo blockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(subject);
+
+        assertEquals(getBaseExpectedBlockInfo().migrationRecordsStreamed(true).build(), blockInfo);
+    }
+
+    private BlockInfo.Builder getBaseExpectedBlockInfo() {
         byte[] result = ByteBuffer.allocate(
                         "hash1".getBytes().length + "hash2".getBytes().length + "hash3".getBytes().length)
                 .put("hash1".getBytes())
                 .put("hash2".getBytes())
                 .put("hash3".getBytes())
                 .array();
-        return new BlockInfo(
-                5L, Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build(), Bytes.wrap(result));
+        return BlockInfo.newBuilder()
+                .lastBlockNumber(5L)
+                .firstConsTimeOfLastBlock(CONSENSUS_TIME)
+                .blockHashes(Bytes.wrap(result));
     }
 
-    private BlockInfo getExpectedBlockInfoWithoutTime() {
-        byte[] result = ByteBuffer.allocate(
-                        "hash1".getBytes().length + "hash2".getBytes().length + "hash3".getBytes().length)
-                .put("hash1".getBytes())
-                .put("hash2".getBytes())
-                .put("hash3".getBytes())
-                .array();
-        return new BlockInfo(5L, null, Bytes.wrap(result));
+    private BlockInfo.Builder getExpectedBlockInfoWithoutTime() {
+        return getBaseExpectedBlockInfo().firstConsTimeOfLastBlock((Timestamp) null);
     }
 }
