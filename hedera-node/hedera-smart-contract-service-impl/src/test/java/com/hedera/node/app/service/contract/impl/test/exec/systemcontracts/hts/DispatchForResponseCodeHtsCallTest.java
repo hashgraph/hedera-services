@@ -99,10 +99,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
                 .willReturn(123L);
-        given(recordBuilder.status())
-                .willReturn(INVALID_ACCOUNT_ID)
-                .willReturn(INVALID_ACCOUNT_ID)
-                .willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        given(recordBuilder.status()).willReturn(INVALID_ACCOUNT_ID).willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         given(failureCustomizer.customize(TransactionBody.DEFAULT, INVALID_ACCOUNT_ID, mockEnhancement()))
                 .willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
