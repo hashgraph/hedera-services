@@ -20,6 +20,7 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
@@ -50,7 +51,7 @@ import java.util.Set;
  */
 public class WiringModel implements Startable, Stoppable {
 
-    private final PlatformContext platformContext;
+    private final Metrics metrics;
     private final Time time;
 
     /**
@@ -76,11 +77,11 @@ public class WiringModel implements Startable, Stoppable {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param time            provides wall clock time
+     * @param metrics the metrics
+     * @param time    provides wall clock time
      */
-    private WiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        this.platformContext = Objects.requireNonNull(platformContext);
+    private WiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
+        this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
     }
 
@@ -93,7 +94,19 @@ public class WiringModel implements Startable, Stoppable {
      */
     @NonNull
     public static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        return new WiringModel(platformContext, time);
+        return new WiringModel(Objects.requireNonNull(platformContext).getMetrics(), time);
+    }
+
+    /**
+     * Build a new wiring model instance.
+     *
+     * @param metrics the metrics
+     * @param time            provides wall clock time
+     * @return a new wiring model instance
+     */
+    @NonNull
+    public static WiringModel create(@NonNull final Metrics metrics, @NonNull final Time time) {
+        return new WiringModel(metrics, time);
     }
 
     /**
@@ -117,7 +130,7 @@ public class WiringModel implements Startable, Stoppable {
      */
     @NonNull
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
-        return new TaskSchedulerMetricsBuilder(platformContext.getMetrics(), time);
+        return new TaskSchedulerMetricsBuilder(metrics, time);
     }
 
     /**

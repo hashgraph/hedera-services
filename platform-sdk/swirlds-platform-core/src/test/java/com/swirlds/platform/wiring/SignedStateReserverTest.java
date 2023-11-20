@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
@@ -30,7 +32,6 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.test.framework.TestWiringModelBuilder;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -49,7 +50,7 @@ class SignedStateReserverTest {
                 "create",
                 false);
 
-        final WiringModel model = TestWiringModelBuilder.create();
+        final WiringModel model = WiringModel.create(new NoOpMetrics(), Time.getCurrent());
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
