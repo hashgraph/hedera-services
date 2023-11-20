@@ -30,10 +30,8 @@ class SignedStateNexusTest {
     @Test
     void basicUsage() {
         final int round = 123;
-        final ReservedSignedState original = new RandomSignedStateGenerator()
-                .setRound(round)
-                .build()
-                .reserve("test");
+        final ReservedSignedState original =
+                new RandomSignedStateGenerator().setRound(round).build().reserve("test");
         final SignedStateNexus nexus = new SignedStateNexus();
 
         assertNull(nexus.getState("reason"), "Should be null when initialized");
@@ -61,7 +59,8 @@ class SignedStateNexusTest {
         final ReservedSignedState reservedSignedState = realState();
         nexus.setState(reservedSignedState);
         reservedSignedState.close();
-        assertNull(nexus.getState("reason"), "The nexus has a state, but it cannot be reserved, so it should return null");
+        assertNull(
+                nexus.getState("reason"), "The nexus has a state, but it cannot be reserved, so it should return null");
     }
 
     /**
@@ -110,16 +109,14 @@ class SignedStateNexusTest {
         assertSame(state2child, threadGetResult.get(), "The nexus should have returned the child of state2");
     }
 
-    private static ReservedSignedState mockState(){
+    private static ReservedSignedState mockState() {
         final ReservedSignedState state = Mockito.mock(ReservedSignedState.class);
         final SignedState ss = new RandomSignedStateGenerator().build();
         Mockito.when(state.get()).thenReturn(ss);
         return state;
     }
 
-    private static ReservedSignedState realState(){
-        return new RandomSignedStateGenerator()
-                .build()
-                .reserve("test");
+    private static ReservedSignedState realState() {
+        return new RandomSignedStateGenerator().build().reserve("test");
     }
 }

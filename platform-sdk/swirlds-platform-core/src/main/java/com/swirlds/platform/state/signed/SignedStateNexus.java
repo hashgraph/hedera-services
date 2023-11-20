@@ -70,8 +70,7 @@ public class SignedStateNexus implements Consumer<ReservedSignedState>, Clearabl
         currentStateRound.set(
                 reservedSignedState == null
                         ? ConsensusConstants.ROUND_UNDEFINED
-                        : reservedSignedState.get().getRound()
-        );
+                        : reservedSignedState.get().getRound());
         if (oldState != null) {
             oldState.close();
         }
