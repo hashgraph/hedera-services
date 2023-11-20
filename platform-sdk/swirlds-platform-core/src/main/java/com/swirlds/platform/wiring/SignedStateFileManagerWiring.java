@@ -20,6 +20,7 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
@@ -38,8 +39,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record SignedStateFileManagerWiring(
         @NonNull OutputWire<StateSavingResult> outputWire,
-        @NonNull BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
-        @NonNull BindableInputWire<StateDumpRequest, Void> dumpStateToDisk) {
+        @NonNull InputWire<ReservedSignedState> saveStateToDisk,
+        @NonNull InputWire<StateDumpRequest> dumpStateToDisk) {
     /**
      * Create a new instance of the wiring
      *
@@ -58,12 +59,15 @@ public record SignedStateFileManagerWiring(
      * @param signedStateFileManager the signed state file manager
      */
     public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
-        saveStateToDisk.bind(signedStateFileManager::saveStateTask);
-        dumpStateToDisk.bind(signedStateFileManager::dumpStateTask);
+        ((BindableInputWire<ReservedSignedState, StateSavingResult>) saveStateToDisk)
+                .bind(signedStateFileManager::saveStateTask);
+        ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk)
+                .bind(signedStateFileManager::dumpStateTask);
     }
 
     /**
      * Solder the {@link SignedStateFileManager} to the pre-consensus event writer
+     *
      * @param preconsensusEventWriter the pre-consensus event writer
      */
     public void solderPces(@NonNull final PreconsensusEventWriter preconsensusEventWriter) {
@@ -77,6 +81,7 @@ public record SignedStateFileManagerWiring(
 
     /**
      * Solder the {@link SignedStateFileManager} to the platform status manager
+     *
      * @param statusManager the platform status manager
      */
     public void solderStatusManager(@NonNull final PlatformStatusManager statusManager) {
@@ -87,6 +92,7 @@ public record SignedStateFileManagerWiring(
 
     /**
      * Solder the {@link SignedStateFileManager} to the app communication component
+     *
      * @param appCommunicationComponent the app communication component
      */
     public void solderAppCommunication(@NonNull final AppCommunicationComponent appCommunicationComponent) {
