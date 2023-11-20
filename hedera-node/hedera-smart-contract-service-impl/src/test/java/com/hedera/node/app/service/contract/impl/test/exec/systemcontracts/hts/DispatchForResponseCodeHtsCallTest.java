@@ -78,7 +78,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
                 .willReturn(123L);
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var pricedResult = subject.execute(frame);
+        final var pricedResult = subject.execute();
         final var contractResult = pricedResult.fullResult().result().getOutput();
         assertArrayEquals(ReturnTypes.encodedRc(SUCCESS).array(), contractResult.toArray());
 
@@ -100,7 +100,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
         given(failureCustomizer.customize(TransactionBody.DEFAULT, INVALID_ACCOUNT_ID, mockEnhancement()))
                 .willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        final var pricedResult = subject.execute(frame);
+        final var pricedResult = subject.execute();
         final var contractResult = pricedResult.fullResult().result().getOutput();
         assertArrayEquals(
                 ReturnTypes.encodedRc(INVALID_TREASURY_ACCOUNT_FOR_TOKEN).array(), contractResult.toArray());
