@@ -86,7 +86,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-//@HapiTestSuite
+@HapiTestSuite
 public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoApproveAllowanceSuite.class);
@@ -220,7 +220,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec canDeleteAllowanceFromDeletedSpender() {
-        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
+        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -546,7 +546,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec invalidOwnerFails() {
-        return defaultHapiSpec("invalidOwnerFails")
+        return defaultHapiSpec("invalidOwnerFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -668,7 +668,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec noOwnerDefaultsToPayer() {
-        return defaultHapiSpec("noOwnerDefaultsToPayer")
+        return defaultHapiSpec("noOwnerDefaultsToPayer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -822,7 +822,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec feesAsExpected() {
-        return defaultHapiSpec("feesAsExpected")
+        return defaultHapiSpec("feesAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -993,7 +993,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
-        return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked")
+        return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
@@ -1324,7 +1324,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec happyPathWorks() {
-        return defaultHapiSpec("happyPathWorks")
+        return defaultHapiSpec("happyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1390,7 +1390,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
-        return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn")
+        return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1599,9 +1599,9 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
-    @HapiTest
+    @HapiTest // failing for schedules
     private HapiSpec scheduledCryptoApproveAllowanceWorks() {
-        return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks")
+        return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1650,7 +1650,8 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                                 .addNftAllowance(
                                                         OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L))
                                                 .fee(ONE_HUNDRED_HBARS))
-                                .via("successTx"))
+                                .via("successTx"),
+                        getTxnRecord("successTx").logged())
                 .then(
                         cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
                                         .between(OWNER, OTHER_RECEIVER))
