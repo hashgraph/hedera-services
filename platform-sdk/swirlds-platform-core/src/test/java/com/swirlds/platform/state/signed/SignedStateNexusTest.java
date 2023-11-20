@@ -18,9 +18,8 @@ package com.swirlds.platform.state.signed;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.platform.state.State;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.state.RandomSignedStateGenerator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,37 +29,39 @@ import org.mockito.Mockito;
 class SignedStateNexusTest {
     @Test
     void basicUsage() {
-        final ReservedSignedState original = new SignedState(
-                        new TestConfigBuilder(StateConfig.class)
-                                .getOrCreateConfig()
-                                .getConfigData(StateConfig.class),
-                        Mockito.mock(State.class),
-                        "create",
-                        false)
+        final int round = 123;
+        final ReservedSignedState original = new RandomSignedStateGenerator()
+                .setRound(round)
+                .build()
                 .reserve("test");
         final SignedStateNexus nexus = new SignedStateNexus();
 
-        assertNull(nexus.get("reason"), "Should be null when initialized");
-        nexus.set(original);
+        assertNull(nexus.getState("reason"), "Should be null when initialized");
+        assertEquals(ConsensusConstants.ROUND_UNDEFINED, nexus.getRound(), "Should be undefined when initialized");
+        nexus.setState(original);
 
-        try (final ReservedSignedState get = nexus.get("reason")) {
+        try (final ReservedSignedState get = nexus.getState("reason")) {
             assertNotNull(get, "Should not be null");
             assertNotSame(original, get, "Should be a different instance");
         }
+        assertEquals(round, nexus.getRound(), "Should be set to the round of the state");
 
         assertFalse(original.isClosed(), "Should not be closed since its still held by the nexus");
-        nexus.set(Mockito.mock(ReservedSignedState.class));
+        nexus.setState(realState());
         assertTrue(original.isClosed(), "Should be closed once its replaced");
 
         nexus.clear();
-        assertNull(nexus.get("reason"));
+        assertNull(nexus.getState("reason"));
+        assertEquals(ConsensusConstants.ROUND_UNDEFINED, nexus.getRound(), "Should be undefined when cleared");
     }
 
     @Test
     void closedStateTest() {
         final SignedStateNexus nexus = new SignedStateNexus();
-        nexus.set(Mockito.mock(ReservedSignedState.class));
-        assertNull(nexus.get("reason"), "The nexus has a state, but it cannot be reserved, so it should return null");
+        final ReservedSignedState reservedSignedState = realState();
+        nexus.setState(reservedSignedState);
+        reservedSignedState.close();
+        assertNull(nexus.getState("reason"), "The nexus has a state, but it cannot be reserved, so it should return null");
     }
 
     /**
@@ -71,7 +72,7 @@ class SignedStateNexusTest {
     void raceConditionTest() throws InterruptedException {
         final SignedStateNexus nexus = new SignedStateNexus();
 
-        final ReservedSignedState state1 = Mockito.mock(ReservedSignedState.class);
+        final ReservedSignedState state1 = mockState();
         final CountDownLatch unblockThread = new CountDownLatch(1);
         final CountDownLatch threadWaiting = new CountDownLatch(1);
         Mockito.when(state1.tryGetAndReserve(Mockito.any())).then(i -> {
@@ -79,18 +80,18 @@ class SignedStateNexusTest {
             unblockThread.await();
             return null;
         });
-        final ReservedSignedState state2 = Mockito.mock(ReservedSignedState.class);
-        final ReservedSignedState state2child = Mockito.mock(ReservedSignedState.class);
+        final ReservedSignedState state2 = mockState();
+        final ReservedSignedState state2child = mockState();
         Mockito.when(state2.tryGetAndReserve(Mockito.any())).thenReturn(state2child);
 
         final CountDownLatch threadDone = new CountDownLatch(1);
         final AtomicReference<ReservedSignedState> threadGetResult = new AtomicReference<>();
 
         // the nexus should have state1 initially
-        nexus.set(state1);
+        nexus.setState(state1);
         // the background thread will try to reserve state1, but will be blocked the unblockThread latch
         new Thread(() -> {
-                    threadGetResult.set(nexus.get("reason"));
+                    threadGetResult.set(nexus.getState("reason"));
                     threadDone.countDown();
                 })
                 .start();
@@ -98,7 +99,7 @@ class SignedStateNexusTest {
         // wait for the thread to start trying to reserve the state, fail if it takes too long
         assertTrue(threadWaiting.await(5, TimeUnit.SECONDS), "The thread should be waiting for the state");
         // while the thread is waiting to reserve state1, replace it with state2
-        nexus.set(state2);
+        nexus.setState(state2);
         // unblock the thread
         // the nexus should then see that it cannot reserve state1, and that state1 is no longer the current state
         // it should then reserve state2 and set the threadGetResult variable
@@ -107,5 +108,18 @@ class SignedStateNexusTest {
         assertTrue(threadDone.await(5, TimeUnit.SECONDS), "The thread should have finished");
         // check that the nexus returned the child of state2
         assertSame(state2child, threadGetResult.get(), "The nexus should have returned the child of state2");
+    }
+
+    private static ReservedSignedState mockState(){
+        final ReservedSignedState state = Mockito.mock(ReservedSignedState.class);
+        final SignedState ss = new RandomSignedStateGenerator().build();
+        Mockito.when(state.get()).thenReturn(ss);
+        return state;
+    }
+
+    private static ReservedSignedState realState(){
+        return new RandomSignedStateGenerator()
+                .build()
+                .reserve("test");
     }
 }

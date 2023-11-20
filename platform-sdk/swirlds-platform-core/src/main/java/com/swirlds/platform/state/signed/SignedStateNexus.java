@@ -17,8 +17,10 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -27,6 +29,7 @@ import java.util.function.Consumer;
  */
 public class SignedStateNexus implements Consumer<ReservedSignedState>, Clearable {
     private final AtomicReference<ReservedSignedState> currentState = new AtomicReference<>();
+    private final AtomicLong currentStateRound = new AtomicLong(ConsensusConstants.ROUND_UNDEFINED);
 
     /**
      * Returns the current signed state and reserves it. If the current signed state is null, or cannot be reserved,
@@ -35,7 +38,7 @@ public class SignedStateNexus implements Consumer<ReservedSignedState>, Clearabl
      * @param reason a short description of why this SignedState is being reserved
      * @return the current signed state, or null if there is no state set or if it cannot be reserved
      */
-    public @Nullable ReservedSignedState get(@NonNull final String reason) {
+    public @Nullable ReservedSignedState getState(@NonNull final String reason) {
         ReservedSignedState state;
         do {
             state = currentState.get();
@@ -62,26 +65,41 @@ public class SignedStateNexus implements Consumer<ReservedSignedState>, Clearabl
      *
      * @param reservedSignedState the new signed state
      */
-    public void set(@Nullable final ReservedSignedState reservedSignedState) {
+    public void setState(@Nullable final ReservedSignedState reservedSignedState) {
         final ReservedSignedState oldState = currentState.getAndSet(reservedSignedState);
+        currentStateRound.set(
+                reservedSignedState == null
+                        ? ConsensusConstants.ROUND_UNDEFINED
+                        : reservedSignedState.get().getRound()
+        );
         if (oldState != null) {
             oldState.close();
         }
     }
 
     /**
-     * Same as {@link #set(ReservedSignedState)} with a null argument
+     * Returns the round of the current signed state
+     *
+     * @return the round of the current signed state, or {@link ConsensusConstants#ROUND_UNDEFINED} if there is no
+     * current signed state
      */
-    @Override
-    public void clear() {
-        set(null);
+    public long getRound() {
+        return currentStateRound.get();
     }
 
     /**
-     * Same as {@link #set(ReservedSignedState)}
+     * Same as {@link #setState(ReservedSignedState)} with a null argument
+     */
+    @Override
+    public void clear() {
+        setState(null);
+    }
+
+    /**
+     * Same as {@link #setState(ReservedSignedState)}
      */
     @Override
     public void accept(@Nullable final ReservedSignedState reservedSignedState) {
-        set(reservedSignedState);
+        setState(reservedSignedState);
     }
 }
