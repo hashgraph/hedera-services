@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.prehandle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -266,6 +268,8 @@ class PreHandleContextListUpdatesTest {
         given(account.key()).willReturn(payerKey);
         given(accountStore.getContractById(otherContractId)).willReturn(contractAccount);
         given(contractAccount.key()).willReturn(contractIdKey);
+        given(contractAccount.keyOrElse(EMPTY_KEY_LIST)).willReturn(contractIdKey);
+        given(contractAccount.accountIdOrThrow()).willReturn(asAccount(otherContractId.contractNum()));
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(storeFactory, createAccountTransaction(), CONFIG, dispatcher);
 
@@ -284,6 +288,7 @@ class PreHandleContextListUpdatesTest {
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(account.accountIdOrThrow()).willReturn(payer);
         subject = new PreHandleContextImpl(storeFactory, createAccountTransaction(), CONFIG, dispatcher);
 
         // When we require the account by alias
@@ -299,6 +304,8 @@ class PreHandleContextListUpdatesTest {
         final var alias = ContractID.newBuilder().evmAddress(Bytes.wrap("test")).build();
         given(accountStore.getContractById(alias)).willReturn(contractAccount);
         given(contractAccount.key()).willReturn(otherKey);
+        given(contractAccount.keyOrElse(EMPTY_KEY_LIST)).willReturn(otherKey);
+        given(contractAccount.accountIdOrThrow()).willReturn(asAccount(otherContractId.contractNum()));
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);

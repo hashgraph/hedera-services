@@ -16,19 +16,26 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.workflows.handle.HandleContextImpl;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -57,7 +64,14 @@ import java.util.stream.Stream;
  */
 public final class RecordListBuilder {
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
-    /** The record builder for the user transaction. */
+    private static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
+            ResponseCodeEnum.OK,
+            ResponseCodeEnum.SUCCESS,
+            ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED,
+            ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+    /**
+     * The record builder for the user transaction.
+     */
     private final SingleTransactionRecordBuilderImpl userTxnRecordBuilder;
     /**
      * The list of record builders for preceding transactions. If the user transaction is at consensus time T, then
@@ -118,12 +132,30 @@ public final class RecordListBuilder {
      *
      * @param configuration the current configuration
      * @return the record builder for the preceding transaction
-     * @throws NullPointerException      if {@code consensusConfig} is {@code null}
+     * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws HandleException if no more preceding slots are available
      */
-    public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addPreceding(
+            @NonNull final Configuration configuration,
+            final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        return doAddPreceding(configuration, ReversingBehavior.IRREVERSIBLE, precedingTxnCategory);
+    }
 
+    public SingleTransactionRecordBuilderImpl addReversiblePreceding(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        return doAddPreceding(configuration, ReversingBehavior.REVERSIBLE, LIMITED_CHILD_RECORDS);
+    }
+
+    public SingleTransactionRecordBuilderImpl addRemovablePreceding(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        return doAddPreceding(configuration, ReversingBehavior.REMOVABLE, LIMITED_CHILD_RECORDS);
+    }
+
+    public SingleTransactionRecordBuilderImpl doAddPreceding(
+            @NonNull final Configuration configuration,
+            @NonNull final ReversingBehavior reversingBehavior,
+            @NonNull final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
         // Lazily create. FUTURE: We should reuse the RecordListBuilder between handle calls, and we should
         // reuse these lists. Then we can omit this lazy create entirely and produce less garbage overall.
         if (precedingTxnRecordBuilders == null) {
@@ -136,7 +168,10 @@ public final class RecordListBuilder {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var precedingCount = precedingTxnRecordBuilders.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        if (precedingCount >= maxRecords) {
+        // On genesis start we create almost 700 preceding child records for creating system accounts.
+        // Also, we should not be failing for stake update transaction records that happen every midnight.
+        // In these two cases need to allow for this, but we don't want to allow for this on every handle call.
+        if (precedingTxnRecordBuilders.size() >= maxRecords && (precedingTxnCategory != UNLIMITED_CHILD_RECORDS)) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
@@ -145,8 +180,10 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder =
-                new SingleTransactionRecordBuilderImpl(consensusNow).exchangeRate(userTxnRecordBuilder.exchangeRate());
+        // FUTURE : For some reason, we do not set the exchange rate for preceding transactions in mono-service.
+        // Should be corrected after differential testing.
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        //                .exchangeRate(userTxnRecordBuilder.exchangeRate());
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -160,11 +197,11 @@ public final class RecordListBuilder {
      * @param configuration the current configuration
      * @return the record builder for the child transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
-     * @throws HandleException      if no more child slots are available
+     * @throws HandleException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, false);
+        return doAddChild(configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     /**
@@ -177,15 +214,37 @@ public final class RecordListBuilder {
      * @param configuration the current configuration
      * @return the record builder for the child transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
-     * @throws HandleException      if no more child slots are available
+     * @throws HandleException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, true);
+        return doAddChild(configuration, ReversingBehavior.REMOVABLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
+
+    /**
+     * Adds a record builder for a child transaction that is removed when reverted, and performs a custom
+     * "finishing" operation on the transaction before externalizing it to the record stream.
+     *
+     * <p>We need this variant to let the contract service externalize some of its dispatched
+     * {@code CryptoCreate} transactions as {@code ContractCreate} transactions.
+     *
+     * @param configuration the current configuration
+     * @param customizer the custom finishing operation
+     * @return the record builder for the child transaction
+     * @throws NullPointerException if {@code consensusConfig} is {@code null}
+     * @throws HandleException if no more child slots are available
+     */
+    public SingleTransactionRecordBuilderImpl addRemovableChildWithExternalizationCustomizer(
+            @NonNull final Configuration configuration, @NonNull final ExternalizedRecordCustomizer customizer) {
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        requireNonNull(customizer, "customizer must not be null");
+        return doAddChild(configuration, ReversingBehavior.REMOVABLE, customizer);
     }
 
     private SingleTransactionRecordBuilderImpl doAddChild(
-            @NonNull final Configuration configuration, final boolean removable) {
+            @NonNull final Configuration configuration,
+            final ReversingBehavior reversingBehavior,
+            @NonNull final ExternalizedRecordCustomizer customizer) {
         // FUTURE: We should reuse the RecordListBuilder between handle calls, and we should reuse these lists, in
         // which case we will no longer have to create them lazily.
         if (childRecordBuilders == null) {
@@ -205,10 +264,12 @@ public final class RecordListBuilder {
                 ? userTxnRecordBuilder.consensusNow()
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
         final var consensusNow = prevConsensusNow.plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, removable)
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer)
                 .parentConsensus(parentConsensusTimestamp)
                 .exchangeRate(userTxnRecordBuilder.exchangeRate());
-        childRecordBuilders.add(recordBuilder);
+        if (!customizer.shouldSuppressRecord()) {
+            childRecordBuilders.add(recordBuilder);
+        }
         return recordBuilder;
     }
 
@@ -224,8 +285,9 @@ public final class RecordListBuilder {
      * actually be removed from the list.
      *
      * <p>If the given builder is the 5th of these 10, then each builder from the 6th to the 10th will be removed from
-     * the list if they were added by {@link #addRemovableChild(Configuration)}, otherwise they will have their status
-     * set to {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already).
+     * the list if they were added by {@link #addRemovableChild(Configuration)} or
+     * {@link #addRemovableChildWithExternalizationCustomizer(Configuration, ExternalizedRecordCustomizer)}, otherwise they will have their
+     * status set to {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already).
      *
      * @param recordBuilder the record builder which children need to be reverted
      */
@@ -233,6 +295,9 @@ public final class RecordListBuilder {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
         if (childRecordBuilders == null) {
             childRecordBuilders = new ArrayList<>();
+        }
+        if (precedingTxnRecordBuilders == null) {
+            precedingTxnRecordBuilders = new ArrayList<>();
         }
 
         // Find the index into the list of records from which to revert. If the record builder is the user transaction,
@@ -242,6 +307,20 @@ public final class RecordListBuilder {
         final int index;
         if (recordBuilder == userTxnRecordBuilder) {
             index = 0;
+
+            // The user transaction fails and therefore we also have to revert preceding transactions
+            if (!precedingTxnRecordBuilders.isEmpty()) {
+                for (int i = 0; i < precedingTxnRecordBuilders.size(); i++) {
+                    final var preceding = precedingTxnRecordBuilders.get(i);
+                    if (preceding.reversingBehavior() == ReversingBehavior.REVERSIBLE
+                            && SUCCESSES.contains(preceding.status())) {
+                        preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    } else if (preceding.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                        precedingTxnRecordBuilders.set(i, null);
+                    }
+                }
+                precedingTxnRecordBuilders.removeIf(Objects::isNull);
+            }
         } else {
             // Traverse from end to start, since we are most likely going to be reverting the most recent child,
             // or close to it.
@@ -258,12 +337,14 @@ public final class RecordListBuilder {
         int into = index; // The position in the array into which we should put the next remaining child
         for (int i = index; i < count; i++) {
             final var child = childRecordBuilders.get(i);
-            if (child.removable()) {
+            if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
                 childRecordBuilders.set(i, null);
             } else {
-                if (child.status() == ResponseCodeEnum.OK) child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                    child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                }
 
                 if (into != i) {
                     childRecordBuilders.set(into, child);
@@ -296,8 +377,10 @@ public final class RecordListBuilder {
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
             final var recordBuilder = precedingTxnRecordBuilders.get(i);
-            records.add(
-                    recordBuilder.transactionID(idBuilder.nonce(i + 1).build()).build());
+            records.add(recordBuilder
+                    .transactionID(idBuilder.nonce(i + 1).build())
+                    .syncBodyIdFromRecordId()
+                    .build());
         }
 
         records.add(userTxnRecord);
@@ -308,25 +391,11 @@ public final class RecordListBuilder {
             final var recordBuilder = childRecordBuilders.get(i);
             records.add(recordBuilder
                     .transactionID(idBuilder.nonce(nextNonce++).build())
+                    .syncBodyIdFromRecordId()
                     .build());
         }
 
         return new Result(userTxnRecord, unmodifiableList(records));
-    }
-
-    /*
-     * This method is only used for testing. Unfortunately, building records does not work yet.
-     * Added this method temporarily to check the content of this object.
-     */
-    Stream<SingleTransactionRecordBuilderImpl> builders() {
-        Stream<SingleTransactionRecordBuilderImpl> recordBuilders = Stream.of(userTxnRecordBuilder);
-        if (precedingTxnRecordBuilders != null) {
-            recordBuilders = Stream.concat(precedingTxnRecordBuilders.stream(), recordBuilders);
-        }
-        if (childRecordBuilders != null) {
-            recordBuilders = Stream.concat(recordBuilders, childRecordBuilders.stream());
-        }
-        return recordBuilders;
     }
 
     /**
@@ -334,7 +403,7 @@ public final class RecordListBuilder {
      *
      * @param userTransactionRecord The record for the user transaction.
      * @param records An ordered list of all records, ordered by consensus timestamp. Preceding records come before
-     *                the user transaction record, which comes before child records.
+     * the user transaction record, which comes before child records.
      */
     public record Result(
             @NonNull SingleTransactionRecord userTransactionRecord, @NonNull List<SingleTransactionRecord> records) {}

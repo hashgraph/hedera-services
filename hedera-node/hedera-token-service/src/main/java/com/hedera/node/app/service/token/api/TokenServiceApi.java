@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.api;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
@@ -60,7 +61,7 @@ public interface TokenServiceApi {
             @NonNull DeleteCapableTransactionRecordBuilder recordBuilder);
 
     /**
-     * Validates the given staking election relative to the given account store, network info, and staking config.
+     * Validates the creation of a given staking election relative to the given account store, network info, and staking config.
      *
      * @param isStakingEnabled       if staking is enabled
      * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
@@ -70,7 +71,27 @@ public interface TokenServiceApi {
      * @param accountStore           readable account store
      * @throws HandleException if the staking election is invalid
      */
-    void assertValidStakingElection(
+    void assertValidStakingElectionForCreation(
+            boolean isStakingEnabled,
+            boolean hasDeclineRewardChange,
+            @NonNull String stakedIdKind,
+            @Nullable AccountID stakedAccountIdInOp,
+            @Nullable Long stakedNodeIdInOp,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull NetworkInfo networkInfo);
+
+    /**
+     * Validates the update of a given staking election relative to the given account store, network info, and staking config.
+     *
+     * @param isStakingEnabled       if staking is enabled
+     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     * @throws HandleException if the staking election is invalid
+     */
+    void assertValidStakingElectionForUpdate(
             boolean isStakingEnabled,
             boolean hasDeclineRewardChange,
             @NonNull String stakedIdKind,
@@ -96,7 +117,7 @@ public interface TokenServiceApi {
      *
      * @param contractId the id of the contract to delete
      */
-    void deleteAndMaybeUnaliasContract(@NonNull ContractID contractId);
+    void deleteContract(@NonNull ContractID contractId);
 
     /**
      * Increments the nonce of the given contract.
@@ -140,7 +161,7 @@ public interface TokenServiceApi {
      * Updates the storage metadata for the given contract.
      *
      * @param accountId the id of the contract
-     * @param firstKey       the first key in the storage linked list, empty if the storage is empty
+     * @param firstKey       the first key in the storage linked list, {@link Bytes#EMPTY} if the storage is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
     void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
@@ -151,8 +172,9 @@ public interface TokenServiceApi {
      * @param payer the id of the account that should be charged
      * @param amount the amount to charge
      * @param recordBuilder the record builder to record the fees in
+     * @return true if the full amount was charged, false otherwise
      */
-    void chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeRecordBuilder recordBuilder);
+    boolean chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeRecordBuilder recordBuilder);
 
     /**
      * Charges the payer the given fees, and records those fees in the given record builder.
@@ -185,4 +207,10 @@ public interface TokenServiceApi {
      * @return the number of storage slots used by the given account before any changes were made
      */
     long originalKvUsageFor(@NonNull AccountID id);
+
+    /**
+     * Updates the passed contract
+     * @param contract the contract that is updated
+     */
+    void updateContract(Account contract);
 }

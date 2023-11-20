@@ -23,8 +23,8 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.PlatformMetrics;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import java.util.Collection;
@@ -68,7 +68,7 @@ public class DefaultMetrics implements PlatformMetrics {
     private final Map<String, String> globalMetricKeys = new ConcurrentHashMap<>();
 
     // Factory that creates specific implementation of Metric
-    private final MetricsFactory factory;
+    private final PlatformMetricsFactory factory;
 
     // Helper-class that implements the Observer-pattern for MetricsEvents
     private final MetricsEventBus<MetricsEvent> eventBus;
@@ -86,7 +86,7 @@ public class DefaultMetrics implements PlatformMetrics {
      * @param executor
      * 		the {@link ScheduledExecutorService} that will be used by this {@code DefaultMetrics}
      * @param factory
-     * 		the {@link MetricsFactory} that will be used to create new instances of {@link Metric}
+     * 		the {@link PlatformMetricsFactory} that will be used to create new instances of {@link Metric}
      * @param metricsConfig
      *      the {@link MetricsConfig} for metrics configuration
      */
@@ -94,7 +94,7 @@ public class DefaultMetrics implements PlatformMetrics {
             final NodeId selfId,
             final MetricKeyRegistry metricKeyRegistry,
             final ScheduledExecutorService executor,
-            final MetricsFactory factory,
+            final PlatformMetricsFactory factory,
             final MetricsConfig metricsConfig) {
         this.selfId = selfId;
         this.metricKeyRegistry = throwArgNull(metricKeyRegistry, "metricsKeyRegistry");

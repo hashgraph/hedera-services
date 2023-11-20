@@ -73,7 +73,8 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
                 attempt,
                 nominalBodyFor(attempt),
                 SingleTransactionRecordBuilder.class,
-                UpdateTranslator::gasRequirement);
+                UpdateTranslator::gasRequirement,
+                UpdateDecoder.FAILURE_CUSTOMIZER);
     }
 
     public static long gasRequirement(

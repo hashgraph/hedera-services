@@ -50,7 +50,7 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
             final SignedState signedState, final AddressBook addressBook, SignedStateValidationData previousStateData) {
         throwIfOld(signedState, previousStateData);
         signedState.pruneInvalidSignatures(addressBook);
-        signedState.throwIfIncomplete();
+        signedState.throwIfNotVerifiable();
     }
 
     /**

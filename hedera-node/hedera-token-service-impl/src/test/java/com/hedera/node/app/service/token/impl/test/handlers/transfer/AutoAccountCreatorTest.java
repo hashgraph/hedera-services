@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,13 +74,13 @@ class AutoAccountCreatorTest extends StepsBase {
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathECKeyAliasWorks() {
         accountCreatorInternalSetup(false);
-        given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -90,7 +89,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
-        assertThat(writableAliases.get(ecEvmAlias)).isNull();
+        assertThat(writableAliases.get(ecKeyAlias)).isNull();
 
         subject.create(ecKeyAlias.value(), 0);
 
@@ -98,15 +97,15 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(3);
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecEvmAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
     }
 
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathEDKeyAliasWorks() {
         accountCreatorInternalSetup(false);
-        given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -136,8 +135,8 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
         accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
-        given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

@@ -79,6 +79,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
@@ -142,6 +143,13 @@ public class TestHelpers {
     public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key ANOTHER_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0202020202020202020202020202020202020202020202020202020202020202"))
+            .build();
+
+    public static final Key YET_ANOTHER_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("3232323232323232323232323232323232323232323232323232323232323232"))
             .build();
     public static final long REQUIRED_GAS = 123L;
     public static final long NONCE = 678;
@@ -213,6 +221,12 @@ public class TestHelpers {
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
 
+    public static final Token EXPLICITLY_IMMUTABLE_FUNGIBLE_TOKEN = FUNGIBLE_TOKEN
+            .copyBuilder()
+            .adminKey(KeyUtils.IMMUTABILITY_SENTINEL_KEY)
+            .build();
+    public static final Token MUTABLE_FUNGIBLE_TOKEN =
+            FUNGIBLE_TOKEN.copyBuilder().adminKey(AN_ED25519_KEY).build();
     public static final CustomFee FIXED_HBAR_FEES = CustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(2).build())
             .feeCollectorAccountId(SENDER_ID)

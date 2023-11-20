@@ -81,7 +81,9 @@ public class FakePreHandleContext implements PreHandleContext {
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
+    private final boolean userTransaction;
     private final Map<Class<?>, Object> stores = new ConcurrentHashMap<>();
+    private Configuration configuration;
 
     /**
      * Create a new PreHandleContext instance. The payer and key will be extracted from the transaction body.
@@ -92,18 +94,33 @@ public class FakePreHandleContext implements PreHandleContext {
      */
     public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn)
             throws PreCheckException {
-        this(accountStore, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+        this(
+                accountStore,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                true);
+    }
+
+    public FakePreHandleContext(
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final TransactionBody txn,
+            @NonNull final Configuration configuration)
+            throws PreCheckException {
+        this(accountStore, txn);
+        this.configuration = configuration;
     }
 
     /** Create a new instance */
     private FakePreHandleContext(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer)
+            @NonNull final AccountID payer,
+            final boolean userTransaction)
             throws PreCheckException {
         this.accountStore = requireNonNull(accountStore, "The supplied argument 'accountStore' cannot be null!");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
+        this.userTransaction = userTransaction;
 
         stores.put(ReadableAccountStore.class, accountStore);
         // Find the account, which must exist or throw a PreCheckException with the given response code.
@@ -147,7 +164,12 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        throw new UnsupportedOperationException("Not implemented");
+        return configuration;
+    }
+
+    @Override
+    public boolean isUserTransaction() {
+        return userTransaction;
     }
 
     @NonNull
@@ -393,7 +415,7 @@ public class FakePreHandleContext implements PreHandleContext {
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested);
+        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested, false);
         return innerContext;
     }
 

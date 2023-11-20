@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
+import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +36,7 @@ class FractionalTimerTests {
     @BeforeEach
     void reset() {
         clock.reset();
-        metric = new FractionalTimer(clock);
+        metric = new StandardFractionalTimer(clock);
     }
 
     /**
@@ -157,5 +159,17 @@ class FractionalTimerTests {
                 0.5,
                 metric.getAndReset(),
                 "after the reset the metric should start tracking again, so 0.5 is expected");
+    }
+
+    @Test
+    void noOpTest() {
+        final FractionalTimer timer = NoOpFractionalTimer.getInstance();
+        timer.registerMetric(null, null, null, null);
+        timer.activate();
+        timer.activate(1234);
+        timer.deactivate(1234);
+        timer.deactivate();
+        assertEquals(0, timer.getActiveFraction());
+        assertEquals(0, timer.getAndReset());
     }
 }

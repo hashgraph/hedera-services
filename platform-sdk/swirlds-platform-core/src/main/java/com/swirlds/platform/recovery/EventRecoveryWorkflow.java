@@ -168,7 +168,10 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
-                    selfId, resultingStateDirectory, recoveredState.state().get(), platformContext.getConfiguration());
+                    platformContext,
+                    selfId,
+                    resultingStateDirectory,
+                    recoveredState.state().get());
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             updateEmergencyRecoveryFile(
                     stateConfig, resultingStateDirectory, initialState.get().getConsensusTimestamp());

@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -106,18 +108,22 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(recordBuilderClass);
 
         return context.dispatchChildTransaction(
-                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId);
+                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status) {
+    public void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResultStatus status,
+            @NonNull final ResponseCodeEnum responseStatus) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
+                .transaction(Transaction.DEFAULT)
                 .contractID(result.contractID())
-                .status(status == ResultStatus.IS_ERROR ? FAIL_INVALID : SUCCESS)
+                .status(status == ResultStatus.IS_ERROR ? responseStatus : SUCCESS)
                 .contractCallResult(result);
     }
 

@@ -16,21 +16,33 @@
 
 package com.swirlds.platform.crypto;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
+import static com.swirlds.logging.legacy.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.crypto.CryptographyException;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -55,7 +67,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 import javax.security.auth.x500.X500Principal;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,7 +111,7 @@ public final class CryptoStatic {
      * 		the value, such as "John Smith"
      * @return the RDN (if any), possibly preceded by a comma (if not first)
      */
-    public static String rdn(String[] commaSeparator, String attributeType, String attributeValue) {
+    private static String rdn(String[] commaSeparator, String attributeType, String attributeValue) {
         if (attributeValue == null || attributeValue.equals("")) {
             return "";
         }
@@ -157,7 +171,7 @@ public final class CryptoStatic {
      * 		name such as "John Smith" or "Acme Inc"
      * @return the distinguished name, suitable for passing to generateCertificate()
      */
-    public static String distinguishedName(String commonName) {
+    static String distinguishedName(String commonName) {
         String[] commaSeparator = new String[] {""};
         return rdn(commaSeparator, "CN", commonName)
                 + rdn(commaSeparator, "O", null)
@@ -200,7 +214,7 @@ public final class CryptoStatic {
      * @throws KeyGeneratingException
      * 		in any issue occurs
      */
-    public static X509Certificate generateCertificate(
+    static X509Certificate generateCertificate(
             String distinguishedName,
             KeyPair pair,
             String caDistinguishedName,
@@ -234,7 +248,7 @@ public final class CryptoStatic {
      * @throws KeyStoreException
      * 		if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
-    public static KeyStore createEmptyTrustStore() throws KeyStoreException {
+    static KeyStore createEmptyTrustStore() throws KeyStoreException {
         final KeyStore trustStore;
         try {
             trustStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
@@ -281,7 +295,7 @@ public final class CryptoStatic {
      * @throws KeyLoadingException
      * 		if the file is empty or another issue occurs while reading it
      */
-    public static KeyStore loadKeys(final Path file, final char[] password)
+    private static KeyStore loadKeys(final Path file, final char[] password)
             throws KeyStoreException, KeyLoadingException {
         final KeyStore store = createEmptyTrustStore();
         try (final FileInputStream fis = new FileInputStream(file.toFile())) {
@@ -301,7 +315,7 @@ public final class CryptoStatic {
      * 		the name of the key owner
      * @return the file name that is supposed to store the private key for the supplied member
      */
-    public static String getPrivateKeysFileName(final String memberName) {
+    private static String getPrivateKeysFileName(final String memberName) {
         return "private-" + memberName + ".pfx";
     }
 
@@ -325,7 +339,7 @@ public final class CryptoStatic {
      * 		in an issue occurs while loading keys and certificates
      */
     @NonNull
-    public static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
+    static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
             @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
@@ -380,8 +394,6 @@ public final class CryptoStatic {
      * Grover's and the BHT algorithm, respectively. Of course, ECDH and ECDSA aren't post-quantum, but
      * AES-256 and SHA-384 are (as far as we know).
      *
-     * @param threadPool
-     * 		the thread pool that will be used to load the keys in parallel
      * @param addressBook
      * 		the address book of the network
      * @throws ExecutionException
@@ -393,11 +405,9 @@ public final class CryptoStatic {
      * 		if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
     @NonNull
-    public static Map<NodeId, KeysAndCerts> generateKeysAndCerts(
-            @NonNull final AddressBook addressBook, @NonNull final ExecutorService threadPool)
+    static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
             throws ExecutionException, InterruptedException, KeyStoreException {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
-        Objects.requireNonNull(threadPool, "threadPool must not be null");
 
         final byte[] masterKey = new byte[CryptoConstants.SYM_KEY_SIZE_BYTES];
         final byte[] swirldId = new byte[CryptoConstants.HASH_SIZE_BYTES];
@@ -406,6 +416,12 @@ public final class CryptoStatic {
 
         final int n = addressBook.getSize();
         final Map<NodeId, Future<KeysAndCerts>> futures = new HashMap<>(n);
+        final ExecutorService threadPool =
+                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
+                        .setComponent("browser")
+                        .setThreadName("crypto-generate")
+                        .setDaemon(false)
+                        .buildFactory());
         for (int i = 0; i < n; i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
@@ -434,6 +450,7 @@ public final class CryptoStatic {
                             name, masterKeyClone, swirldIdClone, CommonUtils.intToBytes(memId), publicStores)));
         }
         final Map<NodeId, KeysAndCerts> keysAndCerts = futuresToMap(futures);
+        threadPool.shutdown();
         // After the keys have been generated or loaded, they are then copied to the address book
         try {
             copyPublicKeys(publicStores, addressBook);
@@ -454,7 +471,7 @@ public final class CryptoStatic {
      * @throws KeyLoadingException
      * 		if {@link PublicStores#getPublicKey(KeyCertPurpose, String)} throws
      */
-    public static void copyPublicKeys(final PublicStores publicStores, final AddressBook addressBook)
+    private static void copyPublicKeys(final PublicStores publicStores, final AddressBook addressBook)
             throws KeyLoadingException {
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
@@ -485,7 +502,7 @@ public final class CryptoStatic {
      * 		if {@link Future#get} throws
      */
     @NonNull
-    public static <T> Map<NodeId, T> futuresToMap(@NonNull final Map<NodeId, Future<T>> futures)
+    private static <T> Map<NodeId, T> futuresToMap(@NonNull final Map<NodeId, Future<T>> futures)
             throws ExecutionException, InterruptedException {
         final Map<NodeId, T> map = new HashMap<>();
         for (Map.Entry<NodeId, Future<T>> entry : futures.entrySet()) {
@@ -513,5 +530,79 @@ public final class CryptoStatic {
         // different for different choices of OS, Java version, and JDK library implementation.
         nonDetRandom.nextBytes(new byte[1]);
         return nonDetRandom;
+    }
+
+    /**
+     * Create {@link KeysAndCerts} objects for all nodes in the address book.
+     *
+     * @param addressBook
+     * 		the current address book
+     * @param configuration
+     * 		the current configuration
+     * @return a map of KeysAndCerts objects, one for each node
+     */
+    public static Map<NodeId, KeysAndCerts> initNodeSecurity(
+            @NonNull final AddressBook addressBook, @NonNull final Configuration configuration) {
+        Objects.requireNonNull(addressBook, "addressBook must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
+
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+
+        final Map<NodeId, KeysAndCerts> keysAndCerts;
+        try {
+            if (basicConfig.loadKeysFromPfxFiles()) {
+                try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
+                    CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
+                            + list.filter(path -> path.getFileName().endsWith("pfx"))
+                                    .toList());
+                    logger.debug(STARTUP.getMarker(), "About start loading keys");
+                    keysAndCerts = loadKeysAndCerts(
+                            addressBook,
+                            pathsConfig.getKeysDirPath(),
+                            cryptoConfig.keystorePassword().toCharArray());
+                    logger.debug(STARTUP.getMarker(), "Done loading keys");
+                }
+            } else {
+                // if there are no keys on the disk, then create our own keys
+                CommonUtils.tellUserConsole(
+                        "Creating keys, because there are no files in " + pathsConfig.getKeysDirPath());
+                logger.debug(STARTUP.getMarker(), "About to start creating generating keys");
+                keysAndCerts = generateKeysAndCerts(addressBook);
+                logger.debug(STARTUP.getMarker(), "Done generating keys");
+            }
+        } catch (final InterruptedException
+                | ExecutionException
+                | KeyStoreException
+                | KeyLoadingException
+                | UnrecoverableKeyException
+                | NoSuchAlgorithmException
+                | IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception while loading/generating keys", e);
+            if (Utilities.isRootCauseSuppliedType(e, NoSuchAlgorithmException.class)
+                    || Utilities.isRootCauseSuppliedType(e, NoSuchProviderException.class)) {
+                CommonUtils.tellUserConsolePopup(
+                        "ERROR",
+                        "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
+            }
+            SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
+            throw new CryptographyException(e); // will never reach this line due to exit above
+        }
+
+        final String msg = basicConfig.loadKeysFromPfxFiles() ? "Certificate loaded: {}" : "Certificate generated: {}";
+
+        keysAndCerts.forEach((nodeId, keysAndCertsForNode) -> {
+            if (keysAndCertsForNode == null) {
+                logger.error(CERTIFICATES.getMarker(), "No keys and certs for node {}", nodeId);
+                return;
+            }
+            logger.debug(CERTIFICATES.getMarker(), "Node ID: {}", nodeId);
+            logger.debug(CERTIFICATES.getMarker(), msg, keysAndCertsForNode.sigCert());
+            logger.debug(CERTIFICATES.getMarker(), msg, keysAndCertsForNode.encCert());
+            logger.debug(CERTIFICATES.getMarker(), msg, keysAndCertsForNode.agrCert());
+        });
+
+        return keysAndCerts;
     }
 }
