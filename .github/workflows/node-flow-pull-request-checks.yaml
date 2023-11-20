@@ -121,7 +121,7 @@ jobs:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   hapi-tests-1:
-    name: HAPI Tests
+    name: HAPI Tests (misc)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard

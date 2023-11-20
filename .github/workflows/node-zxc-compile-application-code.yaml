@@ -34,7 +34,7 @@ on:
         required: false
         default: false
       enable-hapi-tests-1:
-        description: "HAPI Testing Enabled"
+        description: "HAPI Testing (misc) Enabled"
         type: boolean
         required: false
         default: false
