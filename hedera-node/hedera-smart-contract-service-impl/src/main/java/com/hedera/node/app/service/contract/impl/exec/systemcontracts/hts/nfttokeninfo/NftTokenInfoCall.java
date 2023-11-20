@@ -96,7 +96,8 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
                         .encodeElements(
-                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
+                                status.protoOrdinal(),
+                                nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
                 gasRequirement);
     }
 }
