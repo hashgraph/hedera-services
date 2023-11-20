@@ -235,7 +235,7 @@ public class SignedStateFileManager implements Startable {
         }
 
         metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
+        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round, reservedState.isFreezeState()));
         stateToDiskAttemptConsumer.stateToDiskAttempt(reservedState, directory, true);
 
         reservedState.stateSavedToDisk();

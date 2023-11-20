@@ -160,12 +160,14 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
      * {@inheritDoc}
      * <p>
      * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#CHECKING} has no effect on the state
-     * machine.
+     * machine, unless it is a freeze state, in which case the status transitions to {@link PlatformStatus#FREEZE_COMPLETE}.
      */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
-        return this;
+        Objects.requireNonNull(action);
+
+        return action.isFreezeState() ? new FreezeCompleteStatusLogic() : this;
     }
 
     /**

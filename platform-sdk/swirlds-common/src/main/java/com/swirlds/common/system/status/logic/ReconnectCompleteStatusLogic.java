@@ -189,7 +189,7 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
      * {@inheritDoc}
      * <p>
      * If the state written to disk is prior to the reconnect state round, it's old, so we need to wait until the
-     * reconnected state is written to disk (or a later state).
+     * reconnected state is written to disk (or a later state), unless it is a freeze state, in which case the status transitions to {@link PlatformStatus#FREEZE_COMPLETE}.
      * <p>
      * If the state written to disk is the reconnected state or later, then we can transition to a new status. If a
      * freeze boundary has been crossed, we transition to {@link PlatformStatus#FREEZING} status. Otherwise, we
@@ -198,6 +198,10 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
+        if (action.isFreezeState()) {
+            return new FreezeCompleteStatusLogic();
+        }
+
         if (action.round() < reconnectStateRound) {
             // if the state written to disk is prior to the reconnect state round, it's old.
             // we need to wait until the reconnected state is written to disk (or a later state)
