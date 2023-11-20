@@ -16,14 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.allowance;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OPERATOR;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,6 +56,25 @@ class GetAllowanceCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
+    }
+
+    @Test
+    void revertsWithInvalidAccountId() {
+        subject = new GetAllowanceCall(
+                addressIdConverter,
+                gasCalculator,
+                mockEnhancement(),
+                FUNGIBLE_TOKEN,
+                OWNER_HEADLONG_ADDRESS,
+                APPROVED_HEADLONG_ADDRESS,
+                true,
+                true);
+        given(addressIdConverter.convert(OWNER_HEADLONG_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNum())).willReturn(null);
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
     }
 
     @Test
