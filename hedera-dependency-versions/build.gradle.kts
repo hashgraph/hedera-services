@@ -91,7 +91,7 @@ moduleInfo {
     version("org.hamcrest", "2.2")
     version("org.hyperledger.besu.datatypes", besuVersion)
     version("org.hyperledger.besu.evm", besuVersion)
-    version("org.hyperledger.besu.secp256k1", besuNativeVersion)
+    version("org.hyperledger.besu.nativelib.secp256k1", besuNativeVersion)
     version("org.json", "20231013")
     version("org.junit.jupiter.api", "5.9.1")
     version("org.junit.platform.engine", "1.9.1")
