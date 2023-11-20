@@ -1205,7 +1205,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return defaultHapiSpec("autoAccountCreationsHappyPath")
+        return defaultHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
