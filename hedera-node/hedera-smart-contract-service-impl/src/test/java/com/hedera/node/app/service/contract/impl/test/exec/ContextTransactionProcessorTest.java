@@ -96,7 +96,8 @@ class ContextTransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
-        final var expectedResult = new CallOutcome(protoResult, SUCCESS, SUCCESS_RESULT.gasPrice());
+        final var expectedResult =
+                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
         assertEquals(expectedResult, subject.call());
     }
 
@@ -124,7 +125,8 @@ class ContextTransactionProcessorTest {
                 .willReturn(SUCCESS_RESULT);
 
         final var protoResult = SUCCESS_RESULT.asProtoResultOf(null, baseProxyWorldUpdater);
-        final var expectedResult = new CallOutcome(protoResult, SUCCESS, SUCCESS_RESULT.gasPrice());
+        final var expectedResult =
+                new CallOutcome(protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice());
         assertEquals(expectedResult, subject.call());
     }
 
