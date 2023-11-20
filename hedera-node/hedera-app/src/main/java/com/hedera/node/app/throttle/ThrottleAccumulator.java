@@ -241,6 +241,17 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         return GAS_THROTTLED_FUNCTIONS.contains(function);
     }
 
+    /*
+     * Resets the usage for all underlying throttles.
+     */
+    public void resetUsage() {
+        lastTxnWasGasThrottled = false;
+        activeThrottles.forEach(DeterministicThrottle::resetUsage);
+        if (gasThrottle != null) {
+            gasThrottle.resetUsage();
+        }
+    }
+
     private boolean shouldThrottleTxn(
             boolean isChild,
             @NonNull final TransactionInfo txnInfo,
