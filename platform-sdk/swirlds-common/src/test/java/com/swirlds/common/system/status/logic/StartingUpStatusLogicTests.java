@@ -98,5 +98,7 @@ class StartingUpStatusLogicTests {
                 logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
         triggerActionAndAssertException(
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, true), logic.getStatus());
     }
 }

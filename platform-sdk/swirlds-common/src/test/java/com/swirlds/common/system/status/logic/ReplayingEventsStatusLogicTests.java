@@ -83,7 +83,7 @@ class ReplayingEventsStatusLogicTests {
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(5, false), logic.getStatus());
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(6, true), // todo
+                new StateWrittenToDiskAction(6, true),
                 PlatformStatus.FREEZE_COMPLETE);
     }
 

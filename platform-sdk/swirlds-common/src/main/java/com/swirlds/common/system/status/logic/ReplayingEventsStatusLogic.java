@@ -185,8 +185,8 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      * <p>
-     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#REPLAYING_EVENTS} has no effect on the state
-     * machine, unless it is a freeze state, in which case the status transitions to {@link PlatformStatus#FREEZE_COMPLETE}.
+     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#REPLAYING_EVENTS} causes a transition to
+     * {@link PlatformStatus#FREEZE_COMPLETE} if it's a freeze state.
      */
     @NonNull
     @Override

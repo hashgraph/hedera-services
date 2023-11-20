@@ -79,7 +79,6 @@ class FreezingStatusLogicTests {
                 logic::processFallenBehindAction, new FallenBehindAction(), logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
-        // If the round number of the state written to disk isn't a freeze round, no transition should occur
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());
     }
