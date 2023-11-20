@@ -19,7 +19,7 @@ package com.swirlds.test.framework;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

@@ -17,14 +17,15 @@
 package com.swirlds.common.wiring.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.utility.ModelGroup;
 import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -1676,5 +1677,21 @@ class ModelTests {
         taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, false, true);
+    }
+
+    @Test
+    void unboundInputWireTest() {
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.schedulerBuilder("A").build().cast();
+        final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+
+        assertTrue(model.checkForUnboundInputWires());
+
+        inputA.bind(x -> {});
+
+        assertFalse(model.checkForUnboundInputWires());
     }
 }
