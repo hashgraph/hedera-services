@@ -25,10 +25,10 @@ testModuleInfo {
     requires("com.hedera.node.config")
     requires("com.swirlds.test.framework")
     requires("org.assertj.core")
-    requires("org.hyperledger.besu.datatypes")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+    runtimeOnly("org.hyperledger.besu.datatypes")
 }
