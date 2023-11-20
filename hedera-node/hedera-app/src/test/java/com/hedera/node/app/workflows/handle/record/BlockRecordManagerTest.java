@@ -62,6 +62,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings({"DataFlowIssue"})
 final class BlockRecordManagerTest extends AppTestBase {
+    private static final Timestamp CONSENSUS_TIME =
+            Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build();
     /** Make it small enough to trigger roll over code with the number of test blocks we have */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
 
@@ -100,7 +102,8 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withSingletonState(
                         RUNNING_HASHES_STATE_KEY, new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null))
                 .withSingletonState(
-                        BLOCK_INFO_STATE_KEY, new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash()))
+                        BLOCK_INFO_STATE_KEY,
+                        new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash(), null, false))
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
@@ -119,7 +122,7 @@ final class BlockRecordManagerTest extends AppTestBase {
     @ParameterizedTest
     @CsvSource({"GENESIS, false", "NON_GENESIS, false", "GENESIS, true", "NON_GENESIS, true"})
     void testRecordStreamProduction(final String startMode, final boolean concurrent) throws Exception {
-        // setup initial block info,
+        // setup initial block info
         final long STARTING_BLOCK;
         if (startMode.equals("GENESIS")) {
             STARTING_BLOCK = 1;
@@ -140,7 +143,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                                                             .seconds()
                                                     - 2,
                                             0),
-                                    STARTING_RUNNING_HASH_OBJ.hash()))
+                                    STARTING_RUNNING_HASH_OBJ.hash(),
+                                    CONSENSUS_TIME,
+                                    true))
                     .commit();
         }
 
@@ -225,7 +230,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                                                         .seconds()
                                                 - 2,
                                         0),
-                                STARTING_RUNNING_HASH_OBJ.hash()))
+                                STARTING_RUNNING_HASH_OBJ.hash(),
+                                CONSENSUS_TIME,
+                                true))
                 .commit();
 
         final Random random = new Random(82792874);
