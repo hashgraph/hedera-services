@@ -37,7 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param name the name of the reserver
  */
-public record SignedStateReserver(String name)
+public record SignedStateReserver(@NonNull String name)
         implements AdvancedTransformation<ReservedSignedState, ReservedSignedState> {
     @NonNull
     @Override
