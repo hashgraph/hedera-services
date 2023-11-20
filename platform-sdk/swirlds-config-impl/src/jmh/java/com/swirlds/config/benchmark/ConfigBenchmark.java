@@ -16,10 +16,10 @@
 
 package com.swirlds.config.benchmark;
 
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
