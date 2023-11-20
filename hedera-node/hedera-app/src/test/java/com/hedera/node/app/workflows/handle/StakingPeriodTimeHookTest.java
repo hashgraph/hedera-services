@@ -25,6 +25,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.config.data.StakingConfig;
@@ -41,18 +44,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingPeriodTimeHookTest {
-    private static final Instant CONSENSUS_TIME_1234567 = Instant.ofEpochSecond(1_234_567L);
+    private static final Instant CONSENSUS_TIME_1234567 = Instant.ofEpochSecond(1_234_5670L, 1357);
 
     @Mock
     private EndOfStakingPeriodUpdater stakingPeriodCalculator;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private TokenContext context;
+
+    @Mock
+    private ReadableBlockRecordStore blockStore;
 
     private StakingPeriodTimeHook subject;
 
     @BeforeEach
     void setUp() {
+        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
+
         subject = new StakingPeriodTimeHook(stakingPeriodCalculator);
     }
 
@@ -69,7 +77,10 @@ class StakingPeriodTimeHookTest {
 
     @Test
     void processUpdateCalledForNullConsensusTime() {
-        subject.setLastConsensusTime(null);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn((Timestamp) null)
+                        .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
 
         subject.process(context);
@@ -81,7 +92,12 @@ class StakingPeriodTimeHookTest {
     void processUpdateSkippedForPreviousConsensusTime() {
         final var beforeLastConsensusTime = CONSENSUS_TIME_1234567.minusSeconds(1);
         given(context.consensusTime()).willReturn(beforeLastConsensusTime);
-        subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                                .seconds(CONSENSUS_TIME_1234567.getEpochSecond())
+                                .nanos(CONSENSUS_TIME_1234567.getNano()))
+                        .build());
 
         subject.process(context);
 
@@ -92,9 +108,14 @@ class StakingPeriodTimeHookTest {
     void processUpdateCalledForNextPeriod() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
-        var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
+        final var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                                .seconds(CONSENSUS_TIME_1234567.getEpochSecond())
+                                .nanos(CONSENSUS_TIME_1234567.getNano()))
+                        .build());
         given(context.consensusTime()).willReturn(currentConsensusTime);
-        subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
         // Pre-condition check
         Assertions.assertThat(StakingPeriodTimeHook.isNextStakingPeriod(
@@ -112,8 +133,14 @@ class StakingPeriodTimeHookTest {
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
                 .updateNodes(any());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plusSeconds(10));
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn((Timestamp) null)
+                        .build());
 
         Assertions.assertThatNoException().isThrownBy(() -> subject.process(context));
+        verify(stakingPeriodCalculator).updateNodes(any());
     }
 
     @Test
