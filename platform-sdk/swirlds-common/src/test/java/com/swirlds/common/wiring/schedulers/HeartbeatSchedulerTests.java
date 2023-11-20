@@ -69,7 +69,7 @@ class HeartbeatSchedulerTests {
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
         final Bindable<Instant, Void> heartbeatBindable =
-                scheduler.buildHeartbeatInputWire("heartbeat", Duration.ofMillis(100));
+                scheduler.buildHeartbeatInputWire("heartbeat", Duration.ofMillis(10));
 
         final AtomicLong counter = new AtomicLong(0);
         heartbeatBindable.bind((time) -> {
