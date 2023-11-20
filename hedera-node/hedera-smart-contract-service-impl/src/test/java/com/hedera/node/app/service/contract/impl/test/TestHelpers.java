@@ -134,11 +134,21 @@ public class TestHelpers {
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
+    public static final Configuration AUTO_ASSOCIATING_PER_ACCOUNT_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.allowAutoAssociations", true)
+            .withValue("ledger.maxAutoAssociations", 5)
+            .withValue("tokens.maxPerAccount", 3)
+            .withValue("entities.limitTokenAssociations", true)
+            .getOrCreateConfig();
 
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
+    public static final EntitiesConfig AUTO_ASSOCIATING_ENTITIES_CONFIG =
+            AUTO_ASSOCIATING_PER_ACCOUNT_CONFIG.getConfigData(EntitiesConfig.class);
+    public static final TokensConfig AUTO_ASSOCIATING_TOKENS_CONFIG =
+            AUTO_ASSOCIATING_PER_ACCOUNT_CONFIG.getConfigData(TokensConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(ContractsConfig.class);
     public static final ContractsConfig DEV_CHAIN_ID_CONTRACTS_CONFIG =

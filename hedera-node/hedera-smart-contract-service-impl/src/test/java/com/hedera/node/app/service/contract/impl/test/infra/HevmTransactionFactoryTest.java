@@ -40,7 +40,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_ENTITIES_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_TOKENS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
@@ -272,6 +274,15 @@ class HevmTransactionFactoryTest {
         assertCreateFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, b -> b.gas(
                         DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
                 .maxAutomaticTokenAssociations(AUTO_ASSOCIATING_LEDGER_CONFIG.maxAutoAssociations() + 1)
+                .autoRenewPeriod(SOME_DURATION));
+    }
+
+    @Test
+    void fromHapiCreationDoesNotPermitExcessAutoAssociationsPerAccount() {
+        givenInsteadAutoAssociatingPerAccountSubject();
+        assertCreateFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, b -> b.gas(
+                        DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
+                .maxAutomaticTokenAssociations(AUTO_ASSOCIATING_LEDGER_CONFIG.maxAutoAssociations())
                 .autoRenewPeriod(SOME_DURATION));
     }
 
@@ -620,6 +631,26 @@ class HevmTransactionFactoryTest {
                 tokenServiceApi,
                 ethereumSignatures);
     }
+
+    private void givenInsteadAutoAssociatingPerAccountSubject() {
+        subject = new HevmTransactionFactory(
+                networkInfo,
+                AUTO_ASSOCIATING_LEDGER_CONFIG,
+                AUTO_ASSOCIATING_TOKENS_CONFIG,
+                AUTO_ASSOCIATING_ENTITIES_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
+                gasCalculator,
+                DEFAULT_STAKING_CONFIG,
+                AUTO_ASSOCIATING_CONTRACTS_CONFIG,
+                null,
+                accountStore,
+                expiryValidator,
+                fileStore,
+                attributeValidator,
+                tokenServiceApi,
+                ethereumSignatures);
+    }
+
 
     private void givenInsteadFailedHydrationSubject() {
         subject = new HevmTransactionFactory(
