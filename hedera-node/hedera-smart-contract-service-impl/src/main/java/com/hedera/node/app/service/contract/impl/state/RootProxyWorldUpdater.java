@@ -46,7 +46,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
 
     private boolean committed = false;
     private List<ContractID> createdContractIds;
-    private List<ContractNonceInfo> updatedContractNonces;
+    private List<ContractNonceInfo> updatedContractNonces = new ArrayList<>();
 
     @Inject
     public RootProxyWorldUpdater(
@@ -94,7 +94,12 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // information for the Hedera record
         final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
         createdContractIds = contractChangeSummary.newContractIds();
-        updatedContractNonces = contractChangeSummary.updatedContractNonces();
+
+        // If nonces externalization is enabled, we need to capture the updated nonces
+        if(contractsConfig.noncesExternalizationEnabled()) {
+            updatedContractNonces = contractChangeSummary.updatedContractNonces();
+        }
+
         super.commit();
         // Be sure not to externalize contract ids or nonces without a successful commit
         committed = true;
