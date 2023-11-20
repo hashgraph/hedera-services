@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MES
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
+import static com.hedera.pbj.runtime.ProtoTestTools.getThreadLocalDataBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,7 +62,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junitpioneer.jupiter.cartesian.CartesianTest;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -303,14 +308,14 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
         given(schedulingConfig.longTermEnabled()).willReturn(longTermEnabled);
         given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
-        given(autoCreationConfig.enabled()).willReturn(true);
+        given(autoCreationConfig.enabled()).willReturn(false);
         given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
         given(lazyCreationConfig.enabled()).willReturn(false);
 
         given(state.createReadableStates(any())).willReturn(readableStates);
         given(readableStates.get(any())).willReturn(aliases);
 
-        final var alias = A_PRIMITIVE_KEY.ed25519();
+        final var alias = keyToBytes(A_PRIMITIVE_KEY);
         var accountAmounts = new ArrayList<AccountAmount>();
         accountAmounts.add(AccountAmount.newBuilder()
                 .amount(-1_000_000_000L)
@@ -400,6 +405,242 @@ class ThrottleAccumulatorTest {
         assertEquals(
                 longTermEnabled && throttleType == FRONTEND_THROTTLE ? BucketThrottle.capacityUnitsPerTxn() : 0,
                 subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true,true",
+        "FRONTEND_THROTTLE,true,false",
+        "BACKEND_THROTTLE,true,true",
+        "BACKEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,true",
+    })
+    void doesntUseCryptoCreateThrottleForNonCryptoTransfer(
+            final ThrottleAccumulator.ThrottleType throttleType,
+            final boolean autoCreationEnabled,
+            final boolean lazyCreationEnabled)
+            throws IOException {
+        // given
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
+        given(accountsConfig.lastThrottleExempt()).willReturn(100L);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.throttleThrottleByGas()).willReturn(false);
+        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
+        given(schedulingConfig.longTermEnabled()).willReturn(false);
+        given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
+        given(autoCreationConfig.enabled()).willReturn(autoCreationEnabled);
+        given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
+        given(lazyCreationConfig.enabled()).willReturn(lazyCreationEnabled);
+
+        final var scheduledTxn = SchedulableTransactionBody.newBuilder()
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
+
+        final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
+        subject.rebuildFor(defs);
+
+        // when
+        final var txnInfo = scheduleCreate(scheduledTxn, false, null);
+        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
+        final var aNow = throttlesNow.get(0);
+
+        // then
+        assertFalse(ans);
+        assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+    }
+
+    @CartesianTest
+    @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+    void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleCreate(
+            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
+        // given
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
+        given(accountsConfig.lastThrottleExempt()).willReturn(100L);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.throttleThrottleByGas()).willReturn(false);
+        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
+        given(schedulingConfig.longTermEnabled()).willReturn(longTermEnabled);
+        given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
+        given(autoCreationConfig.enabled()).willReturn(true);
+        given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
+        given(lazyCreationConfig.enabled()).willReturn(false);
+
+        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(readableStates.get(any())).willReturn(aliases);
+
+        final var alias = keyToBytes(A_PRIMITIVE_KEY);
+        if (!(throttleType != FRONTEND_THROTTLE && longTermEnabled)) {
+            given(aliases.get(any())).willReturn(null);
+        }
+
+        var accountAmounts = new ArrayList<AccountAmount>();
+        accountAmounts.add(AccountAmount.newBuilder()
+                .amount(-1_000_000_000L)
+                .accountID(AccountID.newBuilder().accountNum(3333L).build())
+                .build());
+        accountAmounts.add(AccountAmount.newBuilder()
+                .amount(+1_000_000_000L)
+                .accountID(AccountID.newBuilder().alias(alias).build())
+                .build());
+        final var scheduledTransferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .transfers(TransferList.newBuilder()
+                                .accountAmounts(accountAmounts)
+                                .build()))
+                .build();
+
+        final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
+        subject.rebuildFor(defs);
+
+        // when
+        final var txnInfo = scheduleCreate(scheduledTransferWithAutoCreation, false, null);
+        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
+        final var aNow = throttlesNow.get(0);
+
+        // then
+        assertFalse(ans);
+        if (longTermEnabled && throttleType == FRONTEND_THROTTLE) {
+            // with long term enabled, we count the schedule create in addition to the auto
+            // creations, which
+            // is how it should have been to start with
+            assertEquals(51 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+        } else if (longTermEnabled) {
+            // with long term enabled, consensus throttles do not count the contained txn
+            assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+        } else {
+            assertEquals(50 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+        }
+
+        assertEquals(0, subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
+    }
+
+    @CartesianTest
+    @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+    void usesScheduleCreateThrottleForAliasedCryptoTransferWithNoAutoCreation(
+            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
+        // given
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
+
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
+        given(accountsConfig.lastThrottleExempt()).willReturn(100L);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.throttleThrottleByGas()).willReturn(false);
+        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
+        given(schedulingConfig.longTermEnabled()).willReturn(longTermEnabled);
+        given(configuration.getConfigData(AutoCreationConfig.class)).willReturn(autoCreationConfig);
+        given(autoCreationConfig.enabled()).willReturn(true);
+        given(configuration.getConfigData(LazyCreationConfig.class)).willReturn(lazyCreationConfig);
+        given(lazyCreationConfig.enabled()).willReturn(false);
+
+        given(state.createReadableStates(any())).willReturn(readableStates);
+        given(readableStates.get(any())).willReturn(aliases);
+
+        final var alias = keyToBytes(A_PRIMITIVE_KEY);
+        if (!(throttleType != FRONTEND_THROTTLE && longTermEnabled)) {
+            given(aliases.get(any()))
+                    .willReturn(AccountID.newBuilder().accountNum(1_234L).build());
+        }
+
+        var accountAmounts = new ArrayList<AccountAmount>();
+        accountAmounts.add(AccountAmount.newBuilder()
+                .amount(-1_000_000_000L)
+                .accountID(AccountID.newBuilder().accountNum(3333L).build())
+                .build());
+        accountAmounts.add(AccountAmount.newBuilder()
+                .amount(+1_000_000_000L)
+                .accountID(AccountID.newBuilder().alias(alias).build())
+                .build());
+        final var scheduledTransferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .transfers(TransferList.newBuilder()
+                                .accountAmounts(accountAmounts)
+                                .build()))
+                .build();
+
+        final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
+        subject.rebuildFor(defs);
+
+        // when
+        final var txnInfo = scheduleCreate(scheduledTransferWithAutoCreation, false, null);
+        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
+        final var aNow = throttlesNow.get(0);
+
+        // then
+        assertFalse(ans);
+        assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+
+        assertEquals(
+                longTermEnabled && throttleType == FRONTEND_THROTTLE ? BucketThrottle.capacityUnitsPerTxn() : 0,
+                subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
+    }
+
+    @Test
+    void reclaimsAllUsagesOnThrottledShouldThrottleTxn() throws IOException {
+        // given
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
+        given(accountsConfig.lastThrottleExempt()).willReturn(100L);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.throttleThrottleByGas()).willReturn(false);
+        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
+        given(schedulingConfig.longTermEnabled()).willReturn(true);
+
+        final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
+        final var defs = getThrottleDefs("bootstrap/schedule-create-throttles-inverted.json");
+        subject.rebuildFor(defs);
+
+        final var txnInfo = scheduleCreate(scheduledSubmit, false, null);
+        final var firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        boolean subsequentAns = false;
+        for (int i = 1; i <= 150; i++) {
+            subsequentAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW.plusNanos(i), state);
+        }
+
+        assertFalse(firstAns);
+        assertTrue(subsequentAns);
+        assertEquals(
+                4999250000000L,
+                subject.activeThrottlesFor(SCHEDULE_CREATE).get(0).used());
+
+        assertEquals(
+                4999999250000L,
+                subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
+
+        // when
+        subject.resetUsage();
+
+        // then
+        assertEquals(0L, subject.activeThrottlesFor(SCHEDULE_CREATE).get(0).used());
+        assertEquals(
+                0L, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
+    }
+
+    @NotNull
+    private static Bytes keyToBytes(Key key) throws IOException {
+        final var dataBuffer = getThreadLocalDataBuffer();
+        Key.PROTOBUF.write(key, dataBuffer);
+        // clamp limit to bytes written
+        dataBuffer.limit(dataBuffer.position());
+        return dataBuffer.getBytes(0, dataBuffer.length());
     }
 
     private TransactionInfo scheduleCreate(
