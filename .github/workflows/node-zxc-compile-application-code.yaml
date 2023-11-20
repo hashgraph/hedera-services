@@ -115,6 +115,7 @@ permissions:
 env:
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+  GRADLE_EXEC: cgexec -g cpu,memory:gradle --sticky ./gradlew
 
 jobs:
   compile:
@@ -142,22 +143,57 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
 
+      - name: Setup Control Groups
+        run: |
+          echo "::group::Get System Configuration"
+            UID="$(id -un)"
+            GID="$(id -gn)"
+            MEM_TOTAL="$(free -b | grep "Mem:" | awk '{print $2}')"
+            GRADLE_MEM_LIMIT="$(echo "${MEM_TOTAL}" | awk '{printf "%.0f", $1 * 0.75}')"
+            AGENT_MEM_LIMIT="$(echo "${MEM_TOTAL}" | awk '{printf "%.0f", $1 * 0.25}')"
+          echo "::endgroup::"
+          
+          echo "::group::Install Control Group Tools"
+            if ! command -v cgcreate >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y cgroup-tools
+            fi
+          echo "::endgroup::"
+          
+          echo "::group::Create Control Groups"
+            sudo cgcreate -g cpu,memory:gradle -a ${UID}:${GID} -t ${UID}:${GID}
+            sudo cgcreate -g cpu,memory:agent -a ${UID}:${GID} -t ${UID}:${GID}
+          echo "::endgroup::"
+          
+          echo "::group::Set Control Group Limits"
+            cgset -r cpu.shares=768 gradle
+            cgset -r cpu.shares=256 agent
+            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} gradle
+            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} agent
+            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} gradle
+            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} agent
+          echo "::endgroup::"
+          
+          echo "::group::Move Runner Processes to Control Groups"
+            sudo cgclassify -g cpu,memory:agent $(pgrep 'Runner.Listener' | tr '\n' ' ')
+          echo "::endgroup::"
+
       - name: Compile
         id: gradle-build
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew assemble --scan --no-daemon
+        run: ${GRADLE_EXEC} assemble --scan --no-daemon
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew spotlessCheck --scan --no-daemon
+        run: ${GRADLE_EXEC} spotlessCheck --scan --no-daemon
 
       - name: Gradle Dependency Scopes Check
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew checkAllModuleInfo --scan --continue --no-daemon
+        run: ${GRADLE_EXEC} checkAllModuleInfo --scan --continue --no-daemon
 
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew check --continue --scan --no-daemon
+        run: ${GRADLE_EXEC} check --continue --scan --no-daemon
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -176,12 +212,12 @@ jobs:
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew createDockerImage --scan --no-daemon
+        run: ${GRADLE_EXEC} createDockerImage --scan --no-daemon
 
       - name: Integration Testing
         id: gradle-itest
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew itest --scan --no-daemon
+        run: ${GRADLE_EXEC} itest --scan --no-daemon
 
       - name: Publish Integration Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -228,7 +264,7 @@ jobs:
       - name: E2E Testing
         id: gradle-eet
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew eet --scan --no-daemon
+        run: ${GRADLE_EXEC} eet --scan --no-daemon
 
       - name: Publish E2E Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
