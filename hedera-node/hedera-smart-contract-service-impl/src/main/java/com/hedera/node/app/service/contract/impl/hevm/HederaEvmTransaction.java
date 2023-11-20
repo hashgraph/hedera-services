@@ -97,7 +97,7 @@ public record HederaEvmTransaction(
     public long gasCostGiven(final long gasPrice) {
         try {
             return Math.multiplyExact(gasLimit, gasPrice);
-        } catch (Exception ignore) {
+        } catch (ArithmeticException ignore) {
             return Long.MAX_VALUE;
         }
     }
@@ -105,7 +105,7 @@ public record HederaEvmTransaction(
     public long offeredGasCost() {
         try {
             return Math.multiplyExact(gasLimit, offeredGasPrice);
-        } catch (Exception ignore) {
+        } catch (ArithmeticException ignore) {
             return Long.MAX_VALUE;
         }
     }

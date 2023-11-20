@@ -21,14 +21,16 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.ConcurrentTaskScheduler;
+import com.swirlds.common.wiring.schedulers.DirectTaskScheduler;
 import com.swirlds.common.wiring.schedulers.SequentialTaskScheduler;
+import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -50,9 +52,9 @@ public class TaskSchedulerBuilder<O> {
 
     public static final long UNLIMITED_CAPACITY = -1;
 
-    private final WiringModel model;
+    private final StandardWiringModel model;
 
-    private boolean concurrent = false;
+    private TaskSchedulerType type = TaskSchedulerType.SEQUENTIAL;
     private final String name;
     private TaskSchedulerMetricsBuilder metricsBuilder;
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
@@ -71,7 +73,7 @@ public class TaskSchedulerBuilder<O> {
      * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
      *             alphanumeric characters and underscores.
      */
-    public TaskSchedulerBuilder(@NonNull final WiringModel model, @NonNull final String name) {
+    public TaskSchedulerBuilder(@NonNull final StandardWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
@@ -87,14 +89,14 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
-     * Set whether the scheduler should be concurrent or not. Default false.
+     * Set the type of task scheduler to build. Alters the semantics of the scheduler (i.e. this is not just an internal
+     * implementation detail).
      *
-     * @param concurrent true if the task scheduler should be concurrent, false otherwise
+     * @param type the type of task scheduler to build
      * @return this
      */
-    @NonNull
-    public TaskSchedulerBuilder<O> withConcurrency(final boolean concurrent) {
-        this.concurrent = concurrent;
+    public TaskSchedulerBuilder<O> withType(@NonNull final TaskSchedulerType type) {
+        this.type = Objects.requireNonNull(type);
         return this;
     }
 
@@ -281,7 +283,7 @@ public class TaskSchedulerBuilder<O> {
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
         } else if ((metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled())
-                || (concurrent && flushingEnabled)) {
+                || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {
             innerCounter = null;
@@ -300,8 +302,8 @@ public class TaskSchedulerBuilder<O> {
         if (metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
             return NoOpFractionalTimer.getInstance();
         }
-        if (concurrent) {
-            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent wires");
+        if (type == TaskSchedulerType.CONCURRENT) {
+            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent schedulers");
         }
         return metricsBuilder.buildBusyTimer();
     }
@@ -322,27 +324,57 @@ public class TaskSchedulerBuilder<O> {
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
-        if (concurrent) {
-            return new ConcurrentTaskScheduler<>(
-                    model,
-                    name,
-                    pool,
-                    buildUncaughtExceptionHandler(),
-                    counters.onRamp(),
-                    counters.offRamp(),
-                    flushingEnabled,
-                    insertionIsBlocking);
-        } else {
-            return new SequentialTaskScheduler<>(
-                    model,
-                    name,
-                    pool,
-                    buildUncaughtExceptionHandler(),
-                    counters.onRamp(),
-                    counters.offRamp(),
-                    busyFractionTimer,
-                    flushingEnabled,
-                    insertionIsBlocking);
-        }
+        final TaskScheduler<O> scheduler =
+                switch (type) {
+                    case CONCURRENT -> new ConcurrentTaskScheduler<>(
+                            model,
+                            name,
+                            pool,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            flushingEnabled,
+                            insertionIsBlocking);
+                    case SEQUENTIAL -> new SequentialTaskScheduler<>(
+                            model,
+                            name,
+                            pool,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            flushingEnabled,
+                            insertionIsBlocking);
+                    case SEQUENTIAL_THREAD -> new SequentialThreadTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            sleepDuration,
+                            flushingEnabled,
+                            insertionIsBlocking);
+                    case DIRECT -> new DirectTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            false);
+                    case DIRECT_STATELESS -> new DirectTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            busyFractionTimer,
+                            true);
+                };
+
+        model.registerScheduler(scheduler);
+
+        return scheduler;
     }
 }

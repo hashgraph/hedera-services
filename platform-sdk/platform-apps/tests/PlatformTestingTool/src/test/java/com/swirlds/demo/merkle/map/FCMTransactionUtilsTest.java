@@ -25,7 +25,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.base.utility.Triple;
+import com.swirlds.demo.platform.Triple;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccountFCQ;

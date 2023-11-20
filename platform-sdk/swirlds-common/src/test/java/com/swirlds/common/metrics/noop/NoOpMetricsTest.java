@@ -32,11 +32,11 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
@@ -61,7 +61,7 @@ class NoOpMetricsTest {
         assertNotNull(metric.getFormat());
         assertNotNull(metric.getValueTypes());
         metric.reset();
-        if (metric instanceof LegacyMetric legacyMetric) {
+        if (metric instanceof PlatformMetric legacyMetric) {
             final StatsBuffered statsBuffered = legacyMetric.getStatsBuffered();
             assertNotNull(statsBuffered);
             assertNotNull(statsBuffered.getAllHistory());
@@ -254,8 +254,8 @@ class NoOpMetricsTest {
                     metrics.getOrCreate(new StatEntry.Config<>("asdf", "asdf", Integer.class, () -> 0));
 
             assertNotNull(metric.getDataType());
-            if (metric instanceof LegacyMetric legacyMetric) {
-                assertNotNull(legacyMetric.getStatsBuffered());
+            if (metric instanceof PlatformMetric platformMetric) {
+                assertNotNull(platformMetric.getStatsBuffered());
             }
             assertNotNull(metric.getReset());
             metric.getReset().accept(0.0);

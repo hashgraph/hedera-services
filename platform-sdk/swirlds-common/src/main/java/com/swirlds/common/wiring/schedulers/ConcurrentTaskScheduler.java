@@ -17,10 +17,10 @@
 package com.swirlds.common.wiring.schedulers;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -48,19 +48,20 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param onRamp                   an object counter that is incremented when data is added to the scheduler
      * @param offRamp                  an object counter that is decremented when data is removed from the scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
-     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is available?
+     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is
+     *                                 available?
      */
     public ConcurrentTaskScheduler(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
-            @NonNull ForkJoinPool pool,
-            @NonNull UncaughtExceptionHandler uncaughtExceptionHandler,
+            @NonNull final ForkJoinPool pool,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
 
-        super(model, name, flushEnabled, insertionIsBlocking);
+        super(model, name, TaskSchedulerType.CONCURRENT, flushEnabled, insertionIsBlocking);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
@@ -72,7 +73,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
@@ -81,7 +82,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
             new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
@@ -93,7 +94,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }

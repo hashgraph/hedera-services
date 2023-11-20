@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,8 +33,8 @@ public class EventSignatureValidatorScheduler {
 
     private final TaskScheduler<GossipEvent> taskScheduler;
 
-    private final InputWire<GossipEvent, GossipEvent> eventInput;
-    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
+    private final BindableInputWire<GossipEvent, GossipEvent> eventInput;
+    private final BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
 
     /**
      * Constructor.
@@ -41,7 +43,7 @@ public class EventSignatureValidatorScheduler {
      */
     public EventSignatureValidatorScheduler(@NonNull final WiringModel model) {
         taskScheduler = model.schedulerBuilder("eventSignatureValidator")
-                .withConcurrency(false)
+                .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
@@ -58,7 +60,7 @@ public class EventSignatureValidatorScheduler {
      * @return the event input wire
      */
     @NonNull
-    public InputWire<GossipEvent, GossipEvent> getEventInput() {
+    public InputWire<GossipEvent> getEventInput() {
         return eventInput;
     }
 
@@ -68,7 +70,7 @@ public class EventSignatureValidatorScheduler {
      * @return the minimum generation non ancient input wire
      */
     @NonNull
-    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
