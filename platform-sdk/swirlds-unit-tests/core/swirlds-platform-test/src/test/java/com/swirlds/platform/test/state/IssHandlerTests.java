@@ -46,16 +46,14 @@ class IssHandlerTests {
     @Test
     @DisplayName("Hash Disagreement From Self")
     void hashDisagreementFromSelf() {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("state.haltOnAnyIss", true).getOrCreateConfig();
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
-
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -81,9 +79,8 @@ class IssHandlerTests {
     @Test
     @DisplayName("Hash Disagreement Always Freeze")
     void hashDisagreementAlwaysFreeze() {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("state.haltOnAnyIss", true).getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 
@@ -122,9 +119,8 @@ class IssHandlerTests {
     @Test
     @DisplayName("Hash Disagreement No Action")
     void hashDisagreementNoAction() {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("state.haltOnAnyIss", false).getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final long selfId = 0;
 

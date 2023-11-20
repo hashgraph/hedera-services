@@ -156,8 +156,7 @@ public class IssHandler {
      * @param ignored2 the correct hash computed by the network
      */
     @Observer(SelfIssTrigger.class)
-    public void selfIssObserver(
-            @NonNull final Long round, @NonNull final Hash ignored1, @NonNull final Hash ignored2) {
+    public void selfIssObserver(@NonNull final Long round, @NonNull final Hash ignored1, @NonNull final Hash ignored2) {
 
         if (halted) {
             // don't take any action once halted

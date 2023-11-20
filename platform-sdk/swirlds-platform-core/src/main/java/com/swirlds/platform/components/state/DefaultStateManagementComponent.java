@@ -149,7 +149,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.savedStateController = Objects.requireNonNull(savedStateController);
         this.stateDumpConsumer = Objects.requireNonNull(stateDumpConsumer);
 
-        hashLogger = new HashLogger(threadManager, platformContext.getConfiguration().getConfigData(StateConfig.class));
+        hashLogger =
+                new HashLogger(threadManager, platformContext.getConfiguration().getConfigData(StateConfig.class));
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
