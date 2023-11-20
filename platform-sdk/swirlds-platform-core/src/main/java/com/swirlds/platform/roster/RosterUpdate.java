@@ -23,17 +23,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Describes a (potential) update to the effective roster. Note that a roster update is sent once per round even if
  * there is not change in the roster.
  *
- * @param pendingConsensusRound the current round that the hashgraph is working on (i.e. the round that will reach
- *                              consensus next). This is equivalent to the round in which {@link #effectiveRoster}
- *                              becomes effective.
- * @param effectiveRoster       the roster that is being used to compute consensus for {@link #pendingConsensusRound}
- * @param effectiveRosterDiff   describes the difference between the new effective roster and the previous effective
- *                              roster
+ * @param effectiveRound the round when this roster becomes effective
+ * @param roster         the roster that will be used to compute consensus for the effective round
+ * @param rosterDiff     describes the difference between the new roster and the roster that is effective in round
+ *                       ({@link #effectiveRound} - 1).
  */
 public record RosterUpdate(
-        long pendingConsensusRound,
-        long minimumRoundNonAncient,
-        @NonNull AddressBook effectiveRoster,
-        @NonNull RosterDiff effectiveRosterDiff) {
-
+        long effectiveRound, @NonNull AddressBook roster, @NonNull RosterDiff rosterDiff) {
 }
