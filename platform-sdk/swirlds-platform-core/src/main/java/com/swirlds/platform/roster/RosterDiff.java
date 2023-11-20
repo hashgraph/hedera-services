@@ -32,6 +32,7 @@ import java.util.List;
  * @param modifiedNodes          the nodes that were modified
  */
 public record RosterDiff(
+        @NonNull UpdatedRoster newRoster,
         boolean rosterIsIdentical,
         boolean consensusWeightChanged,
         boolean membershipChanged,

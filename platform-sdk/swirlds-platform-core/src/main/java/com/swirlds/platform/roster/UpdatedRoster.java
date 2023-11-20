@@ -20,14 +20,10 @@ import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Describes a (potential) update to the effective roster. Note that a roster update is sent once per round even if
- * there is not change in the roster.
+ * Signals that a new roster has been selected. This happens once per round regardless of whether or not the new roster
+ * is any different that the prior roster.
  *
- * @param effectiveRound the round when this roster becomes effective
- * @param roster         the roster that will be used to compute consensus for the effective round
- * @param rosterDiff     describes the difference between the new roster and the roster that is effective in round
- *                       ({@link #effectiveRound} - 1).
+ * @param effectiveRound the round in which this roster becomes effective
+ * @param roster         the new roster
  */
-public record RosterUpdate(
-        long effectiveRound, @NonNull AddressBook roster, @NonNull RosterDiff rosterDiff) {
-}
+public record UpdatedRoster(long effectiveRound, @NonNull AddressBook roster) {}
