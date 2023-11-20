@@ -44,7 +44,6 @@ import org.apache.logging.log4j.Logger;
  * @param <T> the type of the record builder to expect from the dispatch
  */
 public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
-    private static final Logger logger = LogManager.getLogger(DispatchForResponseCodeHtsCall.class);
     /**
      * The "standard" failure customizer that replaces {@link ResponseCodeEnum#INVALID_SIGNATURE} with
      * {@link ResponseCodeEnum#INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE}. (Note this code no longer
@@ -215,11 +214,6 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
-        logger.info(
-                "Dispatched synthetic body {} with result {} (gas requirement={})",
-                syntheticBody,
-                recordBuilder.status(),
-                gasRequirement);
         var status = recordBuilder.status();
         if (status != SUCCESS) {
             status = failureCustomizer.customize(syntheticBody, status, enhancement);

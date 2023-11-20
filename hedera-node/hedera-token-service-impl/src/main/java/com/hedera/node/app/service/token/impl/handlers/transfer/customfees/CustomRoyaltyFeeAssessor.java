@@ -89,13 +89,7 @@ public class CustomRoyaltyFeeAssessor {
                 final var fallback = royaltyFee.fallbackFeeOrThrow();
                 final var fallbackFee = asFixedFee(
                         fallback.amount(), fallback.denominatingTokenId(), collector, fee.allCollectorsAreExempt());
-                // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-                // paid it for this token
-                if (result.getRoyaltiesPaid().contains(Pair.of(receiver, fallback.denominatingTokenId()))) {
-                    continue;
-                }
                 fixedFeeAssessor.assessFixedFee(feeMeta, receiver, fallbackFee, result);
-                result.addToRoyaltiesPaid(Pair.of(receiver, fallback.denominatingTokenId()));
             } else {
                 if (!isPayerExempt(feeMeta, fee, sender)) {
                     chargeRoyalty(exchangedValue, feeMeta, fee, result);

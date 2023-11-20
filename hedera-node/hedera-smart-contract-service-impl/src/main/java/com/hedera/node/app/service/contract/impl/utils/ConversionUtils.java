@@ -162,7 +162,7 @@ public class ConversionUtils {
     }
 
     /**
-     * Given an account, returns its "priority" address as a headlong address.
+     * Given an account, returns its "priority" address as a Besu address.
      *
      * @param account the account
      * @return the priority address

@@ -41,8 +41,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class FinalizeChildRecordHandler extends RecordFinalizerBase implements ChildRecordFinalizer {
-    private static final Logger logger = LogManager.getLogger(FinalizeChildRecordHandler.class);
-
     @Inject
     public FinalizeChildRecordHandler() {
         // For Dagger Injection
@@ -74,11 +72,9 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
-        logger.info("Finalizing child record for fungible token transfers");
         final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
-        logger.info("Finalized child record for fungible token transfers - {}", tokenTransferLists);
 
         // ---------- nft transfers -------------------------
         final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);

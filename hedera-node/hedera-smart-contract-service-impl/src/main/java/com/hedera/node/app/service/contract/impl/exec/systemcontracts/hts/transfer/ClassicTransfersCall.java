@@ -66,8 +66,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * But the basic pattern of constructing and dispatching a synthetic {@link CryptoTransferTransactionBody} remains.
  */
 public class ClassicTransfersCall extends AbstractHtsCall {
-    private static final Logger logger = LogManager.getLogger(ClassicTransfersCall.class);
-
     private final byte[] selector;
     private final AccountID spenderId;
     private final TransactionBody syntheticTransfer;
@@ -119,7 +117,6 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                     gasRequirement,
                     systemContractOperations().externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
         }
-        logger.info("\n\nDispatching: {}\n\n", syntheticTransfer);
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
                         .copyBuilder()

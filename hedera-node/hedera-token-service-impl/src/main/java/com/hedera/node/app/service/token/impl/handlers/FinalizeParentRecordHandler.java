@@ -53,7 +53,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
-    private static final Logger logger = LogManager.getLogger(FinalizeParentRecordHandler.class);
     private final StakingRewardsHandler stakingRewardsHandler;
 
     @Inject
@@ -120,14 +119,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,
             @NonNull final Map<AccountID, Long> hbarChanges) {
         final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
-        logger.info(
-                "Deducting changes from child records " + "- hbar changes: {}, fungible changes: {}, nft changes: {}",
-                hbarChanges,
-                fungibleChanges,
-                nftTransfers);
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
             final var childHbarChangesFromRecord = childRecord.transferList();
-            logger.info(" - child hbar changes: {}", childHbarChangesFromRecord);
             for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {
@@ -141,7 +134,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                 final var fungibleTransfers = tokenTransfers.transfersOrElse(emptyList());
                 final var tokenId = tokenTransfers.tokenOrThrow();
                 if (!fungibleTransfers.isEmpty()) {
-                    logger.info(" - child fungible transfers: {}", fungibleTransfers);
                     for (final var unitAdjust : fungibleTransfers) {
                         final var accountId = unitAdjust.accountIDOrThrow();
                         final var amount = unitAdjust.amount();
@@ -154,7 +146,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                         }
                     }
                 } else {
-                    logger.info(" - child nft transfers: {}", tokenTransfers.nftTransfersOrElse(emptyList()));
                     for (final var ownershipChange : tokenTransfers.nftTransfersOrElse(emptyList())) {
                         final var newOwnerId = ownershipChange.receiverAccountIDOrElse(ZERO_ACCOUNT_ID);
                         final var key = new NftID(tokenId, ownershipChange.serialNumber());
@@ -177,11 +168,5 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                 iter.remove();
             }
         }
-        logger.info(
-                "RESULT of deducting changes from child records "
-                        + "- hbar changes: {}, fungible changes: {}, nft changes: {}",
-                hbarChanges,
-                fungibleChanges,
-                nftTransfers);
     }
 }

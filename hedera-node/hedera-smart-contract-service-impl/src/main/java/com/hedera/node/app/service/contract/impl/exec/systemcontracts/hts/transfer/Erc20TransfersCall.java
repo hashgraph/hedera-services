@@ -49,8 +49,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Implements the ERC-20 {@code transfer()} and {@code transferFrom()} calls of the HTS contract.
  */
 public class Erc20TransfersCall extends AbstractHtsCall {
-    private static final Logger logger = LogManager.getLogger(Erc20TransfersCall.class);
-
     private final long amount;
 
     @Nullable
@@ -92,7 +90,6 @@ public class Erc20TransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        logger.info("execute");
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
@@ -129,7 +126,6 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             final var tokenTransferLists = syntheticTransferOrTransferFrom(senderId)
                     .cryptoTransferOrThrow()
                     .tokenTransfersOrThrow();
-            logger.info("tokenTransferLists: {}", tokenTransferLists);
             for (final var fungibleTransfers : tokenTransferLists) {
                 TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
                         requireNonNull(tokenId),
