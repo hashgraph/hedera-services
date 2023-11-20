@@ -75,7 +75,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -1482,7 +1481,8 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
-        return defaultHapiSpec("CannotHaveMultipleAllowedSpendersForTheSameNFTSerial", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "CannotHaveMultipleAllowedSpendersForTheSameNFTSerial", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
