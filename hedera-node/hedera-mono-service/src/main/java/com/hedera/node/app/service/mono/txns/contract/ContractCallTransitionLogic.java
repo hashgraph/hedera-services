@@ -51,12 +51,9 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -230,15 +227,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             }
         } else {
             // --- Persist changes into state ---
-            final var createdContractsFromWorldState = worldState.getCreatedContractIds();
-            final List<ContractID> createdContracts = new ArrayList<>();
-            final var createdContractNonces = worldState.getContractNonces().keySet();
-            for (final var createdContract : createdContractsFromWorldState) {
-                if (createdContractNonces.stream()
-                        .anyMatch(o -> o.getContractNum() == createdContract.getContractNum())) {
-                    createdContracts.add(createdContract);
-                }
-            }
+            final var createdContracts = worldState.getCreatedContractIds();
             result.setCreatedContracts(createdContracts);
 
             txnCtx.setTargetedContract(target.toGrpcContractID());
