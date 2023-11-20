@@ -26,6 +26,7 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
