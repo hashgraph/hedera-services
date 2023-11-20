@@ -651,7 +651,6 @@ class HevmTransactionFactoryTest {
                 ethereumSignatures);
     }
 
-
     private void givenInsteadFailedHydrationSubject() {
         subject = new HevmTransactionFactory(
                 networkInfo,
