@@ -80,7 +80,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                 canQueryForRecordsWithDeletedPayers());
     }
 
-    @HapiTest
+    @HapiTest // here transactionFee
     private HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
