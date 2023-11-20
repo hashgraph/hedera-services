@@ -377,6 +377,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 getTxnRecord("payTxn")
+                                        .andAllChildRecords()
                                         .logged()
                                         .hasPriority(recordWith()
                                                 .contractCreateResult(resultWith()
@@ -391,7 +392,16 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                                         .getBytes(ETH_SENDER_ADDRESS)),
                                                                 0L))
                                                 .ethereumHash(ByteString.copyFrom(
-                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                                                        spec.registry().getBytes(ETH_HASH_KEY))))
+                                        .hasChildRecordCount(1)
+                                        .hasChildRecords(recordWith()
+                                                .status(SUCCESS)
+                                                .contractCreateResult(resultWith()
+                                                        .contract(PAY_RECEIVABLE_CONTRACT)
+                                                        .create1EvmAddress(
+                                                                ByteString.copyFrom(spec.registry()
+                                                                        .getBytes(ETH_SENDER_ADDRESS)),
+                                                                0L))))),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)));
     }
