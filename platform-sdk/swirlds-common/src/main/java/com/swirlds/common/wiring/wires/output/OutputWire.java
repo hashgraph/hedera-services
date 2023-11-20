@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
 import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
 import com.swirlds.common.wiring.transformers.internal.WireFilter;
@@ -38,7 +38,7 @@ import java.util.function.Predicate;
  */
 public abstract class OutputWire<OUT> {
 
-    private final WiringModel model;
+    private final StandardWiringModel model;
     private final String name;
 
     /**
@@ -47,7 +47,7 @@ public abstract class OutputWire<OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    public OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
+    public OutputWire(@NonNull final StandardWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
     }
@@ -77,7 +77,7 @@ public abstract class OutputWire<OUT> {
      *
      * @param inputWire the input wire to forward output data to
      */
-    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
+    public void solderTo(@NonNull final InputWire<OUT> inputWire) {
         solderTo(inputWire, SolderType.PUT);
     }
 
@@ -95,7 +95,7 @@ public abstract class OutputWire<OUT> {
      * @param inputWire  the input wire to forward output data to
      * @param solderType the semantics of the soldering operation
      */
-    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, @NonNull final SolderType solderType) {
+    public void solderTo(@NonNull final InputWire<OUT> inputWire, @NonNull final SolderType solderType) {
         model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
 
         switch (solderType) {
@@ -218,15 +218,14 @@ public abstract class OutputWire<OUT> {
      * This method is very similar to {@link #buildAdvancedTransformer(String, Function, Consumer)}, but with a
      * different way of describing the transformation.
      *
-     * @param name        the name of the transformer
      * @param transformer an object that manages the transformation
      * @param <NEW_OUT>   the output type of the transformer
      * @return the output wire of the transformer
      */
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
-            @NonNull final String name, @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
-        return buildAdvancedTransformer(name, transformer::transform, transformer::cleanup);
+            @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
+        return buildAdvancedTransformer(transformer.getName(), transformer::transform, transformer::cleanup);
     }
 
     /**
