@@ -19,6 +19,7 @@ package com.hedera.node.app.state.merkle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
@@ -109,8 +110,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
 
-    private static final long CLASS_ID = 0x2de3ead3caf06392L;
-    private static final int VERSION_1 = 1;
+//    private static final long CLASS_ID = 0x2de3ead3caf06392L;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    private static final int VERSION_1 = 25;
     private static final int CURRENT_VERSION = VERSION_1;
 
     private long classId;
@@ -192,6 +194,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        logger.info("Now we have a mono-service state, e.g. child {} is {}",
+                StateChildIndices.NETWORK_CTX, getChild(StateChildIndices.NETWORK_CTX).getClass().getSimpleName());
+        if (true) {
+            throw new AssertionError("Not implemented");
+        }
         // At some point this method will no longer be defined on SwirldState2, because we want to move
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,

@@ -17,6 +17,7 @@
 package com.hedera.node.app;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
@@ -52,7 +53,7 @@ public class ServicesMain implements SwirldMain {
     public ServicesMain() {
         final var configProvider = new ConfigProviderImpl(false);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        if (hederaConfig.workflowsEnabled().isEmpty()) {
+        if (false && hederaConfig.workflowsEnabled().isEmpty()) {
             logger.info("No workflows enabled, using mono-service");
             delegate = new MonoServicesMain();
         } else {
@@ -93,6 +94,8 @@ public class ServicesMain implements SwirldMain {
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
         final var registry = ConstructableRegistry.getInstance();
+        final var maybeOnDiskAccountConstructor = registry.getConstructor(0xc88e3a5c7b497468L);
+        System.out.println("LOOK AT ME Found " + maybeOnDiskAccountConstructor);
 
         final Hedera hedera = new Hedera(registry);
         final NodeId selfId = args != null && args.length > 0 ? new NodeId(Integer.parseInt(args[0])) : new NodeId(0);
