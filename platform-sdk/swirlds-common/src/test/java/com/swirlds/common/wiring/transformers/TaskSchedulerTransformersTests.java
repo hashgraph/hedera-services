@@ -475,7 +475,7 @@ class TaskSchedulerTransformersTests {
         model.stop();
     }
 
-    private static class FooBarTransformer implements AdvancedTransformation<FooBar, FooBar> {
+    private record FooBarTransformer(String name) implements AdvancedTransformation<FooBar, FooBar> {
         @Nullable
         @Override
         public FooBar transform(@NonNull final FooBar fooBar) {
@@ -485,6 +485,12 @@ class TaskSchedulerTransformersTests {
         @Override
         public void cleanup(@NonNull final FooBar fooBar) {
             fooBar.release();
+        }
+
+        @NonNull
+        @Override
+        public String getName() {
+            return name;
         }
     }
 
@@ -506,8 +512,7 @@ class TaskSchedulerTransformersTests {
                 .cast();
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
-        final OutputWire<FooBar> outAReserved =
-                outA.buildAdvancedTransformer("reserve FooBar", new FooBarTransformer());
+        final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new FooBarTransformer("reserve FooBar"));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)

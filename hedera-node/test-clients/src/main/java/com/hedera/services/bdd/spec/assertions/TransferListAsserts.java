@@ -34,12 +34,31 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
+import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 
 public class TransferListAsserts extends BaseErroringAssertsProvider<TransferList> {
     public static TransferListAsserts exactParticipants(Function<HapiSpec, List<AccountID>> provider) {
         return new ExactParticipantsAssert(provider);
+    }
+
+    // non-standard initialization
+    @SuppressWarnings("java:S3599")
+    public static TransferListAsserts noCreditAboveNumber(ToLongFunction<HapiSpec> provider) {
+        return new TransferListAsserts() {
+            {
+                registerProvider((spec, o) -> {
+                    TransferList actual = (TransferList) o;
+                    long maxAllowed = provider.applyAsLong(spec);
+                    Assertions.assertTrue(
+                            actual.getAccountAmountsList().stream()
+                                    .filter(aa -> aa.getAmount() > 0)
+                                    .allMatch(aa -> aa.getAccountID().getAccountNum() <= maxAllowed),
+                            "Transfers include a credit above account 0.0." + maxAllowed);
+                });
+            }
+        };
     }
 
     @SafeVarargs
