@@ -213,7 +213,7 @@ public class CryptoCreateSuite extends HapiSuite {
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
         final var token = "token";
 
-        return onlyDefaultHapiSpec("usdFeeAsExpected")
+        return defaultHapiSpec("usdFeeAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))
