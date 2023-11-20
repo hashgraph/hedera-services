@@ -17,7 +17,6 @@
 package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;

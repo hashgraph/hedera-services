@@ -53,7 +53,7 @@ public interface WiringModel extends Startable, Stoppable {
      * Build a new wiring model instance.
      *
      * @param metrics provides metrics
-     * @param time            provides wall clock time
+     * @param time    provides wall clock time
      * @return a new wiring model instance
      */
     @NonNull
