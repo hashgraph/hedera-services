@@ -119,6 +119,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             ContractUpdateTransactionBody op,
             ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
+        validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey() && processAdminKey(op)) {
             throw new HandleException(INVALID_ADMIN_KEY);
@@ -142,12 +143,11 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
-            final long newMax = op.maxAutomaticTokenAssociations();
+            final long newMax = op.maxAutomaticTokenAssociationsOrThrow();
 
             validateFalse(
                     newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
             validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),

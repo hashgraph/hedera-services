@@ -8,7 +8,6 @@ module com.swirlds.common {
     exports com.swirlds.common.config.export;
     exports com.swirlds.common.config.reflection;
     exports com.swirlds.common.config.singleton;
-    exports com.swirlds.common.config.sources;
     exports com.swirlds.common.config.validators;
     exports com.swirlds.common.constructable;
     exports com.swirlds.common.constructable.internal;
@@ -80,8 +79,8 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring;
     exports com.swirlds.common.wiring.builders;
     exports com.swirlds.common.wiring.counters;
+    exports com.swirlds.common.wiring.model;
     exports com.swirlds.common.wiring.transformers;
-    exports com.swirlds.common.wiring.utility;
     exports com.swirlds.common.wiring.wires;
     exports com.swirlds.common.wiring.wires.input;
     exports com.swirlds.common.wiring.wires.output;
