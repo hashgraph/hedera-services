@@ -30,18 +30,26 @@ import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 @WithContext
 @WithLoggingMirror
 public class LoggingSystemTest {
+
+    @BeforeEach
+    void cleanup() {
+        // reset Emergency logger to remove messages from previous tests
+        EmergencyLoggerImpl.getInstance().publishLoggedEvents();
+    }
 
     @Test
     @DisplayName("Test that a logger name is always created correctly")
@@ -358,27 +366,30 @@ public class LoggingSystemTest {
 
     @Test
     @DisplayName(
-            "Test that all logging for a configured level is forwarded to emergency logger if no handler is defined")
+            "Test that all logging for info+ is forwarded to emergency logger if no handler is defined")
     void testEmergencyLoggerIsUsedForConfiguredLevelIfNoAppender() {
         // given
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("logging.level.test", "ERROR").getOrCreateConfig();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final LoggerImpl logger = loggingSystem.getLogger("test");
         EmergencyLoggerImpl.getInstance().publishLoggedEvents(); // reset Emergency logger to remove the init logging
 
         // when
-        logger.trace("trace-message"); // should not be logged since logger is defined as ERROR level
-        logger.debug("debug-message"); // should not be logged since logger is defined as ERROR level
-        logger.info("info-message"); // should not be logged since logger is defined as ERROR level
-        logger.warn("warn-message"); // should not be logged since logger is defined as ERROR level
+        logger.trace("trace-message"); // should not be logged
+        logger.debug("debug-message"); // should not be logged
+        logger.info("info-message");
+        logger.warn("warn-message");
         logger.error("error-message");
 
         // then
         final List<LogEvent> loggedEvents = EmergencyLoggerImpl.getInstance().publishLoggedEvents();
-        Assertions.assertEquals(1, loggedEvents.size());
-        Assertions.assertEquals("error-message", loggedEvents.get(0).message().getMessage());
-        Assertions.assertEquals(Level.ERROR, loggedEvents.get(0).level());
+        Assertions.assertEquals(3, loggedEvents.size());
+        Assertions.assertEquals("info-message", loggedEvents.get(0).message().getMessage());
+        Assertions.assertEquals(Level.INFO, loggedEvents.get(0).level());
+        Assertions.assertEquals("warn-message", loggedEvents.get(1).message().getMessage());
+        Assertions.assertEquals(Level.WARN, loggedEvents.get(1).level());
+        Assertions.assertEquals("error-message", loggedEvents.get(2).message().getMessage());
+        Assertions.assertEquals(Level.ERROR, loggedEvents.get(2).level());
     }
 
     @Test
@@ -388,7 +399,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final InMemoryHandler handler = new InMemoryHandler();
+        final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
         final Instant startTime = Instant.now();
@@ -447,7 +458,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final InMemoryHandler handler = new InMemoryHandler();
+        final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LocalDateTime startTime = LocalDateTime.now();
         LogEvent event1 = loggingSystem.getLogEventFactory().createLogEvent(Level.INFO, "test-logger", "info-message");
@@ -482,7 +493,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final InMemoryHandler handler = new InMemoryHandler();
+        final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
         final Instant startTime = Instant.now();
@@ -563,7 +574,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final InMemoryHandler handler = new InMemoryHandler();
+        final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
 
         LogEvent event1 = loggingSystem
@@ -680,7 +691,7 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        InMemoryHandler handler = new InMemoryHandler();
+        InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
 
         // then

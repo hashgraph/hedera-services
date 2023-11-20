@@ -16,8 +16,10 @@
 
 package com.swirlds.logging.util;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
-import com.swirlds.logging.api.extensions.handler.LogHandler;
+import com.swirlds.logging.api.extensions.handler.AbstractLogHandler;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,22 +45,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * where you need to capture log events in memory for inspection.
  * </p>
  */
-public class InMemoryHandler implements LogHandler {
+public class InMemoryHandler extends AbstractLogHandler {
 
     private final List<LogEvent> events = new CopyOnWriteArrayList<>();
 
     /**
-     * Gets the name of this log handler.
+     * Creates a new log handler.
      *
-     * @return the name of this log handler, which is the simple name of the class
+     * @param configKey     the configuration key
+     * @param configuration the configuration
      */
-    @Override
-    public String getName() {
-        return InMemoryHandler.class.getSimpleName();
+    public InMemoryHandler (final Configuration configuration) {
+        super("inMemory", configuration);
     }
 
     /**
-     * Checks if the log handler is active.
+     * InMemoryHandler is always enabled.
      *
      * @return {@code true} to indicate that this log handler is always active
      */

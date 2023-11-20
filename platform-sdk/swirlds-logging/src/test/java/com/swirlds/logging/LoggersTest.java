@@ -22,6 +22,7 @@ import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.internal.DefaultLoggingSystem;
 import com.swirlds.logging.util.InMemoryHandler;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,7 @@ public class LoggersTest {
 
     @BeforeEach
     void init() {
-        loggingMirror = new InMemoryHandler();
+        loggingMirror = new InMemoryHandler(new TestConfigBuilder().getOrCreateConfig());
         // TODO: Replace with @WithLoggingMirror once we have a test fixture
         DefaultLoggingSystem.getInstance().addHandler(loggingMirror);
     }

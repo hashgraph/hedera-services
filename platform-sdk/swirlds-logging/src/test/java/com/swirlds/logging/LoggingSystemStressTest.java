@@ -24,12 +24,13 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingUtils;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
 public class LoggingSystemStressTest {
@@ -39,7 +40,7 @@ public class LoggingSystemStressTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final InMemoryHandler handler = new InMemoryHandler();
+        final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, 100)
                 .mapToObj(i -> loggingSystem.getLogger("logger-" + i))
@@ -65,7 +66,7 @@ public class LoggingSystemStressTest {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final Logger logger = loggingSystem.getLogger("logger");
-        final InMemoryHandler handler = new InMemoryHandler();
+        final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, 100)
                 .mapToObj(l -> (Runnable) () -> LoggingUtils.generateExtensiveLogMessages(logger))

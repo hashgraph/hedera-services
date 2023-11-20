@@ -18,8 +18,9 @@ package com.swirlds.logging;
 
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
-import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
+
+import java.util.Arrays;
 
 public class LoggerApiSpecTest {
 
@@ -244,8 +245,6 @@ public class LoggerApiSpecTest {
     }
 
     private static void testLogCall(Logger logger, Level level, String message) {
-        System.out.println("Checking logger call for level '" + level + "' and message '" + message + "'");
-
         Assertions.assertDoesNotThrow(() -> logger.log(level, message), LOG_ERROR_MESSAGE);
 
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW), LOG_ERROR_MESSAGE);
