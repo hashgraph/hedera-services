@@ -18,7 +18,7 @@ package com.swirlds.common.wiring.wires.output.internal;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -56,7 +56,7 @@ public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OU
      *                    original data is passed to this method. Ignored if null.
      */
     public TransformingOutputWire(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final Function<IN, OUT> transformer,
             @Nullable final Consumer<IN> cleanup) {
