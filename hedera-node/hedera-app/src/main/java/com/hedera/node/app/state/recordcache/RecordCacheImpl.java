@@ -197,7 +197,6 @@ public class RecordCacheImpl implements HederaRecordCache {
         if (history == null) {
             return DuplicateCheckResult.NO_DUPLICATE;
         }
-
         return history.nodeIds().contains(nodeId) ? DuplicateCheckResult.SAME_NODE : DuplicateCheckResult.OTHER_NODE;
     }
 
@@ -239,8 +238,10 @@ public class RecordCacheImpl implements HederaRecordCache {
         history.nodeIds().add(nodeId);
 
         // Either we add this tx to the main records list if it is a user/preceding transaction, or to the child
-        // transactions list of its parent
-        final var listToAddTo = isChildTx ? history.childRecords() : history.records();
+        // transactions list of its parent.  Note that scheduled transactions are always child transactions, but
+        // never produce child *records*; instead, the scheduled transaction record is treated as
+        // a user transaction record.
+        final var listToAddTo = (isChildTx && !txId.scheduled()) ? history.childRecords() : history.records();
         listToAddTo.add(transactionRecord);
 
         // Add to the payer-to-transaction index
