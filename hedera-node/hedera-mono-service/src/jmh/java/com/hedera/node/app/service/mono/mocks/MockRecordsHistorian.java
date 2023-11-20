@@ -99,6 +99,11 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
+    public boolean canTrackPrecedingChildRecords(int n) {
+        return false;
+    }
+
+    @Override
     public void trackPrecedingChildRecord(
             final int sourceId, final Builder syntheticBody, final ExpirableTxnRecord.Builder recordSoFar) {
         // No-op

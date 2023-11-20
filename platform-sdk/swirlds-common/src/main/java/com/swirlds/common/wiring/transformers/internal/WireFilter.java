@@ -16,8 +16,8 @@
 
 package com.swirlds.common.wiring.transformers.internal;
 
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,7 +43,9 @@ public class WireFilter<T> implements Consumer<T> {
      *                  wiring framework and may result in very poor system performance.
      */
     public WireFilter(
-            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
+            @NonNull final StandardWiringModel model,
+            @NonNull final String name,
+            @NonNull final Predicate<T> predicate) {
         this.predicate = Objects.requireNonNull(predicate);
         this.outputWire = new StandardOutputWire<>(model, name);
         model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
