@@ -99,9 +99,9 @@ public final class WiringFlowchart {
         if (vertex.getType() == TaskSchedulerType.CONCURRENT) {
             sb.append("[[").append(vertex.getName()).append("]]");
         } else if (vertex.getType() == TaskSchedulerType.DIRECT) {
-            sb.append("((").append(vertex.getName()).append("))");
+            sb.append("[/").append(vertex.getName()).append("/]");
         } else if (vertex.getType() == TaskSchedulerType.DIRECT_STATELESS) {
-            sb.append("(((").append(vertex.getName()).append(")))");
+            sb.append("{{").append(vertex.getName()).append("}}");
         }
     }
 
