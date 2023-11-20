@@ -22,6 +22,8 @@ plugins {
 
 group = "com.swirlds"
 
+tasks.checkModuleInfo { moduleNamePrefix = "com.swirlds" }
+
 javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-core") }
 
 configurations.getByName("mainRuntimeClasspath") {

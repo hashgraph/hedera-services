@@ -129,22 +129,22 @@ module com.swirlds.platform.core {
             com.swirlds.common,
             com.swirlds.config.impl;
 
-    requires transitive com.fasterxml.jackson.annotation;
-    requires transitive com.fasterxml.jackson.databind;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.platform.gui;
+    requires transitive com.fasterxml.jackson.annotation;
+    requires transitive com.fasterxml.jackson.databind;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.dataformat.yaml;
     requires com.swirlds.config.extensions;
     requires com.swirlds.fchashmap;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.dataformat.yaml;
     requires java.management;
     requires java.scripting;
     requires jdk.management;
