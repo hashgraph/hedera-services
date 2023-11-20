@@ -14,8 +14,6 @@
 # limitations under the License.
 ##
 
-# Run performance test twice a day on performance 6 network
-
 name: "Service daily performance test"
 on:
   schedule:
