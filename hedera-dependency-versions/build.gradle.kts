@@ -25,7 +25,7 @@ val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
-val jacksonVersion = "2.13.5"
+val jacksonVersion = "2.16.0"
 val log4jVersion = "2.21.1"
 val mockitoVersion = "4.11.0"
 val nettyVersion = "4.1.87.Final"
@@ -102,7 +102,7 @@ moduleInfo {
     version("org.opentest4j", "1.2.0")
     version("org.testcontainers", testContainersVersion)
     version("org.testcontainers.junit.jupiter", testContainersVersion)
-    version("org.yaml.snakeyaml", "1.33")
+    version("org.yaml.snakeyaml", "2.2")
     version("tuweni.bytes", tuweniVersion)
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)

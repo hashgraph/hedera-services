@@ -212,10 +212,6 @@ extraJavaModuleInfo {
         exportAllPackages()
         // no dependencies
     }
-    module("org.yaml:snakeyaml", "org.yaml.snakeyaml") {
-        exportAllPackages()
-        // no dependencies
-    }
     module("org.hyperledger.besu.internal:algorithms", "org.hyperledger.besu.internal.crypto") {
         exportAllPackages()
         requireAllDefinedDependencies()
