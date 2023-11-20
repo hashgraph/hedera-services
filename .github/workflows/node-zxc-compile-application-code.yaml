@@ -148,23 +148,22 @@ jobs:
           echo "::group::Get System Configuration"
             USR_ID="$(id -un)"
             GRP_ID="$(id -gn)"
-            MEM_TOTAL="$(free -b | grep "Mem:" | awk '{print $2}')"
-            GRADLE_MEM_LIMIT="$(echo "${MEM_TOTAL}" | awk '{printf "%.0f", $1 * 0.75}')"
-            AGENT_MEM_LIMIT="$(echo "${MEM_TOTAL}" | awk '{printf "%.0f", $1 * 0.25}')"
+            GRADLE_MEM_LIMIT="30064771072"
+            AGENT_MEM_LIMIT="2147483648"
           echo "::endgroup::"
-          
+
           echo "::group::Install Control Group Tools"
             if ! command -v cgcreate >/dev/null 2>&1; then
               sudo apt-get update
               sudo apt-get install -y cgroup-tools
             fi
           echo "::endgroup::"
-          
+
           echo "::group::Create Control Groups"
             sudo cgcreate -g cpu,memory:gradle -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
             sudo cgcreate -g cpu,memory:agent -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
           echo "::endgroup::"
-          
+
           echo "::group::Set Control Group Limits"
             cgset -r cpu.shares=768 gradle
             cgset -r cpu.shares=256 agent
@@ -173,9 +172,10 @@ jobs:
             cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} gradle
             cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} agent
           echo "::endgroup::"
-          
+
           echo "::group::Move Runner Processes to Control Groups"
-            sudo cgclassify -g cpu,memory:agent $(pgrep 'Runner.Listener' | tr '\n' ' ')
+            sudo cgclassify --sticky -g cpu,memory:agent $(pgrep 'Runner.Listener' | tr '\n' ' ')
+            sudo cgclassify --sticky -g cpu,memory:agent $(pgrep 'Runner.Worker' | tr '\n' ' ')
           echo "::endgroup::"
 
       - name: Compile
