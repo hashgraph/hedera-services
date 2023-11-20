@@ -146,7 +146,7 @@ fun includeAllProjects(containingFolder: String) {
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
 val hapiProtoVersion = "0.44.0"
-val hapiProtoBranchOrTag = "v0.44.0"
+val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))

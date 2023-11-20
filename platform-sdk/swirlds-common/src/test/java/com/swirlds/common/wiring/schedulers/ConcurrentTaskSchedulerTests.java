@@ -23,8 +23,8 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.test.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;

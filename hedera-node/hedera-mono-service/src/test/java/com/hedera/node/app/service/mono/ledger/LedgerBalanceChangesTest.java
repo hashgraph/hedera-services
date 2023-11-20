@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -433,6 +434,7 @@ class LedgerBalanceChangesTest {
         given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
                 .willReturn(OK);
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
+        given(historian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         subject.begin();
         assertDoesNotThrow(() -> subject.doZeroSum(changes));
@@ -488,6 +490,7 @@ class LedgerBalanceChangesTest {
         given(txnCtx.isSelfSubmitted()).willReturn(true);
         given(autoCreationLogic.create(any(), eq(accountsLedger), any())).willReturn(Pair.of(INVALID_ACCOUNT_ID, 100L));
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
+        given(historian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         subject.begin();
         assertFailsWith(() -> subject.doZeroSum(changes), INVALID_ACCOUNT_ID);
@@ -532,6 +535,7 @@ class LedgerBalanceChangesTest {
         given(txnCtx.activePayer()).willReturn(payer);
         given(autoCreationLogic.create(any(), eq(accountsLedger), any())).willReturn(Pair.of(INVALID_ACCOUNT_ID, 100L));
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
+        given(historian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         subject.begin();
         assertFailsWith(() -> subject.doZeroSum(changes), INVALID_ACCOUNT_ID);
