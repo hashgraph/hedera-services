@@ -75,7 +75,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 return revertResult(
                         STATIC_CALL_REVERT_REASON, contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
-            log.info("Created call {}", call.getClass().getSimpleName());
         } catch (final RuntimeException e) {
             log.debug("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());

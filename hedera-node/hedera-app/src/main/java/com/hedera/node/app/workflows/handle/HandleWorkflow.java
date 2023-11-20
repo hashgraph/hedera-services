@@ -492,7 +492,8 @@ public class HandleWorkflow {
                 } catch (final HandleException e) {
                     // In case of a ContractCall when it reverts, the gas charged should not be rolled back
                     rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
-                    if (!hasWaivedFees) {
+                    if (!hasWaivedFees && e.shouldRollbackStack()) {
+                        // Only re-charge fees if we rolled back the stack
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
                 }
