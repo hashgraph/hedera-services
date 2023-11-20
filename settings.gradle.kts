@@ -93,6 +93,8 @@ include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-config-benchmark", "platform-sdk/swirlds-config-benchmark")
 
+include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
+
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
 
 include(":swirlds-fcqueue", "platform-sdk/swirlds-fcqueue")
@@ -142,7 +144,7 @@ fun includeAllProjects(containingFolder: String) {
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
 val hapiProtoVersion = "0.44.0"
-val hapiProtoBranchOrTag = "v0.44.0"
+val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
