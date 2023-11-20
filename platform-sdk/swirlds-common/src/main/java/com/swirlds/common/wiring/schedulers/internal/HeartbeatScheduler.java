@@ -66,7 +66,7 @@ public class HeartbeatScheduler implements Startable, Stoppable {
      *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
      *               are not supported.
      * @return the output wire
-     * @throws IllegalStateException if the heartbeat has already started
+     * @throws IllegalStateException if start has already been called
      */
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
