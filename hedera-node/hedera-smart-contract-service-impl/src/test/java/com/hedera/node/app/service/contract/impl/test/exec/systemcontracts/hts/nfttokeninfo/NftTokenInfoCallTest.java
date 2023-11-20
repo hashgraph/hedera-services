@@ -45,16 +45,17 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
     @Test
     void returnsNftTokenInfoStatusForPresentToken() {
+        com.hedera.pbj.runtime.io.buffer.Bytes ledgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID);
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
+        when(ledgerConfig.id()).thenReturn(ledgerId);
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
         when(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNum())).thenReturn(A_NEW_ACCOUNT);
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
-        String ledgerIdBytes =
-                com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID).toString();
+
+        String ledgerIdBytes = Bytes.wrap(ledgerId.toByteArray()).toString();
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
