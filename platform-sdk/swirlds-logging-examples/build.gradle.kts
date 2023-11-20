@@ -14,6 +14,4 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-}
+plugins { id("com.hedera.hashgraph.sdk.conventions") }

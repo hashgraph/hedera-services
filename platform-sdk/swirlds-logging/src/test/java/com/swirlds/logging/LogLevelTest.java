@@ -16,6 +16,8 @@
 
 package com.swirlds.logging;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.swirlds.base.test.fixtures.io.SystemErrProvider;
 import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
@@ -28,8 +30,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @WithSystemError
 public class LogLevelTest {
 
@@ -37,7 +37,9 @@ public class LogLevelTest {
     private SystemErrProvider systemErrProvider;
 
     private TestConfigBuilder createDefaultBuilder() {
-        return new TestConfigBuilder().withConverter(new MarkerStateConverter()).withConverter(new ConfigLevelConverter());
+        return new TestConfigBuilder()
+                .withConverter(new MarkerStateConverter())
+                .withConverter(new ConfigLevelConverter());
     }
 
     @Test
@@ -212,7 +214,7 @@ public class LogLevelTest {
     }
 
     @Test
-    void logLevelNoInheritanceForLevels () {
+    void logLevelNoInheritanceForLevels() {
         // given
         final Marker markerBaz = new Marker("baz");
 
@@ -231,13 +233,14 @@ public class LogLevelTest {
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
 
         // then
-        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz)).isTrue();
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz))
+                .isTrue();
         assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, null)).isFalse();
         assertThat(config.isEnabled("com.foo.some.Class", Level.ERROR, null)).isFalse();
     }
 
     @Test
-    void logLevelNoInheritanceForLevelsDefaultLevel () {
+    void logLevelNoInheritanceForLevelsDefaultLevel() {
         // given
         final Marker markerBaz = new Marker("baz");
 
@@ -255,7 +258,8 @@ public class LogLevelTest {
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "HANDLER1");
 
         // then
-        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz)).isTrue();
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz))
+                .isTrue();
         assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, null)).isFalse();
         assertThat(config.isEnabled("com.foo.some.Class", Level.INFO, null)).isTrue();
     }

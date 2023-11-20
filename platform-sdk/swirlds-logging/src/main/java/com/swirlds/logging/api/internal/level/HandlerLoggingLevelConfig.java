@@ -23,7 +23,6 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -121,15 +120,14 @@ public class HandlerLoggingLevelConfig {
                 configuration.getValue(PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
         final ConfigLevel defaultHandlerLevel;
         final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(name);
-        final Boolean inheritLevels = configuration.getValue(PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(name),
-                Boolean.class, Boolean.TRUE);
+        final Boolean inheritLevels = configuration.getValue(
+                PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(name), Boolean.class, Boolean.TRUE);
 
         levelConfigProperties.clear();
         markerCache.clear();
 
         if (name != null) {
-            defaultHandlerLevel =
-                    configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
+            defaultHandlerLevel = configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
         } else {
             defaultHandlerLevel = ConfigLevel.UNDEFINED;
         }
@@ -160,7 +158,7 @@ public class HandlerLoggingLevelConfig {
     }
 
     @NonNull
-    private Map<String, MarkerState> readMarkers (
+    private Map<String, MarkerState> readMarkers(
             @NonNull final String prefix, @NonNull final Configuration configuration) {
         final Map<String, MarkerState> result = new HashMap<>();
         final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
@@ -221,14 +219,13 @@ public class HandlerLoggingLevelConfig {
         if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
             final List<MarkerState> markerStates = allMarkerNames.stream()
-                                                                 .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
-                                                                 .filter(markerState -> markerState != MarkerState.UNDEFINED)
-                                                                 .toList();
-            if (! markerStates.isEmpty()) {
+                    .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
+                    .filter(markerState -> markerState != MarkerState.UNDEFINED)
+                    .toList();
+            if (!markerStates.isEmpty()) {
                 if (markerStates.stream().anyMatch(markerState -> markerState == MarkerState.ENABLED)) {
                     return true;
-                } else if (markerStates.stream()
-                                       .allMatch(markerState -> markerState == MarkerState.DISABLED)) {
+                } else if (markerStates.stream().allMatch(markerState -> markerState == MarkerState.DISABLED)) {
                     return false;
                 }
             }

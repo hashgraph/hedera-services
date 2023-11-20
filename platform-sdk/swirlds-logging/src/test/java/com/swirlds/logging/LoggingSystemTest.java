@@ -30,15 +30,14 @@ import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @WithContext
 @WithLoggingMirror

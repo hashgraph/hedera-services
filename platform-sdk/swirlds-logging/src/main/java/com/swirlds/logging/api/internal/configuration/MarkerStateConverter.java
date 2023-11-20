@@ -40,7 +40,7 @@ public class MarkerStateConverter implements ConfigConverter<MarkerState> {
      */
     @Nullable
     @Override
-    public MarkerState convert (@NonNull final String value) throws IllegalArgumentException, NullPointerException {
+    public MarkerState convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }

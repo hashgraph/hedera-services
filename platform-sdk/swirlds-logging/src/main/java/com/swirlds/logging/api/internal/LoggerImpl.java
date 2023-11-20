@@ -29,7 +29,6 @@ import com.swirlds.logging.api.internal.event.ParameterizedLogMessage;
 import com.swirlds.logging.api.internal.event.SimpleLogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

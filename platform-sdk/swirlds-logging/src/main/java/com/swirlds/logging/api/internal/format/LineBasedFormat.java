@@ -24,7 +24,6 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -181,7 +180,6 @@ public class LineBasedFormat {
             return "null";
         } else {
             return String.join(", ", marker.getAllMarkerNames());
-
         }
     }
 }

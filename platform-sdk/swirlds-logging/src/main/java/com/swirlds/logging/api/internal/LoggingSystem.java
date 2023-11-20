@@ -29,7 +29,6 @@ import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +132,7 @@ public class LoggingSystem implements LogEventConsumer {
      * @param level the level to check
      * @return true, if the logger with the given name is enabled for the given level, otherwise false
      */
-    public boolean isEnabled (@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
+    public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
         if (name == null) {
             EMERGENCY_LOGGER.logNPE("name");
             return isEnabled(ROOT_LOGGER_NAME, level, marker);
@@ -158,11 +157,11 @@ public class LoggingSystem implements LogEventConsumer {
                 try {
                     final List<Consumer<LogEvent>> eventConsumers = new ArrayList<>();
                     handlers.stream()
-                            .filter(handler -> handler.isEnabled(event.loggerName(), event.level(),  event.marker()))
+                            .filter(handler -> handler.isEnabled(event.loggerName(), event.level(), event.marker()))
                             .forEach(eventConsumers::add);
 
                     if (eventConsumers.isEmpty()) {
-                        if (isEnabled(event.loggerName(), event.level(),  event.marker())) {
+                        if (isEnabled(event.loggerName(), event.level(), event.marker())) {
                             eventConsumers.add(e -> EMERGENCY_LOGGER.log(event));
                         }
                     }

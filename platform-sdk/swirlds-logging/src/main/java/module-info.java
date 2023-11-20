@@ -25,14 +25,15 @@ module com.swirlds.logging {
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.swirlds.config.api;
     requires transitive org.apache.logging.log4j;
-    requires com.swirlds.config.extensions;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.datatype.jsr310;
     requires com.swirlds.base;
+    requires com.swirlds.config.extensions;
     requires static com.github.spotbugs.annotations;
 
     uses LogHandlerFactory;
     uses LogProviderFactory;
 
-    provides LogHandlerFactory with ConsoleHandlerFactory;
+    provides LogHandlerFactory with
+            ConsoleHandlerFactory;
 }

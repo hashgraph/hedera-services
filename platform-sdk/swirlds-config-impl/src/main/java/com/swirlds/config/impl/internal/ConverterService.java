@@ -36,7 +36,6 @@ import com.swirlds.config.impl.converters.UrlConverter;
 import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.File;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
