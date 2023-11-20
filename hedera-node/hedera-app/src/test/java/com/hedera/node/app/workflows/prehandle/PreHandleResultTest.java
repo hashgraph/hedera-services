@@ -70,6 +70,7 @@ final class PreHandleResultTest implements Scenarios {
                             txInfo,
                             DEFAULT_REQUIRED_KEYS,
                             Set.of(),
+                            Set.of(),
                             DEFAULT_VERIFICATION_RESULTS,
                             innerResult,
                             DEFAULT_CONFIG_VERSION))
@@ -89,6 +90,7 @@ final class PreHandleResultTest implements Scenarios {
                             null,
                             txInfo,
                             DEFAULT_REQUIRED_KEYS,
+                            Set.of(),
                             Set.of(),
                             DEFAULT_VERIFICATION_RESULTS,
                             innerResult,
@@ -132,7 +134,8 @@ final class PreHandleResultTest implements Scenarios {
         void preHandleFailure(@Mock TransactionInfo txInfo) {
             final var payer = AccountID.newBuilder().accountNum(1001).build();
             final var responseCode = INVALID_PAYER_ACCOUNT_ID;
-            final var result = PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null, null, null);
+            final var result =
+                    PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null, null, null, null);
 
             assertThat(result.status()).isEqualTo(PRE_HANDLE_FAILURE);
             assertThat(result.responseCode()).isEqualTo(responseCode);
