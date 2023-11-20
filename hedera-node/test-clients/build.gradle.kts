@@ -54,9 +54,22 @@ tasks.withType<JavaExec> {
     modularity.inferModulePath.set(false)
 }
 
-// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
+// The following tasks run the 'HapiTestEngine' tests (residing in src/main/java).
 // IntelliJ picks up this task when running tests through in the IDE.
+
+// Runs all tests
 tasks.register<Test>("hapiTest") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform()
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs all tests that are not part of other test tasks
+tasks.register<Test>("hapiTestMisc") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
@@ -66,8 +79,7 @@ tasks.register<Test>("hapiTest") {
     modularity.inferModulePath.set(false)
 }
 
-// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
-// IntelliJ picks up this task when running tests through in the IDE.
+// Runs all tests of TokenService (token & crypto)
 tasks.register<Test>("hapiTestToken") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
@@ -78,8 +90,7 @@ tasks.register<Test>("hapiTestToken") {
     modularity.inferModulePath.set(false)
 }
 
-// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
-// IntelliJ picks up this task when running tests through in the IDE.
+// Runs all tests of SmartContractService
 tasks.register<Test>("hapiTestSmartContract") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
@@ -90,8 +101,7 @@ tasks.register<Test>("hapiTestSmartContract") {
     modularity.inferModulePath.set(false)
 }
 
-// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
-// IntelliJ picks up this task when running tests through in the IDE.
+// Runs a handful of test-suites that are extremely time-consuming (10+ minutes)
 tasks.register<Test>("hapiTestTimeConsuming") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
