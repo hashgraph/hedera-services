@@ -28,7 +28,6 @@ import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -49,8 +48,8 @@ public class HederaCallEvmTxProcessorV045 extends CallEvmTxProcessor {
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcp,
+            final Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
         super(
@@ -59,8 +58,8 @@ public class HederaCallEvmTxProcessorV045 extends CallEvmTxProcessor {
                 codeCache,
                 dynamicProperties,
                 gasCalculator,
-                mcps.get(dynamicProperties.evmVersion()),
-                ccps.get(dynamicProperties.evmVersion()),
+                mcp,
+                ccp,
                 aliasManager,
                 blockMetaSource);
         this.codeCache = codeCache;

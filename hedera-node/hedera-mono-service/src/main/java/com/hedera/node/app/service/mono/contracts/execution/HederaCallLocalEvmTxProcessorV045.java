@@ -24,7 +24,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -47,17 +46,10 @@ public class HederaCallLocalEvmTxProcessorV045 extends CallLocalEvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcp,
+            final Provider<ContractCreationProcessor> ccp,
             final AliasManager aliasManager) {
-        super(
-                codeCache,
-                livePricesSource,
-                dynamicProperties,
-                gasCalculator,
-                mcps.get(dynamicProperties.evmVersion()),
-                ccps.get(dynamicProperties.evmVersion()),
-                aliasManager);
+        super(codeCache, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, aliasManager);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
