@@ -16,8 +16,8 @@
 
 package com.swirlds.common.wiring.transformers.internal;
 
-import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
 import com.swirlds.common.wiring.wires.output.internal.TransformingOutputWire;
@@ -49,7 +49,7 @@ public class AdvancedWireTransformer<A, B> implements Consumer<A> {
      *                    original data is passed to this method. Ignored if null.
      */
     public AdvancedWireTransformer(
-            @NonNull final WiringModel model,
+            @NonNull final StandardWiringModel model,
             @NonNull final String name,
             @NonNull final Function<A, B> transformer,
             @Nullable final Consumer<A> cleanup) {
