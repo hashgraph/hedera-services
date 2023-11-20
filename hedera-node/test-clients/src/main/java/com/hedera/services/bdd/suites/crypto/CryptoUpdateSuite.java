@@ -63,8 +63,9 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.List;
@@ -74,7 +75,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-//@HapiTestSuite
+@HapiTestSuite
 public class CryptoUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
 
@@ -86,7 +87,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     public static final String UPD_KEY = "updKey";
 
     public static void main(String... args) {
-        new CryptoUpdateSuite().runSuiteConcurrentWithOverrides(Map.of("spec.autoScheduledTxns", "CryptoUpdate"));
+        new CryptoUpdateSuite().runSuiteConcurrentWithOverrides(Map.of("spec.autoScheduledTxns", ""));
     }
 
     private final SigControl twoLevelThresh = SigControl.threshSigs(
@@ -340,10 +341,24 @@ public class CryptoUpdateSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec updateFailsWithContractKey() {
-        return defaultHapiSpec("UpdateFailsWithContractKey", NONDETERMINISTIC_TRANSACTION_FEES, EXPECT_STREAMLINED_INGEST_RECORDS)
-                .given(cryptoCreate(TARGET_ACCOUNT))
+        AtomicLong id = new AtomicLong();
+        final var CONTRACT = "Multipurpose";
+        return defaultHapiSpec(
+                        "UpdateFailsWithContractKey",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(TARGET_ACCOUNT),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).exposingNumTo(id::set))
                 .when()
-                .then(cryptoUpdate(TARGET_ACCOUNT).usingContractKey().hasKnownStatus(INVALID_SIGNATURE));
+                .then(sourcing(() -> cryptoUpdate(TARGET_ACCOUNT)
+                        .protoKey(Key.newBuilder()
+                                .setContractID(ContractID.newBuilder()
+                                        .setContractNum(id.get())
+                                        .build())
+                                .build())
+                        .hasKnownStatus(INVALID_SIGNATURE)));
     }
 
     @HapiTest
