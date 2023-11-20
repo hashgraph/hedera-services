@@ -32,6 +32,7 @@ import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -105,6 +106,7 @@ public class DefaultLoggingSystem {
         }
     }
 
+    @NonNull
     private static Configuration createConfiguration() {
         final String logConfigPath = System.getenv(ENV_PROPERTY_LOG_PATH);
         final Path configFilePath =
@@ -117,9 +119,9 @@ public class DefaultLoggingSystem {
                     .withConverter(new ConfigLevelConverter())
                     .build();
         } catch (IOException e) {
-            final var message = "Unable to load logging configuration from path: " + configFilePath;
-            EMERGENCY_LOGGER.log(Level.ERROR, message);
-            throw new IllegalStateException(message, e);
+            EMERGENCY_LOGGER.log(Level.WARN,
+                                 "Unable to load logging configuration from path: '%s'. Using default configuration.".formatted(configFilePath));
+            return ConfigurationBuilder.create().build();
         }
     }
 
