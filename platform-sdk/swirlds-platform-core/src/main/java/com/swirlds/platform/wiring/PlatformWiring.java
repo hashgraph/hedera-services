@@ -62,7 +62,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         model = WiringModel.create(platformContext, time);
 
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(model);
+        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());

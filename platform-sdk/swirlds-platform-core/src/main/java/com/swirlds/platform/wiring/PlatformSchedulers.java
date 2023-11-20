@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.builders.TaskSchedulerType.SEQUENTIAL;
-
+import com.swirlds.common.config.PlatformSchedulersConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
@@ -47,49 +47,53 @@ public record PlatformSchedulers(
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
      *
-     * @param model the wiring model
+     * @param context the platform context
+     * @param model   the wiring model
      * @return the instantiated platform schedulers
      */
-    public static PlatformSchedulers create(@NonNull final WiringModel model) {
+    public static PlatformSchedulers create(@NonNull final PlatformContext context, @NonNull final WiringModel model) {
+        final PlatformSchedulersConfig config =
+                context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
         return new PlatformSchedulers(
                 model.schedulerBuilder("internalEventValidator")
-                        .withType(SEQUENTIAL)
-                        .withUnhandledTaskCapacity(500)
+                        .withType(config.getInternalEventValidatorSchedulerType())
+                        .withUnhandledTaskCapacity(config.internalEventValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")
-                        .withType(SEQUENTIAL)
-                        .withUnhandledTaskCapacity(500)
+                        .withType(config.getEventDeduplicatorSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventDeduplicatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventSignatureValidator")
-                        .withType(SEQUENTIAL)
-                        .withUnhandledTaskCapacity(500)
+                        .withType(config.getEventSignatureValidatorSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventSignatureValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("orphanBuffer")
-                        .withType(SEQUENTIAL)
-                        .withUnhandledTaskCapacity(500)
+                        .withType(config.getOrphanBufferSchedulerType())
+                        .withUnhandledTaskCapacity(config.orphanBufferUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
-                        .withType(SEQUENTIAL)
-                        .withUnhandledTaskCapacity(500)
+                        .withType(config.getInOrderLinkerSchedulerType())
+                        .withUnhandledTaskCapacity(config.inOrderLinkerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("linkedEventIntake")
-                        .withType(SEQUENTIAL)
-                        .withUnhandledTaskCapacity(500)
+                        .withType(config.getLinkedEventIntakeSchedulerType())
+                        .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
