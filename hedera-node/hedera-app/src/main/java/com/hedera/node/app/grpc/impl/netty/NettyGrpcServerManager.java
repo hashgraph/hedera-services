@@ -73,9 +73,9 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
     /** The configuration provider, so we can figure out ports and other information. */
     private final ConfigProvider configProvider;
     /** The gRPC server listening on the plain (non-tls) port */
-    private Server plainServer;
+    private volatile Server plainServer;
     /** The gRPC server listening on the plain TLS port */
-    private Server tlsServer;
+    private volatile Server tlsServer;
 
     /**
      * Create a new instance.
@@ -118,17 +118,29 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     @Override
     public int port() {
-        return plainServer == null || plainServer.isTerminated() ? -1 : plainServer.getPort();
+        try {
+            return plainServer.getPort();
+        } catch (final NullPointerException | IllegalStateException ex) {
+            return -1;
+        }
     }
 
     @Override
     public int tlsPort() {
-        return tlsServer == null ? -1 : tlsServer.getPort();
+        try {
+            return tlsServer.getPort();
+        } catch (final NullPointerException | IllegalStateException ex) {
+            return -1;
+        }
     }
 
     @Override
     public boolean isRunning() {
-        return plainServer != null && !plainServer.isShutdown();
+        try {
+            return !plainServer.isShutdown();
+        } catch (NullPointerException ex) {
+            return false;
+        }
     }
 
     @Override
