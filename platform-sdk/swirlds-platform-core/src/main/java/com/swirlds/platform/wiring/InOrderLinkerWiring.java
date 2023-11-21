@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -33,8 +34,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable                    the runnable to flush the linker
  */
 public record InOrderLinkerWiring(
-        @NonNull BindableInputWire<GossipEvent, EventImpl> eventInput,
-        @NonNull BindableInputWire<Long, EventImpl> minimumGenerationNonAncientInput,
+        @NonNull InputWire<GossipEvent> eventInput,
+        @NonNull InputWire<Long> minimumGenerationNonAncientInput,
         @NonNull OutputWire<EventImpl> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -58,7 +59,8 @@ public record InOrderLinkerWiring(
      * @param inOrderLinker the in order linker to bind
      */
     public void bind(@NonNull final InOrderLinker inOrderLinker) {
-        eventInput.bind(inOrderLinker::linkEvent);
-        minimumGenerationNonAncientInput.bind(inOrderLinker::setMinimumGenerationNonAncient);
+        ((BindableInputWire<GossipEvent, EventImpl>) eventInput).bind(inOrderLinker::linkEvent);
+        ((BindableInputWire<Long, EventImpl>) minimumGenerationNonAncientInput)
+                .bind(inOrderLinker::setMinimumGenerationNonAncient);
     }
 }

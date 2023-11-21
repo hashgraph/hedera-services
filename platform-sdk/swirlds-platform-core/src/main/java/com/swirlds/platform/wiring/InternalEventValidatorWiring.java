@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -31,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable the runnable to flush the validator
  */
 public record InternalEventValidatorWiring(
-        @NonNull BindableInputWire<GossipEvent, GossipEvent> eventInput,
+        @NonNull InputWire<GossipEvent> eventInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -54,6 +55,6 @@ public record InternalEventValidatorWiring(
      * @param internalEventValidator the validator to bind
      */
     public void bind(@NonNull final InternalEventValidator internalEventValidator) {
-        eventInput.bind(internalEventValidator::validateEvent);
+        ((BindableInputWire<GossipEvent, GossipEvent>) eventInput).bind(internalEventValidator::validateEvent);
     }
 }

@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -34,9 +35,9 @@ import java.util.List;
  * @param flushRunnable                    the runnable to flush the buffer
  */
 public record OrphanBufferWiring(
-        @NonNull BindableInputWire<GossipEvent, List<GossipEvent>> eventInput,
-        @NonNull BindableInputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput,
-        @NonNull BindableInputWire<Boolean, List<GossipEvent>> pauseInput,
+        @NonNull InputWire<GossipEvent> eventInput,
+        @NonNull InputWire<Long> minimumGenerationNonAncientInput,
+        @NonNull InputWire<Boolean> pauseInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -61,8 +62,9 @@ public record OrphanBufferWiring(
      * @param orphanBuffer the orphan buffer to bind
      */
     public void bind(@NonNull final OrphanBuffer orphanBuffer) {
-        eventInput.bind(orphanBuffer::handleEvent);
-        minimumGenerationNonAncientInput.bind(orphanBuffer::setMinimumGenerationNonAncient);
-        pauseInput.bind(orphanBuffer::setPaused);
+        ((BindableInputWire<GossipEvent, List<GossipEvent>>) eventInput).bind(orphanBuffer::handleEvent);
+        ((BindableInputWire<Long, List<GossipEvent>>) minimumGenerationNonAncientInput)
+                .bind(orphanBuffer::setMinimumGenerationNonAncient);
+        ((BindableInputWire<Boolean, List<GossipEvent>>) pauseInput).bind(orphanBuffer::setPaused);
     }
 }

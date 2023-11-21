@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -32,8 +33,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable                    the runnable to flush the deduplicator
  */
 public record EventDeduplicatorWiring(
-        @NonNull BindableInputWire<GossipEvent, GossipEvent> eventInput,
-        @NonNull BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput,
+        @NonNull InputWire<GossipEvent> eventInput,
+        @NonNull InputWire<Long> minimumGenerationNonAncientInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -57,7 +58,8 @@ public record EventDeduplicatorWiring(
      * @param deduplicator the deduplicator to bind
      */
     public void bind(@NonNull final EventDeduplicator deduplicator) {
-        eventInput.bind(deduplicator::handleEvent);
-        minimumGenerationNonAncientInput.bind(deduplicator::setMinimumGenerationNonAncient);
+        ((BindableInputWire<GossipEvent, GossipEvent>) eventInput).bind(deduplicator::handleEvent);
+        ((BindableInputWire<Long, GossipEvent>) minimumGenerationNonAncientInput)
+                .bind(deduplicator::setMinimumGenerationNonAncient);
     }
 }
