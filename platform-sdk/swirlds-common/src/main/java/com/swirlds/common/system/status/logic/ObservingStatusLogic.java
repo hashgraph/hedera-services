@@ -181,13 +181,15 @@ public class ObservingStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      * <p>
-     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#OBSERVING} has no effect on the state
-     * machine.
+     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#OBSERVING} causes a transition to
+     * {@link PlatformStatus#FREEZE_COMPLETE} if it's a freeze state.
      */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
-        return this;
+        Objects.requireNonNull(action);
+
+        return action.isFreezeState() ? new FreezeCompleteStatusLogic() : this;
     }
 
     /**

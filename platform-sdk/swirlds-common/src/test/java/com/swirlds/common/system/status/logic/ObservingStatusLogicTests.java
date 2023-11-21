@@ -121,10 +121,19 @@ class ObservingStatusLogicTests {
     }
 
     @Test
+    @DisplayName("Go to FREEZE_COMPLETE")
+    void toFreezeComplete() {
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(0, true),
+                PlatformStatus.FREEZE_COMPLETE);
+    }
+
+    @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
                 new SelfEventReachedConsensusAction(time.now()),

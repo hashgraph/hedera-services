@@ -80,21 +80,19 @@ class ReplayingEventsStatusLogicTests {
                 logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
         // if the state written to disk isn't the freeze state, we shouldn't transition
         triggerActionAndAssertNoTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(5), logic.getStatus());
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(5, false), logic.getStatus());
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(6),
+                new StateWrittenToDiskAction(6, true),
                 PlatformStatus.FREEZE_COMPLETE);
     }
 
     @Test
-    @DisplayName("Go immediately to FREEZE_COMPLETE when a freeze state is written, even if replay isn't done yet")
-    void fastFreeze() {
-        triggerActionAndAssertNoTransition(
-                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(6L), logic.getStatus());
+    @DisplayName("Go to FREEZE_COMPLETE")
+    void toFreezeComplete() {
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(6),
+                new StateWrittenToDiskAction(0, true),
                 PlatformStatus.FREEZE_COMPLETE);
     }
 
@@ -117,7 +115,7 @@ class ReplayingEventsStatusLogicTests {
                 new SelfEventReachedConsensusAction(time.now()),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());
     }
 
     @Test
