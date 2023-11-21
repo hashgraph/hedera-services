@@ -148,6 +148,14 @@ public interface RecordsHistorian {
             int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
 
     /**
+     * Returns whether the active transaction has the capacity to track the given number of preceding children.
+     *
+     * @param n the number of preceding children to track
+     * @return whether the active transaction has the capacity to track the given number of preceding children
+     */
+    boolean canTrackPrecedingChildRecords(int n);
+
+    /**
      * Reverts all records created by the given source.
      *
      * @param sourceId the id of the source whose records should be reverted

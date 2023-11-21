@@ -125,6 +125,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.evmFrameState = evmFrameStateFactory.get();
     }
 
+    /**
+     * Returns the pending creation, if any, for this updater.
+     *
+     * @return the pending creation, if any, for this updater
+     */
+    public @Nullable PendingCreation getPendingCreation() {
+        return pendingCreation;
+    }
+
     @Override
     public @NonNull Enhancement enhancement() {
         return enhancement;
@@ -496,17 +505,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             var aliasBytes = ConversionUtils.aliasFrom(alias);
             number = enhancement.nativeOperations().resolveAlias(aliasBytes);
         }
-        
+
         pendingCreation = new PendingCreation(
                 alias == null ? asLongZeroAddress(number) : alias,
                 number,
                 origin != null ? evmFrameState.getIdNumber(origin) : MISSING_ENTITY_NUMBER,
                 body);
-    }
-
-    // Visible for testing
-    public @Nullable PendingCreation getPendingCreation() {
-        return pendingCreation;
     }
 
     public void addActionAndStateChangesSidecars(ActionSidecarContentTracer tracer, ContractStateChanges stateChanges) {
