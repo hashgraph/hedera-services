@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.validation;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -27,6 +28,7 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -42,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.nonMirrorAddrWith;
@@ -50,6 +53,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.ErrorMessageResult.
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -91,6 +95,7 @@ public class Evm45ValidationSuite extends HapiSuite {
     private static final Long NOT_ENOUGH_GAS_LIMIT_FOR_CREATION = 500_000L;
     private static final Long ENOUGH_GAS_LIMIT_FOR_CREATION = 900_000L;
     private static final String RECEIVER = "receiver";
+    private static final String ECDSA_KEY = "ecdsaKey";
 
     public static void main(String... args) {
         new Evm45ValidationSuite().runSuiteAsync();
@@ -105,11 +110,14 @@ public class Evm45ValidationSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 // Top-level calls:
-                // todo add cases with repeat call attempt, assert that the account is not created
                 // EOA -calls-> NonExistingMirror, expect noop success
                 directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp(),
                 // EOA -calls-> NonExistingNonMirror, expect noop success
                 directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp(),
+                // EOA -calls-> ExistingCryptoAccount, expect noop success
+                directCallToExistingCryptoAccountResultsInSuccess(),
+                // EOA -callsWValue-> ExistingCryptoAccount, expect successful transfer
+                directCallWithValueToExistingCryptoAccountResultsInSuccess(),
                 // EOA -calls-> Reverting, expect revert
                 directCallToRevertingContractRevertsWithCorrectRevertReason(),
 
@@ -122,23 +130,27 @@ public class Evm45ValidationSuite extends HapiSuite {
                 internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess(),
                 // EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
                 internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn(),
-                // todo EOA -calls-> InternalCaller -calls-> ExistingNonMirror, expect successful call
+                // todo EOA -calls-> InternalCaller -calls-> ExistingNonMirror, expect successful
+                // call
 
                 // Internal transfers:
                 // EOA -calls-> InternalCaller -transfer-> NonExistingMirror, expect revert
-                // todo is this all we expect? no contract function result? INVALID_SOLIDITY_ADDRESS?
+                // todo is this all we expect? no contract function result?
+                // INVALID_SOLIDITY_ADDRESS?
                 internalTransferToNonExistingMirrorAddressResultsInRevert(),
                 // EOA -calls-> InternalCaller -transfer-> ExistingMirror, expect success
                 internalTransferToExistingMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -transfer-> NonExistingNonMirror, expect revert
-                // todo is this all we expect? no contract function result? CONTRACT_REVERT_EXECUTED?
+                // todo is this all we expect? no contract function result?
+                // CONTRACT_REVERT_EXECUTED?
                 internalTransferToNonExistingNonMirrorAddressResultsInRevert(),
                 // EOA -calls-> InternalCaller -transfer-> ExistingNonMirror, expect success
                 internalTransferToExistingNonMirrorAddressResultsInSuccess(),
 
                 // Internal sends:
                 // EOA -calls-> InternalCaller -send-> NonExistingMirror, expect revert
-                // todo is this all we expect? no contract function result? INVALID_SOLIDITY_ADDRESS?
+                // todo is this all we expect? no contract function result?
+                // INVALID_SOLIDITY_ADDRESS?
                 internalSendToNonExistingMirrorAddressResultsInRevert(),
                 // EOA -calls-> InternalCaller -send-> ExistingMirror, expect success
                 internalSendToExistingMirrorAddressResultsInSuccess(),
@@ -159,8 +171,14 @@ public class Evm45ValidationSuite extends HapiSuite {
                 // EOA -calls-> InternalCaller -callWValue-> ExistingNonMirror, expect ?
                 internalCallWithValueToExistingNonMirrorAddressResultsInSuccess()
 
-                // Ethereum transaction cases
                 // todo
+                // deleted: call - noop; transfer - whatever HAPI is doing
+                // expired: make check but treat as a normal account for now
+                // system accounts
+                // top-level calls to eth precompiles work, top-level calls to hed precompiles don’t work
+                // call to normal account (non-contract)
+                // static calls
+                // hollow account creation on self destruct with non-existing beneficiary
                 );
     }
 
@@ -173,18 +191,23 @@ public class Evm45ValidationSuite extends HapiSuite {
                                 asContractIdWithEvmAddress(ByteString.copyFrom(unhex(NON_EXISTING_MIRROR_ADDRESS))))))
                 .when(withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
-                        contractCallWithFunctionAbi(
-                                        "nonExistingMirrorAddress",
-                                        getABIFor(
-                                                com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                NAME,
-                                                ERC_721_ABI))
+                        contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via("directCallToNonExistingMirrorAddress"))))
-                .then(getTxnRecord("directCallToNonExistingMirrorAddress")
-                        .hasPriority(recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))));
+                                .via("directCallToNonExistingMirrorAddress"),
+                        // attempt call again, make sure the result is the same
+                        contractCallWithFunctionAbi("nonExistingMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("directCallToNonExistingMirrorAddress2"))))
+                .then(
+                        getTxnRecord("directCallToNonExistingMirrorAddress")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getTxnRecord("directCallToNonExistingMirrorAddress2")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getContractInfo("nonExistingMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     private HapiSpec directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
@@ -198,17 +221,24 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .when(withOpContext((spec, ctxLog) -> allRunFor(
                         spec,
                         contractCallWithFunctionAbi(
-                                        "nonExistingNonMirrorAddress",
-                                        getABIFor(
-                                                com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                NAME,
-                                                ERC_721_ABI))
+                                        "nonExistingNonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
                                 .gas(GAS_LIMIT_FOR_CALL)
-                                .via("directCallToNonExistingNonMirrorAddress"))))
-                .then(getTxnRecord("directCallToNonExistingNonMirrorAddress")
-                        .hasPriority(recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))));
+                                .via("directCallToNonExistingNonMirrorAddress"),
+                        // attempt call again, make sure the result is the same
+                        contractCallWithFunctionAbi(
+                                        "nonExistingNonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("directCallToNonExistingNonMirrorAddress2"))))
+                .then(
+                        getTxnRecord("directCallToNonExistingNonMirrorAddress")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getTxnRecord("directCallToNonExistingNonMirrorAddress2")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getContractInfo("nonExistingNonMirrorAddress").hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
     private HapiSpec directCallToRevertingContractRevertsWithCorrectRevertReason() {
@@ -229,6 +259,111 @@ public class Evm45ValidationSuite extends HapiSuite {
                                         .error(errorMessageResult("RevertReason")
                                                 .getBytes()
                                                 .toString()))));
+    }
+
+    private HapiSpec directCallToExistingCryptoAccountResultsInSuccess() {
+
+        AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
+
+        return defaultHapiSpec("directCallToExistingCryptoAccountResultsInSuccess")
+                .given(
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate("MirrorAccount")
+                                .balance(ONE_HUNDRED_HBARS)
+                                .exposingCreatedIdTo(mirrorAccountID::set),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> {
+                            spec.registry()
+                                    .saveContractId(
+                                            "mirrorAddress",
+                                            asContract("0.0."
+                                                    + mirrorAccountID.get().getAccountNum()));
+                            updateSpecFor(spec, ECDSA_KEY);
+                            spec.registry()
+                                    .saveContractId(
+                                            "nonMirrorAddress",
+                                            asContract("0.0."
+                                                    + spec.registry()
+                                                            .getAccountID(ECDSA_KEY)
+                                                            .getAccountNum()));
+                        }))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi("mirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("callToMirrorAddress"),
+                        contractCallWithFunctionAbi("nonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("callToNonMirrorAddress"))))
+                .then(
+                        getTxnRecord("callToMirrorAddress")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getTxnRecord("callToNonMirrorAddress")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))));
+    }
+
+    private HapiSpec directCallWithValueToExistingCryptoAccountResultsInSuccess() {
+
+        AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
+
+        return defaultHapiSpec("directCallWithValueToExistingCryptoAccountResultsInSuccess")
+                .given(
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate("MirrorAccount")
+                                .balance(ONE_HUNDRED_HBARS)
+                                .exposingCreatedIdTo(mirrorAccountID::set),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> {
+                            spec.registry()
+                                    .saveContractId(
+                                            "mirrorAddress",
+                                            asContract("0.0."
+                                                    + mirrorAccountID.get().getAccountNum()));
+                            updateSpecFor(spec, ECDSA_KEY);
+                            spec.registry()
+                                    .saveContractId(
+                                            "nonMirrorAddress",
+                                            asContract("0.0."
+                                                    + spec.registry()
+                                                            .getAccountID(ECDSA_KEY)
+                                                            .getAccountNum()));
+                            spec.registry()
+                                    .saveAccountId(
+                                            "NonMirrorAccount",
+                                            AccountID.newBuilder()
+                                                    .setAccountNum(spec.registry()
+                                                            .getAccountID(ECDSA_KEY)
+                                                            .getAccountNum())
+                                                    .build());
+                        }))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        balanceSnapshot("mirrorSnapshot", "MirrorAccount"),
+                        balanceSnapshot("nonMirrorSnapshot", "NonMirrorAccount"),
+                        contractCallWithFunctionAbi("mirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .sending(ONE_HBAR)
+                                .via("callToMirrorAddress"),
+                        contractCallWithFunctionAbi("nonMirrorAddress", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .sending(ONE_HBAR)
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("callToNonMirrorAddress"))))
+                .then(
+                        getTxnRecord("callToMirrorAddress")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getTxnRecord("callToNonMirrorAddress")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().gasUsed(INTRINSIC_GAS_COST))),
+                        getAccountBalance("MirrorAccount").hasTinyBars(changeFromSnapshot("mirrorSnapshot", ONE_HBAR)),
+                        getAccountBalance("NonMirrorAccount")
+                                .hasTinyBars(changeFromSnapshot("nonMirrorSnapshot", ONE_HBAR)));
     }
 
     private HapiSpec internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
@@ -372,19 +507,18 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalTransferToExistingNonMirrorAddressResultsInSuccess")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(withOpContext((spec, op) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     allRunFor(
                             spec,
-                            balanceSnapshot("autoCreatedSnapshot", SECP_256K1_SOURCE_KEY)
-                                    .accountIsAlias(),
+                            balanceSnapshot("autoCreatedSnapshot", ECDSA_KEY).accountIsAlias(),
                             contractCall(
                                             INTERNAL_CALLER_CONTRACT,
                                             TRANSFER_TO_FUNCTION,
@@ -395,9 +529,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(INNER_TXN)
                                 .hasPriority(recordWith()
-                                        .transfers(including(
-                                                tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, SECP_256K1_SOURCE_KEY, 1)))),
-                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
+                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
+                        getAutoCreatedAccountBalance(ECDSA_KEY)
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
@@ -445,9 +578,9 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalSendToNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext((spec, op) -> {
-                            final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                             final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                             final var addressBytes = recoverAddressFromPubKey(tmp);
                             nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
@@ -476,19 +609,18 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalSendToExistingNonMirrorAddressResultsInSuccess")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(withOpContext((spec, op) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     allRunFor(
                             spec,
-                            balanceSnapshot("autoCreatedSnapshot", SECP_256K1_SOURCE_KEY)
-                                    .accountIsAlias(),
+                            balanceSnapshot("autoCreatedSnapshot", ECDSA_KEY).accountIsAlias(),
                             contractCall(INTERNAL_CALLER_CONTRACT, SEND_TO_FUNCTION, asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL * 4)
                                     .via(INNER_TXN));
@@ -496,9 +628,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(INNER_TXN)
                                 .hasPriority(recordWith()
-                                        .transfers(including(
-                                                tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, SECP_256K1_SOURCE_KEY, 1)))),
-                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
+                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
+                        getAutoCreatedAccountBalance(ECDSA_KEY)
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
@@ -577,19 +708,18 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalCallWithValueToExistingNonMirrorAddressResultsInSuccess")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(withOpContext((spec, op) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     allRunFor(
                             spec,
-                            balanceSnapshot("autoCreatedSnapshot", SECP_256K1_SOURCE_KEY)
-                                    .accountIsAlias(),
+                            balanceSnapshot("autoCreatedSnapshot", ECDSA_KEY).accountIsAlias(),
                             contractCall(
                                             INTERNAL_CALLER_CONTRACT,
                                             CALL_WITH_VALUE_TO_FUNCTION,
@@ -600,9 +730,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(INNER_TXN)
                                 .hasPriority(recordWith()
-                                        .transfers(including(
-                                                tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, SECP_256K1_SOURCE_KEY, 1)))),
-                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
+                                        .transfers(including(tinyBarsFromTo(INTERNAL_CALLER_CONTRACT, ECDSA_KEY, 1)))),
+                        getAutoCreatedAccountBalance(ECDSA_KEY)
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
