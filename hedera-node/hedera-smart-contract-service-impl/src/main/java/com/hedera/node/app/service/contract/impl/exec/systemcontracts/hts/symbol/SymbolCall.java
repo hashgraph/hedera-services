@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbol;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,7 +41,7 @@ public class SymbolCall extends AbstractRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
+    protected @NonNull FullResult resultOfViewingToken(@NonNull Token token) {
         final var output = SymbolTranslator.SYMBOL.getOutputs().encodeElements(token.symbol());
         return successResult(output, gasCalculator.viewGasRequirement());
     }

@@ -35,17 +35,13 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.fixtures.AssertionUtils;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -54,19 +50,16 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * This class contains basic sanity checks for the {@code StateManagementComponent}. Not all inputs and outputs are
@@ -74,27 +67,19 @@ import org.junit.jupiter.api.io.TempDir;
  * which is not able to be manipulated. These operations are tested in targeted class tests, not here.
  */
 class StateManagementComponentTests {
-
-    private static final String MAIN = "main";
-    private static final String SWIRLD = "swirld123";
-    private static final NodeId NODE_ID = new NodeId(0L);
     private static final int NUM_NODES = 4;
 
     private final int roundsToKeepForSigning = 5;
     private final TestPrioritySystemTransactionConsumer systemTransactionConsumer =
             new TestPrioritySystemTransactionConsumer();
     private final TestSignedStateWrapperConsumer newLatestCompleteStateConsumer = new TestSignedStateWrapperConsumer();
-    private final TestIssConsumer issConsumer = new TestIssConsumer();
-    private final TestStateToDiskAttemptConsumer stateToDiskAttemptConsumer = new TestStateToDiskAttemptConsumer();
-
-    @TempDir
-    private Path tmpDir;
+    private final TestSavedStateController controller = new TestSavedStateController();
 
     @BeforeEach
     protected void beforeEach() {
         systemTransactionConsumer.reset();
         newLatestCompleteStateConsumer.reset();
-        issConsumer.reset();
+        controller.getStatesQueue().clear();
     }
 
     /**
@@ -106,11 +91,7 @@ class StateManagementComponentTests {
     void newStateFromTransactionsSubmitsSystemTransaction() {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numSignedStates = 100;
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent();
 
         component.start();
 
@@ -151,11 +132,7 @@ class StateManagementComponentTests {
     @DisplayName("Signed state to load becomes the latest complete signed state")
     void signedStateToLoadIsLatestComplete() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent();
 
         component.start();
 
@@ -240,11 +217,7 @@ class StateManagementComponentTests {
     @DisplayName("State signatures are applied and consumers are invoked")
     void stateSignaturesAppliedAndTracked() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent();
 
         component.start();
 
@@ -282,11 +255,7 @@ class StateManagementComponentTests {
     @DisplayName("Signed States For Old Rounds Are Not Processed")
     void signedStateFromTransactionsCodePath() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent();
 
         systemTransactionConsumer.reset();
         component.start();
@@ -356,14 +325,9 @@ class StateManagementComponentTests {
 
     @Test
     @DisplayName("Test that the state is saved to disk when it is received via reconnect")
-    void testReconnectStateSaved() throws InterruptedException {
+    void testReconnectStateSaved() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent();
 
         component.start();
 
@@ -374,12 +338,10 @@ class StateManagementComponentTests {
                 .setSigningNodeIds(majorityWeightNodes)
                 .build();
         component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-        final StateToDiskAttempt attempt =
-                stateToDiskAttemptConsumer.getAttemptQueue().poll(5, TimeUnit.SECONDS);
-        assertNotNull(attempt, "The state should be saved to disk.");
+        final SignedState stateSentForWriting = controller.getStatesQueue().poll();
+        assertNotNull(stateSentForWriting, "The state should be saved to disk.");
         assertEquals(
-                attempt.signedState(), signedState, "The state saved to disk should be the same as the state loaded.");
-        assertTrue(attempt.success(), "The state saved to disk should be marked as a success.");
+                stateSentForWriting, signedState, "The state saved to disk should be the same as the state loaded.");
 
         component.stop();
     }
@@ -452,20 +414,17 @@ class StateManagementComponentTests {
     private TestConfigBuilder defaultConfigBuilder() {
         return new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
-                .withValue("state.saveStatePeriod", 1)
-                .withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+                .withValue("state.saveStatePeriod", 1);
     }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
-        return newStateManagementComponent(addressBook, defaultConfigBuilder());
+    private DefaultStateManagementComponent newStateManagementComponent() {
+        return newStateManagementComponent(defaultConfigBuilder());
     }
 
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
-
-        configBuilder.withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+            @NonNull final TestConfigBuilder configBuilder) {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
@@ -487,20 +446,13 @@ class StateManagementComponentTests {
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
                 dispatchBuilder,
-                addressBook,
                 signer,
-                MAIN,
-                NODE_ID,
-                SWIRLD,
                 systemTransactionConsumer::consume,
-                stateToDiskAttemptConsumer,
                 newLatestCompleteStateConsumer::consume,
-                issConsumer::consume,
-                (msg) -> {},
                 (msg, t, code) -> {},
-                mock(PreconsensusEventWriter.class),
                 platformStatusGetter,
-                mock(StatusActionSubmitter.class));
+                controller,
+                r -> {});
 
         dispatchBuilder.start();
 
