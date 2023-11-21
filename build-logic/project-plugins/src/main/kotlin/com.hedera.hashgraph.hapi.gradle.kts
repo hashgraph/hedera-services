@@ -49,12 +49,3 @@ sourceSets.all {
         }
     }
 }
-
-tasks.withType<Jar>().configureEach {
-    dependsOn(tasks.named("generatePbjSource"))
-    dependsOn(tasks.named("generateTestPbjSource"))
-    dependsOn(tasks.named("generateTestFixturesPbjSource"))
-    dependsOn(tasks.named("generateItestPbjSource"))
-    dependsOn(tasks.named("generateEetPbjSource"))
-    dependsOn(tasks.named("generateXtestPbjSource"))
-}

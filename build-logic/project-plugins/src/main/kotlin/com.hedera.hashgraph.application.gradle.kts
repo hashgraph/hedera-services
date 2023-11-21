@@ -17,12 +17,9 @@
 plugins {
     id("application")
     id("com.hedera.hashgraph.java")
-    id("com.gorylenko.gradle-git-properties")
 }
 
 group = "com.swirlds"
-
-gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
 // Find the central SDK deployment dir by searching up the folder hierarchy
 fun sdkDir(dir: Directory): Directory =
@@ -38,9 +35,11 @@ val copyLib =
 // Copy built jar into `data/apps` and rename
 val copyApp =
     tasks.register<Copy>("copyApp") {
+        inputs.property("projectName", project.name)
+
         from(tasks.jar)
         into(sdkDir(layout.projectDirectory).dir("data/apps"))
-        rename { "${project.name}.jar" }
+        rename { "${inputs.properties["projectName"]}.jar" }
     }
 
 tasks.assemble {

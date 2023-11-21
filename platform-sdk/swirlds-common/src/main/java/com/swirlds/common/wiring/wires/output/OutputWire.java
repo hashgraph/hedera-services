@@ -218,15 +218,14 @@ public abstract class OutputWire<OUT> {
      * This method is very similar to {@link #buildAdvancedTransformer(String, Function, Consumer)}, but with a
      * different way of describing the transformation.
      *
-     * @param name        the name of the transformer
      * @param transformer an object that manages the transformation
      * @param <NEW_OUT>   the output type of the transformer
      * @return the output wire of the transformer
      */
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
-            @NonNull final String name, @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
-        return buildAdvancedTransformer(name, transformer::transform, transformer::cleanup);
+            @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
+        return buildAdvancedTransformer(transformer.getName(), transformer::transform, transformer::cleanup);
     }
 
     /**
