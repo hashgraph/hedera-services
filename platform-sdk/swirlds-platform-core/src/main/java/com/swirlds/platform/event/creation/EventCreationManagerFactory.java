@@ -65,7 +65,6 @@ public final class EventCreationManagerFactory {
      * @param eventObserverDispatcher   wires together event intake logic
      * @param platformStatusSupplier    provides the current platform status
      * @param latestReconnectRound      provides the latest reconnect round
-     * @param latestSavedStateRound     provides the latest saved state round
      * @return a new event creation manager
      */
     @NonNull
@@ -81,8 +80,7 @@ public final class EventCreationManagerFactory {
             @NonNull final QueueThread<GossipEvent> eventIntakeQueue,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final Supplier<Long> latestReconnectRound,
-            @NonNull final Supplier<Long> latestSavedStateRound) {
+            @NonNull final Supplier<Long> latestReconnectRound) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -96,7 +94,6 @@ public final class EventCreationManagerFactory {
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(latestReconnectRound);
-        Objects.requireNonNull(latestSavedStateRound);
 
         final EventCreator eventCreator = new TipsetEventCreator(
                 platformContext,

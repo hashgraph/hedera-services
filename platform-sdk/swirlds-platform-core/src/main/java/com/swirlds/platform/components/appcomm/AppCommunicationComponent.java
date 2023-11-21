@@ -36,22 +36,20 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent
-        implements PlatformComponent, StateToDiskAttemptConsumer, NewLatestCompleteStateConsumer, IssConsumer {
+public class AppCommunicationComponent implements PlatformComponent, NewLatestCompleteStateConsumer, IssConsumer {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
@@ -65,8 +63,9 @@ public class AppCommunicationComponent
 
     /**
      * Create a new instance
+     *
      * @param notificationEngine the notification engine
-     * @param context the platform context
+     * @param context            the platform context
      */
     public AppCommunicationComponent(
             @NonNull final NotificationEngine notificationEngine, @NonNull final PlatformContext context) {
@@ -88,20 +87,18 @@ public class AppCommunicationComponent
                 .build();
     }
 
-    @Override
-    public void stateToDiskAttempt(
-            @NonNull final SignedState signedState, @NonNull final Path directory, final boolean success) {
-        if (success) {
-            // Synchronous notification, no need to take an extra reservation
-            notificationEngine.dispatch(
-                    StateWriteToDiskCompleteListener.class,
-                    new StateWriteToDiskCompleteNotification(
-                            signedState.getRound(),
-                            signedState.getConsensusTimestamp(),
-                            signedState.getSwirldState(),
-                            directory,
-                            signedState.isFreezeState()));
-        }
+    /**
+     * Notify the application that a state has been saved to disk successfully
+     *
+     * @param stateSavingResult the result of the state saving operation
+     */
+    public void stateSavedToDisk(@NonNull final StateSavingResult stateSavingResult) {
+        notificationEngine.dispatch(
+                StateWriteToDiskCompleteListener.class,
+                new StateWriteToDiskCompleteNotification(
+                        stateSavingResult.round(),
+                        stateSavingResult.consensusTimestamp(),
+                        stateSavingResult.freezeState()));
     }
 
     @Override

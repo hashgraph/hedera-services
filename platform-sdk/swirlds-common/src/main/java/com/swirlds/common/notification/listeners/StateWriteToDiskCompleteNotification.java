@@ -28,20 +28,12 @@ public class StateWriteToDiskCompleteNotification extends AbstractNotification {
 
     private final long roundNumber;
     private final Instant consensusTimestamp;
-    private final SwirldState state;
-    private final Path folder;
     private final boolean isFreezeState;
 
     public StateWriteToDiskCompleteNotification(
-            final long roundNumber,
-            final Instant consensusTimestamp,
-            final SwirldState state,
-            final Path folder,
-            final boolean isFreezeState) {
+            final long roundNumber, final Instant consensusTimestamp, final boolean isFreezeState) {
         this.roundNumber = roundNumber;
         this.consensusTimestamp = consensusTimestamp;
-        this.state = state;
-        this.folder = folder;
         this.isFreezeState = isFreezeState;
     }
 
@@ -64,21 +56,23 @@ public class StateWriteToDiskCompleteNotification extends AbstractNotification {
     }
 
     /**
-     * Gets the {@link SwirldState} instance that was sigend and saved to disk.
-     *
-     * @return the signed {@link SwirldState} instance
+     * Deprecated method, always returns null
+     * @return null
+     * @deprecated used by PTT for an obsolete feature
      */
+    @Deprecated(forRemoval = true)
     public SwirldState getState() {
-        return state;
+        return null;
     }
 
     /**
-     * Gets the path where the signed state was written to disk.
-     *
-     * @return the path containing the saved state
+     * Deprecated method, always returns null
+     * @return null
+     * @deprecated used by PTT for an obsolete feature
      */
+    @Deprecated(forRemoval = true)
     public Path getFolder() {
-        return folder;
+        return null;
     }
 
     /**
