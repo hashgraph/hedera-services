@@ -81,6 +81,8 @@ import org.apache.tuweni.bytes.Bytes;
  *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should now succeed</li>*
  *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.This should fail with status INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
  *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}.This should fail with status INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.This should fail with status TOKEN_HAS_NO_KYC_KEY.</li>
+ *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}.This should fail with status TOKEN_HAS_NO_KYC_KEY.</li>
  * </ol>
  */
 public class GrantRevokeKycXTest extends AbstractContractXTest {
@@ -218,7 +220,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_KYC_KEY).array()),
                         output,
-                        "Should not be able to grant KYC with invalid signature"));
+                        "Should not be able to grant KYC with missing signature"));
         // REVOKE_KYC with no kyc key
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -228,7 +230,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_KYC_KEY).array()),
                         output,
-                        "Should not be able to revoke KYC with invalid signature"));
+                        "Should not be able to revoke KYC with missing signature"));
     }
 
     @Override

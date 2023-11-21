@@ -75,9 +75,9 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Transfer {@code ERC20_TOKEN} from  SENDER to RECEIVER.  This should now succeed</li>
  *     <li>Freeze {@code ERC721_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
  *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
- *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
- *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
- *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} with different freeze key via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
+ *     <li>Freeze {@code ERC20_TOKEN} with different freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
  * </ol>
  */
 public class FreezeUnfreezeXTest extends AbstractContractXTest {
@@ -182,7 +182,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                 .array()),
                         output));
-        //         FREEZE DIFFERENT FREEZE KEY
+        // FREEZE DIFFERENT FREEZE KEY
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
