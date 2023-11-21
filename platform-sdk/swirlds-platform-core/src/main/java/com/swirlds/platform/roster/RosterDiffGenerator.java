@@ -71,7 +71,7 @@ public class RosterDiffGenerator {
                 return null;
             }
 
-            if (previousEffectiveRound <= effectiveRound) {
+            if (previousEffectiveRound >= effectiveRound) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Effective rounds should always increase over time. "
