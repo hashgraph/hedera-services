@@ -249,7 +249,7 @@ class ExpirableTxnRecordBuilderTest {
 
         assertNull(subject.getTokens());
         assertNull(subject.getScheduleRef());
-        assertNull(subject.getHbarAdjustments());
+        assertSame(CurrencyAdjustments.EMPTY, subject.getHbarAdjustments());
         assertNull(subject.getStakingRewardsPaid());
         assertNull(subject.getTokenAdjustments());
         assertNotNull(subject.getContractCallResult());
