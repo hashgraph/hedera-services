@@ -16,13 +16,84 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
-public class ScheduleUtils {
+public final class ScheduleUtils {
+    static final String SENDER_TXN = "senderTxn";
+    static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
+    static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
+    static final String SCHEDULING_MAX_TXN_PER_SECOND = "scheduling.maxTxnPerSecond";
+    static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
+    static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS = "ledger.schedule.txExpiryTimeSecs";
+    static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
+    static final String PAYING_ACCOUNT = "payingAccount";
+    static final String RECEIVER = "receiver";
+    static final String SENDER = "sender";
+    static final String BASIC_XFER = "basicXfer";
+    static final String CREATE_TX = "createTx";
+    static final String SIGN_TX = "signTx";
+    static final String TRIGGERING_TXN = "triggeringTxn";
+    static final String PAYING_ACCOUNT_2 = "payingAccount2";
+    static final String FALSE = "false";
+    static final String VALID_SCHEDULE = "validSchedule";
+    static final String SUCCESS_TXN = "successTxn";
+    static final String PAYER_TXN = "payerTxn";
+    static final String WRONG_RECORD_ACCOUNT_ID = "Wrong record account ID!";
+    static final String TRANSACTION_NOT_SCHEDULED = "Transaction not scheduled!";
+    static final String WRONG_SCHEDULE_ID = "Wrong schedule ID!";
+    static final String WRONG_TRANSACTION_VALID_START = "Wrong transaction valid start!";
+    static final String WRONG_CONSENSUS_TIMESTAMP = "Wrong consensus timestamp!";
+    static final String WRONG_TRANSFER_LIST = "Wrong transfer list!";
+    static final String SIMPLE_UPDATE = "SimpleUpdate";
+    static final String PAYING_ACCOUNT_TXN = "payingAccountTxn";
+    static final String LUCKY_RECEIVER = "luckyReceiver";
+    static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
+    static final String FAILED_XFER = "failedXfer";
+    static final String WEIRDLY_POPULAR_KEY = "weirdlyPopularKey";
+    static final String SENDER_1 = "sender1";
+    static final String SENDER_2 = "sender2";
+    static final String SENDER_3 = "sender3";
+    static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
+    static final String THREE_SIG_XFER = "threeSigXfer";
+    static final String PAYER = "payer";
+
+    /**
+     * Whitelist containing all of the non-query type transactions so we don't hit whitelist failures
+     * everywhere.  Recommended for most specs that override whitelist.
+     */
+    static final String FULL_WHITELIST =
+            """
+            ConsensusCreateTopic,ConsensusDeleteTopic,ConsensusSubmitMessage,ConsensusUpdateTopic,\
+            ContractAutoRenew,ContractCall,ContractCallLocal,ContractCreate,ContractDelete,\
+            ContractUpdate,CreateTransactionRecord,CryptoAccountAutoRenew,CryptoAddLiveHash,\
+            CryptoApproveAllowance,CryptoCreate,CryptoDelete,CryptoDeleteAllowance,CryptoDeleteLiveHash,\
+            CryptoTransfer,CryptoUpdate,EthereumTransaction,FileAppend,FileCreate,FileDelete,FileUpdate,\
+            Freeze,SystemDelete,SystemUndelete,TokenAccountWipe,TokenAssociateToAccount,TokenBurn,\
+            TokenCreate,TokenDelete,TokenDissociateFromAccount,TokenFeeScheduleUpdate,TokenFreezeAccount,\
+            TokenGrantKycToAccount,TokenMint,TokenPause,TokenRevokeKycFromAccount,TokenUnfreezeAccount,\
+            TokenUnpause,TokenUpdate,UtilPrng""";
+    /**
+     * A very small whitelist containing just the transactions needed for SecheduleExecutionSpecs because
+     * that suite has to override the whitelist on every single spec due to some sort of ordering issue.
+     */
+    static final String WHITELIST_MINIMUM =
+            "ConsensusSubmitMessage,ContractCall,CryptoCreate,CryptoTransfer,FileUpdate,SystemDelete,TokenBurn,TokenMint,Freeze";
+    /**
+     * A whitelist guaranteed to contain every transaction type possible.  Useful for specs that need to test scheduling
+     * a transaction that shouldn't work (e.g. a query).
+     */
+    static final String WHITELIST_ALL = getWhitelistAll();
+
+    private ScheduleUtils() {}
+
     public static SchedulableTransactionBody fromOrdinary(TransactionBody txn) {
-        var scheduleBuilder = SchedulableTransactionBody.newBuilder();
-
+        Builder scheduleBuilder = SchedulableTransactionBody.newBuilder();
         scheduleBuilder.setTransactionFee(txn.getTransactionFee());
         scheduleBuilder.setMemo(txn.getMemo());
 
@@ -93,7 +164,16 @@ public class ScheduleUtils {
         } else if (txn.hasCryptoApproveAllowance()) {
             scheduleBuilder.setCryptoApproveAllowance(txn.getCryptoApproveAllowance());
         }
-
         return scheduleBuilder.build();
+    }
+
+    private static String getWhitelistAll() {
+        final List<String> whitelistNames = new LinkedList<>();
+        for (final HederaFunctionality enumValue : HederaFunctionality.values()) {
+            if (enumValue != HederaFunctionality.NONE) whitelistNames.add(enumValue.protoName());
+        }
+        Collections.sort(whitelistNames); // make things easier to read
+        final String whitelistAll = String.join(",", whitelistNames);
+        return whitelistAll;
     }
 }

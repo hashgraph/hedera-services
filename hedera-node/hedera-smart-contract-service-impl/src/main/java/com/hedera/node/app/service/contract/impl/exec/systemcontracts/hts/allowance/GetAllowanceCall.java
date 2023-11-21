@@ -84,6 +84,10 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         }
         final var ownerID = addressIdConverter.convert(owner);
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
+        if (isStaticCall && ownerAccount == null) {
+            return FullResult.revertResult(
+                    com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID, gasRequirement);
+        }
         final var spenderID = addressIdConverter.convert(spender);
         if (!spenderID.hasAccountNum() && !isStaticCall) {
             return FullResult.successResult(
