@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.junit.TestTags.TOKEN;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Tag;
  * the auto-created account is about to expire.
  */
 @HapiTestSuite
-@Tag(TOKEN)
+@Tag(CRYPTO)
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
     public static final long INITIAL_BALANCE = 1000L;

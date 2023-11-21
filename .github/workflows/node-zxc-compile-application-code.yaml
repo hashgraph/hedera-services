@@ -33,22 +33,27 @@ on:
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-1:
+      enable-hapi-tests-misc:
         description: "HAPI Testing (misc) Enabled"
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-2:
-        description: "HAPI Testing (crypto & token) Enabled"
+      enable-hapi-tests-crypto:
+        description: "HAPI Testing (crypto) Enabled"
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-3:
+      enable-hapi-tests-token:
+        description: "HAPI Testing (token) Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-hapi-tests-smart-contract:
         description: "HAPI Testing (smart contract) Enabled"
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-4:
+      enable-hapi-tests-time-consuming:
         description: "HAPI Testing (time consuming) Enabled"
         type: boolean
         required: false
@@ -256,8 +261,8 @@ jobs:
             hedera-node/test-clients/build/network/itest/output/**
 
       - name: HAPI Testing (misc)
-        id: gradle-hapi-1
-        if: ${{ inputs.enable-hapi-tests-1 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        id: gradle-hapi-misc
+        if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
@@ -265,7 +270,7 @@ jobs:
 
       - name: Publish HAPI Test (misc) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
-        if: ${{ inputs.enable-hapi-tests-1 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (misc) Results'
           check_run_disabled: false
@@ -274,40 +279,65 @@ jobs:
 
       - name: Publish HAPI Test (misc) Network Logs
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        if: ${{ inputs.enable-hapi-tests-1 && inputs.enable-network-log-capture && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-misc && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (misc) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
 
-      - name: HAPI Testing (crypto & token)
-        id: gradle-hapi-2
-        if: ${{ inputs.enable-hapi-tests-2 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+      - name: HAPI Testing (crypto)
+        id: gradle-hapi-crypto
+        if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        env:
+          LC_ALL: en.UTF-8
+          LANG: en_US.UTF-8
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew hapiTestCrypto -Dfile.encoding=UTF-8 --scan --no-daemon
+
+      - name: Publish HAPI Test (crypto) Report
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: HAPI Test (crypto) Results'
+          check_run_disabled: false
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/hapiTestCrypto/TEST-*.xml"
+
+      - name: Publish HAPI Test (crypto) Network Logs
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: ${{ inputs.enable-hapi-tests-crypto && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: HAPI Test (crypto) Network Logs
+          path: |
+            hedera-node/test-clients/build/hapi-test/**/output/**
+
+      - name: HAPI Testing (token)
+        id: gradle-hapi-token
+        if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
         run: ionice -c 2 -n 2 nice -n 19 ./gradlew hapiTestToken -Dfile.encoding=UTF-8 --scan --no-daemon
 
-      - name: Publish HAPI Test (crypto & token) Report
+      - name: Publish HAPI Test (token) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
-        if: ${{ inputs.enable-hapi-tests-2 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (crypto & token) Results'
+          check_name: 'Node: HAPI Test (token) Results'
           check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/hapiTestToken/TEST-*.xml"
 
-      - name: Publish HAPI Test (crypto & token) Network Logs
+      - name: Publish HAPI Test (token) Network Logs
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        if: ${{ inputs.enable-hapi-tests-2 && inputs.enable-network-log-capture && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-token && inputs.enable-network-log-capture && !cancelled() }}
         with:
-          name: HAPI Test (crypto & token) Network Logs
+          name: HAPI Test (token) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
 
       - name: HAPI Testing (smart contract)
-        id: gradle-hapi-3
-        if: ${{ inputs.enable-hapi-tests-3 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        id: gradle-hapi-smart-contract
+        if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
@@ -315,7 +345,7 @@ jobs:
 
       - name: Publish HAPI Test (smart contract) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
-        if: ${{ inputs.enable-hapi-tests-3 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (smart contract) Results'
           check_run_disabled: false
@@ -324,15 +354,15 @@ jobs:
 
       - name: Publish HAPI Test (smart contract) Network Logs
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        if: ${{ inputs.enable-hapi-tests-3 && inputs.enable-network-log-capture && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-smart-contract && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (smart contract) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
 
       - name: HAPI Testing (time consuming)
-        id: gradle-hapi-4
-        if: ${{ inputs.enable-hapi-tests-4 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        id: gradle-hapi-time-consuming
+        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
@@ -340,7 +370,7 @@ jobs:
 
       - name: Publish HAPI Test (time consuming) Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
-        if: ${{ inputs.enable-hapi-tests-4 && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (time consuming) Results'
           check_run_disabled: false
@@ -349,7 +379,7 @@ jobs:
 
       - name: Publish HAPI Test (time consuming) Network Logs
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-        if: ${{ inputs.enable-hapi-tests-4 && inputs.enable-network-log-capture && !cancelled() }}
+        if: ${{ inputs.enable-hapi-tests-time-consuming && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: HAPI Test (time consuming) Network Logs
           path: |

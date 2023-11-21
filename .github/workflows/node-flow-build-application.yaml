@@ -33,22 +33,27 @@ on:
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-1:
+      enable-hapi-tests-misc:
         description: "HAPI Testing (misc) Enabled"
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-2:
-        description: "HAPI Testing (crypto & token) Enabled"
+      enable-hapi-tests-crypto:
+        description: "HAPI Testing (crypto) Enabled"
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-3:
+      enable-hapi-tests-token:
+        description: "HAPI Testing (token) Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-hapi-tests-smart-contract:
         description: "HAPI Testing (smart contract) Enabled"
         type: boolean
         required: false
         default: false
-      enable-hapi-tests-4:
+      enable-hapi-tests-time-consuming:
         description: "HAPI Testing (time consuming) Enabled"
         type: boolean
         required: false

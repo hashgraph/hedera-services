@@ -73,13 +73,24 @@ tasks.register<Test>("hapiTestMisc") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { excludeTags("TOKEN", "SMART_CONTRACT", "TIME_CONSUMING") }
+    useJUnitPlatform { excludeTags("CRYPTO", "TOKEN", "SMART_CONTRACT", "TIME_CONSUMING") }
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
 }
 
-// Runs all tests of TokenService (token & crypto)
+// Runs all tests of CryptoService
+tasks.register<Test>("hapiTestCrypto") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform { includeTags("CRYPTO") }
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs all tests of TokenService
 tasks.register<Test>("hapiTestToken") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath

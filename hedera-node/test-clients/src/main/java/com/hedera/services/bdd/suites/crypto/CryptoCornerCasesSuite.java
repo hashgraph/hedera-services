@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.junit.TestTags.TOKEN;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
-@Tag(TOKEN)
+@Tag(CRYPTO)
 public class CryptoCornerCasesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
     private static final String NEW_PAYEE = "newPayee";

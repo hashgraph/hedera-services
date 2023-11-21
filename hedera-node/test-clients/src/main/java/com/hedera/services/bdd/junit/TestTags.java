@@ -22,6 +22,7 @@ public class TestTags {
         throw new IllegalStateException("Utility class");
     }
 
+    public static final String CRYPTO = "CRYPTO";
     public static final String SMART_CONTRACT = "SMART_CONTRACT";
     public static final String TIME_CONSUMING = "TIME_CONSUMING";
     public static final String TOKEN = "TOKEN";

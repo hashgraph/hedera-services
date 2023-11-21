@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.junit.TestTags.TOKEN;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
@@ -65,7 +65,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
-@Tag(TOKEN)
+@Tag(CRYPTO)
 public class CryptoDeleteAllowanceSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoDeleteAllowanceSuite.class);
 
