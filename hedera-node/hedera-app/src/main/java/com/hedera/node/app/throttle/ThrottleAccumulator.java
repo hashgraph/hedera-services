@@ -156,7 +156,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return false;
         }
 
-        final var shouldThrottleByGas =
+        final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
         resetLastAllowedUse();
@@ -267,12 +267,12 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         // exemption
         // but this is only possible for the case of triggered transactions which is not yet implemented (see
         // MonoMultiplierSources.java)
-        final var isPayerThrottleExempt = throttleExempt(txnInfo.payerID(), configuration);
+        final boolean isPayerThrottleExempt = throttleExempt(txnInfo.payerID(), configuration);
         if (isPayerThrottleExempt) {
             return false;
         }
 
-        final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
+        final long txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
         if (isGasExhausted(function, now, txGasLimit, configuration)) {
             lastTxnWasGasThrottled = true;
             return true;
@@ -333,9 +333,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         // maintain legacy behaviour
         final var configuration = configProvider.getConfiguration();
         if (!configuration.getConfigData(SchedulingConfig.class).longTermEnabled()) {
-            final var isAutoCreationEnabled =
+            final boolean isAutoCreationEnabled =
                     configuration.getConfigData(AutoCreationConfig.class).enabled();
-            final var isLazyCreationEnabled =
+            final boolean isLazyCreationEnabled =
                     configuration.getConfigData(LazyCreationConfig.class).enabled();
             if ((isAutoCreationEnabled || isLazyCreationEnabled) && scheduledFunction == CRYPTO_TRANSFER) {
                 final var transfer = scheduled.cryptoTransfer();
@@ -344,7 +344,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                     final var transferTxnBody = TransactionBody.newBuilder()
                             .cryptoTransfer(transfer)
                             .build();
-                    final var implicitCreationsCount = getImplicitCreationsCount(transferTxnBody, accountStore);
+                    final int implicitCreationsCount = getImplicitCreationsCount(transferTxnBody, accountStore);
                     if (implicitCreationsCount > 0) {
                         return shouldThrottleImplicitCreations(implicitCreationsCount, now);
                     }
@@ -379,9 +379,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
     public static boolean throttleExempt(
             @NonNull final AccountID accountID, @NonNull final Configuration configuration) {
-        final var maxThrottleExemptNum =
+        final long maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        final var accountNum = accountID.accountNum();
+        final long accountNum = accountID.accountNum().longValue();
         return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
     }
 
@@ -416,7 +416,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final Instant now,
             final long txGasLimit,
             @NonNull final Configuration configuration) {
-        final var shouldThrottleByGas =
+        final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
         return shouldThrottleByGas
                 && isGasThrottled(function)
@@ -428,7 +428,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final TokenMintTransactionBody op,
             @NonNull final Instant now,
             @NonNull final Configuration configuration) {
-        final var numNfts = op.metadata().size();
+        final int numNfts = op.metadata().size();
         if (numNfts == 0) {
             return !manager.allReqsMetAt(now);
         } else {
@@ -443,9 +443,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final Instant now,
             @NonNull final Configuration configuration,
             final int implicitCreationsCount) {
-        final var isAutoCreationEnabled =
+        final boolean isAutoCreationEnabled =
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
-        final var isLazyCreationEnabled =
+        final boolean isLazyCreationEnabled =
                 configuration.getConfigData(LazyCreationConfig.class).enabled();
         if (isAutoCreationEnabled || isLazyCreationEnabled) {
             return shouldThrottleBasedOnImplicitCreations(manager, implicitCreationsCount, now);
@@ -459,9 +459,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final Instant now,
             @NonNull final Configuration configuration,
             final int implicitCreationsCount) {
-        final var isAutoCreationEnabled =
+        final boolean isAutoCreationEnabled =
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
-        final var isLazyCreationEnabled =
+        final boolean isLazyCreationEnabled =
                 configuration.getConfigData(LazyCreationConfig.class).enabled();
         if (isAutoCreationEnabled && isLazyCreationEnabled) {
             return shouldThrottleBasedOnImplicitCreations(manager, implicitCreationsCount, now);
@@ -472,7 +472,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
     private int getImplicitCreationsCount(
             @NonNull final TransactionBody txnBody, @NonNull final ReadableAccountStore accountStore) {
-        var implicitCreationsCount = 0;
+        int implicitCreationsCount = 0;
         if (txnBody.hasEthereumTransaction()) {
             final var ethTxData = populateEthTxData(
                     txnBody.ethereumTransaction().ethereumData().toByteArray());
@@ -480,7 +480,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                 return UNKNOWN_NUM_IMPLICIT_CREATIONS;
             }
 
-            final var doesNotExist = accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
+            final boolean doesNotExist = accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
             if (doesNotExist && ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
                 implicitCreationsCount++;
             }
@@ -505,7 +505,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return 0;
         }
 
-        var implicitCreationsCount = 0;
+        int implicitCreationsCount = 0;
         for (var adjust : cryptoTransferBody.transfers().accountAmounts()) {
             if (!isKnownAlias(adjust.accountID(), accountStore) && containsImplicitCreations(adjust)) {
                 implicitCreationsCount++;
@@ -522,7 +522,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return 0;
         }
 
-        var implicitCreationsCount = 0;
+        int implicitCreationsCount = 0;
         for (var tokenAdjust : cryptoTransferBody.tokenTransfers()) {
             for (final var adjust : tokenAdjust.transfers()) {
                 if (!isKnownAlias(adjust.accountID(), accountStore) && containsImplicitCreations(adjust)) {

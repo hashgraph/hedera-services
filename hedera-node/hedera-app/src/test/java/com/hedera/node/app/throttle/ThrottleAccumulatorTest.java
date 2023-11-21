@@ -148,7 +148,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledSubmit, waitForExpiry, null);
-        final var firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         boolean subsequentAns = false;
         for (int i = 1; i <= 150; i++) {
             subsequentAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW.plusNanos(i), state);
@@ -199,7 +199,7 @@ class ThrottleAccumulatorTest {
                 scheduledSubmit,
                 waitForExpiry,
                 AccountID.newBuilder().accountNum(2L).build());
-        final var firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         boolean subsequentAns = false;
         for (int i = 1; i <= 150; i++) {
             subsequentAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW.plusNanos(i), state);
@@ -233,7 +233,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(SchedulableTransactionBody.DEFAULT, false, null);
-        final var firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         for (int i = 1; i <= 150; i++) {
             assertTrue(subject.shouldThrottle(txnInfo, CONSENSUS_NOW.plusNanos(i), state));
         }
@@ -279,7 +279,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledTransferNoAliases, false, null);
-        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
         final var aNow = throttlesNow.get(0);
 
@@ -337,7 +337,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledTransferWithAutoCreation, false, null);
-        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
         final var aNow = throttlesNow.get(0);
 
@@ -395,7 +395,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledTransferNoAliases, false, null);
-        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
         final var aNow = throttlesNow.get(0);
 
@@ -445,7 +445,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledTxn, false, null);
-        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
         final var aNow = throttlesNow.get(0);
 
@@ -504,7 +504,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledTransferWithAutoCreation, false, null);
-        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
         final var aNow = throttlesNow.get(0);
 
@@ -576,7 +576,7 @@ class ThrottleAccumulatorTest {
 
         // when
         final var txnInfo = scheduleCreate(scheduledTransferWithAutoCreation, false, null);
-        final var ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean ans = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_CREATE);
         final var aNow = throttlesNow.get(0);
 
@@ -609,7 +609,7 @@ class ThrottleAccumulatorTest {
         subject.rebuildFor(defs);
 
         final var txnInfo = scheduleCreate(scheduledSubmit, false, null);
-        final var firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
+        final boolean firstAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW, state);
         boolean subsequentAns = false;
         for (int i = 1; i <= 150; i++) {
             subsequentAns = subject.shouldThrottle(txnInfo, CONSENSUS_NOW.plusNanos(i), state);
