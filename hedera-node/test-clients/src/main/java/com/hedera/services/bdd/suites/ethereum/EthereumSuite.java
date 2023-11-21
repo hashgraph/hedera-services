@@ -132,12 +132,12 @@ public class EthereumSuite extends HapiSuite {
     private static final String ERC20_ABI = "ERC20ABI";
 
     public static void main(String... args) {
-        new EthereumSuite().runSuiteSync();
+        new EthereumSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
