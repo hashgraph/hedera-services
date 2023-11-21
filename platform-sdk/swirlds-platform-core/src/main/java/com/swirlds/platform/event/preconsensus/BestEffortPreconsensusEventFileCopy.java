@@ -61,12 +61,14 @@ public final class BestEffortPreconsensusEventFileCopy {
      * @param destinationDirectory        the directory where the state is being written
      * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
      *                                    state that is being written
+     * @param round                       the round of the state that is being written
      */
     public static void copyPreconsensusEventStreamFilesRetryOnFailure(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Path destinationDirectory,
-            final long minimumGenerationNonAncient) {
+            final long minimumGenerationNonAncient,
+            final long round) {
 
         final boolean copyPreconsensusStream = platformContext
                 .getConfiguration()
@@ -97,8 +99,9 @@ public final class BestEffortPreconsensusEventFileCopy {
                     logger.error(
                             EXCEPTION.getMarker(),
                             "Unable to copy the last PCES file after {} retries. "
-                                    + "PCES files will not be written into the state.",
+                                    + "PCES files will not be written into the state snapshot for round {}.",
                             COPY_PCES_MAX_RETRIES,
+                            round,
                             e);
                 }
             }
@@ -117,6 +120,7 @@ public final class BestEffortPreconsensusEventFileCopy {
      * cleaner strategies.
      *
      * @param platformContext             the platform context
+     * @param selfId                      the id of this node
      * @param destinationDirectory        the directory where the PCES files should be written
      * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
      *                                    state that is being written
