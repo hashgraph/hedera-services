@@ -81,7 +81,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 public class HollowAccountFinalizationSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(HollowAccountFinalizationSuite.class);
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";

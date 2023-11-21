@@ -61,10 +61,5 @@ public enum SnapshotMatchMode {
      * fuzzy-matching of records that have different ids. Also, when auto-creation fails the charged fee to payer is not re-claimed
      * in mono-service. So the  transaction fee differs a lot.
      */
-    ALLOW_SKIPPED_ENTITY_IDS,
-    /**
-     * When the failure is due to node due diligence the transactionFee field is not set in mono-service record. But in modular
-     * service we set the transactionFee field to the fee charged to the payer. This mode allows for fuzzy-matching of records
-     */
-    ALLOW_EXTRA_TRANSACTION_FEE
+    ALLOW_SKIPPED_ENTITY_IDS
 }

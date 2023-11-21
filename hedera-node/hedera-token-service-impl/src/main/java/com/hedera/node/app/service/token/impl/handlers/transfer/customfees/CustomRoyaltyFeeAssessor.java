@@ -86,6 +86,9 @@ public class CustomRoyaltyFeeAssessor {
                 if (!royaltyFee.hasFallbackFee()) {
                     continue;
                 }
+                if (result.getRoyaltiesPaid().contains(Pair.of(receiver, tokenId))) {
+                    continue;
+                }
                 final var fallback = royaltyFee.fallbackFeeOrThrow();
                 final var fallbackFee = asFixedFee(
                         fallback.amount(), fallback.denominatingTokenId(), collector, fee.allCollectorsAreExempt());

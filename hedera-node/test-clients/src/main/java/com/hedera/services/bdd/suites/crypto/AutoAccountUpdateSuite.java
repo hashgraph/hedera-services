@@ -48,7 +48,7 @@ import org.apache.logging.log4j.Logger;
  * to decrease the expiration time of any entity, so we cannot test the behavior of the network when
  * the auto-created account is about to expire.
  */
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
     public static final long INITIAL_BALANCE = 1000L;

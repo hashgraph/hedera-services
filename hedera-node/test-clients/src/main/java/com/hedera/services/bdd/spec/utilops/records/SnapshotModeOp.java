@@ -741,8 +741,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
             return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
-        } else if("transactionFee".equals(expectedName)){
-            return matchModes.contains(ALLOW_EXTRA_TRANSACTION_FEE);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }

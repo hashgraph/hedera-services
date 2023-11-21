@@ -62,7 +62,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 public class CryptoDeleteAllowanceSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoDeleteAllowanceSuite.class);
 

@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_EXTRA_TRANSACTION_FEE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -54,7 +54,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+@HapiTestSuite(fuzzyMatch = true)
 public class CryptoDeleteSuite extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoDeleteSuite.class);
     private static final long TOKEN_INITIAL_SUPPLY = 500;
@@ -95,7 +95,7 @@ public class CryptoDeleteSuite extends HapiSuite {
         String SUBMITTING_NODE_PRE_TRANSFER = "submittingNodePreTransfer";
         String SUBMITTING_NODE_AFTER_BALANCE_LOAD = "submittingNodeAfterBalanceLoad";
 
-        return defaultHapiSpec("DeletedAccountCannotBePayer", ALLOW_EXTRA_TRANSACTION_FEE)
+        return defaultHapiSpec("DeletedAccountCannotBePayer", FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(ACCOUNT_TO_BE_DELETED),
                         cryptoCreate(BENEFICIARY_ACCOUNT).balance(0L))
