@@ -32,7 +32,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 // TODO unit test
-// TODO create wiring
 
 /**
  * Takes as input a sequence of {@link UpdatedRoster} objects and produces a sequence of {@link RosterDiff} objects.
@@ -106,7 +105,7 @@ public class RosterDiffGenerator {
 
         final AddressBook roster = updatedRoster.roster();
 
-        // TODO make sure we've hashed the roster prior to this stage!
+        // FUTURE WORK: make sure we've hashed the roster prior to this point in time
         if (roster.getHash().equals(previousRoster.getHash())) {
             // Simple case: the roster is identical to the previous one.
             // Short circuit the diff generation for the sake of efficiency.
