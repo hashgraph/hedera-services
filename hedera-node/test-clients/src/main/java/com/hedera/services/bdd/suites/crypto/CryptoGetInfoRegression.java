@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -97,7 +98,8 @@ public class CryptoGetInfoRegression extends HapiSuite {
         final var token6 = "token6";
         final var token7 = "token7";
         final var token8 = "token8";
-        return defaultHapiSpec("FetchesOnlyALimitedTokenAssociations")
+        return propertyPreservingHapiSpec("FetchesOnlyALimitedTokenAssociations")
+                .preserving("tokens.maxRelsPerInfoQuery")
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
