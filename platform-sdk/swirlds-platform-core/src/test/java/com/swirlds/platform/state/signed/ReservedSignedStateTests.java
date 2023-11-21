@@ -65,7 +65,8 @@ class ReservedSignedStateTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         assertEquals(0, signedState.getReservationCount());
 
-        try (final ReservedSignedState reservedSignedState = ReservedSignedState.createAndReserve(signedState, "reason")) {
+        try (final ReservedSignedState reservedSignedState =
+                ReservedSignedState.createAndReserve(signedState, "reason")) {
 
             assertSame(signedState, reservedSignedState.get());
             assertSame(signedState, reservedSignedState.getNullable());
@@ -128,7 +129,8 @@ class ReservedSignedStateTests {
         try {
             assertEquals(1, signedState.getReservationCount());
 
-            try (final ReservedSignedState reservedSignedState2 = reservedSignedState.tryGetAndReserve("successful try")) {
+            try (final ReservedSignedState reservedSignedState2 =
+                    reservedSignedState.tryGetAndReserve("successful try")) {
                 assertNotNull(reservedSignedState2);
                 assertNotSame(reservedSignedState, reservedSignedState2);
                 assertSame(signedState, reservedSignedState2.get());

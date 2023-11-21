@@ -86,7 +86,8 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
      *                    reservation bugs easier.
      */
-    static @NonNull ReservedSignedState createAndReserve(@NonNull final SignedState signedState, @NonNull final String reason){
+    static @NonNull ReservedSignedState createAndReserve(
+            @NonNull final SignedState signedState, @NonNull final String reason) {
         final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason);
         signedState.incrementReservationCount(reason, reservedSignedState.getReservationId());
         return reservedSignedState;
@@ -101,7 +102,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
      *                    reservation bugs easier.
      */
-    static @NonNull ReservedSignedState create(@NonNull final SignedState signedState, @NonNull final String reason){
+    static @NonNull ReservedSignedState create(@NonNull final SignedState signedState, @NonNull final String reason) {
         return new ReservedSignedState(signedState, reason);
     }
 
