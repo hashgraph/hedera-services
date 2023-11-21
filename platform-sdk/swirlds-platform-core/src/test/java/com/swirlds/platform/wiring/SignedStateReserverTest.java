@@ -24,9 +24,9 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.ValueReference;
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.state.State;
@@ -58,7 +58,7 @@ class SignedStateReserverTest {
         final OutputWire<ReservedSignedState> outputWire =
                 taskScheduler.getOutputWire().buildAdvancedTransformer(new SignedStateReserver("reserver"));
         final BindableInputWire<ReservedSignedState, ReservedSignedState> inputWire =
-                taskScheduler.buildInputWire("in").withInputType(ReservedSignedState.class);
+                taskScheduler.buildInputWire("in");
         inputWire.bind(s -> s);
 
         final List<ValueReference<ReservedSignedState>> consumers = Stream.generate(

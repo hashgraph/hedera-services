@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.platform.components.LinkedEventIntake;

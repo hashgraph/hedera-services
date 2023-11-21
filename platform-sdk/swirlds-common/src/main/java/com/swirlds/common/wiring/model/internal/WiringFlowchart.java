@@ -16,8 +16,8 @@
 
 package com.swirlds.common.wiring.model.internal;
 
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.ModelGroup;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

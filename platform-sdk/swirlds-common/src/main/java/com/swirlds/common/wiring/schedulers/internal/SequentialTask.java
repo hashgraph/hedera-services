@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers;
+package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;

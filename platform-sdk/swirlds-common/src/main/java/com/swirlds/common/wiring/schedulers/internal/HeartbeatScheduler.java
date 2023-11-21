@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers;
+package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -66,7 +66,7 @@ public class HeartbeatScheduler implements Startable, Stoppable {
      *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
      *               are not supported.
      * @return the output wire
-     * @throws IllegalStateException if the heartbeat has already started
+     * @throws IllegalStateException if start has already been called
      */
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {

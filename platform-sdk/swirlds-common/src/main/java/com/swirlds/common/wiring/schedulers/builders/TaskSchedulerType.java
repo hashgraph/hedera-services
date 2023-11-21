@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.builders;
+package com.swirlds.common.wiring.schedulers.builders;
 
 /**
  * Various types of task schedulers. Pass one of these types to {@link TaskSchedulerBuilder#withType(TaskSchedulerType)}

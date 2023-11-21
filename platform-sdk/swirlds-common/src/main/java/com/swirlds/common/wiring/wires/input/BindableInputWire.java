@@ -16,8 +16,8 @@
 
 package com.swirlds.common.wiring.wires.input;
 
-import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -29,7 +29,7 @@ import java.util.function.Function;
  * @param <IN>  the type of data that passes into the wire
  * @param <OUT> the type of the primary output wire for the scheduler that is associated with this object
  */
-public class BindableInputWire<IN, OUT> extends InputWire<IN> {
+public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindable<IN, OUT> {
 
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private final String taskSchedulerName;
@@ -55,65 +55,20 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> {
     }
 
     /**
-     * Cast this input wire into whatever a variable is expecting. Sometimes the compiler gets confused with generics,
-     * and path of least resistance is to just cast to the proper data type.
-     *
-     * <p>
-     * Warning: this will appease the compiler, but it is possible to cast a wire into a data type that will cause
-     * runtime exceptions. Use with appropriate caution.
-     *
-     * @param <A> the input type to cast to
-     * @param <B> the output type to cast to
-     * @return this, cast into whatever type is requested
-     */
-    @NonNull
-    @SuppressWarnings("unchecked")
-    public final <A, B> BindableInputWire<A, B> cast() {
-        return (BindableInputWire<A, B>) this;
-    }
-
-    /**
-     * Convenience method for creating an input wire with a specific input type. This method is useful for when the
-     * compiler can't figure out the generic type of the input wire. This method is a no op.
-     *
-     * @param inputType the input type of the input wire
-     * @param <X>       the input type of the input wire
-     * @return this
+     * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public <X> BindableInputWire<X, OUT> withInputType(@NonNull final Class<X> inputType) {
-        return (BindableInputWire<X, OUT>) this;
-    }
-
-    /**
-     * Bind this input wire to a handler. A handler must be bound to this input wire prior to inserting data via any
-     * method.
-     *
-     * @param handler the handler to bind to this input wire
-     * @return this
-     * @throws IllegalStateException if a handler is already bound and this method is called a second time
-     */
-    @SuppressWarnings("unchecked")
-    @NonNull
-    public BindableInputWire<IN, OUT> bind(@NonNull final Consumer<IN> handler) {
+    public void bind(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
         setHandler((Consumer<Object>) handler);
         model.registerInputWireBinding(taskSchedulerName, getName());
-
-        return this;
     }
 
     /**
-     * Bind this input wire to a handler. A handler must be bound to this inserter prior to inserting data via any
-     * method.
-     *
-     * @param handler the handler to bind to this input task scheduler
-     * @return this
-     * @throws IllegalStateException if a handler is already bound and this method is called a second time
+     * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    @NonNull
-    public BindableInputWire<IN, OUT> bind(@NonNull final Function<IN, OUT> handler) {
+    public void bind(@NonNull final Function<IN, OUT> handler) {
         Objects.requireNonNull(handler);
         setHandler(i -> {
             final OUT output = handler.apply((IN) i);
@@ -121,8 +76,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> {
                 taskSchedulerInput.forward(output);
             }
         });
-        model.registerInputWireBinding(taskSchedulerName, getName());
 
-        return this;
+        model.registerInputWireBinding(taskSchedulerName, getName());
     }
 }

@@ -18,7 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
-import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -50,7 +50,7 @@ public record SignedStateFileManagerWiring(
         this(
                 scheduler.getOutputWire(),
                 scheduler.buildInputWire("save state to disk"),
-                scheduler.buildInputWire("dump state to disk").cast());
+                scheduler.buildInputWire("dump state to disk"));
     }
 
     /**
