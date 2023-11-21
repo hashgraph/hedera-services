@@ -32,7 +32,7 @@ import javax.tools.JavaFileObject;
  * Utilities for creating constant class files from {@link ConfigDataRecordDefinition} instances.
  * Its methods should be accessed statically, and it should not be instantiated.
  */
-public class ConstantClassFactory {
+public final class ConstantClassFactory {
 
     /**
      * private constructor to prevent instantiation
