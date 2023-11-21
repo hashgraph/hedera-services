@@ -53,18 +53,19 @@ public class HtsCallFactory {
     }
 
     /**
-     * Creates a new {@link HtsCall} for the given input and message frame.
+     * Creates a new {@link HtsCallAttempt} for the given input and message frame.
      *
      * @param input the input
      * @param frame the message frame
      * @return the new attempt
      * @throws RuntimeException if the call cannot be created
      */
-    public @NonNull HtsCall createCallFrom(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
+    public @NonNull HtsCallAttempt createCallAttemptFrom(
+            @NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();
-        final var attempt = new HtsCallAttempt(
+        return new HtsCallAttempt(
                 input,
                 frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
@@ -74,7 +75,8 @@ public class HtsCallFactory {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
-                frame.isStatic());
-        return requireNonNull(attempt.asExecutableCall());
+                frame.isStatic(),
+                frame.getBlockValues(),
+                frame.getValue());
     }
 }

@@ -130,6 +130,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 recordWith().status(INVALID_TOKEN_ID)));
     }
 
+    @HapiTest
     private HapiSpec noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

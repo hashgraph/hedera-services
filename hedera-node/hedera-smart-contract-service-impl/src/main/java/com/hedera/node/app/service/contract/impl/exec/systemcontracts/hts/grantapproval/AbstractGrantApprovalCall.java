@@ -48,8 +48,9 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
-            @NonNull final TokenType tokenType) {
-        super(gasCalculator, enhancement);
+            @NonNull final TokenType tokenType,
+            @NonNull final boolean isViewCall) {
+        super(gasCalculator, enhancement, isViewCall);
         this.verificationStrategy = verificationStrategy;
         this.senderId = senderId;
         this.token = token;
