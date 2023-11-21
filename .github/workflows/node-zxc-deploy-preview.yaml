@@ -112,7 +112,7 @@ jobs:
           fi
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        uses: google-github-actions/auth@f105ef0cdb3b102a020be1767fcc8a974898b7c6 # v1.2.0
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
