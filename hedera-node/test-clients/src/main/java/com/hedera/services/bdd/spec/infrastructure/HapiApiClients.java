@@ -20,6 +20,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.interceptor.HapiApiClientsInterceptor;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
@@ -32,6 +33,7 @@ import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartCont
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc.TokenServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.UtilServiceGrpc;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
@@ -90,7 +92,7 @@ public class HapiApiClients {
      */
     private static final int MAX_DESIRED_CHANNELS_PER_NODE = 50;
 
-    private int retries = 3;
+    private HapiApiClientsInterceptor clientInterceptor;
 
     private ManagedChannel createNettyChannel(boolean useTls, final String host, final int port, final int tlsPort) {
         try {
@@ -113,6 +115,7 @@ public class HapiApiClients {
             } else {
                 channel = NettyChannelBuilder.forAddress(host, port)
                         .usePlaintext()
+                        .enableRetry()
                         .build();
             }
             return channel;
@@ -142,8 +145,8 @@ public class HapiApiClients {
         this.defaultNode = defaultNode;
     }
 
-    public void setRetries(int retries) {
-        this.retries = retries;
+    public void setClientInterceptor(HapiApiClientsInterceptor clientInterceptor) {
+        this.clientInterceptor = clientInterceptor;
     }
 
     public ChannelStubs recreateChannelAndStub(ChannelStubs stub, boolean useTls) {
@@ -156,10 +159,7 @@ public class HapiApiClients {
         final var uri = useTls ? node.tlsUri() : node.uri();
 
         final var existingPool = channelPools.computeIfAbsent(uri, COPY_ON_WRITE_LIST_SUPPLIER);
-        boolean found;
-        do {
-            found = existingPool.remove(stub);
-        } while(found);
+        existingPool.remove(stub);
 
         final var newChannel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
         final var newStub = ChannelStubs.from(newChannel, node);
@@ -182,7 +182,9 @@ public class HapiApiClients {
 
     public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {
         final var stub = nextStubsFromPool(stubId(nodeId, useTls));
-        return stub.cryptoSvcStubs().withInterceptors(new RetryInterceptor(this, stub, useTls, retries));
+        var service = stub.cryptoSvcStubs();
+        if (this.clientInterceptor == null) return service;
+        return service.withInterceptors(this.clientInterceptor.Build(this, stub, useTls));
     }
 
     public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls) {
@@ -228,10 +230,7 @@ public class HapiApiClients {
         if (currentSequence == null) {
             throw new IllegalArgumentException("Should have assigned a sequence counter to the pool");
         }
-        final var stub = stubs.get(currentSequence.getAndIncrement() % stubs.size());
-//        stub.networkSvcStubs()
-//        stub.channel().
-        return stub;
+        return stubs.get(currentSequence.getAndIncrement() % stubs.size());
     }
 
     @Override
