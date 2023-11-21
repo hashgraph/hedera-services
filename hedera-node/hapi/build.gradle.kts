@@ -56,6 +56,15 @@ providers
     .result
     .get()
 
+@Suppress("UnstableApiUsage")
+providers
+    .exec {
+        workingDir = hederaProtoDir.asFile
+        commandLine("git", "reset", "--hard", "origin/$hapiProtoBranchOrTag", "-q")
+    }
+    .result
+    .get()
+
 testModuleInfo {
     requires("com.hedera.node.hapi")
     // we depend on the protoc compiled hapi during test as we test our pbj generated code
