@@ -18,8 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapp
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator.CLASSIC_IS_APPROVED_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator.ERC_IS_APPROVED_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
@@ -33,7 +33,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,7 +66,7 @@ public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
             return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());

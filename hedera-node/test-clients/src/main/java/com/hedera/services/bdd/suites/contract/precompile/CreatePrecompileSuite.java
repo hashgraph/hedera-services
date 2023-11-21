@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
@@ -120,6 +121,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-007 & TEST-016
+    // Should fail on insufficient value sent
     private HapiSpec tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec("tokenCreateWithEmptyKeysReverts")
                 .given(
@@ -165,6 +167,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-008
+    @HapiTest
     private HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
         return defaultHapiSpec("tokenCreateWithKeyWithMultipleKeyValuesReverts")
                 .given(
@@ -193,6 +196,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-009
+    @HapiTest
     private HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
         return defaultHapiSpec("tokenCreateWithFixedFeeWithMultiplePaymentsReverts")
                 .given(
@@ -228,6 +232,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-010 & TEST-017
+    // Should fail on insufficient value sent
     private HapiSpec createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct")
                 .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
@@ -275,6 +280,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-011
+    @HapiTest
     private HapiSpec createTokenWithInvalidExpiry() {
         return defaultHapiSpec("createTokenWithInvalidExpiry")
                 .given(
@@ -310,6 +316,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-013
+    @HapiTest
     private HapiSpec createTokenWithInvalidTreasury() {
         return defaultHapiSpec("createTokenWithInvalidTreasury")
                 .given(
@@ -351,6 +358,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-018
+    // Should fail on insufficient value sent
     private HapiSpec createTokenWithInsufficientValueSent() {
         return defaultHapiSpec("createTokenWithInsufficientValueSent")
                 .given(
@@ -409,6 +417,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-020
+    @HapiTest
     private HapiSpec delegateCallTokenCreateFails() {
         return defaultHapiSpec("delegateCallTokenCreateFails")
                 .given(

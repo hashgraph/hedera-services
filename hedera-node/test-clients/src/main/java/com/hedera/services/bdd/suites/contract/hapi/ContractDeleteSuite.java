@@ -157,6 +157,7 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .hasChildRecords());
     }
 
+    @HapiTest
     private HapiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";

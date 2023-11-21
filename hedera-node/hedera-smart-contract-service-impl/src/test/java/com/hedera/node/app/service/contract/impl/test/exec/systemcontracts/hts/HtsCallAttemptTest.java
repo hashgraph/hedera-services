@@ -77,6 +77,8 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,6 +93,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     private AddressIdConverter addressIdConverter;
 
     @Mock
+    private BlockValues blockValues;
+
+    @Mock
     private VerificationStrategy strategy;
 
     @Mock
@@ -103,6 +108,8 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     private MintDecoder mintDecoder;
 
     private List<HtsCallTranslator> callTranslators;
+
+    private Wei value = Wei.ZERO;
 
     @BeforeEach
     void setUp() {
@@ -136,7 +143,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
     }
@@ -156,7 +165,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertNull(subject.asExecutableCall());
     }
 
@@ -174,7 +185,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(DecimalsCall.class, subject.asExecutableCall());
     }
 
@@ -192,7 +205,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(TokenUriCall.class, subject.asExecutableCall());
     }
 
@@ -210,7 +225,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(OwnerOfCall.class, subject.asExecutableCall());
     }
 
@@ -231,7 +248,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(BalanceOfCall.class, subject.asExecutableCall());
     }
 
@@ -253,7 +272,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
 
@@ -273,7 +294,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
 
@@ -291,7 +314,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(TotalSupplyCall.class, subject.asExecutableCall());
     }
 
@@ -309,7 +334,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(NameCall.class, subject.asExecutableCall());
     }
 
@@ -327,7 +354,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(SymbolCall.class, subject.asExecutableCall());
     }
 
@@ -356,7 +385,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(Erc721TransferFromCall.class, subject.asExecutableCall());
     }
 
@@ -385,7 +416,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
 
@@ -411,7 +444,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
 
@@ -463,7 +498,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
 
         assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
@@ -525,7 +562,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
 
         assertInstanceOf(ClassicTransfersCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
@@ -595,7 +634,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
-                false);
+                false,
+                blockValues,
+                value);
 
         assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());

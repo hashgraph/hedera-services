@@ -265,9 +265,9 @@ public final class RecordListBuilder {
                 ? userTxnRecordBuilder.consensusNow()
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
         final var consensusNow = prevConsensusNow.plusNanos(1L);
+        // Note we do not repeat exchange rates for child transactions
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer)
-                .parentConsensus(parentConsensusTimestamp)
-                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+                .parentConsensus(parentConsensusTimestamp);
         if (!customizer.shouldSuppressRecord()) {
             childRecordBuilders.add(recordBuilder);
         }

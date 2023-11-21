@@ -368,6 +368,7 @@ public class SingleTransactionRecordBuilderImpl
 
     /**
      * When we update nonce on the record, we need to update the body as well with the same transactionID.
+     *
      * @return the builder
      */
     @NonNull
@@ -382,13 +383,7 @@ public class SingleTransactionRecordBuilderImpl
                     .copyBuilder()
                     .transactionID(newTransactionID)
                     .build();
-            final var newBodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-            final var newSignedTransaction =
-                    SignedTransaction.newBuilder().bodyBytes(newBodyBytes).build();
-            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(newSignedTransaction);
-            this.transaction = Transaction.newBuilder()
-                    .signedTransactionBytes(signedTransactionBytes)
-                    .build();
+            this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
             return this;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -513,6 +508,11 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
         return this;
+    }
+
+    @Override
+    public List<TokenTransferList> tokenTransferLists() {
+        return tokenTransferLists;
     }
 
     /**
@@ -923,6 +923,11 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(serialNumbers, "serialNumbers must not be null");
         this.serialNumbers = serialNumbers;
         return this;
+    }
+
+    @Override
+    public List<Long> serialNumbers() {
+        return serialNumbers;
     }
 
     /**

@@ -162,6 +162,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
+    @HapiTest
     private HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -210,6 +211,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
+    @HapiTest
     private HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

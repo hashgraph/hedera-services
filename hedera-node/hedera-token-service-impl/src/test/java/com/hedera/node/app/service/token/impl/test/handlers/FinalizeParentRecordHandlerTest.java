@@ -252,6 +252,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .amount(childRecordTransfer)
                                         .build())
                         .build());
+        given(context.hasChildRecords()).willReturn(true);
         doAnswer(invocation -> {
                     final var consumer = invocation.getArgument(1, Consumer.class);
                     consumer.accept(childRecord);

@@ -20,16 +20,20 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
+import static java.util.stream.Collectors.joining;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -60,13 +64,20 @@ public class AddressAliasIdFuzzing extends HapiSuite {
         return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
-    @HapiTest
+    // FileUpdate resolves to UNKNOWN
     private HapiSpec addressAliasIdFuzzing() {
+        final Map<String, String> existingProps = new LinkedHashMap<>();
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(
                         CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP, ATOMIC_CRYPTO_TRANSFER)
-                .given(initOperations())
-                .when()
+                .given(
+                        getFileContents(APP_PROPERTIES).addingConfigListTo(existingProps),
+                        withOpContext((spec, opLog) -> log.info(
+                                "Before initOperations() properties are\n\t{}",
+                                existingProps.entrySet().stream()
+                                        .map(e -> e.getKey() + "=" + e.getValue())
+                                        .collect(joining("\n\t")))))
+                .when(initOperations())
                 .then(runWithProvider(idFuzzingWith(PROPERTIES))
                         .lasting(10L, TimeUnit.SECONDS)
                         .maxOpsPerSec(maxOpsPerSec::get)

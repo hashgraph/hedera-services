@@ -314,6 +314,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
+    // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
     private HapiSpec erc20TransferFromLazyCreate() {
         return defaultHapiSpec("erc20TransferFromLazyCreate")
                 .given(

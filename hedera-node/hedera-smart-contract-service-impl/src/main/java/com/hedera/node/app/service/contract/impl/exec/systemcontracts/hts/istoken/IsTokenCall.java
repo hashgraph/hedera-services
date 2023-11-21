@@ -17,15 +17,14 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.istoken;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.istoken.IsTokenTranslator.IS_TOKEN;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,7 +46,7 @@ public class IsTokenCall extends AbstractNonRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), true);
     }

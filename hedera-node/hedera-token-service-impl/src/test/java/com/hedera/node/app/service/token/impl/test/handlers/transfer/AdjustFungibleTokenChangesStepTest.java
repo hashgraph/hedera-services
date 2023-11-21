@@ -203,7 +203,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
 
         assertThatThrownBy(() -> adjustFungibleTokenChangesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE));
+                .has(responseCode(ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE));
     }
 
     @Test

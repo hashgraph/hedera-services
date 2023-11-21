@@ -18,19 +18,14 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -56,41 +51,18 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public @Nullable Nft getNftAndExternalizeResult(
-            @NonNull final NftID id,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<Nft> translator) {
-        throw new UnsupportedOperationException("Cannot get Nft and externalize result");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable Token getTokenAndExternalizeResult(
-            final long number, final long callingContractNumber, @NonNull final ResultTranslator<Token> translator) {
-        throw new UnsupportedOperationException("Cannot get fungible token and externalize result");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @Nullable Account getAccountAndExternalizeResult(
-            final long number, final long callingContractNumber, @NonNull final ResultTranslator<Account> translator) {
-        throw new UnsupportedOperationException("Cannot get account and externalize result");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public @NonNull <T> T dispatch(
             @NonNull final TransactionBody syntheticTransaction,
             @NonNull final VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
             @NonNull Class<T> recordBuilderClass) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
+    }
+
+    @Override
+    public ContractCallRecordBuilder externalizePreemptedDispatch(
+            @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
+        throw new UnsupportedOperationException("Cannot externalize preempted dispatch");
     }
 
     /**
@@ -106,9 +78,7 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      */
     @Override
     public void externalizeResult(
-            @NonNull final ContractFunctionResult result,
-            @NonNull final ResultStatus status,
-            @NonNull final ResponseCodeEnum responseStatus) {
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
         // no-op
     }
 

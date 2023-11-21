@@ -27,7 +27,6 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,20 +82,22 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             // create a child record
             createSuccessfulRecord(frame, randomNum, contractID);
 
-            return new FullResult(result, gasRequirement);
+            return new FullResult(result, gasRequirement, null);
         } catch (InvalidTransactionException e) {
             // This error is caused by the user sending in the wrong selector
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return new FullResult(
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
-                    gasRequirement);
+                    gasRequirement,
+                    null);
         } catch (NullPointerException e) {
             // Log a warning as this error will be caused by insufficient entropy
             log.warn("Internal precompile failure", e);
             createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
             return new FullResult(
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
-                    gasRequirement);
+                    gasRequirement,
+                    null);
         }
     }
 
@@ -108,9 +109,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
-                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID),
-                    ResultStatus.IS_SUCCESS,
-                    SUCCESS);
+                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), SUCCESS);
         }
     }
 
@@ -122,9 +121,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
-                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID),
-                    ResultStatus.IS_ERROR,
-                    FAIL_INVALID);
+                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), FAIL_INVALID);
         }
     }
 

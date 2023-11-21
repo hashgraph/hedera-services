@@ -44,7 +44,9 @@ import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -126,6 +128,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final ExchangeRateManager exchangeRateManager;
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
+    private final ChildRecordFinalizer childRecordFinalizer;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -135,26 +138,27 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txBody                The {@link TransactionBody} of the transaction
-     * @param functionality         The {@link HederaFunctionality} of the transaction
-     * @param signatureMapSize      The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
-     * @param payer                 The {@link AccountID} of the payer
-     * @param payerKey              The {@link Key} of the payer
-     * @param networkInfo           The {@link NetworkInfo} of the network
-     * @param category              The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder         The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack                 The {@link SavepointStackImpl} used to manage savepoints
-     * @param configuration         The current {@link Configuration}
-     * @param verifier              The {@link KeyVerifier} used to verify signatures and hollow accounts
-     * @param recordListBuilder     The {@link RecordListBuilder} used to build the record stream
-     * @param checker               The {@link TransactionChecker} used to check dispatched transaction
-     * @param dispatcher            The {@link TransactionDispatcher} used to dispatch child transactions
-     * @param serviceScopeLookup    The {@link ServiceScopeLookup} used to look up the scope of a service
-     * @param feeManager            The {@link FeeManager} used to convert usage into fees
-     * @param exchangeRateManager   The {@link ExchangeRateManager} used to obtain exchange rate information
+     * @param txBody The {@link TransactionBody} of the transaction
+     * @param functionality The {@link HederaFunctionality} of the transaction
+     * @param signatureMapSize The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
+     * @param payer The {@link AccountID} of the payer
+     * @param payerKey The {@link Key} of the payer
+     * @param networkInfo The {@link NetworkInfo} of the network
+     * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
+     * @param stack The {@link SavepointStackImpl} used to manage savepoints
+     * @param configuration The current {@link Configuration}
+     * @param verifier The {@link KeyVerifier} used to verify signatures and hollow accounts
+     * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
+     * @param checker The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeManager The {@link FeeManager} used to convert usage into fees
+     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
-     * @param authorizer            The {@link Authorizer} used to authorize the transaction
-     * @param solvencyPreCheck      The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
+     * @param authorizer The {@link Authorizer} used to authorize the transaction
+     * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
+     * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -178,7 +182,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final Instant userTransactionConsensusTime,
             @NonNull final Authorizer authorizer,
-            @NonNull final SolvencyPreCheck solvencyPreCheck) {
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -199,6 +204,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.userTransactionConsensusTime =
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
+        this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
@@ -689,11 +695,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 exchangeRateManager,
                 userTransactionConsensusTime,
                 authorizer,
-                solvencyPreCheck);
+                solvencyPreCheck,
+                childRecordFinalizer);
 
         try {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
+            final var finalizeContext = new ChildFinalizeContextImpl(
+                    readableStoreFactory, new WritableStoreFactory(childStack, TokenService.NAME), childRecordBuilder);
+            childRecordFinalizer.finalizeChildRecord(finalizeContext);
             childStack.commitFullStack();
         } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());

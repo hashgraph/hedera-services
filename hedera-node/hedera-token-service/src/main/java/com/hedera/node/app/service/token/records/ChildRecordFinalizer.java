@@ -34,5 +34,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the child record
  */
 public interface ChildRecordFinalizer {
-    void finalizeChildRecord(@NonNull final FinalizeContext context);
+    void finalizeChildRecord(@NonNull ChildFinalizeContext context);
 }
