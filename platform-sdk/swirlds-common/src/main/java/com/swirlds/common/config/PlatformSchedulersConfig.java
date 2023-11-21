@@ -16,7 +16,7 @@
 
 package com.swirlds.common.config;
 
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 

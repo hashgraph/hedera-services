@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
