@@ -76,5 +76,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
                 taskSchedulerInput.forward(output);
             }
         });
+
+        model.registerInputWireBinding(taskSchedulerName, getName());
     }
 }

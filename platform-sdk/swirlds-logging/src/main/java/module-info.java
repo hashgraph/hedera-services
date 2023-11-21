@@ -6,8 +6,8 @@ module com.swirlds.logging {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive org.apache.logging.log4j;
+    requires com.swirlds.base;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.datatype.jsr310;
-    requires com.swirlds.base;
     requires static com.github.spotbugs.annotations;
 }
