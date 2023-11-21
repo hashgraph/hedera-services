@@ -85,7 +85,9 @@ public record SignedStateFileManagerWiring(
      */
     public void solderStatusManager(@NonNull final PlatformStatusManager statusManager) {
         outputWire
-                .buildTransformer("to StateWrittenToDiskAction", ssr -> new StateWrittenToDiskAction(ssr.round()))
+                .buildTransformer(
+                        "to StateWrittenToDiskAction",
+                        ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState()))
                 .solderTo("status manager", statusManager::submitStatusAction);
     }
 
