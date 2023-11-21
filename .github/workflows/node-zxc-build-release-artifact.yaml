@@ -370,7 +370,7 @@ jobs:
 
       - name: Notify Jenkins of Release (Integration)
         id: jenkins-integration
-        uses: fjogeleit/http-request-action@eab8015483ccea148feff7b1c65f320805ddc2bf # v1.14.1
+        uses: fjogeleit/http-request-action@25a5a55111f57b7eeaaff0ba0c6a457ce1895b90 # v1.14.2
         if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'integration' && !cancelled() && !failure() }}
         with:
           url: ${{ secrets.jenkins-integration-url }}
