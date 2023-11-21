@@ -140,7 +140,7 @@ testing {
                     }
                     // Increase the heap size for the unit tests
                     maxHeapSize = "4096m"
-                    jvmArgs("-XX:ActiveProcessorCount=16")
+                    jvmArgs("-XX:ActiveProcessorCount=7")
                     // Can be useful to set in some cases
                     // testLogging.showStandardStreams = true
                 }
@@ -159,7 +159,7 @@ testing {
 
                 useJUnitPlatform { includeTags("HAMMER") }
                 maxHeapSize = "8g"
-                jvmArgs("-XX:ActiveProcessorCount=16")
+                jvmArgs("-XX:ActiveProcessorCount=7")
             }
 
             tasks.register<Test>("performanceTest") {
@@ -175,7 +175,7 @@ testing {
                 setForkEvery(1)
                 minHeapSize = "2g"
                 maxHeapSize = "16g"
-                jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
+                jvmArgs("-XX:ActiveProcessorCount=7", "-XX:+UseZGC")
             }
         }
     }
