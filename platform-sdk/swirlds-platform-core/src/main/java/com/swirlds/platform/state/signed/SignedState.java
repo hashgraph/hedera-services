@@ -296,7 +296,7 @@ public class SignedState implements SignedStateInfo {
      * @return a wrapper that holds the state and the reservation
      */
     public @NonNull ReservedSignedState reserve(@NonNull final String reason) {
-        return new ReservedSignedState(this, reason);
+        return ReservedSignedState.createAndReserve(this, reason);
     }
 
     /**

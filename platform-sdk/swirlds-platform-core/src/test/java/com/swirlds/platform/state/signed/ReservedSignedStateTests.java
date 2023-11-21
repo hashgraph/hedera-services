@@ -63,7 +63,7 @@ class ReservedSignedStateTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         assertEquals(0, signedState.getReservationCount());
 
-        try (final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, "reason")) {
+        try (final ReservedSignedState reservedSignedState = ReservedSignedState.createAndReserve(signedState, "reason")) {
 
             assertSame(signedState, reservedSignedState.get());
             assertSame(signedState, reservedSignedState.getNullable());
@@ -105,7 +105,7 @@ class ReservedSignedStateTests {
     @DisplayName("Non-Null Bad Lifecycle Test")
     void nonNullBadLifecycleTest() {
         final ReservedSignedState reservedSignedState =
-                new ReservedSignedState(new RandomSignedStateGenerator().build(), "reason");
+                ReservedSignedState.createAndReserve(new RandomSignedStateGenerator().build(), "reason");
         reservedSignedState.close();
 
         assertThrows(ReferenceCountException.class, reservedSignedState::get);

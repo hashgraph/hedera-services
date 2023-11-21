@@ -76,8 +76,33 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     ReservedSignedState(@NonNull final SignedState signedState, @NonNull final String reason) {
         this.signedState = Objects.requireNonNull(signedState);
         this.reason = Objects.requireNonNull(reason);
+    }
 
-        signedState.incrementReservationCount(reason, reservationId);
+    /**
+     * Create a new reserved signed state and increment the reservation count on the underlying signed state.
+     *
+     * @param signedState the signed state to reserve
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
+     */
+    static @NonNull ReservedSignedState createAndReserve(@NonNull final SignedState signedState, @NonNull final String reason){
+        final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason);
+        signedState.incrementReservationCount(reason, reservedSignedState.getReservationId());
+        return reservedSignedState;
+    }
+
+    /**
+     * Create a new reserved signed state. This method assumes that the reservation count will be incremented by the
+     * caller.
+     *
+     * @param signedState the signed state to reserve
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
+     */
+    static @NonNull ReservedSignedState create(@NonNull final SignedState signedState, @NonNull final String reason){
+        return new ReservedSignedState(signedState, reason);
     }
 
     /**
@@ -113,7 +138,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         if (signedState == null) {
             return new ReservedSignedState();
         }
-        return new ReservedSignedState(signedState, reason);
+        return createAndReserve(signedState, reason);
     }
 
     /**
@@ -131,10 +156,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         if (!signedState.tryIncrementReservationCount(reason, reservationId)) {
             return null;
         }
-        final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason);
-        // the constructor will increment the reservation count again, so we need to decrement it here
-        signedState.decrementReservationCount(reason, reservationId);
-        return reservedSignedState;
+        return create(signedState, reason);
     }
 
     /**
