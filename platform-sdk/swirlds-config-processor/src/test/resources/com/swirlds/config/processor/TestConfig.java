@@ -23,7 +23,8 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Config that control the SignedStateManager and SignedStateFileManager behaviors.
  *
- * @param saveStatePeriod The frequency of writes of a state to disk every this many seconds (0 to never write).
+ * @param saveStatePeriod The frequency of writes of a state to disk every this
+ *                       many seconds (0 to never write).
  */
 @ConfigData("test")
 public record TestConfig(@ConfigProperty(defaultValue = "900") int saveStatePeriod) {

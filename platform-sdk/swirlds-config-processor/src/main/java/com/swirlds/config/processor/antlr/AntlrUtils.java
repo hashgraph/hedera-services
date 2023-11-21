@@ -29,13 +29,13 @@ import com.swirlds.config.processor.antlr.generated.JavaParser.TypeDeclarationCo
 import com.swirlds.config.processor.antlr.generated.JavadocLexer;
 import com.swirlds.config.processor.antlr.generated.JavadocParser;
 import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagTextContext;
 import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContentContext;
 import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContext;
 import com.swirlds.config.processor.antlr.generated.JavadocParser.TagSectionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
@@ -163,7 +162,7 @@ public final class AntlrUtils {
      */
     @NonNull
     public static List<String> getImports(@NonNull final ParserRuleContext ctx) {
-        CompilationUnitContext compilationUnitContext = getCompilationUnit(ctx);
+        final CompilationUnitContext compilationUnitContext = getCompilationUnit(ctx);
         return compilationUnitContext.importDeclaration().stream()
                 .map(context -> context.qualifiedName())
                 .map(name -> name.getText())
@@ -178,7 +177,7 @@ public final class AntlrUtils {
      */
     @NonNull
     public static String getPackage(@NonNull final ParserRuleContext ctx) {
-        CompilationUnitContext compilationUnitContext = getCompilationUnit(ctx);
+        final CompilationUnitContext compilationUnitContext = getCompilationUnit(ctx);
         return compilationUnitContext.packageDeclaration().qualifiedName().getText();
     }
 
@@ -229,7 +228,7 @@ public final class AntlrUtils {
     }
 
     public static List<RecordDeclarationContext> getRecordDeclarationContext(
-            CompilationUnitContext compilationUnitContext) {
+            @NonNull final CompilationUnitContext compilationUnitContext) {
         return compilationUnitContext.children.stream()
                 .filter(child -> child instanceof TypeDeclarationContext)
                 .map(child -> (TypeDeclarationContext) child)
@@ -250,10 +249,10 @@ public final class AntlrUtils {
     public static Map<String, String> getJavaDocParams(@NonNull String rawDocContent) {
         Objects.requireNonNull(rawDocContent, "rawDocContent must not be null");
         final Map<String, String> params = new HashMap<>();
-        Lexer lexer = new JavadocLexer(CharStreams.fromString(rawDocContent));
-        TokenStream tokens = new CommonTokenStream(lexer);
-        JavadocParser parser = new JavadocParser(tokens);
-        DocumentationContext documentationContext = parser.documentation();
+        final Lexer lexer = new JavadocLexer(CharStreams.fromString(rawDocContent));
+        final TokenStream tokens = new CommonTokenStream(lexer);
+        final JavadocParser parser = new JavadocParser(tokens);
+        final DocumentationContext documentationContext = parser.documentation();
         Optional.ofNullable(documentationContext.exception).ifPresent(e -> {
             throw new IllegalStateException("Error in ANTLR parsing", e);
         });
@@ -264,30 +263,32 @@ public final class AntlrUtils {
                 .filter(c -> c instanceof TagSectionContext)
                 .map(c -> (TagSectionContext) c)
                 .flatMap(context -> context.children.stream())
-                .filter(c -> c instanceof BlockTagContext)
+                .filter(c -> c instanceof BlockTagContext btc)
                 .map(c -> (BlockTagContext) c)
                 .filter(c -> Objects.equals(c.blockTagName().NAME().getText(), JAVADOC_PARAM))
-                .forEach(c -> {
-                    final BlockTagTextContext paramContext =
-                            c.blockTagContent().get(0).blockTagText();
-
-                    Optional.ofNullable(paramContext).map(co -> co.getText()).ifPresent(firstLine -> {
-                        final String paramName = firstLine.split(" ")[0].trim();
-                        final String description =
-                                firstLine.substring(paramName.length()).trim() + " "
-                                        + IntStream.range(1, c.blockTagContent().size())
-                                                .mapToObj(i -> c.blockTagContent()
-                                                        .get(i)
-                                                        .blockTagText())
-                                                .filter(Objects::nonNull)
-                                                .map(co -> co.getText().trim())
-                                                .filter(t -> !t.isBlank())
-                                                .reduce((a, b) -> a.trim() + " " + b.trim())
-                                                .orElse("");
-                        params.put(paramName.trim(), description.trim());
-                    });
+                .map(c -> extractFullText(c))
+                .filter(fullText -> !fullText.isBlank())
+                .filter(fullText -> fullText.contains(" "))
+                .forEach(fullText -> {
+                    final String paramName = fullText.split(" ")[0].trim();
+                    final String description =
+                            fullText.substring(paramName.length()).trim();
+                    params.put(paramName.trim(), description.trim());
                 });
         return params;
+    }
+
+    private static String extractFullText(@NonNull final BlockTagContext c) {
+        final String[] split = c.getText().trim().split("\n \\*");
+        final String result = Arrays.asList(split).stream()
+                .map(s -> s.trim())
+                .filter(s -> !s.isBlank())
+                .reduce((a, b) -> a + " " + b)
+                .orElse("");
+        if (result.startsWith("@param")) {
+            return result.substring("@param".length()).trim();
+        }
+        return result.trim();
     }
 
     /**
@@ -299,10 +300,10 @@ public final class AntlrUtils {
      * @throws IOException if an I/O error occurs
      */
     public static CompilationUnitContext parse(@NonNull final String fileContent) throws IOException {
-        Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
-        TokenStream tokens = new CommonTokenStream(lexer);
-        JavaParser parser = new JavaParser(tokens);
-        CompilationUnitContext context = parser.compilationUnit();
+        final Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
+        final TokenStream tokens = new CommonTokenStream(lexer);
+        final JavaParser parser = new JavaParser(tokens);
+        final CompilationUnitContext context = parser.compilationUnit();
         Optional.ofNullable(context.exception).ifPresent(e -> {
             throw new IllegalStateException("Error in ANTLR parsing", e);
         });

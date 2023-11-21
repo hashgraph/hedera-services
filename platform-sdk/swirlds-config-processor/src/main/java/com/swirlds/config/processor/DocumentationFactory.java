@@ -57,7 +57,6 @@ public class DocumentationFactory {
             throws IOException {
         Objects.requireNonNull(configDataRecordDefinition, "configDataRecordDefinition must not be null");
         Objects.requireNonNull(configDocumentationFile, "configDocumentationFile must not be null");
-        System.out.println("Writing documentation to " + configDocumentationFile);
         try (final FileWriter writer = new FileWriter(configDocumentationFile.toString(), true)) {
             configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
                 try {
