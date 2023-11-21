@@ -95,8 +95,7 @@ extraJavaModuleInfo {
     }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
-        // requireAllDefinedDependencies() <- That is currently needed based on a limitation of the
-        // Gradlex plugin
+        // requireAllDefinedDependencies() <- Currently not possible due to a Gradlex plugin limitation
         requires("com.google.guava.failureaccess")
         requires("java.logging")
     }
