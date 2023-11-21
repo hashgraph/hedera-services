@@ -253,7 +253,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     private boolean shouldThrottleTxn(
-            boolean isChild,
+            final boolean isChild,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant now,
             @NonNull final HederaState state) {
