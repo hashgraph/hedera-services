@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.state.output;
+package com.swirlds.common.wiring.model.internal;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A method that is called when the minimum generation non-ancient,
- * with respect to the oldest state snapshot on disk, is updated.
+ * Uniquely describes an input wire within a wiring model.
+ *
+ * <p>
+ * This object exists so that standard input wires don't have to implement equals and hash code.
+ *
+ * @param taskSchedulerName the name of the task scheduler the input wire is bound to
+ * @param name              the name of the input wire
  */
-@FunctionalInterface
-public interface MinimumGenerationNonAncientConsumer {
-
-    /**
-     * Called when the minimum generation non-ancient is updated, with respect to the oldest state snapshot on disk.
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
-     */
-    void newMinimumGenerationNonAncient(long minimumGenerationNonAncient);
-}
+public record InputWireDescriptor(@NonNull String taskSchedulerName, @NonNull String name) {}
