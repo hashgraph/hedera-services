@@ -383,7 +383,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             if (testMethod.getParameterCount() == 0) {
                 final var spec = (HapiSpec) testMethod.invoke(suite);
                 spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
-                if(parent.fuzzyMatch){
+                if (parent.fuzzyMatch) {
                     spec.addOverrideProperties(Map.of("recordStream.autoSnapshotManagement", "true"));
                 }
                 final var env = context.getEnv();
