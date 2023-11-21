@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Executes a transformation for an advanced transformer as created by
- * {@link com.swirlds.common.wiring.wires.output.OutputWire#buildAdvancedTransformer(String, AdvancedTransformation)}.
+ * {@link com.swirlds.common.wiring.wires.output.OutputWire#buildAdvancedTransformer(AdvancedTransformation)}.
  *
  * @param <A> the original wire output type
  * @param <B> the output type of the transformer
@@ -45,4 +45,10 @@ public interface AdvancedTransformation<A, B> {
      * @param a the original data element
      */
     void cleanup(@NonNull A a);
+
+    /**
+     * @return the name of this transformer
+     */
+    @NonNull
+    String getName();
 }
