@@ -31,6 +31,10 @@
 
 parser grammar JavaParser;
 
+@header {
+package com.swirlds.config.processor.antlr.generated;
+}
+
 options { tokenVocab=JavaLexer; }
 
 compilationUnit

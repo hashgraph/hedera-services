@@ -28,6 +28,10 @@
 
 lexer grammar JavadocLexer;
 
+@lexer::header {
+package com.swirlds.config.processor.antlr.generated;
+}
+
 NAME
 	: [a-zA-Z]+
 	;

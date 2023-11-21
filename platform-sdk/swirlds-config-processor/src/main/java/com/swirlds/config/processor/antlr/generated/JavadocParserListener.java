@@ -14,341 +14,233 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.processor.antlr.generated; // Generated from JavadocParser.g4 by ANTLR 4.13.0
+package com.swirlds.config.processor.antlr.generated;
 
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagContentContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagNameContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagTextContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagTextElementContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BraceContentContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BraceExpressionContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.BraceTextContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionLineContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionLineElementContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionLineNoSpaceNoAtContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionLineStartContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionLineTextContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DescriptionNewlineContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContentContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.InlineTagContentContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.InlineTagContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.InlineTagNameContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.SkipWhitespaceContext;
-import com.swirlds.config.processor.antlr.generated.JavadocParser.TagSectionContext;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
- * This interface defines a complete listener for a parse tree produced by {@link JavadocParser}.
+ * This interface defines a complete listener for a parse tree produced by
+ * {@link JavadocParser}.
  */
 public interface JavadocParserListener extends ParseTreeListener {
     /**
      * Enter a parse tree produced by {@link JavadocParser#documentation}.
-     *
      * @param ctx the parse tree
      */
-    void enterDocumentation(DocumentationContext ctx);
-
+    void enterDocumentation(JavadocParser.DocumentationContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#documentation}.
-     *
      * @param ctx the parse tree
      */
-    void exitDocumentation(DocumentationContext ctx);
-
+    void exitDocumentation(JavadocParser.DocumentationContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#documentationContent}.
-     *
      * @param ctx the parse tree
      */
-    void enterDocumentationContent(DocumentationContentContext ctx);
-
+    void enterDocumentationContent(JavadocParser.DocumentationContentContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#documentationContent}.
-     *
      * @param ctx the parse tree
      */
-    void exitDocumentationContent(DocumentationContentContext ctx);
-
+    void exitDocumentationContent(JavadocParser.DocumentationContentContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#skipWhitespace}.
-     *
      * @param ctx the parse tree
      */
-    void enterSkipWhitespace(SkipWhitespaceContext ctx);
-
+    void enterSkipWhitespace(JavadocParser.SkipWhitespaceContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#skipWhitespace}.
-     *
      * @param ctx the parse tree
      */
-    void exitSkipWhitespace(SkipWhitespaceContext ctx);
-
+    void exitSkipWhitespace(JavadocParser.SkipWhitespaceContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#description}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescription(DescriptionContext ctx);
-
+    void enterDescription(JavadocParser.DescriptionContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#description}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescription(DescriptionContext ctx);
-
+    void exitDescription(JavadocParser.DescriptionContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#descriptionLine}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescriptionLine(DescriptionLineContext ctx);
-
+    void enterDescriptionLine(JavadocParser.DescriptionLineContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#descriptionLine}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescriptionLine(DescriptionLineContext ctx);
-
+    void exitDescriptionLine(JavadocParser.DescriptionLineContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#descriptionLineStart}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescriptionLineStart(DescriptionLineStartContext ctx);
-
+    void enterDescriptionLineStart(JavadocParser.DescriptionLineStartContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#descriptionLineStart}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescriptionLineStart(DescriptionLineStartContext ctx);
-
+    void exitDescriptionLineStart(JavadocParser.DescriptionLineStartContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#descriptionLineNoSpaceNoAt}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescriptionLineNoSpaceNoAt(DescriptionLineNoSpaceNoAtContext ctx);
-
+    void enterDescriptionLineNoSpaceNoAt(JavadocParser.DescriptionLineNoSpaceNoAtContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#descriptionLineNoSpaceNoAt}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescriptionLineNoSpaceNoAt(DescriptionLineNoSpaceNoAtContext ctx);
-
+    void exitDescriptionLineNoSpaceNoAt(JavadocParser.DescriptionLineNoSpaceNoAtContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#descriptionLineElement}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescriptionLineElement(DescriptionLineElementContext ctx);
-
+    void enterDescriptionLineElement(JavadocParser.DescriptionLineElementContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#descriptionLineElement}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescriptionLineElement(DescriptionLineElementContext ctx);
-
+    void exitDescriptionLineElement(JavadocParser.DescriptionLineElementContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#descriptionLineText}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescriptionLineText(DescriptionLineTextContext ctx);
-
+    void enterDescriptionLineText(JavadocParser.DescriptionLineTextContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#descriptionLineText}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescriptionLineText(DescriptionLineTextContext ctx);
-
+    void exitDescriptionLineText(JavadocParser.DescriptionLineTextContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#descriptionNewline}.
-     *
      * @param ctx the parse tree
      */
-    void enterDescriptionNewline(DescriptionNewlineContext ctx);
-
+    void enterDescriptionNewline(JavadocParser.DescriptionNewlineContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#descriptionNewline}.
-     *
      * @param ctx the parse tree
      */
-    void exitDescriptionNewline(DescriptionNewlineContext ctx);
-
+    void exitDescriptionNewline(JavadocParser.DescriptionNewlineContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#tagSection}.
-     *
      * @param ctx the parse tree
      */
-    void enterTagSection(TagSectionContext ctx);
-
+    void enterTagSection(JavadocParser.TagSectionContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#tagSection}.
-     *
      * @param ctx the parse tree
      */
-    void exitTagSection(TagSectionContext ctx);
-
+    void exitTagSection(JavadocParser.TagSectionContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#blockTag}.
-     *
      * @param ctx the parse tree
      */
-    void enterBlockTag(BlockTagContext ctx);
-
+    void enterBlockTag(JavadocParser.BlockTagContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#blockTag}.
-     *
      * @param ctx the parse tree
      */
-    void exitBlockTag(BlockTagContext ctx);
-
+    void exitBlockTag(JavadocParser.BlockTagContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#blockTagName}.
-     *
      * @param ctx the parse tree
      */
-    void enterBlockTagName(BlockTagNameContext ctx);
-
+    void enterBlockTagName(JavadocParser.BlockTagNameContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#blockTagName}.
-     *
      * @param ctx the parse tree
      */
-    void exitBlockTagName(BlockTagNameContext ctx);
-
+    void exitBlockTagName(JavadocParser.BlockTagNameContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#blockTagContent}.
-     *
      * @param ctx the parse tree
      */
-    void enterBlockTagContent(BlockTagContentContext ctx);
-
+    void enterBlockTagContent(JavadocParser.BlockTagContentContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#blockTagContent}.
-     *
      * @param ctx the parse tree
      */
-    void exitBlockTagContent(BlockTagContentContext ctx);
-
+    void exitBlockTagContent(JavadocParser.BlockTagContentContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#blockTagText}.
-     *
      * @param ctx the parse tree
      */
-    void enterBlockTagText(BlockTagTextContext ctx);
-
+    void enterBlockTagText(JavadocParser.BlockTagTextContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#blockTagText}.
-     *
      * @param ctx the parse tree
      */
-    void exitBlockTagText(BlockTagTextContext ctx);
-
+    void exitBlockTagText(JavadocParser.BlockTagTextContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#blockTagTextElement}.
-     *
      * @param ctx the parse tree
      */
-    void enterBlockTagTextElement(BlockTagTextElementContext ctx);
-
+    void enterBlockTagTextElement(JavadocParser.BlockTagTextElementContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#blockTagTextElement}.
-     *
      * @param ctx the parse tree
      */
-    void exitBlockTagTextElement(BlockTagTextElementContext ctx);
-
+    void exitBlockTagTextElement(JavadocParser.BlockTagTextElementContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#inlineTag}.
-     *
      * @param ctx the parse tree
      */
-    void enterInlineTag(InlineTagContext ctx);
-
+    void enterInlineTag(JavadocParser.InlineTagContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#inlineTag}.
-     *
      * @param ctx the parse tree
      */
-    void exitInlineTag(InlineTagContext ctx);
-
+    void exitInlineTag(JavadocParser.InlineTagContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#inlineTagName}.
-     *
      * @param ctx the parse tree
      */
-    void enterInlineTagName(InlineTagNameContext ctx);
-
+    void enterInlineTagName(JavadocParser.InlineTagNameContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#inlineTagName}.
-     *
      * @param ctx the parse tree
      */
-    void exitInlineTagName(InlineTagNameContext ctx);
-
+    void exitInlineTagName(JavadocParser.InlineTagNameContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#inlineTagContent}.
-     *
      * @param ctx the parse tree
      */
-    void enterInlineTagContent(InlineTagContentContext ctx);
-
+    void enterInlineTagContent(JavadocParser.InlineTagContentContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#inlineTagContent}.
-     *
      * @param ctx the parse tree
      */
-    void exitInlineTagContent(InlineTagContentContext ctx);
-
+    void exitInlineTagContent(JavadocParser.InlineTagContentContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#braceExpression}.
-     *
      * @param ctx the parse tree
      */
-    void enterBraceExpression(BraceExpressionContext ctx);
-
+    void enterBraceExpression(JavadocParser.BraceExpressionContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#braceExpression}.
-     *
      * @param ctx the parse tree
      */
-    void exitBraceExpression(BraceExpressionContext ctx);
-
+    void exitBraceExpression(JavadocParser.BraceExpressionContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#braceContent}.
-     *
      * @param ctx the parse tree
      */
-    void enterBraceContent(BraceContentContext ctx);
-
+    void enterBraceContent(JavadocParser.BraceContentContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#braceContent}.
-     *
      * @param ctx the parse tree
      */
-    void exitBraceContent(BraceContentContext ctx);
-
+    void exitBraceContent(JavadocParser.BraceContentContext ctx);
     /**
      * Enter a parse tree produced by {@link JavadocParser#braceText}.
-     *
      * @param ctx the parse tree
      */
-    void enterBraceText(BraceTextContext ctx);
-
+    void enterBraceText(JavadocParser.BraceTextContext ctx);
     /**
      * Exit a parse tree produced by {@link JavadocParser#braceText}.
-     *
      * @param ctx the parse tree
      */
-    void exitBraceText(BraceTextContext ctx);
+    void exitBraceText(JavadocParser.BraceTextContext ctx);
 }

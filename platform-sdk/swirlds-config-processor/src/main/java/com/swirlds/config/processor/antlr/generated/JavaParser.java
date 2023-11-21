@@ -14,32 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.processor.antlr.generated; // Generated from JavaParser.g4 by ANTLR 4.13.0
+package com.swirlds.config.processor.antlr.generated;
 
 import java.util.List;
-import org.antlr.v4.runtime.FailedPredicateException;
-import org.antlr.v4.runtime.NoViableAltException;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.RuleContext;
-import org.antlr.v4.runtime.RuntimeMetaData;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.Vocabulary;
-import org.antlr.v4.runtime.VocabularyImpl;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class JavaParser extends Parser {
     static {
-        RuntimeMetaData.checkVersion("4.13.0", RuntimeMetaData.VERSION);
+        RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
     }
 
     protected static final DFA[] _decisionToDFA;
@@ -816,16 +803,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterCompilationUnit(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterCompilationUnit(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitCompilationUnit(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitCompilationUnit(this);
         }
     }
 
@@ -854,7 +837,7 @@ public class JavaParser extends Parser {
                         setState(259);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 2, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     setState(257);
@@ -1007,16 +990,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterPackageDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterPackageDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitPackageDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitPackageDeclaration(this);
         }
     }
 
@@ -1097,16 +1076,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterImportDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterImportDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitImportDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitImportDeclaration(this);
         }
     }
 
@@ -1197,16 +1172,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeDeclaration(this);
         }
     }
 
@@ -1220,7 +1191,7 @@ public class JavaParser extends Parser {
                 setState(304);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 10, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -1313,16 +1284,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterModifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterModifier(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitModifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitModifier(this);
         }
     }
 
@@ -1458,16 +1425,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterClassOrInterfaceModifier(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitClassOrInterfaceModifier(this);
-            }
         }
     }
 
@@ -1580,16 +1545,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterVariableModifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterVariableModifier(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitVariableModifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitVariableModifier(this);
         }
     }
 
@@ -1696,16 +1657,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterClassDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterClassDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitClassDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitClassDeclaration(this);
         }
     }
 
@@ -1816,16 +1773,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeParameters(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeParameters(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeParameters(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeParameters(this);
         }
     }
 
@@ -1902,16 +1855,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeParameter(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeParameter(this);
         }
     }
 
@@ -1926,7 +1875,7 @@ public class JavaParser extends Parser {
                 setState(370);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 20, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -1951,7 +1900,7 @@ public class JavaParser extends Parser {
                         setState(378);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 21, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -2008,16 +1957,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeBound(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeBound(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeBound(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeBound(this);
         }
     }
 
@@ -2106,16 +2051,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterEnumDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterEnumDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitEnumDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitEnumDeclaration(this);
         }
     }
 
@@ -2218,16 +2159,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterEnumConstants(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterEnumConstants(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitEnumConstants(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitEnumConstants(this);
         }
     }
 
@@ -2243,7 +2180,7 @@ public class JavaParser extends Parser {
                 setState(415);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 28, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -2302,16 +2239,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterEnumConstant(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterEnumConstant(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitEnumConstant(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitEnumConstant(this);
         }
     }
 
@@ -2326,7 +2259,7 @@ public class JavaParser extends Parser {
                 setState(421);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 29, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -2396,16 +2329,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterEnumBodyDeclarations(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterEnumBodyDeclarations(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitEnumBodyDeclarations(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitEnumBodyDeclarations(this);
         }
     }
 
@@ -2490,16 +2419,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterInterfaceDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterInterfaceDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitInterfaceDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitInterfaceDeclaration(this);
         }
     }
 
@@ -2590,16 +2515,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterClassBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterClassBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitClassBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitClassBody(this);
         }
     }
 
@@ -2670,16 +2591,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterInterfaceBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterInterfaceBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitInterfaceBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitInterfaceBody(this);
         }
     }
 
@@ -2758,16 +2675,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterClassBodyDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterClassBodyDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitClassBodyDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitClassBodyDeclaration(this);
         }
     }
 
@@ -2810,7 +2723,7 @@ public class JavaParser extends Parser {
                         setState(479);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 39, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -2891,16 +2804,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterMemberDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterMemberDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitMemberDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitMemberDeclaration(this);
         }
     }
 
@@ -3045,16 +2954,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterMethodDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterMethodDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitMethodDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitMethodDeclaration(this);
         }
     }
 
@@ -3133,16 +3038,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterMethodBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterMethodBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitMethodBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitMethodBody(this);
         }
     }
 
@@ -3201,16 +3102,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeTypeOrVoid(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeTypeOrVoid(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeTypeOrVoid(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeTypeOrVoid(this);
         }
     }
 
@@ -3293,16 +3190,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterGenericMethodDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitGenericMethodDeclaration(this);
-            }
         }
     }
 
@@ -3348,16 +3243,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterGenericConstructorDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitGenericConstructorDeclaration(this);
-            }
         }
     }
 
@@ -3417,16 +3310,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterConstructorDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitConstructorDeclaration(this);
-            }
         }
     }
 
@@ -3497,16 +3388,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterCompactConstructorDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitCompactConstructorDeclaration(this);
-            }
         }
     }
 
@@ -3520,7 +3409,7 @@ public class JavaParser extends Parser {
                 setState(538);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 47, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -3573,16 +3462,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterFieldDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterFieldDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitFieldDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitFieldDeclaration(this);
         }
     }
 
@@ -3638,16 +3523,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterInterfaceBodyDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitInterfaceBodyDeclaration(this);
-            }
         }
     }
 
@@ -3707,7 +3590,7 @@ public class JavaParser extends Parser {
                         setState(551);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 48, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -3789,16 +3672,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterInterfaceMemberDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitInterfaceMemberDeclaration(this);
-            }
         }
     }
 
@@ -3913,16 +3794,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterConstDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterConstDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitConstDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitConstDeclaration(this);
         }
     }
 
@@ -4007,16 +3884,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterConstantDeclarator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterConstantDeclarator(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitConstantDeclarator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitConstantDeclarator(this);
         }
     }
 
@@ -4085,16 +3958,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterInterfaceMethodDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitInterfaceMethodDeclaration(this);
-            }
         }
     }
 
@@ -4108,7 +3979,7 @@ public class JavaParser extends Parser {
                 setState(593);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 53, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -4171,16 +4042,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterInterfaceMethodModifier(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitInterfaceMethodModifier(this);
-            }
         }
     }
 
@@ -4291,16 +4160,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterGenericInterfaceMethodDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitGenericInterfaceMethodDeclaration(this);
-            }
         }
     }
 
@@ -4405,16 +4272,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterInterfaceCommonBodyDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitInterfaceCommonBodyDeclaration(this);
-            }
         }
     }
 
@@ -4429,7 +4294,7 @@ public class JavaParser extends Parser {
                 setState(618);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 56, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -4518,16 +4383,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterVariableDeclarators(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterVariableDeclarators(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitVariableDeclarators(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitVariableDeclarators(this);
         }
     }
 
@@ -4592,16 +4453,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterVariableDeclarator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterVariableDeclarator(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitVariableDeclarator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitVariableDeclarator(this);
         }
     }
 
@@ -4669,16 +4526,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterVariableDeclaratorId(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterVariableDeclaratorId(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitVariableDeclaratorId(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitVariableDeclaratorId(this);
         }
     }
 
@@ -4739,16 +4592,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterVariableInitializer(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterVariableInitializer(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitVariableInitializer(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitVariableInitializer(this);
         }
     }
 
@@ -4871,16 +4720,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterArrayInitializer(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterArrayInitializer(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitArrayInitializer(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitArrayInitializer(this);
         }
     }
 
@@ -4905,7 +4750,7 @@ public class JavaParser extends Parser {
                         setState(668);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 63, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -4986,16 +4831,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterClassOrInterfaceType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterClassOrInterfaceType(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitClassOrInterfaceType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitClassOrInterfaceType(this);
         }
     }
 
@@ -5010,7 +4851,7 @@ public class JavaParser extends Parser {
                 setState(686);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 67, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -5095,16 +4936,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeArgument(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeArgument(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeArgument(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeArgument(this);
         }
     }
 
@@ -5154,9 +4991,7 @@ public class JavaParser extends Parser {
                                 if (!(_la == EXTENDS || _la == SUPER)) {
                                     _errHandler.recoverInline(this);
                                 } else {
-                                    if (_input.LA(1) == Token.EOF) {
-                                        matchedEOF = true;
-                                    }
+                                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                                     _errHandler.reportMatch(this);
                                     consume();
                                 }
@@ -5206,16 +5041,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterQualifiedNameList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterQualifiedNameList(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitQualifiedNameList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitQualifiedNameList(this);
         }
     }
 
@@ -5288,16 +5119,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterFormalParameters(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterFormalParameters(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitFormalParameters(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitFormalParameters(this);
         }
     }
 
@@ -5411,16 +5238,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterReceiverParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterReceiverParameter(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitReceiverParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitReceiverParameter(this);
         }
     }
 
@@ -5495,16 +5318,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterFormalParameterList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterFormalParameterList(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitFormalParameterList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitFormalParameterList(this);
         }
     }
 
@@ -5525,7 +5344,7 @@ public class JavaParser extends Parser {
                         setState(747);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 78, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -5600,16 +5419,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterFormalParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterFormalParameter(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitFormalParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitFormalParameter(this);
         }
     }
 
@@ -5623,7 +5438,7 @@ public class JavaParser extends Parser {
                 setState(760);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 81, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -5692,16 +5507,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLastFormalParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLastFormalParameter(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLastFormalParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLastFormalParameter(this);
         }
     }
 
@@ -5716,7 +5527,7 @@ public class JavaParser extends Parser {
                 setState(769);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 82, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -5791,16 +5602,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLambdaLVTIList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLambdaLVTIList(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLambdaLVTIList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLambdaLVTIList(this);
         }
     }
 
@@ -5869,16 +5676,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLambdaLVTIParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLambdaLVTIParameter(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLambdaLVTIParameter(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLambdaLVTIParameter(this);
         }
     }
 
@@ -5892,7 +5695,7 @@ public class JavaParser extends Parser {
                 setState(793);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 85, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -5949,16 +5752,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterQualifiedName(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterQualifiedName(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitQualifiedName(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitQualifiedName(this);
         }
     }
 
@@ -5974,7 +5773,7 @@ public class JavaParser extends Parser {
                 setState(804);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 86, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -6041,16 +5840,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLiteral(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLiteral(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLiteral(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLiteral(this);
         }
     }
 
@@ -6156,16 +5951,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterIntegerLiteral(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterIntegerLiteral(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitIntegerLiteral(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitIntegerLiteral(this);
         }
     }
 
@@ -6181,9 +5972,7 @@ public class JavaParser extends Parser {
                 if (!(((((_la - 67)) & ~0x3f) == 0 && ((1L << (_la - 67)) & 15L) != 0))) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -6219,16 +6008,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterFloatLiteral(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterFloatLiteral(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitFloatLiteral(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitFloatLiteral(this);
         }
     }
 
@@ -6244,9 +6029,7 @@ public class JavaParser extends Parser {
                 if (!(_la == FLOAT_LITERAL || _la == HEX_FLOAT_LITERAL)) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -6294,16 +6077,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterAltAnnotationQualifiedName(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitAltAnnotationQualifiedName(this);
-            }
         }
     }
 
@@ -6386,16 +6167,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterAnnotation(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterAnnotation(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitAnnotation(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitAnnotation(this);
         }
     }
 
@@ -6491,16 +6268,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterElementValuePairs(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterElementValuePairs(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitElementValuePairs(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitElementValuePairs(this);
         }
     }
 
@@ -6565,16 +6338,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterElementValuePair(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterElementValuePair(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitElementValuePair(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitElementValuePair(this);
         }
     }
 
@@ -6626,16 +6395,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterElementValue(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterElementValue(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitElementValue(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitElementValue(this);
         }
     }
 
@@ -6715,16 +6480,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterElementValueArrayInitializer(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitElementValueArrayInitializer(this);
-            }
         }
     }
 
@@ -6749,7 +6512,7 @@ public class JavaParser extends Parser {
                         setState(867);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 94, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -6819,16 +6582,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterAnnotationTypeDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitAnnotationTypeDeclaration(this);
-            }
         }
     }
 
@@ -6886,16 +6647,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterAnnotationTypeBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterAnnotationTypeBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitAnnotationTypeBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitAnnotationTypeBody(this);
         }
     }
 
@@ -6966,16 +6723,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterAnnotationTypeElementDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitAnnotationTypeElementDeclaration(this);
-            }
         }
     }
 
@@ -7034,7 +6789,7 @@ public class JavaParser extends Parser {
                         setState(894);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 98, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -7116,16 +6871,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterAnnotationTypeElementRest(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitAnnotationTypeElementRest(this);
-            }
         }
     }
 
@@ -7264,16 +7017,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterAnnotationMethodOrConstantRest(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitAnnotationMethodOrConstantRest(this);
-            }
         }
     }
 
@@ -7338,16 +7089,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterAnnotationMethodRest(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterAnnotationMethodRest(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitAnnotationMethodRest(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitAnnotationMethodRest(this);
         }
     }
 
@@ -7401,16 +7148,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterAnnotationConstantRest(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitAnnotationConstantRest(this);
-            }
         }
     }
 
@@ -7454,16 +7199,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterDefaultValue(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterDefaultValue(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitDefaultValue(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitDefaultValue(this);
         }
     }
 
@@ -7517,16 +7258,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterModuleDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterModuleDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitModuleDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitModuleDeclaration(this);
         }
     }
 
@@ -7593,16 +7330,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterModuleBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterModuleBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitModuleBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitModuleBody(this);
         }
     }
 
@@ -7703,16 +7436,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterModuleDirective(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterModuleDirective(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitModuleDirective(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitModuleDirective(this);
         }
     }
 
@@ -7733,7 +7462,7 @@ public class JavaParser extends Parser {
                         setState(962);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 110, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -7858,16 +7587,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterRequiresModifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterRequiresModifier(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitRequiresModifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitRequiresModifier(this);
         }
     }
 
@@ -7883,9 +7608,7 @@ public class JavaParser extends Parser {
                 if (!(_la == STATIC || _la == TRANSITIVE)) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -7941,16 +7664,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterRecordDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterRecordDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitRecordDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitRecordDeclaration(this);
         }
     }
 
@@ -8027,16 +7746,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterRecordHeader(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterRecordHeader(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitRecordHeader(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitRecordHeader(this);
         }
     }
 
@@ -8103,16 +7818,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterRecordComponentList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterRecordComponentList(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitRecordComponentList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitRecordComponentList(this);
         }
     }
 
@@ -8173,16 +7884,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterRecordComponent(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterRecordComponent(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitRecordComponent(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitRecordComponent(this);
         }
     }
 
@@ -8244,16 +7951,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterRecordBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterRecordBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitRecordBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitRecordBody(this);
         }
     }
 
@@ -8336,16 +8039,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterBlock(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterBlock(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitBlock(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitBlock(this);
         }
     }
 
@@ -8416,16 +8115,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterBlockStatement(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterBlockStatement(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitBlockStatement(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitBlockStatement(this);
         }
     }
 
@@ -8515,16 +8210,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterLocalVariableDeclaration(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitLocalVariableDeclaration(this);
-            }
         }
     }
 
@@ -8538,7 +8231,7 @@ public class JavaParser extends Parser {
                 setState(1056);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 122, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -8663,16 +8356,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterIdentifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterIdentifier(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitIdentifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitIdentifier(this);
         }
     }
 
@@ -8688,9 +8377,7 @@ public class JavaParser extends Parser {
                 if (!(((((_la - 51)) & ~0x3f) == 0 && ((1L << (_la - 51)) & 32767L) != 0) || _la == IDENTIFIER)) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -8774,16 +8461,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeIdentifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeIdentifier(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeIdentifier(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeIdentifier(this);
         }
     }
 
@@ -8799,9 +8482,7 @@ public class JavaParser extends Parser {
                 if (!(((((_la - 51)) & ~0x3f) == 0 && ((1L << (_la - 51)) & 29695L) != 0) || _la == IDENTIFIER)) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -8849,16 +8530,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLocalTypeDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLocalTypeDeclaration(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLocalTypeDeclaration(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLocalTypeDeclaration(this);
         }
     }
 
@@ -8872,7 +8549,7 @@ public class JavaParser extends Parser {
                 setState(1076);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 124, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -9085,16 +8762,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterStatement(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterStatement(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitStatement(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitStatement(this);
         }
     }
 
@@ -9295,7 +8968,7 @@ public class JavaParser extends Parser {
                         setState(1147);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 133, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -9517,16 +9190,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterCatchClause(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterCatchClause(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitCatchClause(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitCatchClause(this);
         }
     }
 
@@ -9544,7 +9213,7 @@ public class JavaParser extends Parser {
                 setState(1204);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 140, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -9605,16 +9274,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterCatchType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterCatchType(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitCatchType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitCatchType(this);
         }
     }
 
@@ -9675,16 +9340,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterFinallyBlock(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterFinallyBlock(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitFinallyBlock(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitFinallyBlock(this);
         }
     }
 
@@ -9738,16 +9399,13 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterResourceSpecification(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitResourceSpecification(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitResourceSpecification(this);
         }
     }
 
@@ -9814,16 +9472,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterResources(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterResources(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitResources(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitResources(this);
         }
     }
 
@@ -9839,7 +9493,7 @@ public class JavaParser extends Parser {
                 setState(1235);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 143, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -9914,16 +9568,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterResource(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterResource(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitResource(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitResource(this);
         }
     }
 
@@ -9941,7 +9591,7 @@ public class JavaParser extends Parser {
                         setState(1241);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 144, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -10027,16 +9677,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterSwitchBlockStatementGroup(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitSwitchBlockStatementGroup(this);
-            }
         }
     }
 
@@ -10133,16 +9781,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterSwitchLabel(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterSwitchLabel(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitSwitchLabel(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitSwitchLabel(this);
         }
     }
 
@@ -10247,16 +9891,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterForControl(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterForControl(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitForControl(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitForControl(this);
         }
     }
 
@@ -10348,16 +9988,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterForInit(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterForInit(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitForInit(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitForInit(this);
         }
     }
 
@@ -10434,16 +10070,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterEnhancedForControl(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterEnhancedForControl(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitEnhancedForControl(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitEnhancedForControl(this);
         }
     }
 
@@ -10457,7 +10089,7 @@ public class JavaParser extends Parser {
                 setState(1301);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 156, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -10528,16 +10160,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterParExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterParExpression(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitParExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitParExpression(this);
         }
     }
 
@@ -10593,16 +10221,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterExpressionList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterExpressionList(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitExpressionList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitExpressionList(this);
         }
     }
 
@@ -10671,16 +10295,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterMethodCall(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterMethodCall(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitMethodCall(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitMethodCall(this);
         }
     }
 
@@ -11023,16 +10643,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterExpression(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitExpression(this);
         }
     }
 
@@ -11168,7 +10784,7 @@ public class JavaParser extends Parser {
                             setState(1357);
                             _errHandler.sync(this);
                             _alt = getInterpreter().adaptivePredict(_input, 163, _ctx);
-                            while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                            while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                                 if (_alt == 1) {
                                     {
                                         {
@@ -11224,7 +10840,7 @@ public class JavaParser extends Parser {
                 setState(1459);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 172, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         if (_parseListeners != null) triggerExitRuleEvent();
                         _prevctx = _localctx;
@@ -11671,16 +11287,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterPattern(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterPattern(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitPattern(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitPattern(this);
         }
     }
 
@@ -11694,7 +11306,7 @@ public class JavaParser extends Parser {
                 setState(1465);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 173, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -11712,7 +11324,7 @@ public class JavaParser extends Parser {
                 setState(1472);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 174, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -11763,16 +11375,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLambdaExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLambdaExpression(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLambdaExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLambdaExpression(this);
         }
     }
 
@@ -11844,16 +11452,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLambdaParameters(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLambdaParameters(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLambdaParameters(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLambdaParameters(this);
         }
     }
 
@@ -11973,16 +11577,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterLambdaBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterLambdaBody(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitLambdaBody(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitLambdaBody(this);
         }
     }
 
@@ -12133,16 +11733,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterPrimary(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterPrimary(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitPrimary(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitPrimary(this);
         }
     }
 
@@ -12294,16 +11890,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterSwitchExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterSwitchExpression(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitSwitchExpression(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitSwitchExpression(this);
         }
     }
 
@@ -12392,16 +11984,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterSwitchLabeledRule(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterSwitchLabeledRule(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitSwitchLabeledRule(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitSwitchLabeledRule(this);
         }
     }
 
@@ -12445,9 +12033,7 @@ public class JavaParser extends Parser {
                         if (!(_la == COLON || _la == ARROW)) {
                             _errHandler.recoverInline(this);
                         } else {
-                            if (_input.LA(1) == Token.EOF) {
-                                matchedEOF = true;
-                            }
+                            if (_input.LA(1) == Token.EOF) matchedEOF = true;
                             _errHandler.reportMatch(this);
                             consume();
                         }
@@ -12465,9 +12051,7 @@ public class JavaParser extends Parser {
                         if (!(_la == COLON || _la == ARROW)) {
                             _errHandler.recoverInline(this);
                         } else {
-                            if (_input.LA(1) == Token.EOF) {
-                                matchedEOF = true;
-                            }
+                            if (_input.LA(1) == Token.EOF) matchedEOF = true;
                             _errHandler.reportMatch(this);
                             consume();
                         }
@@ -12553,16 +12137,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterGuardedPattern(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterGuardedPattern(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitGuardedPattern(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitGuardedPattern(this);
         }
     }
 
@@ -12624,7 +12204,7 @@ public class JavaParser extends Parser {
                             setState(1561);
                             _errHandler.sync(this);
                             _alt = getInterpreter().adaptivePredict(_input, 185, _ctx);
-                            while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                            while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                                 if (_alt == 1) {
                                     {
                                         {
@@ -12642,7 +12222,7 @@ public class JavaParser extends Parser {
                             setState(1568);
                             _errHandler.sync(this);
                             _alt = getInterpreter().adaptivePredict(_input, 186, _ctx);
-                            while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                            while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                                 if (_alt == 1) {
                                     {
                                         {
@@ -12660,7 +12240,7 @@ public class JavaParser extends Parser {
                             setState(1576);
                             _errHandler.sync(this);
                             _alt = getInterpreter().adaptivePredict(_input, 187, _ctx);
-                            while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                            while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                                 if (_alt == 1) {
                                     {
                                         {
@@ -12684,20 +12264,16 @@ public class JavaParser extends Parser {
                 setState(1586);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 189, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
-                        if (_parseListeners != null) {
-                            triggerExitRuleEvent();
-                        }
+                        if (_parseListeners != null) triggerExitRuleEvent();
                         _prevctx = _localctx;
                         {
                             {
                                 _localctx = new GuardedPatternContext(_parentctx, _parentState);
                                 pushNewRecursionContext(_localctx, _startState, RULE_guardedPattern);
                                 setState(1581);
-                                if (!(precpred(_ctx, 1))) {
-                                    throw new FailedPredicateException(this, "precpred(_ctx, 1)");
-                                }
+                                if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
                                 setState(1582);
                                 match(AND);
                                 setState(1583);
@@ -12745,16 +12321,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterSwitchRuleOutcome(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterSwitchRuleOutcome(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitSwitchRuleOutcome(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitSwitchRuleOutcome(this);
         }
     }
 
@@ -12842,16 +12414,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterClassType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterClassType(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitClassType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitClassType(this);
         }
     }
 
@@ -12878,7 +12446,7 @@ public class JavaParser extends Parser {
                 setState(1606);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 193, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -12942,16 +12510,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterCreator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterCreator(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitCreator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitCreator(this);
         }
     }
 
@@ -13043,16 +12607,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterCreatedName(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterCreatedName(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitCreatedName(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitCreatedName(this);
         }
     }
 
@@ -13173,16 +12733,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterInnerCreator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterInnerCreator(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitInnerCreator(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitInnerCreator(this);
         }
     }
 
@@ -13259,16 +12815,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterArrayCreatorRest(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterArrayCreatorRest(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitArrayCreatorRest(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitArrayCreatorRest(this);
         }
     }
 
@@ -13330,11 +12882,11 @@ public class JavaParser extends Parser {
                             setState(1660);
                             _errHandler.sync(this);
                             _alt = getInterpreter().adaptivePredict(_input, 203, _ctx);
-                        } while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER);
+                        } while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER);
                         setState(1666);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 204, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -13383,16 +12935,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterClassCreatorRest(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterClassCreatorRest(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitClassCreatorRest(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitClassCreatorRest(this);
         }
     }
 
@@ -13446,16 +12994,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterExplicitGenericInvocation(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitExplicitGenericInvocation(this);
-            }
         }
     }
 
@@ -13505,16 +13051,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterTypeArgumentsOrDiamond(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitTypeArgumentsOrDiamond(this);
-            }
         }
     }
 
@@ -13577,16 +13121,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterNonWildcardTypeArgumentsOrDiamond(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitNonWildcardTypeArgumentsOrDiamond(this);
-            }
         }
     }
 
@@ -13651,16 +13193,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterNonWildcardTypeArguments(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitNonWildcardTypeArguments(this);
-            }
         }
     }
 
@@ -13716,16 +13256,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeList(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeList(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeList(this);
         }
     }
 
@@ -13810,16 +13346,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeType(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeType(this);
         }
     }
 
@@ -13834,7 +13366,7 @@ public class JavaParser extends Parser {
                 setState(1703);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 210, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -13890,7 +13422,7 @@ public class JavaParser extends Parser {
                 setState(1720);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 213, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -13977,16 +13509,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterPrimitiveType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterPrimitiveType(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitPrimitiveType(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitPrimitiveType(this);
         }
     }
 
@@ -14002,9 +13530,7 @@ public class JavaParser extends Parser {
                 if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & 138111107368L) != 0))) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -14056,16 +13582,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterTypeArguments(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterTypeArguments(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitTypeArguments(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitTypeArguments(this);
         }
     }
 
@@ -14138,16 +13660,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterSuperSuffix(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterSuperSuffix(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitSuperSuffix(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitSuperSuffix(this);
         }
     }
 
@@ -14237,16 +13755,14 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).enterExplicitGenericInvocationSuffix(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
+            if (listener instanceof JavaParserListener)
                 ((JavaParserListener) listener).exitExplicitGenericInvocationSuffix(this);
-            }
         }
     }
 
@@ -14328,16 +13844,12 @@ public class JavaParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).enterArguments(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).enterArguments(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavaParserListener) {
-                ((JavaParserListener) listener).exitArguments(this);
-            }
+            if (listener instanceof JavaParserListener) ((JavaParserListener) listener).exitArguments(this);
         }
     }
 

@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.processor.antlr.generated; // Generated from JavadocParser.g4 by ANTLR 4.13.0
+package com.swirlds.config.processor.antlr.generated;
 
 import java.util.List;
-import org.antlr.v4.runtime.NoViableAltException;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.RuntimeMetaData;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.Vocabulary;
-import org.antlr.v4.runtime.VocabularyImpl;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class JavadocParser extends Parser {
     static {
-        RuntimeMetaData.checkVersion("4.13.0", RuntimeMetaData.VERSION);
+        RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
     }
 
     protected static final DFA[] _decisionToDFA;
@@ -226,16 +215,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterDocumentation(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterDocumentation(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitDocumentation(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitDocumentation(this);
         }
     }
 
@@ -262,7 +247,7 @@ public class JavadocParser extends Parser {
                         setState(49);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 0, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -298,7 +283,7 @@ public class JavadocParser extends Parser {
                         setState(59);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 1, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -367,16 +352,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDocumentationContent(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitDocumentationContent(this);
-            }
         }
     }
 
@@ -416,7 +399,7 @@ public class JavadocParser extends Parser {
                         setState(77);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 4, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -457,11 +440,11 @@ public class JavadocParser extends Parser {
                             setState(85);
                             _errHandler.sync(this);
                             _alt = getInterpreter().adaptivePredict(_input, 5, _ctx);
-                        } while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER);
+                        } while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER);
                         setState(90);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 6, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -510,16 +493,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterSkipWhitespace(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterSkipWhitespace(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitSkipWhitespace(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitSkipWhitespace(this);
         }
     }
 
@@ -535,9 +514,7 @@ public class JavadocParser extends Parser {
                 if (!(_la == NEWLINE || _la == SPACE)) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -581,16 +558,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterDescription(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterDescription(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitDescription(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitDescription(this);
         }
     }
 
@@ -607,7 +580,7 @@ public class JavadocParser extends Parser {
                 setState(109);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 9, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -674,16 +647,13 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDescriptionLine(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitDescriptionLine(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitDescriptionLine(this);
         }
     }
 
@@ -709,7 +679,7 @@ public class JavadocParser extends Parser {
                         setState(116);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 10, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -732,7 +702,7 @@ public class JavadocParser extends Parser {
                         setState(123);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 11, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
@@ -797,16 +767,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDescriptionLineStart(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitDescriptionLineStart(this);
-            }
         }
     }
 
@@ -847,11 +815,11 @@ public class JavadocParser extends Parser {
                     setState(134);
                     _errHandler.sync(this);
                     _alt = getInterpreter().adaptivePredict(_input, 14, _ctx);
-                } while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER);
+                } while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER);
                 setState(141);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 16, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             setState(139);
@@ -937,16 +905,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDescriptionLineNoSpaceNoAt(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitDescriptionLineNoSpaceNoAt(this);
-            }
         }
     }
 
@@ -962,9 +928,7 @@ public class JavadocParser extends Parser {
                 if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & 6354L) != 0))) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -1000,16 +964,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDescriptionLineElement(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitDescriptionLineElement(this);
-            }
         }
     }
 
@@ -1091,16 +1053,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDescriptionLineText(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitDescriptionLineText(this);
-            }
         }
     }
 
@@ -1155,7 +1115,7 @@ public class JavadocParser extends Parser {
                     setState(155);
                     _errHandler.sync(this);
                     _alt = getInterpreter().adaptivePredict(_input, 19, _ctx);
-                } while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER);
+                } while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER);
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1184,16 +1144,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterDescriptionNewline(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitDescriptionNewline(this);
-            }
         }
     }
 
@@ -1237,16 +1195,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterTagSection(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterTagSection(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitTagSection(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitTagSection(this);
         }
     }
 
@@ -1319,16 +1273,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterBlockTag(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterBlockTag(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBlockTag(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBlockTag(this);
         }
     }
 
@@ -1367,7 +1317,7 @@ public class JavadocParser extends Parser {
                 setState(175);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 23, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -1408,16 +1358,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterBlockTagName(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterBlockTagName(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBlockTagName(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBlockTagName(this);
         }
     }
 
@@ -1465,16 +1411,13 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterBlockTagContent(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBlockTagContent(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBlockTagContent(this);
         }
     }
 
@@ -1546,16 +1489,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterBlockTagText(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterBlockTagText(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBlockTagText(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBlockTagText(this);
         }
     }
 
@@ -1585,7 +1524,7 @@ public class JavadocParser extends Parser {
                     setState(188);
                     _errHandler.sync(this);
                     _alt = getInterpreter().adaptivePredict(_input, 25, _ctx);
-                } while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER);
+                } while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER);
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1638,16 +1577,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterBlockTagTextElement(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitBlockTagTextElement(this);
-            }
         }
     }
 
@@ -1663,9 +1600,7 @@ public class JavadocParser extends Parser {
                 if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & 6362L) != 0))) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }
@@ -1717,16 +1652,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterInlineTag(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterInlineTag(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitInlineTag(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitInlineTag(this);
         }
     }
 
@@ -1745,7 +1676,7 @@ public class JavadocParser extends Parser {
                 setState(197);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 26, _ctx);
-                while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                     if (_alt == 1) {
                         {
                             {
@@ -1798,16 +1729,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterInlineTagName(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterInlineTagName(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitInlineTagName(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitInlineTagName(this);
         }
     }
 
@@ -1851,16 +1778,14 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterInlineTagContent(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).exitInlineTagContent(this);
-            }
         }
     }
 
@@ -1925,16 +1850,13 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
+            if (listener instanceof JavadocParserListener)
                 ((JavadocParserListener) listener).enterBraceExpression(this);
-            }
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBraceExpression(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBraceExpression(this);
         }
     }
 
@@ -2007,16 +1929,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterBraceContent(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterBraceContent(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBraceContent(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBraceContent(this);
         }
     }
 
@@ -2048,14 +1966,14 @@ public class JavadocParser extends Parser {
                         setState(232);
                         _errHandler.sync(this);
                         _alt = getInterpreter().adaptivePredict(_input, 31, _ctx);
-                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                             if (_alt == 1) {
                                 {
                                     {
                                         setState(226);
                                         _errHandler.sync(this);
                                         _alt = getInterpreter().adaptivePredict(_input, 30, _ctx);
-                                        while (_alt != 2 && _alt != ATN.INVALID_ALT_NUMBER) {
+                                        while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
                                             if (_alt == 1) {
                                                 {
                                                     {
@@ -2129,16 +2047,12 @@ public class JavadocParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).enterBraceText(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).enterBraceText(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof JavadocParserListener) {
-                ((JavadocParserListener) listener).exitBraceText(this);
-            }
+            if (listener instanceof JavadocParserListener) ((JavadocParserListener) listener).exitBraceText(this);
         }
     }
 
@@ -2154,9 +2068,7 @@ public class JavadocParser extends Parser {
                 if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & 222L) != 0))) {
                     _errHandler.recoverInline(this);
                 } else {
-                    if (_input.LA(1) == Token.EOF) {
-                        matchedEOF = true;
-                    }
+                    if (_input.LA(1) == Token.EOF) matchedEOF = true;
                     _errHandler.reportMatch(this);
                     consume();
                 }

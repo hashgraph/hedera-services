@@ -28,6 +28,10 @@
 
 parser grammar JavadocParser;
 
+@header {
+package com.swirlds.config.processor.antlr.generated;
+}
+
 options { tokenVocab=JavadocLexer; }
 
 

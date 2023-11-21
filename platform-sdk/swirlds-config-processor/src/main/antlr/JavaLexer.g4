@@ -31,6 +31,10 @@
 
 lexer grammar JavaLexer;
 
+@lexer::header {
+package com.swirlds.config.processor.antlr.generated;
+}
+
 // Keywords
 
 ABSTRACT:           'abstract';
