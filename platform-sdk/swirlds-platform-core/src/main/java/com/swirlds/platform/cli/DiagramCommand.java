@@ -50,15 +50,14 @@ public final class DiagramCommand extends AbstractCommand {
 
     @CommandLine.Option(
             names = {"-g", "--group"},
-            description =
-                    "Specify a an un-collapsed grouping. " + "Format is 'GROUP_NAME:COMPONENT_NAME[,COMPONENT_NAME]*'.")
+            description = "Specify an un-collapsed grouping. Format is 'GROUP_NAME:COMPONENT_NAME[,COMPONENT_NAME]*'.")
     private void setGroupStrings(@NonNull final List<String> groupStrings) {
         this.groupStrings = groupStrings;
     }
 
     @CommandLine.Option(
             names = {"-c", "--collapsed-group"},
-            description = "Specify a collapsed grouping. " + "Format is 'GROUP_NAME:COMPONENT_NAME[,COMPONENT_NAME]*'.")
+            description = "Specify a collapsed grouping. Format is 'GROUP_NAME:COMPONENT_NAME[,COMPONENT_NAME]*'.")
     private void setCollapsedGroupStrings(@NonNull final List<String> collapsedGroupStrings) {
         this.collapsedGroupStrings = collapsedGroupStrings;
     }
