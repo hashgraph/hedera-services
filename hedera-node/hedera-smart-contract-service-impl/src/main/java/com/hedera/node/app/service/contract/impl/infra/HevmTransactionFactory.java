@@ -115,14 +115,14 @@ public class HevmTransactionFactory {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull @InitialState final TokenServiceApi tokenServiceApi,
             @NonNull final EthTxSigsCache ethereumSignatures) {
-        this.tokensConfig = tokensConfig;
-        this.entitiesConfig = entitiesConfig;
         this.hydratedEthTxData = hydratedEthTxData;
         this.gasCalculator = requireNonNull(gasCalculator);
         this.fileStore = requireNonNull(fileStore);
         this.networkInfo = requireNonNull(networkInfo);
         this.accountStore = requireNonNull(accountStore);
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.tokensConfig = requireNonNull(tokensConfig);
+        this.entitiesConfig = requireNonNull(entitiesConfig);
         this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
