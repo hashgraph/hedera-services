@@ -337,6 +337,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                     configuration.getConfigData(AutoCreationConfig.class).enabled();
             final boolean isLazyCreationEnabled =
                     configuration.getConfigData(LazyCreationConfig.class).enabled();
+
+            // we check for CryptoTransfer because implicit creations (i.e. auto- or lazy-creation) may happen in it,
+            // and we need to throttle those separately
             if ((isAutoCreationEnabled || isLazyCreationEnabled) && scheduledFunction == CRYPTO_TRANSFER) {
                 final var transfer = scheduled.cryptoTransfer();
                 if (usesAliases(transfer)) {
