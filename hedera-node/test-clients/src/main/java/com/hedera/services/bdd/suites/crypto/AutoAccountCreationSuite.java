@@ -216,7 +216,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Tag("crypto")
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers", EXPECT_STREAMLINED_INGEST_RECORDS)
