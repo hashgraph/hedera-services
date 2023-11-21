@@ -45,7 +45,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
     @Test
     void returnsNftTokenInfoStatusForPresentToken() {
-        com.hedera.pbj.runtime.io.buffer.Bytes ledgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID);
+        final var ledgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID);
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(ledgerId);
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
