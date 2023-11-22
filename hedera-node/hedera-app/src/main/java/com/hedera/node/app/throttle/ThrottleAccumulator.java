@@ -340,7 +340,10 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
         // maintain legacy behaviour
         final var configuration = configProvider.getConfiguration();
-        if (!configuration.getConfigData(SchedulingConfig.class).longTermEnabled()) {
+        final boolean areLongTermSchedulesEnabled =
+                configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
+        log.warn("Long term scheduling is {}.", areLongTermSchedulesEnabled ? "enabled" : "disabled");
+        if (!areLongTermSchedulesEnabled) {
             final boolean isAutoCreationEnabled =
                     configuration.getConfigData(AutoCreationConfig.class).enabled();
             final boolean isLazyCreationEnabled =
@@ -362,17 +365,80 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                 }
             }
             return !manager.allReqsMetAt(now);
-        }
+        } else {
+            if (!manager.allReqsMetAt(now)) {
+                return true;
+            }
 
+            // only check deeply if the schedule could immediately execute
+            if ((!scheduleCreate.waitForExpiry()) && (throttleType == FRONTEND_THROTTLE)) {
+                var effectivePayer = scheduleCreate.hasPayerAccountID()
+                        ? scheduleCreate.payerAccountID()
+                        : txnBody.transactionID().accountID();
+
+                final var innerTxnInfo = new TransactionInfo(
+                        Transaction.DEFAULT,
+                        innerTxn,
+                        TransactionID.DEFAULT,
+                        effectivePayer,
+                        SignatureMap.DEFAULT,
+                        Bytes.EMPTY,
+                        scheduledFunction);
+
+                return shouldThrottleTxn(true, innerTxnInfo, now, state);
+            }
+
+            return false;
+        }
+    }
+
+    private boolean shouldThrottleScheduleSign(
+            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, HederaState state) {
+        final var txnBody = txnInfo.txBody();
         if (!manager.allReqsMetAt(now)) {
             return true;
         }
 
-        // only check deeply if the schedule could immediately execute
-        if ((!scheduleCreate.waitForExpiry()) && (throttleType == FRONTEND_THROTTLE)) {
-            var effectivePayer = scheduleCreate.hasPayerAccountID()
-                    ? scheduleCreate.payerAccountID()
-                    : txnBody.transactionID().accountID();
+        // maintain legacy behaviour
+        final var configuration = configProvider.getConfiguration();
+
+        final boolean areLongTermSchedulesEnabled =
+                configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
+        log.warn("Long term scheduling is {}.", areLongTermSchedulesEnabled ? "enabled" : "disabled");
+        if (!areLongTermSchedulesEnabled) {
+            return false;
+        } else {
+            // deeply check throttle only in the frontend throttle
+            if (throttleType != FRONTEND_THROTTLE) {
+                return false;
+            }
+
+            final var scheduledId = txnBody.scheduleSign().scheduleID();
+            final var scheduleStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
+            final var schedule = scheduleStore.get(scheduledId);
+            if (schedule == null) {
+                log.error(
+                        "Tried to throttle in the frontend throttle a ScheduleSign that does not exist! We should not get here.");
+                return true;
+            }
+
+            // only check deeply if the schedule could immediately execute
+            if (schedule.waitForExpiry()) {
+                return false;
+            }
+
+            TransactionBody innerTxn;
+            HederaFunctionality scheduledFunction;
+            try {
+                innerTxn = childAsOrdinary(schedule);
+                scheduledFunction = functionOf(innerTxn);
+            } catch (HandleException | UnknownHederaFunctionality ex) {
+                log.error("ScheduleSign was associated with an invalid txn.", ex);
+                return true;
+            }
+
+            final var effectivePayer =
+                    schedule.hasPayerAccountId() ? schedule.payerAccountId() : schedule.schedulerAccountId();
 
             final var innerTxnInfo = new TransactionInfo(
                     Transaction.DEFAULT,
@@ -385,65 +451,6 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
             return shouldThrottleTxn(true, innerTxnInfo, now, state);
         }
-
-        return false;
-    }
-
-    private boolean shouldThrottleScheduleSign(
-            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, HederaState state) {
-        final var txnBody = txnInfo.txBody();
-        if (!manager.allReqsMetAt(now)) {
-            return true;
-        }
-
-        // maintain legacy behaviour
-        final var configuration = configProvider.getConfiguration();
-        if (!configuration.getConfigData(SchedulingConfig.class).longTermEnabled()) {
-            return false;
-        }
-
-        // deeply check throttle only in the frontend throttle
-        if (throttleType != FRONTEND_THROTTLE) {
-            return false;
-        }
-
-        final var scheduledId = txnBody.scheduleSign().scheduleID();
-        final var scheduleStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
-        final var schedule = scheduleStore.get(scheduledId);
-        if (schedule == null) {
-            log.error(
-                    "Tried to throttle in the frontend throttle a ScheduleSign that does not exist! We should not get here.");
-            return true;
-        }
-
-        // only check deeply if the schedule could immediately execute
-        if (schedule.waitForExpiry()) {
-            return false;
-        }
-
-        TransactionBody innerTxn;
-        HederaFunctionality scheduledFunction;
-        try {
-            innerTxn = childAsOrdinary(schedule);
-            scheduledFunction = functionOf(innerTxn);
-        } catch (HandleException | UnknownHederaFunctionality ex) {
-            log.error("ScheduleSign was associated with an invalid txn.", ex);
-            return true;
-        }
-
-        final var effectivePayer =
-                schedule.hasPayerAccountId() ? schedule.payerAccountId() : schedule.schedulerAccountId();
-
-        final var innerTxnInfo = new TransactionInfo(
-                Transaction.DEFAULT,
-                innerTxn,
-                TransactionID.DEFAULT,
-                effectivePayer,
-                SignatureMap.DEFAULT,
-                Bytes.EMPTY,
-                scheduledFunction);
-
-        return shouldThrottleTxn(true, innerTxnInfo, now, state);
     }
 
     public static boolean throttleExempt(
