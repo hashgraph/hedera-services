@@ -16,6 +16,8 @@
 
 package com.swirlds.logging;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.swirlds.base.test.fixtures.io.SystemErrProvider;
 import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
@@ -28,8 +30,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @WithSystemError
 public class LogLevelTest {

@@ -24,13 +24,12 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingUtils;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
 public class LoggingSystemStressTest {

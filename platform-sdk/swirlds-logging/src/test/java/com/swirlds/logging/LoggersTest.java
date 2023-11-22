@@ -20,29 +20,17 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.extensions.event.LogEvent;
-import com.swirlds.logging.api.internal.DefaultLoggingSystem;
-import com.swirlds.logging.util.InMemoryHandler;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.AfterEach;
+import com.swirlds.logging.test.fixtures.LoggingMirror;
+import com.swirlds.logging.test.fixtures.WithLoggingMirror;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@WithLoggingMirror
 public class LoggersTest {
 
-    private InMemoryHandler loggingMirror;
-
-    @BeforeEach
-    void init() {
-        loggingMirror = new InMemoryHandler(new TestConfigBuilder().getOrCreateConfig());
-        // TODO: Replace with @WithLoggingMirror once we have a test fixture
-        DefaultLoggingSystem.getInstance().addHandler(loggingMirror);
-    }
-
-    @AfterEach
-    void cleanup() {
-        DefaultLoggingSystem.getInstance().removeHandler(loggingMirror);
-    }
+    @Inject
+    LoggingMirror loggingMirror;
 
     @Test
     void testLoggerCreationByName() {
@@ -107,7 +95,6 @@ public class LoggersTest {
         Assertions.assertEquals(clazz.getName(), event.loggerName());
         Assertions.assertEquals(Thread.currentThread().getName(), event.threadName());
         Assertions.assertEquals(Level.ERROR, event.level());
-        DefaultLoggingSystem.getInstance().removeHandler(loggingMirror);
     }
 
     @Test

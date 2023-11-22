@@ -19,7 +19,6 @@ package com.swirlds.logging.util;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractLogHandler;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -55,7 +54,7 @@ public class InMemoryHandler extends AbstractLogHandler {
      * @param configKey     the configuration key
      * @param configuration the configuration
      */
-    public InMemoryHandler (final Configuration configuration) {
+    public InMemoryHandler(final Configuration configuration) {
         super("inMemory", configuration);
     }
 

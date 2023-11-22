@@ -18,9 +18,8 @@ package com.swirlds.logging;
 
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.Arrays;
+import org.junit.jupiter.api.Assertions;
 
 public class LoggerApiSpecTest {
 

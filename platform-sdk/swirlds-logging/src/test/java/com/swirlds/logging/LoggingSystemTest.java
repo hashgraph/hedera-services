@@ -28,22 +28,19 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
-import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @WithContext
-@WithLoggingMirror
 public class LoggingSystemTest {
 
     @BeforeEach
@@ -367,8 +364,7 @@ public class LoggingSystemTest {
     }
 
     @Test
-    @DisplayName(
-            "Test that all logging for info+ is forwarded to emergency logger if no handler is defined")
+    @DisplayName("Test that all logging for info+ is forwarded to emergency logger if no handler is defined")
     void testEmergencyLoggerIsUsedForConfiguredLevelIfNoAppender() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -693,7 +689,12 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        InMemoryHandler handler = new InMemoryHandler(configuration);
+        LogHandler handler = new LogHandler() {
+            @Override
+            public void accept(LogEvent logEvent) {
+                // We do not handle any events
+            }
+        };
         loggingSystem.addHandler(handler);
 
         // then
