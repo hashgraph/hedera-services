@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedAccountId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
@@ -26,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -93,8 +95,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
         // Assemble the appropriate top-level record for the result
-        final var ethTxData =
-                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+        final var hydratedEthTxData = requireNonNull(component.hydratedEthTxData());
+        validateTrue(hydratedEthTxData.status() == OK, hydratedEthTxData.status());
+        final var ethTxData = requireNonNull(hydratedEthTxData.ethTxData());
 
         // Do not allow sending a transaction to a non-existing long-zero address
         // An empty 20 byte address is considered a Burn address and should not result in INVALID_CONTRACT_ID
