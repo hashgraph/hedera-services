@@ -162,6 +162,17 @@ public class ConversionUtils {
     }
 
     /**
+     * Given an account, returns its "priority" address as a Besu address.
+     *
+     * @param account the account
+     * @return the priority address
+     */
+    public static Address priorityAddressOf(@NonNull final Account account) {
+        requireNonNull(account);
+        return Address.wrap(Bytes.wrap(explicitAddressOf(account)));
+    }
+
+    /**
      * Given an account, returns its "priority" address as a headlong address.
      *
      * @param account the account
