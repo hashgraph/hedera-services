@@ -197,7 +197,7 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator);
+                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         pipeline.replayEvents();
 
@@ -265,7 +265,7 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator);
+                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
 
@@ -333,7 +333,7 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildIOIterator(events), eventValidator);
+                platformContext, threadManager, buildIOIterator(events), eventValidator::validateEvent);
 
         assertThrows(IllegalStateException.class, pipeline::replayEvents);
 
@@ -395,7 +395,10 @@ class PreconsensusEventReplayPipelineTests {
                 .validateEvent(any());
 
         final PreconsensusEventReplayPipeline pipeline = new PreconsensusEventReplayPipeline(
-                platformContext, threadManager, buildThrowingIOIterator(events, eventCount / 2), eventValidator);
+                platformContext,
+                threadManager,
+                buildThrowingIOIterator(events, eventCount / 2),
+                eventValidator::validateEvent);
 
         assertThrows(UncheckedIOException.class, pipeline::replayEvents);
 

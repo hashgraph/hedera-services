@@ -122,14 +122,16 @@ public class LinkedEventIntake {
      * Add an event to the hashgraph
      *
      * @param event an event to be added
+     * @return a list of rounds that came to consensus as a result of adding the event
      */
-    public void addEvent(@NonNull final EventImpl event) {
+    @NonNull
+    public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         Objects.requireNonNull(event);
 
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
-                return;
+                return List.of();
             }
 
             dispatcher.preConsensusEvent(event);
@@ -153,6 +155,8 @@ public class LinkedEventIntake {
                 // with no consensus events, so we check the diff in generations to look for stale events
                 handleStale(minGenNonAncientBeforeAdding);
             }
+
+            return Objects.requireNonNullElseGet(consensusRounds, List::of);
         } finally {
             intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }

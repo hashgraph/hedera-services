@@ -22,9 +22,9 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -62,7 +62,7 @@ public class PreconsensusEventReplayPipeline {
 
     private final PlatformContext platformContext;
     private final IOIterator<GossipEvent> unhashedEventIterator;
-    private final EventValidator eventValidator;
+    private final InterruptableConsumer<GossipEvent> intakeHandler;
 
     /**
      * Create a new event replay pipeline.
@@ -70,18 +70,18 @@ public class PreconsensusEventReplayPipeline {
      * @param platformContext       the platform context
      * @param threadManager         manages background threads
      * @param unhashedEventIterator iterates over events from the preconsensus event stream, events are unhashed
-     * @param eventValidator        events should be passed to the validator, in order, after being hashed
+     * @param intakeHandler         events should be passed to the intake handler, in order, after being hashed
      */
     public PreconsensusEventReplayPipeline(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final IOIterator<GossipEvent> unhashedEventIterator,
-            @NonNull final EventValidator eventValidator) {
+            @NonNull final InterruptableConsumer<GossipEvent> intakeHandler) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
         this.unhashedEventIterator = Objects.requireNonNull(unhashedEventIterator);
-        this.eventValidator = Objects.requireNonNull(eventValidator);
+        this.intakeHandler = Objects.requireNonNull(intakeHandler);
 
         final PreconsensusEventStreamConfig config =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
@@ -114,7 +114,7 @@ public class PreconsensusEventReplayPipeline {
             eventBeingHashed.hashFuture().get();
             final GossipEvent gossipEvent = eventBeingHashed.event();
             gossipEvent.buildDescriptor();
-            eventValidator.validateEvent(gossipEvent);
+            intakeHandler.accept(gossipEvent);
         } catch (final InterruptedException e) {
             logger.error("Interrupted while handling event from PCES", e);
             Thread.currentThread().interrupt();

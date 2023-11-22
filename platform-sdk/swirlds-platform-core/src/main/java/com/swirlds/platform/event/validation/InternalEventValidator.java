@@ -178,7 +178,7 @@ public class InternalEventValidator {
             totalTransactionBytes += transaction.getSerializedLength();
         }
 
-        if (totalTransactionBytes > transactionConfig.transactionMaxBytes()) {
+        if (totalTransactionBytes > transactionConfig.maxTransactionBytesPerEvent()) {
             tooManyTransactionBytesLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
                     "Event %s has %s transaction bytes, which is more than permitted"

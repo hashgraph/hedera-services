@@ -25,6 +25,7 @@ import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.metrics.EventIntakeMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -66,12 +67,6 @@ public class EventDeduplicator {
     private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents =
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
-    private static final LongAccumulator.Config DUPLICATE_EVENT_CONFIG = new LongAccumulator.Config(
-                    PLATFORM_CATEGORY, "duplicateEvents")
-            .withDescription("Events received that exactly match a previous event")
-            .withUnit("events");
-    private final LongAccumulator duplicateEventAccumulator;
-
     private static final LongAccumulator.Config DISPARATE_SIGNATURE_CONFIG = new LongAccumulator.Config(
                     PLATFORM_CATEGORY, "eventsWithDisparateSignature")
             .withDescription(
@@ -80,17 +75,28 @@ public class EventDeduplicator {
     private final LongAccumulator disparateSignatureAccumulator;
 
     /**
+     * Keeps track of the number of events that are duplicates
+     * <p>
+     * Future work: Duplicate event metrics should be created and managed by this class directly once the intake
+     * monolith is dismantled.
+     */
+    private final EventIntakeMetrics eventIntakeMetrics;
+
+    /**
      * Constructor
      *
      * @param platformContext    the platform context
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
+     * @param eventIntakeMetrics keeps track of the number of events that are duplicates
      */
     public EventDeduplicator(
-            @NonNull final PlatformContext platformContext, @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
 
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
 
-        this.duplicateEventAccumulator = platformContext.getMetrics().getOrCreate(DUPLICATE_EVENT_CONFIG);
         this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
     }
 
@@ -117,10 +123,12 @@ public class EventDeduplicator {
                 disparateSignatureAccumulator.update(1);
             }
 
+            eventIntakeMetrics.nonDuplicateEvent();
+
             return event;
         } else {
             // duplicate descriptor and signature
-            duplicateEventAccumulator.update(1);
+            eventIntakeMetrics.duplicateEvent();
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
 
             return null;

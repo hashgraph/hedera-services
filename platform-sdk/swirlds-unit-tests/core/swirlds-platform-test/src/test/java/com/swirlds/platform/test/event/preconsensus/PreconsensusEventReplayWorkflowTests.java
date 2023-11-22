@@ -170,7 +170,7 @@ class PreconsensusEventReplayWorkflowTests {
                 Time.getCurrent(),
                 preconsensusEventFileManager,
                 preconsensusEventWriter,
-                eventValidator,
+                eventValidator::validateEvent,
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,
