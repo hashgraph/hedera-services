@@ -64,6 +64,10 @@ tasks.register<Test>("hapiTest") {
 
     useJUnitPlatform()
 
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
 }
@@ -74,6 +78,10 @@ tasks.register<Test>("hapiTestMisc") {
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform { excludeTags("CRYPTO", "TOKEN", "SMART_CONTRACT", "TIME_CONSUMING") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
@@ -86,6 +94,10 @@ tasks.register<Test>("hapiTestCrypto") {
 
     useJUnitPlatform { includeTags("CRYPTO") }
 
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
 }
@@ -96,6 +108,10 @@ tasks.register<Test>("hapiTestToken") {
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform { includeTags("TOKEN") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
@@ -108,6 +124,10 @@ tasks.register<Test>("hapiTestSmartContract") {
 
     useJUnitPlatform { includeTags("SMART_CONTRACT") }
 
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
 }
@@ -118,6 +138,10 @@ tasks.register<Test>("hapiTestTimeConsuming") {
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform { includeTags("TIME_CONSUMING") }
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
