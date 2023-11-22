@@ -68,7 +68,9 @@ class CatastrophicFailureStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
         triggerActionAndAssertNoTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, false), logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0, true), logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processCatastrophicFailureAction, new CatastrophicFailureAction(), logic.getStatus());
         triggerActionAndAssertNoTransition(

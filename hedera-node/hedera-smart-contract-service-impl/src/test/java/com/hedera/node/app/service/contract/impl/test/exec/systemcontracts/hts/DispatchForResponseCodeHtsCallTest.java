@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.OutputFn.STANDARD_OUTPUT_FN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -29,6 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +50,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
     private DispatchGasCalculator dispatchGasCalculator;
 
     @Mock
-    private SingleTransactionRecordBuilder recordBuilder;
+    private ContractCallRecordBuilder recordBuilder;
 
     private DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder> subject;
 
@@ -62,7 +64,8 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
                 SingleTransactionRecordBuilder.class,
                 verificationStrategy,
                 dispatchGasCalculator,
-                failureCustomizer);
+                failureCustomizer,
+                STANDARD_OUTPUT_FN);
     }
 
     @Test
@@ -71,7 +74,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
                         TransactionBody.DEFAULT,
                         verificationStrategy,
                         AccountID.DEFAULT,
-                        SingleTransactionRecordBuilder.class))
+                        ContractCallRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
@@ -91,12 +94,12 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
                         TransactionBody.DEFAULT,
                         verificationStrategy,
                         AccountID.DEFAULT,
-                        SingleTransactionRecordBuilder.class))
+                        ContractCallRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
                 .willReturn(123L);
-        given(recordBuilder.status()).willReturn(INVALID_ACCOUNT_ID);
+        given(recordBuilder.status()).willReturn(INVALID_ACCOUNT_ID).willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         given(failureCustomizer.customize(TransactionBody.DEFAULT, INVALID_ACCOUNT_ID, mockEnhancement()))
                 .willReturn(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
