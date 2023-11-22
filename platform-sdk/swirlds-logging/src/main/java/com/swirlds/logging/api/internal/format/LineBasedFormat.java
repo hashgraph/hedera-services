@@ -42,8 +42,8 @@ public class LineBasedFormat {
     /**
      * The formatter for the timestamp.
      */
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(
-            ZoneId.systemDefault());
+    private static final DateTimeFormatter formatter =
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
 
     /**
      * Converts the given object to a string. If the object is {@code null}, the given default value is used.
@@ -173,5 +173,4 @@ public class LineBasedFormat {
             return String.join(", ", marker.getAllMarkerNames());
         }
     }
-
 }

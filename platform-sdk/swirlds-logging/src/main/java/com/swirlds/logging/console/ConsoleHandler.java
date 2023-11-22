@@ -22,7 +22,7 @@ import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
 
 public class ConsoleHandler extends AbstractSyncedHandler {
-    
+
     public ConsoleHandler(final Configuration configuration) {
         super("console", configuration);
     }
@@ -32,5 +32,4 @@ public class ConsoleHandler extends AbstractSyncedHandler {
         LineBasedFormat.print(System.out, event);
         System.out.flush();
     }
-
 }

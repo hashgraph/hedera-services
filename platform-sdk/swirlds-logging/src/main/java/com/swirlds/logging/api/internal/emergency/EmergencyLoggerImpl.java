@@ -257,7 +257,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
             LineBasedFormat.print(printStream, logEvent);
             printStream.flush();
         } else {
-            //LET'S HOPE THAT THIS NEVER HAPPENS...
+            // LET'S HOPE THAT THIS NEVER HAPPENS...
         }
 
         logEventsAddLock.lock();
