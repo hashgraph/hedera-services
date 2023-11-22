@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAli
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -132,7 +133,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                 KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
                 KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
 
-        return defaultHapiSpec("updateKeyOnAutoCreatedAccount")
+        return defaultHapiSpec("updateKeyOnAutoCreatedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ALIAS),
                         newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),

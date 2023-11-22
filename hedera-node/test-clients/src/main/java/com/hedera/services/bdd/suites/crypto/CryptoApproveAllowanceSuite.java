@@ -51,6 +51,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
@@ -163,7 +165,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
         final var cryptoAdminKey = "cryptoAdminKey";
         final var contractNum = new AtomicLong();
         final var contract = "PayableConstructor";
-        return defaultHapiSpec("cannotPayForAnyTransactionWithContractAccount")
+        return defaultHapiSpec("cannotPayForAnyTransactionWithContractAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(cryptoAdminKey),
                         uploadInitCode(contract),
@@ -221,7 +223,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec canDeleteAllowanceFromDeletedSpender() {
-        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
+        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -318,7 +320,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
-        return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
+        return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -406,7 +408,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
-        return defaultHapiSpec("approveForAllSpenderCanDelegateOnNFT")
+        return defaultHapiSpec("approveForAllSpenderCanDelegateOnNFT", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -468,7 +470,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
-        return defaultHapiSpec("canGrantFungibleAllowancesWithTreasuryOwner")
+        return defaultHapiSpec("canGrantFungibleAllowancesWithTreasuryOwner", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -503,7 +505,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec canGrantNftAllowancesWithTreasuryOwner() {
-        return defaultHapiSpec("canGrantNftAllowancesWithTreasuryOwner")
+        return defaultHapiSpec("canGrantNftAllowancesWithTreasuryOwner", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -547,7 +549,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec invalidOwnerFails() {
-        return defaultHapiSpec("invalidOwnerFails")
+        return defaultHapiSpec("invalidOwnerFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -669,7 +671,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec noOwnerDefaultsToPayer() {
-        return defaultHapiSpec("noOwnerDefaultsToPayer")
+        return defaultHapiSpec("noOwnerDefaultsToPayer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -728,7 +730,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec canHaveMultipleOwners() {
-        return defaultHapiSpec("canHaveMultipleOwners")
+        return defaultHapiSpec("canHaveMultipleOwners", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -823,7 +825,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec feesAsExpected() {
-        return defaultHapiSpec("feesAsExpected")
+        return defaultHapiSpec("feesAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -994,7 +996,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
-        return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked")
+        return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
@@ -1085,7 +1087,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec tokenExceedsMaxSupplyFails() {
-        return defaultHapiSpec("tokenExceedsMaxSupplyFails")
+        return defaultHapiSpec("tokenExceedsMaxSupplyFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1325,7 +1327,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec happyPathWorks() {
-        return defaultHapiSpec("happyPathWorks")
+        return defaultHapiSpec("happyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1391,7 +1393,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
-        return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn")
+        return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1483,7 +1485,8 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
-        return defaultHapiSpec("CannotHaveMultipleAllowedSpendersForTheSameNFTSerial")
+        return defaultHapiSpec(
+                        "CannotHaveMultipleAllowedSpendersForTheSameNFTSerial", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1562,7 +1565,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec approveForAllDoesNotSetExplicitNFTSpender() {
-        return defaultHapiSpec("approveForAllDoesNotSetExplicitNFTSpender")
+        return defaultHapiSpec("approveForAllDoesNotSetExplicitNFTSpender", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1602,7 +1605,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec scheduledCryptoApproveAllowanceWorks() {
-        return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks")
+        return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1651,7 +1654,8 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                                 .addNftAllowance(
                                                         OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L))
                                                 .fee(ONE_HUNDRED_HBARS))
-                                .via("successTx"))
+                                .via("successTx"),
+                        getTxnRecord("successTx").logged())
                 .then(
                         cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
                                         .between(OWNER, OTHER_RECEIVER))

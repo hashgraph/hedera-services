@@ -728,9 +728,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
-        //        System.out.println("Should skip? " + expectedName + " " + expectedType);
         if ("contractCallResult".equals(expectedName) && ByteString.class.isAssignableFrom(expectedType)) {
-            //        if ("contractCallResult".equals(expectedName) && ByteString.class.equals(expectedType)) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);

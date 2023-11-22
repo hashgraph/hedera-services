@@ -305,7 +305,9 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec hollowAccountFinalizationOccursOnlyOnceWhenMultipleFinalizationTensComeInAtTheSameTime() {
         final var ECDSA_2 = "ECDSA_2";
-        return defaultHapiSpec("hollowAccountFinalizationOccursOnlyOnceWhenMultipleFinalizationTensComeInAtTheSameTime")
+        return defaultHapiSpec(
+                        "hollowAccountFinalizationOccursOnlyOnceWhenMultipleFinalizationTensComeInAtTheSameTime",
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_2).shape(SECP_256K1_SHAPE),
