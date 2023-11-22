@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import java.util.function.BiPredicate;
@@ -42,16 +43,19 @@ public class HederaCallCodeOperationV038 extends CallCodeOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
+    private final GlobalDynamicProperties globalDynamicProperties;
 
     public HederaCallCodeOperationV038(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> systemAccountDetector) {
+            final Predicate<Address> systemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
         this.systemAccountDetector = systemAccountDetector;
+        this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
@@ -64,6 +68,7 @@ public class HederaCallCodeOperationV038 extends CallCodeOperation {
                 () -> super.execute(frame, evm),
                 addressValidator,
                 systemAccountDetector,
-                () -> isStatic(frame));
+                () -> isStatic(frame),
+                globalDynamicProperties);
     }
 }

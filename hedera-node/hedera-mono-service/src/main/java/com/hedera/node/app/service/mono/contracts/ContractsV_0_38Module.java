@@ -162,9 +162,10 @@ public interface ContractsV_0_38Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_38 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallCodeOperationV038(
-                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector);
+                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -199,8 +200,10 @@ public interface ContractsV_0_38Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_38 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaStaticCallOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaStaticCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
