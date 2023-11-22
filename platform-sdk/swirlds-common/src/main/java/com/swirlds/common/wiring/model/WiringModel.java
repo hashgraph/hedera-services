@@ -26,6 +26,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -120,7 +121,7 @@ public interface WiringModel extends Startable, Stoppable {
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
+    String generateWiringDiagram(@NonNull final List<ModelGroup> groups);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

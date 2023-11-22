@@ -30,6 +30,7 @@ import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
@@ -87,11 +88,11 @@ public final class DiagramCommand extends AbstractCommand {
     /**
      * Parse groups from the command line arguments.
      *
-     * @return a set of zero or more groups
+     * @return a list of zero or more groups
      */
     @NonNull
-    private Set<ModelGroup> parseGroups() {
-        final Set<ModelGroup> groups = new HashSet<>();
+    private List<ModelGroup> parseGroups() {
+        final List<ModelGroup> groups = new ArrayList<>();
 
         for (final String group : groupStrings) {
             final String[] parts = group.split(":");

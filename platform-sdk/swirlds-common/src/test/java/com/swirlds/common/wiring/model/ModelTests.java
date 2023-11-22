@@ -29,6 +29,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,7 +60,7 @@ class ModelTests {
         final boolean illegalDirectSchedulerUseDetected = model.checkForIllegalDirectSchedulerUsage();
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
-        final Set<ModelGroup> groups = new HashSet<>();
+        final List<ModelGroup> groups = new ArrayList<>();
 
         // Should not throw.
         final String diagram = model.generateWiringDiagram(groups);

@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -165,8 +166,15 @@ public class StandardWiringModel implements WiringModel {
      */
     @NonNull
     @Override
-    public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
-        return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
+    public String generateWiringDiagram(@NonNull final List<ModelGroup> groups) {
+
+        final List<ModelEdgeSubstitution> edgeSubstitutions = new ArrayList<>();
+        edgeSubstitutions.add(new ModelEdgeSubstitution(
+                "getMinimumGenerationNonAncient",
+                "minimum generation non ancient",
+                "*"));
+
+        return WiringFlowchart.generateWiringDiagram(vertices, edges, groups, edgeSubstitutions); // TODO
     }
 
     /**
