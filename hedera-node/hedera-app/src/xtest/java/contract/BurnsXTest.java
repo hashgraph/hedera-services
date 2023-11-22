@@ -18,6 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
@@ -44,7 +45,6 @@ import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.addErc721Relation;
-import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -58,7 +58,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
@@ -81,7 +80,12 @@ public class BurnsXTest extends AbstractContractXTest {
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 8L)
+                                .array()),
+                        output));
 
         // should successfully burn fungible token with V2
         runHtsCallAndExpectOnSuccess(
@@ -89,7 +93,12 @@ public class BurnsXTest extends AbstractContractXTest {
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, TOKENS_TO_BURN, new long[] {})
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 7L)
+                                .array()),
+                        output));
 
         // should fail when token has no supplyKey
         runHtsCallAndExpectOnSuccess(
@@ -98,8 +107,10 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(
-                                ReturnTypes.encodedRc(TOKEN_HAS_NO_SUPPLY_KEY).array()),
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_HAS_NO_SUPPLY_KEY.protoOrdinal(), 0L)
+                                .array()),
                         output));
 
         // should fail when token is not associated to account
@@ -109,7 +120,9 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.protoOrdinal(), 0L)
                                 .array()),
                         output));
 
@@ -120,8 +133,10 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(
-                                ReturnTypes.encodedRc(INVALID_TOKEN_BURN_AMOUNT).array()),
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) INVALID_TOKEN_BURN_AMOUNT.protoOrdinal(), 0L)
+                                .array()),
                         output));
 
         // should fail on invalid token id
@@ -131,7 +146,11 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) INVALID_TOKEN_ID.protoOrdinal(), 0L)
+                                .array()),
+                        output));
 
         // should successfully burn NFT with V1
         runHtsCallAndExpectOnSuccess(
@@ -140,7 +159,12 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS, BigInteger.valueOf(0L), new long[] {SN_1234.serialNumber()})
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 8L)
+                                .array()),
+                        output));
 
         // should successfully burn NFT with V2
         runHtsCallAndExpectOnSuccess(
@@ -148,7 +172,12 @@ public class BurnsXTest extends AbstractContractXTest {
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, 0L, new long[] {SN_2345.serialNumber()})
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 7L)
+                                .array()),
+                        output));
     }
 
     @Override

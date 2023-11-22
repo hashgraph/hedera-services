@@ -18,7 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
@@ -196,8 +196,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .array()),
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()),
                         output,
                         "Should not be able to grant KYC with invalid signature"));
         // REVOKE_KYC with invalid key
@@ -207,8 +206,7 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .array()),
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()),
                         output,
                         "Should not be able to revoke KYC with invalid signature"));
         // GRANT_KYC with no kyc key
