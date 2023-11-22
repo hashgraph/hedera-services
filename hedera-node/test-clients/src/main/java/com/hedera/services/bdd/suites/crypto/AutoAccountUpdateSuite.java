@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Tag;
  * to decrease the expiration time of any entity, so we cannot test the behavior of the network when
  * the auto-created account is about to expire.
  */
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite
 @Tag(CRYPTO)
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);

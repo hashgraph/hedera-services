@@ -88,7 +88,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite
 @Tag(CRYPTO)
 public class CryptoApproveAllowanceSuite extends HapiSuite {
 
