@@ -277,10 +277,10 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                 addressIdConverter);
 
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(A_NEW_ACCOUNT_ID),
-                eq(CryptoCreateRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(A_NEW_ACCOUNT_ID),
+                        eq(CryptoCreateRecordBuilder.class)))
                 .willReturn(recordBuilder);
     }
 }
