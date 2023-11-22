@@ -19,7 +19,7 @@ package com.hedera.services.bdd.junit;
 public class TestTags {
 
     private TestTags() {
-        throw new IllegalStateException("Utility class");
+        throw new UnsupportedOperationException("Utility class");
     }
 
     public static final String CRYPTO = "CRYPTO";
