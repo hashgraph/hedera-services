@@ -70,11 +70,12 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
                         default -> null;
                     };
             requireNonNull(result);
-            return new FullResult(PrecompileContractResult.success(result), gasRequirement);
+            return new FullResult(PrecompileContractResult.success(result), gasRequirement, null);
         } catch (Exception ignore) {
             return new FullResult(
                     PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
-                    gasRequirement);
+                    gasRequirement,
+                    null);
         }
     }
 

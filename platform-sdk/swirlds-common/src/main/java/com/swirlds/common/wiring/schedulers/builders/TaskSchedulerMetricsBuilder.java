@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.builders;
+package com.swirlds.common.wiring.schedulers.builders;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -22,8 +22,8 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
-import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
