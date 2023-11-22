@@ -62,6 +62,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -172,6 +173,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                 internalCallWithValueToExistingNonMirrorAddressResultsInSuccess()
 
                 // todo
+                // call to accounts with receiverSigRequired
                 // deleted: call - noop; transfer - whatever HAPI is doing
                 // expired: make check but treat as a normal account for now
                 // system accounts
@@ -324,13 +326,17 @@ public class Evm45ValidationSuite extends HapiSuite {
                                             asContract("0.0."
                                                     + mirrorAccountID.get().getAccountNum()));
                             updateSpecFor(spec, ECDSA_KEY);
+                            final var ecdsaKey = spec.registry()
+                                    .getKey(ECDSA_KEY)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var senderAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                             spec.registry()
                                     .saveContractId(
                                             "nonMirrorAddress",
-                                            asContract("0.0."
-                                                    + spec.registry()
-                                                            .getAccountID(ECDSA_KEY)
-                                                            .getAccountNum()));
+                                            ContractID.newBuilder()
+                                                    .setEvmAddress(senderAddress)
+                                                    .build());
                             spec.registry()
                                     .saveAccountId(
                                             "NonMirrorAccount",
