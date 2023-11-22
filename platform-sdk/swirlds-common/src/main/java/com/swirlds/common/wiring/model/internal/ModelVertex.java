@@ -17,8 +17,10 @@
 package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.DIRECT_SCHEDULER_COLOR;
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.GROUP_COLOR;
 import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.INDENTATION;
 import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.SCHEDULER_COLOR;
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.SUBSTITUTION_COLOR;
 import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.TEXT_COLOR;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -50,6 +52,11 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     private final TaskSchedulerType type;
 
     /**
+     * The meta-type of this vertex. Used by the wiring diagram, ignored by other use cases.
+     */
+    private final ModelVertexMetaType metaType;
+
+    /**
      * The outgoing edges of this vertex.
      */
     private final List<ModelEdge> outgoingEdges = new ArrayList<>();
@@ -59,12 +66,17 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      *
      * @param name                the name of the vertex
      * @param type                the type of task scheduler that corresponds to this vertex
+     * @param metaType            the meta-type of this vertex, used to generate a wiring diagram
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
      */
     public ModelVertex(
-            @NonNull final String name, @NonNull final TaskSchedulerType type, final boolean insertionIsBlocking) {
+            @NonNull final String name,
+            @NonNull final TaskSchedulerType type,
+            @NonNull final ModelVertexMetaType metaType,
+            final boolean insertionIsBlocking) {
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
+        this.metaType = Objects.requireNonNull(metaType);
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -88,6 +100,16 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     @NonNull
     public TaskSchedulerType getType() {
         return type;
+    }
+
+    /**
+     * Get the meta-type of this vertex. Used to generate the wiring diagram, ignored by other use cases.
+     *
+     * @return the meta-type of this vertex
+     */
+    @NonNull
+    public ModelVertexMetaType getMetaType() {
+        return metaType;
     }
 
     /**
@@ -117,6 +139,16 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     @NonNull
     public Iterator<ModelEdge> iterator() {
         return outgoingEdges.iterator();
+    }
+
+    /**
+     * Get the outgoing edges of this vertex.
+     *
+     * @return the outgoing edges of this vertex
+     */
+    @NonNull
+    public List<ModelEdge> getOutgoingEdges() {
+        return outgoingEdges;
     }
 
     /**
@@ -161,18 +193,23 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     /**
      * Render this vertex in mermaid format. Used when generating a wiring diagram.
      *
-     * @param sb          the string builder to render to
-     * @param indentation the indentation level
+     * @param sb the string builder to render to
      */
-    public void render(@NonNull final StringBuilder sb, final int indentation) {
+    public void render(@NonNull final StringBuilder sb) {
 
-        sb.append(INDENTATION.repeat(indentation)).append(name);
+        sb.append(INDENTATION).append(name);
 
-        switch (type) {
-            case CONCURRENT -> sb.append("[[");
-            case DIRECT -> sb.append("[/");
-            case DIRECT_STATELESS -> sb.append("{{");
-            default -> sb.append("[");
+        switch (metaType) {
+            case SUBSTITUTION -> sb.append("((");
+            case GROUP -> sb.append("[");
+            case SCHEDULER -> {
+                switch (type) {
+                    case CONCURRENT -> sb.append("[[");
+                    case DIRECT -> sb.append("[/");
+                    case DIRECT_STATELESS -> sb.append("{{");
+                    default -> sb.append("[");
+                }
+            }
         }
 
         sb.append("\"").append(name);
@@ -184,26 +221,38 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
 
         sb.append("\"");
 
-        switch (type) {
-            case CONCURRENT -> sb.append("]]");
-            case DIRECT -> sb.append("/]");
-            case DIRECT_STATELESS -> sb.append("}}");
-            default -> sb.append("]");
+        switch (metaType) {
+            case SUBSTITUTION -> sb.append("((");
+            case GROUP -> sb.append("[");
+            case SCHEDULER -> {
+                switch (type) {
+                    case CONCURRENT -> sb.append("]]");
+                    case DIRECT -> sb.append("/]");
+                    case DIRECT_STATELESS -> sb.append("}}");
+                    default -> sb.append("]");
+                }
+            }
         }
 
         sb.append("\n");
 
-        final String color = switch (type) {
-            case SEQUENTIAL:
-            case SEQUENTIAL_THREAD:
-            case CONCURRENT:
-                yield SCHEDULER_COLOR;
-            case DIRECT:
-            case DIRECT_STATELESS:
-                yield DIRECT_SCHEDULER_COLOR;
+        // TODO future cody:
+        //  - figure out why this doesn't compile
+        //  - generate the graph
+        //  - figure out why things aren't connected the expected way
+        final String color = switch (metaType) {
+            case SUBSTITUTION -> SUBSTITUTION_COLOR;
+            case GROUP -> GROUP_COLOR;
+            case SCHEDULER -> {
+                switch (type) {
+                    case DIRECT -> DIRECT_SCHEDULER_COLOR;
+                    case DIRECT_STATELESS -> DIRECT_SCHEDULER_COLOR;
+                    default -> SCHEDULER_COLOR;
+                }
+            }
         };
 
-        sb.append(INDENTATION.repeat(indentation))
+        sb.append(INDENTATION)
                 .append("style ")
                 .append(name)
                 .append(" fill:#")

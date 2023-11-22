@@ -7,8 +7,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Useful for situations where a component is connected with a large number of other components (thus making the diagram
  * hard to read).
  *
- * @param source       the scheduler that produces the output wire corresponding to the edge (NOT the group name, if
- *                     grouped)
+ * @param source       the name of the scheduler that produces the output wire corresponding to the edge we are
+ *                     attempting to substitute (NOT the group name, if grouped)
  * @param edge         the label on the edge(s) to be substituted
  * @param substitution the substitute label
  */

@@ -16,6 +16,10 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
@@ -187,7 +191,7 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
-        if (scheduler.getType() == TaskSchedulerType.SEQUENTIAL_THREAD) {
+        if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
         }
     }
@@ -205,7 +209,8 @@ public class StandardWiringModel implements WiringModel {
             final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
-        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
+        final boolean unique =
+                vertices.put(vertexName, new ModelVertex(vertexName, type, SCHEDULER, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -343,7 +348,7 @@ public class StandardWiringModel implements WiringModel {
         }
 
         // Create an ad hoc vertex.
-        final ModelVertex adHocVertex = new ModelVertex(vertexName, TaskSchedulerType.DIRECT, true);
+        final ModelVertex adHocVertex = new ModelVertex(vertexName, DIRECT, SCHEDULER, true);
 
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;

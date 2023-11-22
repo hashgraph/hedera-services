@@ -58,7 +58,7 @@ public final class LegacyWiringFlowchart {
         // FUTURE WORK: this while loop is inefficient, but until it becomes a problem this brute force
         // approach is good enough.
         for (final ModelEdgeSubstitution substitution : substitutions) {
-            if (substitution.source().equals(edge.source().getName()) && substitution.edge().equals(edge.label())) {
+            if (substitution.source().equals(edge.getSource().getName()) && substitution.edge().equals(edge.getLabel())) {
                 return substitution.substitution();
             }
         }
@@ -86,12 +86,12 @@ public final class LegacyWiringFlowchart {
 
         // First, figure out where this arrow should start.
         final String source;
-        if (collapsedVertexMap.containsKey(edge.source())) {
+        if (collapsedVertexMap.containsKey(edge.getSource())) {
             // The edge starts at a vertex inside a collapsed group, and so the vertex will not be drawn.
             // Instead, we draw this edge starting at the collapsed group.
-            source = collapsedVertexMap.get(edge.source());
+            source = collapsedVertexMap.get(edge.getSource());
         } else {
-            source = edge.source().getName();
+            source = edge.getSource().getName();
         }
 
         // Next, figure out where this arrow should point.
@@ -100,10 +100,10 @@ public final class LegacyWiringFlowchart {
         final String substitutionDestination = findEdgeDestinationSubstitution(edge, substitutions);
         if (substitutionDestination != null) {
             destination = substitutionDestination;
-        } else if (collapsedVertexMap.containsKey(edge.destination())) {
-            destination = collapsedVertexMap.get(edge.destination());
+        } else if (collapsedVertexMap.containsKey(edge.getDestination())) {
+            destination = collapsedVertexMap.get(edge.getDestination());
         } else {
-            destination = edge.destination().getName();
+            destination = edge.getDestination().getName();
         }
 
         // Finally, check if there is a reason to skip drawing this edge.
@@ -113,8 +113,8 @@ public final class LegacyWiringFlowchart {
             return;
         }
 
-        final WiringFlowchartArrow arrow = new WiringFlowchartArrow(source, destination, edge.label(),
-                edge.insertionIsBlocking());
+        final WiringFlowchartArrow arrow = new WiringFlowchartArrow(source, destination, edge.getLabel(),
+                edge.isInsertionIsBlocking());
         if (!arrowsDrawn.add(arrow)) {
             // Don't draw duplicate arrows.
             return;
@@ -122,17 +122,17 @@ public final class LegacyWiringFlowchart {
 
         sb.append(INDENTATION).append(source);
 
-        if (edge.insertionIsBlocking()) {
-            if (edge.label().isEmpty()) {
+        if (edge.isInsertionIsBlocking()) {
+            if (edge.getLabel().isEmpty()) {
                 sb.append(" --> ");
             } else {
-                sb.append(" -- \"").append(edge.label()).append("\" --> ");
+                sb.append(" -- \"").append(edge.getLabel()).append("\" --> ");
             }
         } else {
-            if (edge.label().isEmpty()) {
+            if (edge.getLabel().isEmpty()) {
                 sb.append(" -.-> ");
             } else {
-                sb.append(" -. \"").append(edge.label()).append("\" .-> ");
+                sb.append(" -. \"").append(edge.getLabel()).append("\" .-> ");
             }
         }
         sb.append(destination).append("\n");
@@ -177,12 +177,12 @@ public final class LegacyWiringFlowchart {
         // approach is good enough.
 
         for (final ModelEdge edge : edges) {
-            if (!edge.destination().equals(vertex)) {
+            if (!edge.getDestination().equals(vertex)) {
                 continue;
             }
 
             for (final ModelEdgeSubstitution substitution : substitutions) {
-                if (substitution.source().equals(edge.source().getName()) && substitution.edge().equals(edge.label())) {
+                if (substitution.source().equals(edge.getSource().getName()) && substitution.edge().equals(edge.getLabel())) {
                     substitutedInputs.add(substitution.substitution());
                 }
             }

@@ -1,8 +1,14 @@
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SUBSTITUTION;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +33,7 @@ public class WiringFlowchart {
         // TODO
 
         vertexMap = copyVertexMap(modelVertexMap);
-        substituteEdges();
+        substituteEdges(substitutions);
         collapseGroups();
 
     }
@@ -46,6 +52,7 @@ public class WiringFlowchart {
             final ModelVertex vertexCopy = new ModelVertex(
                     vertex.getName(),
                     vertex.getType(),
+                    SCHEDULER,
                     vertex.isInsertionIsBlocking());
 
             copy.put(vertex.getName(), vertexCopy);
@@ -55,14 +62,14 @@ public class WiringFlowchart {
         for (final ModelVertex vertex : modelVertexMap.values()) {
             for (final ModelEdge edge : vertex) {
 
-                final ModelVertex source = copy.get(edge.source().getName());
-                final ModelVertex destination = copy.get(edge.destination().getName());
+                final ModelVertex source = copy.get(edge.getSource().getName());
+                final ModelVertex destination = copy.get(edge.getDestination().getName());
 
                 final ModelEdge edgeCopy = new ModelEdge(
                         source,
                         destination,
-                        edge.label(),
-                        edge.insertionIsBlocking());
+                        edge.getLabel(),
+                        edge.isInsertionIsBlocking());
 
                 source.connectToEdge(edgeCopy);
             }
@@ -74,8 +81,49 @@ public class WiringFlowchart {
     /**
      * Find all edges that need to be substituted and perform the substitution.
      */
-    private void substituteEdges() {
-        // TODO
+    private void substituteEdges(@NonNull final List<ModelEdgeSubstitution> substitutions) {
+        for (final ModelEdgeSubstitution substitution : substitutions) {
+            substituteEdge(substitution);
+        }
+    }
+
+    /**
+     * Perform a single edge substitution.
+     */
+    private void substituteEdge(@NonNull final ModelEdgeSubstitution substitution) {
+        // First, create a new vertex that will represent the destination of the substitution.
+        final ModelVertex substitutedVertex = new ModelVertex(
+                substitution.substitution(),
+                DIRECT,
+                SUBSTITUTION,
+                true);
+        vertexMap.put(substitution.substitution(), substitutedVertex);
+
+        // Next, cause all substituted edges to point to this new vertex.
+        for (final ModelVertex vertex : vertexMap.values()) {
+            if (substitution.source().equals(vertex.getName())) {
+                // Only replace edges with the given source.
+                continue;
+            }
+
+            final List<ModelEdge> edges = new ArrayList<>(vertex.getOutgoingEdges());
+
+            // Clear out the edge set, it's not legal to modify data that effects equals and hash code for
+            // data in a set. We will re-populate the set with the modified edges as we go. Some edges may be
+            // duplicates of each other after modification, but that's okay, the set will de-duplicate them.
+            vertex.getOutgoingEdges().clear();
+
+            for (final ModelEdge edge : edges) {
+                if (!substitution.edge().equals(edge.getLabel())) {
+                    // Only replace destinations for edges with the given label.
+                    vertex.getOutgoingEdges().add(edge);
+                    continue;
+                }
+
+                edge.setDestination(substitutedVertex);
+                vertex.getOutgoingEdges().add(edge);
+            }
+        }
     }
 
     /**
@@ -85,7 +133,6 @@ public class WiringFlowchart {
         // TODO
     }
 
-
     /**
      * Render the flowchart to a string.
      *
@@ -93,22 +140,26 @@ public class WiringFlowchart {
      */
     @NonNull
     public String render() {
-
         final StringBuilder sb = new StringBuilder();
         sb.append("flowchart LR\n");
 
-        // Render vertices
-        vertexMap.values().stream().sorted().forEach(vertex -> {
-            vertex.render(sb, 1);
-        });
+        final List<ModelVertex> sortedVertices = vertexMap.values().stream().sorted().toList();
 
-        // Render edges
-        vertexMap.values().stream().sorted().forEach(vertex -> {
-            // TODO force this to be in sorted order
+        final List<ModelEdge> sortedEdges = new ArrayList<>();
+        for (final ModelVertex vertex : sortedVertices) {
             for (final ModelEdge edge : vertex) {
-                edge.render(sb);
+                sortedEdges.add(edge);
             }
-        });
+        }
+        Collections.sort(sortedEdges);
+
+        for (final ModelVertex vertex : sortedVertices) {
+            vertex.render(sb);
+        }
+
+        for (final ModelEdge edge : sortedEdges) {
+            edge.render(sb);
+        }
 
         return sb.toString();
     }
