@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.*;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -74,6 +75,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Validates the {@code TokenCreate} transaction, including its:
@@ -83,6 +85,7 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";

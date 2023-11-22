@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -41,6 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -61,8 +63,14 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(OrderAnnotation.class)
+@Tag(TIME_CONSUMING)
 public class SteadyStateThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
@@ -120,6 +128,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 restoreDevLimits());
     }
 
+    @HapiTest
+    @Order(1)
     private HapiSpec setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 
@@ -131,6 +141,38 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
+    @HapiTest
+    @Order(2)
+    private HapiSpec checkXfersTps() {
+        return checkTps("Xfers", EXPECTED_XFER_TPS, xferOps());
+    }
+
+    @HapiTest
+    @Order(3)
+    private HapiSpec checkFungibleMintsTps() {
+        return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
+    }
+
+    //    @HapiTest - This test fails
+    @Order(4)
+    private HapiSpec checkContractCallsTps() {
+        return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
+    }
+
+    //    @HapiTest - This test fails
+    @Order(5)
+    private HapiSpec checkCryptoCreatesTps() {
+        return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
+    }
+
+    //    @HapiTest - This test hangs
+    @Order(6)
+    private HapiSpec checkBalanceQps() {
+        return checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS);
+    }
+
+    @HapiTest
+    @Order(7)
     private HapiSpec restoreDevLimits() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
