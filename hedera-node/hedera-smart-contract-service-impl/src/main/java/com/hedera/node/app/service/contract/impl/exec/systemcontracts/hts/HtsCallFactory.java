@@ -75,8 +75,6 @@ public class HtsCallFactory {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
-                frame.isStatic(),
-                frame.getBlockValues(),
-                frame.getValue());
+                frame.isStatic());
     }
 }

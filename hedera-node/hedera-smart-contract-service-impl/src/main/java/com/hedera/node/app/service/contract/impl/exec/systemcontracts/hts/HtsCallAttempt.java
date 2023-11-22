@@ -41,8 +41,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.BlockValues;
 
 /**
  * Manages the call attempted by a {@link Bytes} payload received by the {@link HtsSystemContract}.
@@ -70,8 +68,6 @@ public class HtsCallAttempt {
     private final SystemContractGasCalculator gasCalculator;
     private final List<HtsCallTranslator> callTranslators;
     private final boolean isStaticCall;
-    private final BlockValues blockValues;
-    private final Wei value;
     // too many parameters
     @SuppressWarnings("java:S107")
     public HtsCallAttempt(
@@ -84,9 +80,7 @@ public class HtsCallAttempt {
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<HtsCallTranslator> callTranslators,
-            final boolean isStaticCall,
-            @NonNull final BlockValues blockValues,
-            @NonNull final Wei value) {
+            final boolean isStaticCall) {
         requireNonNull(input);
         this.callTranslators = requireNonNull(callTranslators);
         this.gasCalculator = requireNonNull(gasCalculator);
@@ -96,8 +90,6 @@ public class HtsCallAttempt {
         this.enhancement = requireNonNull(enhancement);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
-        this.blockValues = blockValues;
-        this.value = value;
 
         this.isRedirect = isRedirect(input.toArrayUnsafe());
         if (this.isRedirect) {
@@ -197,13 +189,6 @@ public class HtsCallAttempt {
         return senderAddress;
     }
 
-    public @NonNull BlockValues blockValues() {
-        return blockValues;
-    }
-
-    public @NonNull Wei getValue() {
-        return value;
-    }
     /**
      * Returns whether only delegatable contract keys are active for this call.
      *
