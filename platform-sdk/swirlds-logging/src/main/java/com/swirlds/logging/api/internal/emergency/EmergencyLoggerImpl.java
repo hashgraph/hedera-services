@@ -25,7 +25,6 @@ import com.swirlds.logging.api.internal.format.LineBasedFormat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -97,8 +96,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      */
     private final LogEventFactory logEventFactory;
 
-    private final LineBasedFormat lineBasedFormat;
-
     /**
      * Creates the singleton instance of the logger.
      */
@@ -108,13 +105,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         supportedLevel = new AtomicReference<>();
         logEventsAddLock = new ReentrantLock();
         logEventFactory = new SimpleLogEventFactory();
-
-        final PrintStream printStream = Optional.ofNullable(System.err).orElse(System.out);
-        if (printStream != null) {
-            lineBasedFormat = new LineBasedFormat(new PrintWriter(printStream));
-        } else {
-            throw new IllegalStateException("System.err & System.out are null");
-        }
     }
 
     /**
@@ -262,7 +252,14 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
             logNPE("logEvent");
             return;
         }
-        lineBasedFormat.printAndFlush(logEvent);
+        final PrintStream printStream = Optional.ofNullable(System.err).orElse(System.out);
+        if (printStream != null) {
+            LineBasedFormat.print(printStream, logEvent);
+            printStream.flush();
+        } else {
+            //LET'S HOPE THAT THIS NEVER HAPPENS...
+        }
+
         logEventsAddLock.lock();
         try {
             while (logEvents.remainingCapacity() <= 0) {

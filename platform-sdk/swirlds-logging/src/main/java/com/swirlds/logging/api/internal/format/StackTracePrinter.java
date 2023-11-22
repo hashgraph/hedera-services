@@ -19,14 +19,15 @@ package com.swirlds.logging.api.internal.format;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.PrintWriter;
+import java.io.IOException;
 
 public class StackTracePrinter {
 
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
-    private static void print(@NonNull final PrintWriter printWriter, @NonNull Throwable throwable, boolean rootCause) {
-        if (printWriter == null) {
+    private static void print(@NonNull final Appendable writer, @NonNull Throwable throwable, boolean rootCause)
+            throws IOException {
+        if (writer == null) {
             EMERGENCY_LOGGER.logNPE("printWriter");
             return;
         }
@@ -36,36 +37,36 @@ public class StackTracePrinter {
         }
 
         if (!rootCause) {
-            printWriter.print("Caused by: ");
-            printWriter.print(System.lineSeparator());
+            writer.append("Caused by: ");
+            writer.append(System.lineSeparator());
         }
 
-        printWriter.print(throwable.getClass().getName());
-        printWriter.print(": ");
-        printWriter.print(throwable.getMessage());
-        printWriter.print(System.lineSeparator());
+        writer.append(throwable.getClass().getName());
+        writer.append(": ");
+        writer.append(throwable.getMessage());
+        writer.append(System.lineSeparator());
         for (StackTraceElement stackTraceElement : throwable.getStackTrace()) {
             final String className = stackTraceElement.getClassName();
             final String methodName = stackTraceElement.getMethodName();
             final int line = stackTraceElement.getLineNumber();
-            printWriter.print("\tat ");
-            printWriter.print(className);
-            printWriter.print(".");
-            printWriter.print(methodName);
-            printWriter.print("(");
-            printWriter.print(className);
-            printWriter.print(".java:");
-            printWriter.print(line);
-            printWriter.print(")");
-            printWriter.print(System.lineSeparator());
+            writer.append("\tat ");
+            writer.append(className);
+            writer.append(".");
+            writer.append(methodName);
+            writer.append("(");
+            writer.append(className);
+            writer.append(".java:");
+            writer.append(Integer.toString(line));
+            writer.append(")");
+            writer.append(System.lineSeparator());
         }
         final Throwable cause = throwable.getCause();
         if (cause != null) {
-            print(printWriter, cause, false);
+            print(writer, cause, false);
         }
     }
 
-    public static void print(@NonNull final PrintWriter printWriter, @NonNull Throwable throwable) {
-        print(printWriter, throwable, true);
+    public static void print(@NonNull final Appendable writer, @NonNull Throwable throwable) throws IOException {
+        print(writer, throwable, true);
     }
 }

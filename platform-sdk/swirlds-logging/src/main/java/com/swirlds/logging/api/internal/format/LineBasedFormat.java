@@ -24,12 +24,10 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A utility class that formats a {@link LogEvent} as a line based format.
@@ -44,61 +42,54 @@ public class LineBasedFormat {
     /**
      * The formatter for the timestamp.
      */
-    private final DateTimeFormatter formatter;
-
-    /**
-     * The print writer that is used to print the log event.
-     */
-    private final PrintWriter printWriter;
-
-    /**
-     * Creates a new line based format.
-     *
-     * @param printWriter The print writer that is used to print the log event.
-     */
-    public LineBasedFormat(@NonNull final PrintWriter printWriter) {
-        this.formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
-        this.printWriter = Objects.requireNonNull(printWriter, "printWriter must not be null");
-    }
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(
+            ZoneId.systemDefault());
 
     /**
      * Converts the given object to a string. If the object is {@code null}, the given default value is used.
      *
      * @param event
      */
-    public void print(@NonNull final LogEvent event) {
+    public static void print(@NonNull final Appendable writer, @NonNull final LogEvent event) {
         if (event == null) {
             EMERGENCY_LOGGER.logNPE("event");
         }
-        printWriter.print(asString(event.timestamp()));
-        printWriter.print(' ');
-        printWriter.print(asString(event.level()));
-        printWriter.print(' ');
-        printWriter.print('[');
-        printWriter.print(asString(event.threadName(), "THREAD"));
-        printWriter.print(']');
-        printWriter.print(' ');
-        printWriter.print(asString(event.loggerName(), "LOGGER"));
-        printWriter.print(" - ");
-        printWriter.print(asString(event.message()));
-
-        Marker marker = event.marker();
-        if (marker != null) {
-            printWriter.print(" - [M:");
-            printWriter.print(asString(marker));
-            printWriter.print("]");
+        if (writer == null) {
+            EMERGENCY_LOGGER.logNPE("printer");
         }
+        try {
+            writer.append(asString(event.timestamp()));
+            writer.append(' ');
+            writer.append(asString(event.level()));
+            writer.append(' ');
+            writer.append('[');
+            writer.append(asString(event.threadName(), "THREAD"));
+            writer.append(']');
+            writer.append(' ');
+            writer.append(asString(event.loggerName(), "LOGGER"));
+            writer.append(" - ");
+            writer.append(asString(event.message()));
 
-        final Map<String, String> context = event.context();
-        if (context != null && !context.isEmpty()) {
-            printWriter.print(" - C:");
-            printWriter.print(context);
-        }
-        printWriter.print(System.lineSeparator());
+            Marker marker = event.marker();
+            if (marker != null) {
+                writer.append(" - [M:");
+                writer.append(asString(marker));
+                writer.append("]");
+            }
 
-        Throwable throwable = event.throwable();
-        if (throwable != null) {
-            StackTracePrinter.print(printWriter, throwable);
+            final Map<String, String> context = event.context();
+            if (context != null && !context.isEmpty()) {
+                writer.append(" - C:");
+                writer.append(context.toString());
+            }
+            writer.append(System.lineSeparator());
+
+            Throwable throwable = event.throwable();
+            if (throwable != null) {
+                StackTracePrinter.print(writer, throwable);
+            }
+        } catch (final Throwable e) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format and print event", e);
         }
     }
 
@@ -109,7 +100,7 @@ public class LineBasedFormat {
      * @param suffix The suffix that is used if the string is {@code null}
      * @return The string
      */
-    private String asString(String str, String suffix) {
+    private static String asString(String str, String suffix) {
         if (str == null) {
             return "UNDEFINED-" + suffix;
         } else {
@@ -123,7 +114,7 @@ public class LineBasedFormat {
      * @param level The level
      * @return The string
      */
-    private String asString(Level level) {
+    private static String asString(Level level) {
         if (level == null) {
             return "UNDEFINED";
         } else {
@@ -137,7 +128,7 @@ public class LineBasedFormat {
      * @param message The message
      * @return The string
      */
-    private String asString(LogMessage message) {
+    private static String asString(LogMessage message) {
         if (message == null) {
             return "UNDEFINED-MESSAGE";
         } else {
@@ -156,7 +147,7 @@ public class LineBasedFormat {
      * @param instant The instant
      * @return The string
      */
-    private String asString(Instant instant) {
+    private static String asString(Instant instant) {
         if (instant == null) {
             return "UNDEFINED-TIMESTAMP       ";
         } else {
@@ -175,7 +166,7 @@ public class LineBasedFormat {
      * @param marker The marker
      * @return The string
      */
-    private String asString(@Nullable final Marker marker) {
+    private static String asString(@Nullable final Marker marker) {
         if (marker == null) {
             return "null";
         } else {
@@ -183,15 +174,4 @@ public class LineBasedFormat {
         }
     }
 
-    /**
-     * Calls flush on the underlying print writer.
-     */
-    public void flush() {
-        printWriter.flush();
-    }
-
-    public void printAndFlush(@NonNull final LogEvent event) {
-        print(event);
-        flush();
-    }
 }
