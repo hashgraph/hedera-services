@@ -72,7 +72,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junitpioneer.jupiter.cartesian.CartesianTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -128,12 +128,22 @@ class ThrottleAccumulatorTest {
     @Mock
     private ReadableKVState schedules;
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true,true",
+        "FRONTEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "FRONTEND_THROTTLE,false,false",
+        "BACKEND_THROTTLE,true,true",
+        "BACKEND_THROTTLE,true,false",
+        "BACKEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void usesScheduleCreateThrottleForSubmitMessage(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
-            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
+            final ThrottleAccumulator.ThrottleType throttleType,
+            final boolean longTermEnabled,
+            final boolean waitForExpiry)
             throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
@@ -176,12 +186,22 @@ class ThrottleAccumulatorTest {
                 subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true,true",
+        "FRONTEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "FRONTEND_THROTTLE,false,false",
+        "BACKEND_THROTTLE,true,true",
+        "BACKEND_THROTTLE,true,false",
+        "BACKEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void usesScheduleCreateThrottleWithNestedThrottleExempt(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
-            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
+            final ThrottleAccumulator.ThrottleType throttleType,
+            final boolean longTermEnabled,
+            final boolean waitForExpiry)
             throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
@@ -226,9 +246,10 @@ class ThrottleAccumulatorTest {
                 0, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
 
-    @CartesianTest
-    void scheduleCreateAlwaysThrottledWhenNoBody(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType) throws IOException {
+    @ParameterizedTest
+    @EnumSource
+    void scheduleCreateAlwaysThrottledWhenNoBody(final ThrottleAccumulator.ThrottleType throttleType)
+            throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
 
@@ -258,12 +279,16 @@ class ThrottleAccumulatorTest {
                 0, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true",
+        "FRONTEND_THROTTLE,false",
+        "BACKEND_THROTTLE,true",
+        "BACKEND_THROTTLE,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void usesScheduleCreateThrottleForCryptoTransferNoAutoCreations(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
-            throws IOException {
+            final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled) throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
 
@@ -301,12 +326,16 @@ class ThrottleAccumulatorTest {
                 subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true",
+        "FRONTEND_THROTTLE,false",
+        "BACKEND_THROTTLE,true",
+        "BACKEND_THROTTLE,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoAndLazyCreationDisabled(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
-            throws IOException {
+            final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled) throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
 
@@ -360,12 +389,22 @@ class ThrottleAccumulatorTest {
                 subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true,true",
+        "FRONTEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "FRONTEND_THROTTLE,false,false",
+        "BACKEND_THROTTLE,true,true",
+        "BACKEND_THROTTLE,true,false",
+        "BACKEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
-            @CartesianTest.Values(booleans = {false, true}) final boolean autoOrLazyCreationEnabled)
+            final ThrottleAccumulator.ThrottleType throttleType,
+            final boolean longTermEnabled,
+            final boolean autoOrLazyCreationEnabled)
             throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
@@ -421,10 +460,12 @@ class ThrottleAccumulatorTest {
     @CsvSource({
         "FRONTEND_THROTTLE,true,true",
         "FRONTEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "FRONTEND_THROTTLE,false,false",
         "BACKEND_THROTTLE,true,true",
         "BACKEND_THROTTLE,true,false",
-        "FRONTEND_THROTTLE,false,true",
         "BACKEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,false",
     })
     void doesntUseCryptoCreateThrottleForNonCryptoTransfer(
             final ThrottleAccumulator.ThrottleType throttleType,
@@ -464,12 +505,16 @@ class ThrottleAccumulatorTest {
         assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true",
+        "FRONTEND_THROTTLE,false",
+        "BACKEND_THROTTLE,true",
+        "BACKEND_THROTTLE,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleCreate(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
-            throws IOException {
+            final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled) throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
 
@@ -535,12 +580,16 @@ class ThrottleAccumulatorTest {
         assertEquals(0, subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true",
+        "FRONTEND_THROTTLE,false",
+        "BACKEND_THROTTLE,true",
+        "BACKEND_THROTTLE,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void usesScheduleCreateThrottleForAliasedCryptoTransferWithNoAutoCreation(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
-            throws IOException {
+            final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled) throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
 
@@ -644,11 +693,21 @@ class ThrottleAccumulatorTest {
                 0L, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true,true",
+        "FRONTEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "FRONTEND_THROTTLE,false,false",
+        "BACKEND_THROTTLE,true,true",
+        "BACKEND_THROTTLE,true,false",
+        "BACKEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,false",
+    })
     void usesScheduleSignThrottle(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
-            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
+            final ThrottleAccumulator.ThrottleType throttleType,
+            final boolean longTermEnabled,
+            final boolean waitForExpiry)
             throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
@@ -703,11 +762,21 @@ class ThrottleAccumulatorTest {
                 subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true,true",
+        "FRONTEND_THROTTLE,true,false",
+        "FRONTEND_THROTTLE,false,true",
+        "FRONTEND_THROTTLE,false,false",
+        "BACKEND_THROTTLE,true,true",
+        "BACKEND_THROTTLE,true,false",
+        "BACKEND_THROTTLE,false,true",
+        "BACKEND_THROTTLE,false,false",
+    })
     void usesScheduleSignThrottleWithNestedThrottleExempt(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
-            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
+            final ThrottleAccumulator.ThrottleType throttleType,
+            final boolean longTermEnabled,
+            final boolean waitForExpiry)
             throws IOException {
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
@@ -845,12 +914,16 @@ class ThrottleAccumulatorTest {
                 0, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
     }
 
-    @CartesianTest
+    @ParameterizedTest
+    @CsvSource({
+        "FRONTEND_THROTTLE,true",
+        "FRONTEND_THROTTLE,false",
+        "BACKEND_THROTTLE,true",
+        "BACKEND_THROTTLE,false",
+    })
     @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleSign(
-            @CartesianTest.Enum final ThrottleAccumulator.ThrottleType throttleType,
-            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
-            throws IOException {
+            final ThrottleAccumulator.ThrottleType throttleType, final boolean longTermEnabled) throws IOException {
 
         // given
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, throttleType);
