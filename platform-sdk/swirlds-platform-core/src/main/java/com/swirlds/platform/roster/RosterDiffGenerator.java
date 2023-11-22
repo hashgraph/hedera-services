@@ -31,8 +31,6 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO unit test
-
 /**
  * Takes as input a sequence of {@link UpdatedRoster} objects and produces a sequence of {@link RosterDiff} objects.
  */

@@ -178,7 +178,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * @return the round when this address book was constructed, or {@link #UNKNOWN_ROUND} if the round is unknown or
      * this address book was not constructed during a regular round
      */
-    public long getRound() { // TODO remove
+    public long getRound() {
         return round;
     }
 
