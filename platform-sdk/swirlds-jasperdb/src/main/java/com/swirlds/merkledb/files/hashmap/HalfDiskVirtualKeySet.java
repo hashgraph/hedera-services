@@ -21,6 +21,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.deleteDirectoryAndConten
 import com.swirlds.common.bloom.BloomFilter;
 import com.swirlds.common.bloom.hasher.SelfSerializableBloomHasher;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
@@ -71,6 +72,7 @@ public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySe
      * 		the maximum number of elements to keep in memory before flushing to the half disk hash map
      */
     public HalfDiskVirtualKeySet(
+            final MerkleDbConfig config,
             final KeySerializer<K> keySerializer,
             final int bloomFilterHashCount,
             final long bloomFilterSize,
@@ -86,6 +88,7 @@ public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySe
         try {
             tempDir = TemporaryFileBuilder.buildTemporaryDirectory(STORE_PREFIX).resolve("data");
             flushedData = new HalfDiskHashMap<>(
+                    config,
                     halfDiskHashMapSize,
                     keySerializer,
                     tempDir,

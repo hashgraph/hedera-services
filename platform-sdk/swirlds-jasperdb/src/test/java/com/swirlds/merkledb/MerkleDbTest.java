@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;

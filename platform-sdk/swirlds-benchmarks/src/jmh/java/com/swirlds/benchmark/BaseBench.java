@@ -60,14 +60,14 @@ public abstract class BaseBench {
     public int numRecords = 10_000;
 
     @Param({"1000000"})
-    public int maxKey = 100_000_000;
+    public int maxKey = 10_000_000;
 
     // 8 - VirtualLongKey, 8+ - generic VirtualKey
     @Param({"8"})
-    public int keySize = 8;
+    public int keySize = 32;
 
     @Param({"128"})
-    public int recordSize = 128;
+    public int recordSize = 1024;
 
     @Param({"32"})
     public int numThreads = 32;

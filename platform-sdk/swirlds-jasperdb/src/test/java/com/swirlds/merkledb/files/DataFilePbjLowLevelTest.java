@@ -206,7 +206,6 @@ class DataFilePbjLowLevelTest {
         final int headerSize = dataFileMetadata.metadataSizeInBytes();
         // read the whole file
         BufferedData buf = BufferedData.wrap(Files.readAllBytes(dataFile), headerSize, fileSize - headerSize);
-        //        LongBuffer longBuf = buf.asLongBuffer();
         for (int i = 0; i < 1000; i++) {
             final int tag = buf.readVarInt(false);
             assertEquals(DataFileCommon.FIELD_DATAFILE_ITEMS.number(), tag >>> ProtoParserTools.TAG_FIELD_OFFSET);

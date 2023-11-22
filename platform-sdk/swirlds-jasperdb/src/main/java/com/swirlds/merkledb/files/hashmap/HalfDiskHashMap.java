@@ -67,6 +67,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  */
 public class HalfDiskHashMap<K extends VirtualKey>
         implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
+
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -139,6 +140,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
     /**
      * Construct a new HalfDiskHashMap
      *
+     * @param config                         MerkleDb config
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param keySerializer                  Serializer for converting raw data to/from keys
@@ -155,6 +157,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
+            final MerkleDbConfig config,
             final long mapSize,
             final KeySerializer<K> keySerializer,
             final Path storeDir,
@@ -166,7 +169,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
-        this.bucketSerializer = new BucketSerializer<>(keySerializer);
+        this.bucketSerializer = new BucketSerializer<>(config, keySerializer);
         // load or create new
         LoadedDataCallback<Bucket<K>> loadedDataCallback;
         if (Files.exists(storeDir)) {
@@ -393,7 +396,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     }
                     try (final Bucket<K> bucket = res.bucket) {
                         final int bucketIndex = bucket.getBucketIndex();
-                        if (bucket.getBucketEntryCount() == 0) {
+                        if (bucket.isEmpty()) {
                             // bucket is missing or empty, remove it from the index
                             bucketIndexToBucketLocation.remove(bucketIndex);
                         } else {

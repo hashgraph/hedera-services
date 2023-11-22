@@ -357,6 +357,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             longKeyToPath = null;
             String storeName = tableName + "_objectkeytopath";
             objectKeyToPath = new HalfDiskHashMap<>(
+                    database.getConfig(),
                     tableConfig.getMaxNumberOfKeys(),
                     tableConfig.getKeySerializer(),
                     dbPaths.objectKeyToPathDirectory,
@@ -454,6 +455,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 isLongKeyMode ? (KeySerializer<K>) new VirtualKeySetSerializer() : objectKeyToPath.getKeySerializer();
         final MerkleDbConfig config = database.getConfig();
         return new HalfDiskVirtualKeySet<>(
+                database.getConfig(),
                 keySerializer,
                 config.keySetBloomFilterHashCount(),
                 config.keySetBloomFilterSizeInBytes() * BYTES_TO_BITS,

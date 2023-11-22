@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
@@ -32,8 +33,13 @@ import java.nio.ByteBuffer;
  * @param <K> The map key type stored in the buckets
  */
 public class BucketSerializer<K extends VirtualKey> implements DataItemSerializer<Bucket<K>> {
+
+    private final MerkleDbConfig config;
+
     /** Bucket pool used by this serializer */
     private final ReusableBucketPool<K> reusableBucketPool;
+
+    private final ReusableBucketPool<K> reusableParsedBucketPool;
 
     /**
      * How many of the low-order bytes in the serialization version are devoted to non-key
@@ -48,7 +54,8 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     /** The key serializer that we use for keys in buckets */
     private final KeySerializer<K> keySerializer;
 
-    public BucketSerializer(final KeySerializer<K> keySerializer) {
+    public BucketSerializer(final MerkleDbConfig config, final KeySerializer<K> keySerializer) {
+        this.config = config;
         this.keySerializer = keySerializer;
         long keyVersion = keySerializer.getCurrentDataVersion();
         if (Long.numberOfLeadingZeros(keyVersion) < Integer.SIZE) {
@@ -58,7 +65,8 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
         currentSerializationVersion =
                 (keySerializer.getCurrentDataVersion() << LOW_ORDER_BYTES_FOR_NON_KEY_SERIALIZATION_VERSION)
                         | BUCKET_SERIALIZATION_VERSION;
-        reusableBucketPool = new ReusableBucketPool<>(this);
+        reusableBucketPool = new ReusableBucketPool<>(pool -> new Bucket<>(keySerializer, pool));
+        reusableParsedBucketPool = new ReusableBucketPool<>(pool -> new ParsedBucket<>(keySerializer, pool));
     }
 
     /**
@@ -76,7 +84,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
      * @return This serializer's reusable bucket pool.
      */
     public ReusableBucketPool<K> getBucketPool() {
-        return reusableBucketPool;
+        return config.usePbj() ? reusableBucketPool : reusableParsedBucketPool;
     }
 
     /**
@@ -129,14 +137,15 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
 
     @Override
     public Bucket<K> deserialize(@NonNull final ReadableSequentialData in) {
-        final Bucket<K> bucket = reusableBucketPool.getBucket();
+        final Bucket<K> bucket =
+                config.usePbj() ? reusableBucketPool.getBucket() : reusableParsedBucketPool.getBucket();
         bucket.readFrom(in);
         return bucket;
     }
 
     @Override
     public Bucket<K> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        final Bucket<K> bucket = reusableBucketPool.getBucket();
+        final Bucket<K> bucket = reusableParsedBucketPool.getBucket();
         bucket.readFrom(buffer);
         return bucket;
     }

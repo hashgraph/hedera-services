@@ -19,11 +19,11 @@ package com.swirlds.merkledb.files.hashmap;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
 
-final class ReusableBucketPoolTest extends ReusableBucketPoolTestBase {
+final class ReusableParsedBucketPoolTest extends ReusableBucketPoolTestBase {
 
     @Override
     protected ReusableBucketPool<ExampleLongKeyFixedSize> createPool(
             final int size, final KeySerializer<ExampleLongKeyFixedSize> keySerializer) {
-        return new ReusableBucketPool<>(size, pool -> new Bucket<>(keySerializer, pool));
+        return new ReusableBucketPool<>(size, pool -> new ParsedBucket<>(keySerializer, pool));
     }
 }

@@ -24,6 +24,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import com.swirlds.merkledb.utilities.ProtoUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -199,7 +200,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     public D readDataItem(final long dataLocation) throws IOException {
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         final BufferedData data = read(byteOffset);
-        return dataItemSerializer.deserialize(data);
+        return data != null ? dataItemSerializer.deserialize(data) : null;
     }
 
     @Override
@@ -235,7 +236,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
     /** Compares this Data File to another based on creation date and index */
     @Override
-    public int compareTo(final DataFileReader o) {
+    public int compareTo(@NonNull final DataFileReader o) {
         Objects.requireNonNull(o);
         if (this == o) {
             return 0;

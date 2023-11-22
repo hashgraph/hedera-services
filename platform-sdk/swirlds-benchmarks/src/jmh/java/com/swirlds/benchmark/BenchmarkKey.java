@@ -112,6 +112,20 @@ public class BenchmarkKey implements VirtualLongKey {
         return Arrays.equals(this.keyBytes, that.keyBytes);
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < keyBytes.length; i++) {
+            sb.append(keyBytes[i] & 0xFF);
+            if (i < keyBytes.length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
     boolean equals(BufferedData buffer) {
         for (int i = 0; i < keySize; ++i) {
             if (buffer.readByte() != keyBytes[i]) {

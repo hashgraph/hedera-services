@@ -238,18 +238,26 @@ public class DataFileMetadata {
     // beginning of the file before reading data items, assuming file metadata is always written
     // first, then data items
     int metadataSizeInBytes() {
-        return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT)
-                + ProtoUtils.sizeOfVarInt32(index)
-                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT)
-                + ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond())
-                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT)
-                + ProtoUtils.sizeOfVarInt64(creationDate.getNano())
-                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT)
-                + Long.BYTES
-                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT)
-                + ProtoUtils.sizeOfVarInt64(serializationVersion)
-                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_COMPACTION_LEVEL, WIRE_TYPE_VARINT)
-                + ProtoUtils.sizeOfVarInt32(compactionLevel);
+        int size = 0;
+        if (index != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(index);
+        }
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond());
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT);
+        size += ProtoUtils.sizeOfVarInt64(creationDate.getNano());
+        size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT);
+        size += Long.BYTES;
+        if (serializationVersion != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt64(serializationVersion);
+        }
+        if (compactionLevel != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_DATAFILE_COMPACTION_LEVEL, WIRE_TYPE_VARINT);
+            size += ProtoUtils.sizeOfVarInt32(compactionLevel);
+        }
+        return size;
     }
 
     public int getCompactionLevel() {

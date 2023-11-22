@@ -19,8 +19,10 @@ package com.swirlds.merkledb.files.hashmap;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
@@ -46,6 +48,7 @@ class HalfDiskHashMapTest {
     private HalfDiskHashMap<VirtualLongKey> createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap<VirtualLongKey> map = new HalfDiskHashMap<>(
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 count,
                 (KeySerializer<VirtualLongKey>) testType.keySerializer,
                 tempDirPath.resolve(testType.name()),
@@ -109,6 +112,7 @@ class HalfDiskHashMapTest {
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
         HalfDiskHashMap<VirtualLongKey> mapFromSnapshot = new HalfDiskHashMap<>(
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 count,
                 (KeySerializer<VirtualLongKey>) testType.keySerializer,
                 tempSnapshotDir,
