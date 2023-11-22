@@ -26,7 +26,9 @@ import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,8 +74,10 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public @NonNull FeeCalculator feeCalculator(@NonNull final SubType subType) {
         try {
+            var storeFactory = new ReadableStoreFactory((SavepointStackImpl)context.savepointStack());
             return feeManager.createFeeCalculator(
-                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true);
+                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true,
+                    storeFactory);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);

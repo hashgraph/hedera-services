@@ -26,6 +26,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
@@ -108,7 +109,8 @@ public class FeeContextImpl implements FeeContext {
                 signatureMapSize,
                 consensusTime,
                 subType,
-                false);
+                false,
+                storeFactory);
     }
 
     @NonNull

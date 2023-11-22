@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -66,7 +67,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
 
     private final CongestionMultipliers congestionMultipliers;
 
-    private final HederaState state;
+    private final ReadableStoreFactory storeFactory;
 
     private final TransactionInfo txInfo;
 
@@ -97,7 +98,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
             @NonNull final ExchangeRate currentRate,
             final boolean isInternalDispatch,
             final CongestionMultipliers congestionMultipliers,
-            final HederaState state) {
+            final ReadableStoreFactory storeFactory) {
         //  Perform basic validations, and convert the PBJ objects to Google protobuf objects for `hapi-fees`.
         requireNonNull(txBody);
         requireNonNull(payerKey);
@@ -132,7 +133,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
         usage.resetForTransaction(baseMeta, sigUsage);
 
         this.congestionMultipliers = congestionMultipliers;
-        this.state = state;
+        this.storeFactory = storeFactory;
         try {
             this.txInfo = new TransactionInfo(
                     Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody));
@@ -145,7 +146,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
             @Nullable final FeeData feeData,
             @NonNull final ExchangeRate currentRate,
             final CongestionMultipliers congestionMultipliers,
-            final HederaState state,
+            final ReadableStoreFactory storeFactory,
             final HederaFunctionality functionality) {
         if (feeData == null) {
             this.feeData = null;
@@ -161,7 +162,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
         this.sigUsage = new SigUsage(0, 0, 0);
 
         this.congestionMultipliers = congestionMultipliers;
-        this.state = state;
+        this.storeFactory = storeFactory;
 
         // used only for access query functionality (in congestionMultipliers)
         this.txInfo = new TransactionInfo(
@@ -245,12 +246,12 @@ public class FeeCalculatorImpl implements FeeCalculator {
         final var overflowCalc = new OverflowCheckingCalc();
 
         final var feeObject = overflowCalc.fees(
-                usage, feeData, currentRate, congestionMultipliers.maxCurrentMultiplier(txInfo, state));
+                usage, feeData, currentRate, congestionMultipliers.maxCurrentMultiplier(txInfo, storeFactory));
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
     }
 
     public long getCongestionMultiplier() {
-        return congestionMultipliers.maxCurrentMultiplier(txInfo, state);
+        return congestionMultipliers.maxCurrentMultiplier(txInfo, storeFactory);
     }
 
     private void failIfLegacyOnly() {

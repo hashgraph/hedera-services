@@ -48,6 +48,7 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;

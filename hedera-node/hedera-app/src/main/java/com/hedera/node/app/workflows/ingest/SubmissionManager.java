@@ -21,13 +21,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.StatsConfig;
+import com.hedera.node.config.types.Profile;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -131,7 +131,7 @@ public class SubmissionManager {
             // We do NOT allow this call in production!
             // check profile dynamically, this way we allow profile overriding in Hapi tests
             final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-            if (Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD) {
+            if (hederaConfig.activeProfile() == Profile.PROD) {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
 

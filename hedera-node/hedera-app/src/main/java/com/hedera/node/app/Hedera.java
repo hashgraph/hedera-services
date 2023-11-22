@@ -75,6 +75,7 @@ import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.Profile;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -228,7 +229,7 @@ public final class Hedera implements SwirldMain {
         // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD).
         // NOTE: This bootstrapConfig is not entirely satisfactory. We probably need an alternative...
         final var hederaConfig = bootstrapConfig.getConfigData(HederaConfig.class);
-        final var activeProfile = Profile.valueOf(hederaConfig.activeProfile());
+        final var activeProfile = hederaConfig.activeProfile();
         logger.info("Starting in {} mode", activeProfile);
 
         // Read the software version. In addition to logging, we will use this software version to determine whether
@@ -727,7 +728,7 @@ public final class Hedera implements SwirldMain {
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
         logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers, state);
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -814,7 +815,7 @@ public final class Hedera implements SwirldMain {
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
         logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers, state);
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass

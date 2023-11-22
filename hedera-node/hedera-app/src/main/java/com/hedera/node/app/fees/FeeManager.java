@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -80,16 +81,12 @@ public final class FeeManager {
 
     private final CongestionMultipliers congestionMultipliers;
 
-    private final HederaState state;
-
     @Inject
     public FeeManager(
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull CongestionMultipliers congestionMultipliers,
-            @NonNull HederaState state) {
+            @NonNull CongestionMultipliers congestionMultipliers) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.congestionMultipliers = requireNonNull(congestionMultipliers);
-        this.state = state;
     }
 
     /**
@@ -172,7 +169,8 @@ public final class FeeManager {
             final int signatureMapSize,
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType,
-            final boolean isInternalDispatch) {
+            final boolean isInternalDispatch,
+            final ReadableStoreFactory storeFactory) {
 
         if (txBody == null || payerKey == null || functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
@@ -196,12 +194,12 @@ public final class FeeManager {
                 exchangeRateManager.activeRate(consensusTime),
                 isInternalDispatch,
                 congestionMultipliers,
-                this.state);
+                storeFactory);
     }
 
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
+            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime, @NonNull final ReadableStoreFactory storeFactory) {
         // Determine which fee schedule to use, based on the consensus time
         final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
 
@@ -210,7 +208,7 @@ public final class FeeManager {
                 feeData,
                 exchangeRateManager.activeRate(consensusTime),
                 congestionMultipliers,
-                this.state,
+                storeFactory,
                 functionality);
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app;
+package com.hedera.node.config.types;
 
 /**
  * Defines the mode in which the consensus node is executed.
