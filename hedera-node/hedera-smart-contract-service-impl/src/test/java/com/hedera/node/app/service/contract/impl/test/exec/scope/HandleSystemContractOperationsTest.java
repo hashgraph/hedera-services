@@ -41,6 +41,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,6 +118,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
+        given(recordBuilder.entropyBytes(Bytes.EMPTY)).willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
@@ -138,6 +140,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
+        given(recordBuilder.entropyBytes(Bytes.EMPTY)).willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);
