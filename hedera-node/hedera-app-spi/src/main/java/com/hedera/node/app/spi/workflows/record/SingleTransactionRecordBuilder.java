@@ -17,6 +17,9 @@
 package com.hedera.node.app.spi.workflows.record;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -39,4 +42,20 @@ public interface SingleTransactionRecordBuilder {
      * @return the builder
      */
     SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
+
+    /**
+     * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
+     *
+     * @param body the transaction body
+     * @return the transaction
+     */
+    static Transaction transactionWith(@NonNull TransactionBody body) {
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+        final var signedTransaction =
+                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        return Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+    }
 }

@@ -99,6 +99,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
         return List.of(grantRevokeKycSpecWithAliasLocalCall());
     }
 
+    @HapiTest
     private HapiSpec grantRevokeKycFail() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
