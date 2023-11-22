@@ -164,24 +164,30 @@ public interface V034Module {
     @IntoSet
     @ServicesV034
     static Operation provideDelegateCallOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV034 @NonNull final AddressChecks addressChecks) {
-        return new CustomDelegateCallOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV034 @NonNull final AddressChecks addressChecks,
+            @ServicesV034 @NonNull final FeatureFlags featureFlags) {
+        return new CustomDelegateCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV034
     static Operation provideCallCodeOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV034 @NonNull final AddressChecks addressChecks) {
-        return new CustomCallCodeOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV034 @NonNull final AddressChecks addressChecks,
+            @ServicesV034 @NonNull final FeatureFlags featureFlags) {
+        return new CustomCallCodeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV034
     static Operation provideStaticCallOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV034 @NonNull final AddressChecks addressChecks) {
-        return new CustomStaticCallOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV034 @NonNull final AddressChecks addressChecks,
+            @ServicesV034 @NonNull final FeatureFlags featureFlags) {
+        return new CustomStaticCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides

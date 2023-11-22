@@ -216,7 +216,12 @@ public class ActionStack {
                     builder.output(tuweniToPbjBytes(frame.getOutputData()));
                     if (action.targetedAddress() != null) {
                         final var lazyCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
-                        builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
+                        try {
+                            builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
+                        } catch (final IllegalArgumentException e) {
+                            // handle non-existing to/receiver address
+                            builder.recipientAccount((AccountID) null);
+                        }
                     }
                 }
                 yield builder.build();

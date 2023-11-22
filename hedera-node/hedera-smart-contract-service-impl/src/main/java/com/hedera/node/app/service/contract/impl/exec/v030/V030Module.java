@@ -162,24 +162,30 @@ public interface V030Module {
     @IntoSet
     @ServicesV030
     static Operation provideDelegateCallOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
-        return new CustomDelegateCallOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV030 @NonNull final AddressChecks addressChecks,
+            @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomDelegateCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV030
     static Operation provideCallCodeOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
-        return new CustomCallCodeOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV030 @NonNull final AddressChecks addressChecks,
+            @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomCallCodeOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
     @IntoSet
     @ServicesV030
     static Operation provideStaticCallOperation(
-            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
-        return new CustomStaticCallOperation(gasCalculator, addressChecks);
+            @NonNull final GasCalculator gasCalculator,
+            @ServicesV030 @NonNull final AddressChecks addressChecks,
+            @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomStaticCallOperation(gasCalculator, addressChecks, featureFlags);
     }
 
     @Provides
@@ -187,8 +193,8 @@ public interface V030Module {
     @ServicesV030
     static Operation provideCallOperation(
             @NonNull final GasCalculator gasCalculator,
-            @ServicesV030 @NonNull final FeatureFlags featureFlags,
-            @ServicesV030 @NonNull final AddressChecks addressChecks) {
+            @ServicesV030 @NonNull final AddressChecks addressChecks,
+            @ServicesV030 @NonNull final FeatureFlags featureFlags) {
         return new CustomCallOperation(featureFlags, gasCalculator, addressChecks);
     }
 

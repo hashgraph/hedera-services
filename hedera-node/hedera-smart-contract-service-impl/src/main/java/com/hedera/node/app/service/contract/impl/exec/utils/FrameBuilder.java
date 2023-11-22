@@ -157,12 +157,15 @@ public class FrameBuilder {
             @NonNull final MessageFrame.Builder builder,
             @NonNull final HederaEvmTransaction transaction,
             final boolean isAllowCallsToNonContractAccountsEnabled) {
-        final var account = worldUpdater.getHederaAccount(to);
         Code code = CodeV0.EMPTY_CODE;
-        if (account == null && !isAllowCallsToNonContractAccountsEnabled) {
-            validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
-        } else {
-            code = account.getEvmCode();
+        final var toAccount = worldUpdater.getHederaAccount(transaction.contractIdOrThrow());
+        if (toAccount != null || !isAllowCallsToNonContractAccountsEnabled) {
+            final var account = worldUpdater.getHederaAccount(to);
+            if (account == null && !isAllowCallsToNonContractAccountsEnabled) {
+                validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
+            } else {
+                code = account.getEvmCode();
+            }
         }
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)

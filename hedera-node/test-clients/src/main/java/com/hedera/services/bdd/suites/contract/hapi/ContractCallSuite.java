@@ -83,7 +83,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -145,6 +144,7 @@ public class ContractCallSuite extends HapiSuite {
     public static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     public static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
+    private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String OWNER = "owner";
     private static final String INSERT = "insert";
     private static final String TOKEN_ISSUER = "tokenIssuer";
@@ -226,7 +226,8 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                invalidContract(),
+                callNonExistantContract(),
+                callNonExistantInternalContract(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1519,13 +1520,26 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
 
-    HapiSpec invalidContract() {
+    @HapiTest
+    HapiSpec callNonExistantContract() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return defaultHapiSpec("InvalidContract")
-                .given(withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))))
+                .given(withOpContext(
+                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
+                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
+    HapiSpec callNonExistantInternalContract() {
+        return defaultHapiSpec("InvalidInternalCall")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).hasKnownStatus(SUCCESS))
+                .when()
+                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callNonExisting", randomHeadlongAddress())
+                        .hasKnownStatus(SUCCESS));
     }
 
     HapiSpec smartContractFailFirst() {
