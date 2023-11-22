@@ -18,7 +18,11 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -46,6 +50,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateExpiryTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -59,7 +64,7 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
-        // Successfully update token via TOKEN_UPDATE_INFO V1
+        // Successfully update token via UPDATE_TOKEN_EXPIRY_INFO_V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1
@@ -69,7 +74,17 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // Successfully update token via TOKEN_UPDATE_INFO V2
+        // Should throw `INVALID_SIGNATURE`
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS, Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong admin key"));
+
+        // Successfully update token via UPDATE_TOKEN_EXPIRY_INFO_V2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
@@ -140,6 +155,15 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .supplyKey(AN_ED25519_KEY)
                         .adminKey(SENDER_CONTRACT_ID_KEY)
                         .autoRenewAccountId(SENDER_ID)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyKey(Scenarios.ALICE.account().key())
+                        .adminKey(Scenarios.ALICE.account().key())
                         .build());
         return tokens;
     }

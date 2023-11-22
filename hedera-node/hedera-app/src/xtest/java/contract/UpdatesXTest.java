@@ -17,10 +17,16 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.AssociationsXTestConstants.B_TOKEN_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.AN_ED25519_KEY;
-import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
@@ -46,6 +52,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -78,6 +85,28 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 assertSuccess("V1 update failed"));
+
+        // Should throw `INVALID_SIGNATURE`
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS,
+                                Tuple.of(
+                                        NEW_NAME,
+                                        NEW_SYMBOL,
+                                        asHeadlongAddress(SENDER_ADDRESS.toByteArray()),
+                                        "memo",
+                                        true,
+                                        1000L,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(0L, asAddress(""), 0L)))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Test"));
 
         // Successfully update token via TOKEN_UPDATE_INFO V2
         runHtsCallAndExpectOnSuccess(
@@ -208,6 +237,7 @@ public class UpdatesXTest extends AbstractContractXTest {
     protected Map<ProtoBytes, AccountID> initialAliases() {
         final var aliases = new HashMap<ProtoBytes, AccountID>();
         aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(UNAUTHORIZED_SPENDER_ADDRESS).build(), UNAUTHORIZED_SPENDER_ID);
         return aliases;
     }
 
@@ -223,6 +253,22 @@ public class UpdatesXTest extends AbstractContractXTest {
                         .supplyKey(AN_ED25519_KEY)
                         .adminKey(SENDER_CONTRACT_ID_KEY)
                         .autoRenewAccountId(SENDER_ID)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyKey(Scenarios.ALICE.account().key())
+                        .adminKey(Scenarios.ALICE.account().key())
+                        .build());
+        tokens.put(
+                B_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(B_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
                         .build());
         return tokens;
     }
