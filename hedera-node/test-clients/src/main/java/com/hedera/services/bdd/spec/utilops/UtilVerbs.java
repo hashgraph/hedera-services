@@ -575,7 +575,8 @@ public class UtilVerbs {
     public static HapiSpecOperation overridingAllOf(@NonNull final Map<String, String> explicit) {
         return withOpContext((spec, opLog) -> {
             final var updated121 = getUpdated121(spec, explicit);
-            final var multiStepUpdate = updateLargeFile(GENESIS, APP_PROPERTIES, ByteString.copyFrom(updated121));
+            final var multiStepUpdate = updateLargeFile(
+                    GENESIS, APP_PROPERTIES, ByteString.copyFrom(updated121), true, OptionalLong.of(0L));
             allRunFor(spec, multiStepUpdate);
         });
     }
