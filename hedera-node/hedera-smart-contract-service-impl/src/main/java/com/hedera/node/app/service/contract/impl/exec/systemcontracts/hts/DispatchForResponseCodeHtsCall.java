@@ -214,7 +214,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();
         if (status != SUCCESS) {
-            status = failureCustomizer.customize(syntheticBody, this.standardized(status), enhancement);
+            status = failureCustomizer.customize(syntheticBody, standardized(status), enhancement);
             recordBuilder.status(status);
         }
         return completionWith(gasRequirement, recordBuilder, outputFn.apply(recordBuilder));
