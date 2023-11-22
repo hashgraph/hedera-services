@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.builders;
+package com.swirlds.common.wiring.schedulers.builders;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
-import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
-import com.swirlds.common.wiring.schedulers.ConcurrentTaskScheduler;
-import com.swirlds.common.wiring.schedulers.DirectTaskScheduler;
-import com.swirlds.common.wiring.schedulers.SequentialTaskScheduler;
-import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.ConcurrentTaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.SequentialTaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
