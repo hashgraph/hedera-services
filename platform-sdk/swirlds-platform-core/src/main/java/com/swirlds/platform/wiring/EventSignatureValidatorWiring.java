@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -34,9 +35,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param flushRunnable                    the runnable to flush the validator
  */
 public record EventSignatureValidatorWiring(
-        @NonNull BindableInputWire<GossipEvent, GossipEvent> eventInput,
-        @NonNull BindableInputWire<Long, GossipEvent> minimumGenerationNonAncientInput,
-        @NonNull BindableInputWire<AddressBookUpdate, GossipEvent> addressBookUpdateInput,
+        @NonNull InputWire<GossipEvent> eventInput,
+        @NonNull InputWire<Long> minimumGenerationNonAncientInput,
+        @NonNull InputWire<AddressBookUpdate> addressBookUpdateInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -61,8 +62,10 @@ public record EventSignatureValidatorWiring(
      * @param eventSignatureValidator the event signature validator to bind
      */
     public void bind(@NonNull final EventSignatureValidator eventSignatureValidator) {
-        eventInput.bind(eventSignatureValidator::validateSignature);
-        minimumGenerationNonAncientInput.bind(eventSignatureValidator::setMinimumGenerationNonAncient);
-        addressBookUpdateInput.bind(eventSignatureValidator::updateAddressBooks);
+        ((BindableInputWire<GossipEvent, GossipEvent>) eventInput).bind(eventSignatureValidator::validateSignature);
+        ((BindableInputWire<Long, GossipEvent>) minimumGenerationNonAncientInput)
+                .bind(eventSignatureValidator::setMinimumGenerationNonAncient);
+        ((BindableInputWire<AddressBookUpdate, GossipEvent>) addressBookUpdateInput)
+                .bind(eventSignatureValidator::updateAddressBooks);
     }
 }

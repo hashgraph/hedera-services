@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.state.output;
+package com.hedera.services.bdd.junit;
 
-/**
- * A method that is called when the minimum generation non-ancient,
- * with respect to the oldest state snapshot on disk, is updated.
- */
-@FunctionalInterface
-public interface MinimumGenerationNonAncientConsumer {
+public class TestTags {
 
-    /**
-     * Called when the minimum generation non-ancient is updated, with respect to the oldest state snapshot on disk.
-     * @param minimumGenerationNonAncient the new minimum generation non-ancient
-     */
-    void newMinimumGenerationNonAncient(long minimumGenerationNonAncient);
+    private TestTags() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
+    public static final String CRYPTO = "CRYPTO";
+    public static final String SMART_CONTRACT = "SMART_CONTRACT";
+    public static final String TIME_CONSUMING = "TIME_CONSUMING";
+    public static final String TOKEN = "TOKEN";
 }

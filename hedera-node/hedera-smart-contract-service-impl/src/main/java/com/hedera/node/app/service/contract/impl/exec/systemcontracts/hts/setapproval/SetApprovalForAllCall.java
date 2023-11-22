@@ -58,7 +58,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
             @NonNull final TransactionBody transactionBody,
             @NonNull final DispatchGasCalculator gasCalculator,
             final boolean isERC) {
-        super(attempt.systemContractGasCalculator(), attempt.enhancement());
+        super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
         this.transactionBody = transactionBody;
         this.dispatchGasCalculator = gasCalculator;
         this.isERC = isERC;
