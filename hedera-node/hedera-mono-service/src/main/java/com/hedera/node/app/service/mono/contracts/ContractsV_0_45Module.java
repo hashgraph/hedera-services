@@ -37,14 +37,14 @@ import com.hedera.node.app.service.mono.contracts.execution.HederaCallEvmTxProce
 import com.hedera.node.app.service.mono.contracts.execution.HederaCallLocalEvmTxProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
-import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperationV045;
-import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV045;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperationV038;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV038;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaPrngSeedOperator;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSLoadOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperationV045;
-import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperationV045;
+import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperationV038;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
@@ -164,9 +164,10 @@ public interface ContractsV_0_45Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_45 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaCallCodeOperationV045(
-                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaCallCodeOperationV038(
+                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -179,7 +180,7 @@ public interface ContractsV_0_45Module {
             @V_0_45 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
-        return new HederaCallOperationV045(
+        return new HederaCallOperationV038(
                 sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
@@ -201,8 +202,10 @@ public interface ContractsV_0_45Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_45 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaStaticCallOperationV045(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaStaticCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -259,9 +262,15 @@ public interface ContractsV_0_45Module {
             /* Deliberately import the V_0_30 validator, we still want self-destructs to fail if the beneficiary is invalid */
             @ContractsModule.V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
-            final EvmSigsVerifier sigsVerifier) {
+            final EvmSigsVerifier sigsVerifier,
+            final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaSelfDestructOperationV045(
-                gasCalculator, txnCtx, addressValidator, sigsVerifier, hederaSystemAccountDetector);
+                gasCalculator,
+                txnCtx,
+                addressValidator,
+                sigsVerifier,
+                hederaSystemAccountDetector,
+                globalDynamicProperties);
     }
 
     @Provides
