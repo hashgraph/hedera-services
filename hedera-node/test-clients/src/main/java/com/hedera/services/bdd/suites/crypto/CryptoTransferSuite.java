@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -150,8 +151,10 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";

@@ -35,7 +35,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                                          because syncs that started before the throttle engages can grow the queue to
  *                                          very large sizes on larger networks.
  * @param randomEventProbability            The probability that after a sync, a node will create an event with a random
- *                                          other parent. The probability is is 1 in X, where X is the value of
+ *                                          other parent. The probability is 1 in X, where X is the value of
  *                                          randomEventProbability. A value of 0 means that a node will not create any
  *                                          random events.
  *                                          <p>
@@ -57,6 +57,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventsLogDir                      eventStream files will be generated in this directory.
  * @param enableEventStreaming              enable stream event to server.
  * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions
+ * @param useLegacyIntake                   if true then use the legacy intake monolith, if false then use the new intake pipeline
  */
 @ConfigData("event")
 public record EventConfig(
@@ -70,4 +71,5 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
-        @ConfigProperty(defaultValue = "8") int prehandlePoolSize) {}
+        @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
+        @ConfigProperty(defaultValue = "false") boolean useLegacyIntake) {}

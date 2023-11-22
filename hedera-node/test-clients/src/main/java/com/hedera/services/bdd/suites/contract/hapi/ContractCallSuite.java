@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -126,8 +127,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
