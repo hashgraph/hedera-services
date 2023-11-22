@@ -76,6 +76,7 @@ class FrameBuilderTest {
     void constructsExpectedFrameForCallToExtantContractIncludingAccessTrackerWithSidecarEnabled() {
         final var transaction = wellKnownHapiCall();
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(null);
         given(account.getEvmCode()).willReturn(CONTRACT_CODE);
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
@@ -124,6 +125,7 @@ class FrameBuilderTest {
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(null);
         given(account.getEvmCode()).willReturn(CONTRACT_CODE);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.fundingAccount", DEFAULT_COINBASE)
