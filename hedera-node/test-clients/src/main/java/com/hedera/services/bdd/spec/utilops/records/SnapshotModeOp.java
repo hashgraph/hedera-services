@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -34,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEnv;
@@ -169,8 +171,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta(
-                "HollowAccountFinalization", "txnWith2CompletionsAndAnother2PrecedingChildRecords");
+        final var snapshotFileMeta =
+                new SnapshotFileMeta("CryptoTransferHTS", "hapiTransferFromForFungibleTokenToSystemAccountsFails");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -179,16 +181,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             throw new IllegalStateException("No such snapshot");
         }
         final var snapshot = maybeSnapshot.get();
-        final var items = snapshot.parsedItems();
-        try (var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"))) {
-            for (int i = 0, n = items.size(); i < n; i++) {
-                final var item = items.get(i);
-                dumpLoc.write("--- Item #" + i + " ---\n");
-                dumpLoc.write(item.itemBody() + "\n\n");
-                dumpLoc.write("➡️\n\n");
-                dumpLoc.write(item.itemRecord() + "\n\n");
-            }
-        }
+        writeReadableItemsToTxt(snapshotFileMeta.toString(), snapshot.parsedItems());
     }
 
     /**
@@ -342,6 +335,15 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         final var itemsFromSnapshot = snapshotToMatchAgainst.parsedItems();
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
         final var snapshotPlaceholderNum = snapshotToMatchAgainst.getPlaceholderNum();
+        if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
+            log.warn(
+                    "Mismatched item counts between snapshot and post-placeholder records - "
+                            + "snapshot had {} items, but post-placeholder had {} items",
+                    itemsFromSnapshot.size(),
+                    postPlaceholderItems.size());
+            writeReadableItemsToTxt("expected", itemsFromSnapshot);
+            writeReadableItemsToTxt("actual", postPlaceholderItems);
+        }
         for (int i = 0; i < minItems; i++) {
             final var fromSnapshot = itemsFromSnapshot.get(i);
             final var fromStream = postPlaceholderItems.get(i);
@@ -419,9 +421,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Mismatched field names ('" + expectedName + "' vs '" + actualName + "' between expected "
                                 + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
             }
-            if (shouldSkip(expectedName)) {
+            if (shouldSkip(expectedName, expectedField.getValue().getClass())) {
+                //                System.out.println("YES");
                 continue;
             }
+            //            System.out.println("NO");
             matchValues(
                     expectedName,
                     expectedField.getValue(),
@@ -560,7 +564,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // Transaction fees can vary by based on the size of the sig map
             final var maxVariation = feeVariation(matchModes);
             if ("transactionFee".equals(fieldName)) {
-                ;
                 Assertions.assertTrue(
                         Math.abs((long) expected - (long) actual) <= maxVariation,
                         "Transaction fees '" + expected + "' and '" + actual
@@ -689,15 +692,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return Optional.empty();
     }
 
-    private static RecordSnapshot loadSnapshotFor(
-            @NonNull final String snapshotLoc, @NonNull final SnapshotFileMeta snapshotFileMeta) throws IOException {
-        final var om = new ObjectMapper();
-        final var inputLoc = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
-        final var fin = Files.newInputStream(inputLoc);
-        log.info("Loading snapshot of {} post-placeholder records from {}", snapshotFileMeta.specName(), inputLoc);
-        return om.reader().readValue(fin, RecordSnapshot.class);
-    }
-
     private void computePlaceholderNum(
             @NonNull final List<String> recordLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec) {
         this.recordLocs = recordLocs;
@@ -731,14 +725,38 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         return locs;
     }
 
-    private boolean shouldSkip(@NonNull final String expectedName) {
+    private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
         requireNonNull(expectedName);
-        if ("contractCallResult".equals(expectedName)) {
+        requireNonNull(expectedType);
+        //        System.out.println("Should skip? " + expectedName + " " + expectedType);
+        if ("contractCallResult".equals(expectedName) && ByteString.class.isAssignableFrom(expectedType)) {
+            //        if ("contractCallResult".equals(expectedName) && ByteString.class.equals(expectedType)) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
+        } else if ("topic".equals(expectedName)) {
+            // It is unlikely we have _any_ tests with nondeterministic logs but deterministic
+            // call results, so we just use the same match mode for both
+            return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
+        } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
+            return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
+        }
+    }
+
+    private static void writeReadableItemsToTxt(@NonNull final String name, @NonNull final List<ParsedItem> items) {
+        try (final var fout = Files.newBufferedWriter(Paths.get(name + ".txt"))) {
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                fout.write("--- Item #" + i + " ---\n");
+                fout.write(item.itemBody() + "\n\n");
+                fout.write("➡️\n\n");
+                fout.write(item.itemRecord() + "\n\n");
+            }
+        } catch (IOException e) {
+            log.error("Could not write readable items to txt", e);
+            throw new UncheckedIOException(e);
         }
     }
 }

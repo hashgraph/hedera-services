@@ -185,19 +185,15 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      * <p>
-     * If a freeze boundary has been crossed, and the state saved was the freeze state, then the status will transition
-     * to {@link PlatformStatus#FREEZE_COMPLETE}.
-     * <p>
-     * Otherwise, a state being saved has no effect on the state machine.
+     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#REPLAYING_EVENTS} causes a transition to
+     * {@link PlatformStatus#FREEZE_COMPLETE} if it's a freeze state.
      */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
-        if (freezeRound != null && action.round() == freezeRound) {
-            return new FreezeCompleteStatusLogic();
-        } else {
-            return this;
-        }
+        Objects.requireNonNull(action);
+
+        return action.isFreezeState() ? new FreezeCompleteStatusLogic() : this;
     }
 
     /**
