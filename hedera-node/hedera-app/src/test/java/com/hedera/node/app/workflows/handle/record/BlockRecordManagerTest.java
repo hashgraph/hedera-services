@@ -62,6 +62,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings({"DataFlowIssue"})
 final class BlockRecordManagerTest extends AppTestBase {
+    private static final Timestamp CONSENSUS_TIME =
+            Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build();
     /** Make it small enough to trigger roll over code with the number of test blocks we have */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
 
@@ -101,8 +103,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         RUNNING_HASHES_STATE_KEY, new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null))
                 .withSingletonState(
                         BLOCK_INFO_STATE_KEY,
-                        new BlockInfo(
-                                0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash(), new Timestamp(0, 0), false))
+                        new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash(), null, false))
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
@@ -121,33 +122,30 @@ final class BlockRecordManagerTest extends AppTestBase {
     @ParameterizedTest
     @CsvSource({"GENESIS, false", "NON_GENESIS, false", "GENESIS, true", "NON_GENESIS, true"})
     void testRecordStreamProduction(final String startMode, final boolean concurrent) throws Exception {
-        // setup initial block info,
+        // setup initial block info
         final long STARTING_BLOCK;
         if (startMode.equals("GENESIS")) {
             STARTING_BLOCK = 1;
         } else {
             // pretend that previous block was 2 seconds before first test transaction
             STARTING_BLOCK = BLOCK_NUM;
-            final var lastHandledConsTime = new Timestamp(
-                    TEST_BLOCKS
-                            .get(0)
-                            .get(0)
-                            .transactionRecord()
-                            .consensusTimestamp()
-                            .seconds(),
-                    0);
             app.stateMutator(NAME)
                     .withSingletonState(
                             BLOCK_INFO_STATE_KEY,
                             new BlockInfo(
                                     STARTING_BLOCK - 1,
-                                    lastHandledConsTime
-                                            .copyBuilder()
-                                            .seconds(lastHandledConsTime.seconds() - 2)
-                                            .build(),
+                                    new Timestamp(
+                                            TEST_BLOCKS
+                                                            .get(0)
+                                                            .get(0)
+                                                            .transactionRecord()
+                                                            .consensusTimestamp()
+                                                            .seconds()
+                                                    - 2,
+                                            0),
                                     STARTING_RUNNING_HASH_OBJ.hash(),
-                                    lastHandledConsTime,
-                                    false))
+                                    CONSENSUS_TIME,
+                                    true))
                     .commit();
         }
 
@@ -218,26 +216,23 @@ final class BlockRecordManagerTest extends AppTestBase {
     @Test
     void testBlockInfoMethods() throws Exception {
         // setup initial block info, pretend that previous block was 2 seconds before first test transaction
-        final var lastHandledConsTime = new Timestamp(
-                TEST_BLOCKS
-                        .get(0)
-                        .get(0)
-                        .transactionRecord()
-                        .consensusTimestamp()
-                        .seconds(),
-                0);
         app.stateMutator(NAME)
                 .withSingletonState(
                         BLOCK_INFO_STATE_KEY,
                         new BlockInfo(
                                 BLOCK_NUM - 1,
-                                lastHandledConsTime
-                                        .copyBuilder()
-                                        .seconds(lastHandledConsTime.seconds() - 2)
-                                        .build(),
+                                new Timestamp(
+                                        TEST_BLOCKS
+                                                        .get(0)
+                                                        .get(0)
+                                                        .transactionRecord()
+                                                        .consensusTimestamp()
+                                                        .seconds()
+                                                - 2,
+                                        0),
                                 STARTING_RUNNING_HASH_OBJ.hash(),
-                                lastHandledConsTime,
-                                false))
+                                CONSENSUS_TIME,
+                                true))
                 .commit();
 
         final Random random = new Random(82792874);

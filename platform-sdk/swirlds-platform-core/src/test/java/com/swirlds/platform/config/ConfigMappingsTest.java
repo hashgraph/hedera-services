@@ -19,9 +19,9 @@ package com.swirlds.platform.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import org.junit.jupiter.api.Test;
 

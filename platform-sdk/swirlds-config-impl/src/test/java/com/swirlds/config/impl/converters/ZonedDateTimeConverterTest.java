@@ -16,9 +16,9 @@
 
 package com.swirlds.config.impl.converters;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZoneOffset;

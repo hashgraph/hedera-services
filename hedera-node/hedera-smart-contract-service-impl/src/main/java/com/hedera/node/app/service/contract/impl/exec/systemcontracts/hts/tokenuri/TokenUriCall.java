@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,6 +32,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Implements the token redirect {@code tokenURI()} call of the HTS system contract.
  */
 public class TokenUriCall extends AbstractNftViewCall {
+
+    public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
     public TokenUriCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
@@ -45,12 +47,23 @@ public class TokenUriCall extends AbstractNftViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(
-            @NonNull final Token token, @NonNull final Nft nft) {
+    protected @NonNull FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
         requireNonNull(token);
-        requireNonNull(nft);
-        final var metadata = new String(nft.metadata().toByteArray());
+        String metadata;
+        if (nft != null) {
+            metadata = new String(nft.metadata().toByteArray());
+        } else {
+            metadata = URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+        }
         return successResult(
                 TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), gasCalculator.viewGasRequirement());
+    }
+
+    @Override
+    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+        requireNonNull(token);
+        final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
+
+        return resultOfViewingNft(token, nft);
     }
 }

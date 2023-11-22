@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import me.champeau.gradle.igp.gitRepositories
-
 pluginManagement { includeBuild("build-logic") }
 
 plugins { id("com.hedera.hashgraph.settings") }
@@ -93,6 +91,8 @@ include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-config-benchmark", "platform-sdk/swirlds-config-benchmark")
 
+include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
+
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
 
 include(":swirlds-fcqueue", "platform-sdk/swirlds-fcqueue")
@@ -139,26 +139,8 @@ fun includeAllProjects(containingFolder: String) {
     }
 }
 
-// The HAPI API version to use for Protobuf sources. This can be a tag or branch
-// name from the hedera-protobufs GIT repo.
+// The HAPI API version to use for Protobuf sources.
 val hapiProtoVersion = "hip-796-SNAPSHOT"
-val hapiProtoBranchOrTag = "tmp-hip796-protos"
-
-gitRepositories {
-    checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
-    // check branch in repo for updates every second
-    refreshIntervalMillis.set(1000)
-
-    if (!gradle.startParameter.isOffline) {
-        include("hedera-protobufs") {
-            uri.set("https://github.com/hashgraph/hedera-protobufs.git")
-            // HAPI repo version
-            tag.set(hapiProtoBranchOrTag)
-            // do not load project from repo
-            autoInclude.set(false)
-        }
-    }
-}
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -167,6 +149,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.4")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.6")
     }
 }

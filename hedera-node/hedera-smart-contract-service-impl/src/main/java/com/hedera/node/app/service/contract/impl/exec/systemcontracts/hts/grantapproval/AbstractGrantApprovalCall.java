@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grant
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
@@ -49,8 +48,9 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
-            @NonNull final TokenType tokenType) {
-        super(gasCalculator, enhancement);
+            @NonNull final TokenType tokenType,
+            @NonNull final boolean isViewCall) {
+        super(gasCalculator, enhancement, isViewCall);
         this.verificationStrategy = verificationStrategy;
         this.senderId = senderId;
         this.token = token;
@@ -61,7 +61,6 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
 
     public TransactionBody callGrantApproval() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(senderId).build())
                 .cryptoApproveAllowance(approve(token, spender, amount, tokenType))
                 .build();
     }

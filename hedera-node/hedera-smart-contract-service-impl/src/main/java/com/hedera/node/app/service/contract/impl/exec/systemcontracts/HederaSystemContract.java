@@ -16,14 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
@@ -37,37 +31,6 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * the work of the precompile itself.
  */
 public interface HederaSystemContract extends PrecompiledContract {
-    record FullResult(@NonNull PrecompileContractResult result, long gasRequirement) {
-        public FullResult {
-            requireNonNull(result);
-        }
-
-        public Bytes output() {
-            return result.getOutput();
-        }
-
-        public boolean isRefundGas() {
-            return result.isRefundGas();
-        }
-
-        public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
-            requireNonNull(reason);
-            return new FullResult(
-                    PrecompileContractResult.revert(
-                            Bytes.wrap(reason.protoName().getBytes())),
-                    gasRequirement);
-        }
-
-        public static FullResult haltResult(@NonNull final ExceptionalHaltReason reason, final long gasRequirement) {
-            requireNonNull(reason);
-            return new FullResult(PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(reason)), gasRequirement);
-        }
-
-        public static FullResult successResult(@NonNull final ByteBuffer encoded, final long gasRequirement) {
-            requireNonNull(encoded);
-            return new FullResult(PrecompileContractResult.success(Bytes.wrap(encoded.array())), gasRequirement);
-        }
-    }
 
     /**
      * Computes the result of this contract, and also returns the gas requirement.
@@ -77,6 +40,6 @@ public interface HederaSystemContract extends PrecompiledContract {
      * @return the result of the computation, and its gas requirement
      */
     default FullResult computeFully(@NonNull Bytes input, @NonNull MessageFrame messageFrame) {
-        return new FullResult(computePrecompile(input, messageFrame), gasRequirement(input));
+        return new FullResult(computePrecompile(input, messageFrame), gasRequirement(input), null);
     }
 }

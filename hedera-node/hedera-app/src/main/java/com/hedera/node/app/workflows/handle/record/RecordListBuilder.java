@@ -23,6 +23,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -180,8 +181,10 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior)
-                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+        // FUTURE : For some reason, we do not set the exchange rate for preceding transactions in mono-service.
+        // Should be corrected after differential testing.
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        //                .exchangeRate(userTxnRecordBuilder.exchangeRate());
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -262,9 +265,9 @@ public final class RecordListBuilder {
                 ? userTxnRecordBuilder.consensusNow()
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
         final var consensusNow = prevConsensusNow.plusNanos(1L);
+        // Note we do not repeat exchange rates for child transactions
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer)
-                .parentConsensus(parentConsensusTimestamp)
-                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+                .parentConsensus(parentConsensusTimestamp);
         if (!customizer.shouldSuppressRecord()) {
             childRecordBuilders.add(recordBuilder);
         }
@@ -374,22 +377,26 @@ public final class RecordListBuilder {
         // a nonce of N, where N is the number of preceding transactions.
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
-            final var recordBuilder = precedingTxnRecordBuilders.get(i);
-            records.add(
-                    recordBuilder.transactionID(idBuilder.nonce(i + 1).build()).build());
+            final SingleTransactionRecordBuilderImpl recordBuilder = precedingTxnRecordBuilders.get(i);
+            records.add(recordBuilder
+                    .transactionID(idBuilder.nonce(i + 1).build())
+                    .syncBodyIdFromRecordId()
+                    .build());
         }
-
         records.add(userTxnRecord);
 
         int nextNonce = count + 1; // Initialize to be 1 more than the number of preceding items
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
         for (int i = 0; i < count; i++) {
-            final var recordBuilder = childRecordBuilders.get(i);
-            records.add(recordBuilder
-                    .transactionID(idBuilder.nonce(nextNonce++).build())
-                    .build());
+            final SingleTransactionRecordBuilderImpl recordBuilder = childRecordBuilders.get(i);
+            // Only create a new transaction ID for child records if one is not provided
+            if (recordBuilder.transactionID() == null || TransactionID.DEFAULT.equals(recordBuilder.transactionID())) {
+                recordBuilder
+                        .transactionID(idBuilder.nonce(nextNonce++).build())
+                        .syncBodyIdFromRecordId();
+            }
+            records.add(recordBuilder.build());
         }
-
         return new Result(userTxnRecord, unmodifiableList(records));
     }
 

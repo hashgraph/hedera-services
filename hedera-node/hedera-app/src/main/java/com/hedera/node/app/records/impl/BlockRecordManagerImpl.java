@@ -281,6 +281,32 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return BlockRecordInfoUtils.blockHashByBlockNumber(lastBlockInfo, blockNo);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+        final var builder = this.lastBlockInfo
+                .copyBuilder()
+                .consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                        .seconds(consensusTime.getEpochSecond())
+                        .nanos(consensusTime.getNano()));
+        if (!this.lastBlockInfo.migrationRecordsStreamed()) {
+            // Any records created during migration should have been published already. Now we shut off the flag to
+            // disallow further publishing
+            builder.migrationRecordsStreamed(true);
+        }
+        final var newBlockInfo = builder.build();
+
+        // Update the latest block info in state
+        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        blockInfoState.put(newBlockInfo);
+        // Commit the changes. We don't ever want to roll back when advancing the consensus clock
+        ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
+
+        // Cache the updated block info
+        this.lastBlockInfo = newBlockInfo;
+    }
+
     // ========================================================================================================
     // Private Methods
 
@@ -326,7 +352,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 newBlockNumber,
                 new Timestamp(blockFirstTransactionTime.getEpochSecond(), blockFirstTransactionTime.getNano()),
                 Bytes.wrap(newBlockHashesBytes),
-                currentBlockInfo.consTimeOfLastHandledTxn(),
-                currentBlockInfo.migrationRecordsStreamed());
+                lastBlockInfo.consTimeOfLastHandledTxn(),
+                lastBlockInfo.migrationRecordsStreamed());
     }
 }
