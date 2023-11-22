@@ -18,8 +18,10 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +41,8 @@ import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.H
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -58,8 +62,17 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     @Mock
     private CryptoCreateRecordBuilder recordBuilder;
 
+    @Mock
+    private BlockValues blockValues;
+
+    private Wei value = Wei.MAX_WEI;
+
     private static final TransactionBody PRETEND_CREATE_TOKEN = TransactionBody.newBuilder()
-            .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+            .tokenCreation(TokenCreateTransactionBody.newBuilder()
+                    .symbol("FT")
+                    .treasury(A_NEW_ACCOUNT_ID)
+                    .autoRenewAccount(SENDER_ID)
+                    .build())
             .build();
 
     private ClassicCreatesCall subject;
@@ -262,10 +275,13 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                 PRETEND_CREATE_TOKEN,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
-                addressIdConverter);
+                addressIdConverter,
+                blockValues,
+                value);
 
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
