@@ -27,7 +27,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -36,7 +35,6 @@ import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -103,7 +101,8 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.emergencyRecoveryManager =
                 Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager must not be null");
         this.teacherThrottle = Objects.requireNonNull(teacherThrottle, "teacherThrottle must not be null");
-        this.emergencyStateSupplier = Objects.requireNonNull(emergencyStateSupplier, "emergencyStateSupplier must not be null");
+        this.emergencyStateSupplier =
+                Objects.requireNonNull(emergencyStateSupplier, "emergencyStateSupplier must not be null");
         this.reconnectSocketTimeout =
                 Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
         this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
@@ -168,7 +167,12 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try {
             new EmergencyReconnectTeacher(
-                            time, threadManager, emergencyStateSupplier, reconnectSocketTimeout, reconnectMetrics, configuration)
+                            time,
+                            threadManager,
+                            emergencyStateSupplier,
+                            reconnectSocketTimeout,
+                            reconnectMetrics,
+                            configuration)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();

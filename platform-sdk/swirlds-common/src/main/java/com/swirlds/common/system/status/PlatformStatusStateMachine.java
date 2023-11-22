@@ -22,9 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
-import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;

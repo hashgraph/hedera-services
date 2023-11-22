@@ -20,7 +20,6 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.status.actions.PlatformStatusAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
 import com.swirlds.common.threading.framework.QueueThread;

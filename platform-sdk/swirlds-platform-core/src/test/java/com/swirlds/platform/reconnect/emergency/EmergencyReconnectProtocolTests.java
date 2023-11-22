@@ -32,7 +32,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -40,8 +39,6 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.signed.SignedStateFinder;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.Instant;
@@ -107,7 +104,7 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
-                ()->null,
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
@@ -131,7 +128,7 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
-                ()->null,
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
@@ -163,7 +160,7 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 emergencyRecoveryManager,
                 teacherThrottle,
-                ()->null,
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
@@ -214,7 +211,7 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
-                ()->null,
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
