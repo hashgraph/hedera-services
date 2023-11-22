@@ -105,7 +105,7 @@ jobs:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   hapi-tests-misc:
-    name: HAPI Tests (misc)
+    name: HAPI Tests (Misc)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
@@ -122,7 +122,7 @@ jobs:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   hapi-tests-crypto:
-    name: HAPI Tests (crypto)
+    name: HAPI Tests (Crypto)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
@@ -139,7 +139,7 @@ jobs:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   hapi-tests-token:
-    name: HAPI Tests (token)
+    name: HAPI Tests (Token)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
@@ -156,7 +156,7 @@ jobs:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   hapi-tests-smart-contract:
-    name: HAPI Tests (smart contract)
+    name: HAPI Tests (Smart Contract)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
@@ -173,7 +173,7 @@ jobs:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   hapi-tests-time-consuming:
-    name: HAPI Tests (time consuming)
+    name: HAPI Tests (Time Consuming)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
@@ -208,6 +208,7 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+
   snyk-scan:
     name: Snyk Scan
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
