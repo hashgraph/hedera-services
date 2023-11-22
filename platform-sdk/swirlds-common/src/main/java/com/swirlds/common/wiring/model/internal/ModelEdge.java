@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.INDENTATION;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -70,5 +71,30 @@ public record ModelEdge(
             return this.destination.compareTo(that.destination);
         }
         return this.label.compareTo(that.label);
+    }
+
+    /**
+     * Render this edge to a string builder.
+     *
+     * @param sb the string builder to render to
+     */
+    public void render(@NonNull final StringBuilder sb) {
+        sb.append(INDENTATION).append(source.getName());
+
+        if (insertionIsBlocking) {
+            if (label.isEmpty()) {
+                sb.append(" --> ");
+            } else {
+                sb.append(" -- \"").append(label).append("\" --> ");
+            }
+        } else {
+            if (label.isEmpty()) {
+                sb.append(" -.-> ");
+            } else {
+                sb.append(" -. \"").append(label).append("\" .-> ");
+            }
+        }
+
+        sb.append(destination.getName()).append("\n");
     }
 }

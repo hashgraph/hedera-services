@@ -16,6 +16,11 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.DIRECT_SCHEDULER_COLOR;
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.INDENTATION;
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.SCHEDULER_COLOR;
+import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.TEXT_COLOR;
+
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -97,10 +102,10 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     /**
      * Add an outgoing edge to this vertex.
      *
-     * @param vertex the edge to connect to
+     * @param edge the edge to connect to
      */
-    public void connectToEdge(@NonNull final ModelEdge vertex) {
-        outgoingEdges.add(Objects.requireNonNull(vertex));
+    public void connectToEdge(@NonNull final ModelEdge edge) {
+        outgoingEdges.add(Objects.requireNonNull(edge));
     }
 
     /**
@@ -151,5 +156,60 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     @Override
     public int compareTo(@NonNull final ModelVertex that) {
         return name.compareTo(that.name);
+    }
+
+    /**
+     * Render this vertex in mermaid format. Used when generating a wiring diagram.
+     *
+     * @param sb          the string builder to render to
+     * @param indentation the indentation level
+     */
+    public void render(@NonNull final StringBuilder sb, final int indentation) {
+
+        sb.append(INDENTATION.repeat(indentation)).append(name);
+
+        switch (type) {
+            case CONCURRENT -> sb.append("[[");
+            case DIRECT -> sb.append("[/");
+            case DIRECT_STATELESS -> sb.append("{{");
+            default -> sb.append("[");
+        }
+
+        sb.append("\"").append(name);
+
+        // TODO
+//        if (substitutedInputs != null) {
+//            sb.append("<br />" + substitutedInputs);
+//        }
+
+        sb.append("\"");
+
+        switch (type) {
+            case CONCURRENT -> sb.append("]]");
+            case DIRECT -> sb.append("/]");
+            case DIRECT_STATELESS -> sb.append("}}");
+            default -> sb.append("]");
+        }
+
+        sb.append("\n");
+
+        final String color = switch (type) {
+            case SEQUENTIAL:
+            case SEQUENTIAL_THREAD:
+            case CONCURRENT:
+                yield SCHEDULER_COLOR;
+            case DIRECT:
+            case DIRECT_STATELESS:
+                yield DIRECT_SCHEDULER_COLOR;
+        };
+
+        sb.append(INDENTATION.repeat(indentation))
+                .append("style ")
+                .append(name)
+                .append(" fill:#")
+                .append(color)
+                .append(",stroke:#")
+                .append(TEXT_COLOR)
+                .append(",stroke-width:2px\n");
     }
 }
