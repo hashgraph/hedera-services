@@ -88,6 +88,7 @@ public class PrngPrecompileSuite extends HapiSuite {
         return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
     }
 
+    @HapiTest
     private HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
@@ -188,6 +189,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec nonSupportedAbiCallGracefullyFails() {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
@@ -210,6 +212,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
@@ -237,6 +240,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
