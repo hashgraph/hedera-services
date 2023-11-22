@@ -45,8 +45,10 @@ public class EventCreationManagerWiring {
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
         pauseInput = taskScheduler.buildInputWire("pause");
         newEventOutput = taskScheduler.getOutputWire();
+
+        // TODO frequency needs to be configurable
         heartbeatBindable =
-                taskScheduler.buildHeartbeatInputWire("attempt event creation", Duration.ofMillis(1));
+                taskScheduler.buildHeartbeatInputWire("attempt event creation", 100);
     }
 
     /**

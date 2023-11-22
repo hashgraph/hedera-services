@@ -46,11 +46,14 @@ public final class WiringFlowchart {
      * @param edge               the edge to draw
      * @param collapsedVertexMap a map from vertices that are in collapsed groups to the group name that they should be
      *                           replaced with
+     * @param arrowsDrawn        a set of arrows that have already been drawn, used to prevent the drawing of duplicate
+     *                           arrows (this is possible if groups of vertices are collapsed)
      */
     private static void drawEdge(
             @NonNull final StringBuilder sb,
             @NonNull final ModelEdge edge,
-            @NonNull final Map<ModelVertex, String> collapsedVertexMap) {
+            @NonNull final Map<ModelVertex, String> collapsedVertexMap,
+            @NonNull final Set<WiringFlowchartArrow> arrowsDrawn) {
 
         final String source;
         if (collapsedVertexMap.containsKey(edge.source())) {
@@ -69,6 +72,13 @@ public final class WiringFlowchart {
 
         if (source.equals(destination)) {
             // Don't draw arrows from a component back to itself.
+            return;
+        }
+
+        final WiringFlowchartArrow arrow = new WiringFlowchartArrow(source, destination, edge.label(),
+                edge.insertionIsBlocking());
+        if (!arrowsDrawn.add(arrow)) {
+            // Don't draw duplicate arrows.
             return;
         }
 
@@ -280,11 +290,13 @@ public final class WiringFlowchart {
         final List<ModelVertex> ungroupedVertices = getUngroupedVertices(vertices, groupMap);
         final Map<ModelVertex, String> collapsedVertexMap = getCollapsedVertexMap(groups, vertices);
 
+        final Set<WiringFlowchartArrow> arrowsDrawn = new HashSet<>();
+
         groups.stream()
                 .sorted()
                 .forEachOrdered(group -> drawGroup(sb, group, groupMap.get(group.name()), collapsedVertexMap));
         ungroupedVertices.stream().sorted().forEachOrdered(vertex -> drawVertex(sb, vertex, collapsedVertexMap, 1));
-        edges.stream().sorted().forEachOrdered(edge -> drawEdge(sb, edge, collapsedVertexMap));
+        edges.stream().sorted().forEachOrdered(edge -> drawEdge(sb, edge, collapsedVertexMap, arrowsDrawn));
 
         return sb.toString();
     }

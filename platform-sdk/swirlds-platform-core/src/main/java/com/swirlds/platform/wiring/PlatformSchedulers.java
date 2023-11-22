@@ -35,6 +35,7 @@ import java.util.List;
  * @param orphanBufferScheduler            the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler           the scheduler for the in-order linker
  * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
+ * @param eventCreationManagerScheduler    the scheduler for the event creation manager
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
@@ -42,7 +43,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
-        @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler) {
+        @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
+        @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -97,6 +99,12 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
-                        .cast());
+                        .cast(),
+                model.schedulerBuilder("eventCreationManager")
+                        .withType(config.getEventCreationManagerSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
+                        .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build().cast());
     }
 }
