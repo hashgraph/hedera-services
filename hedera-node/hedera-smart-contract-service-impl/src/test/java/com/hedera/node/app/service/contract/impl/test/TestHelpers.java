@@ -70,7 +70,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -79,6 +79,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
@@ -220,6 +221,12 @@ public class TestHelpers {
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
 
+    public static final Token EXPLICITLY_IMMUTABLE_FUNGIBLE_TOKEN = FUNGIBLE_TOKEN
+            .copyBuilder()
+            .adminKey(KeyUtils.IMMUTABILITY_SENTINEL_KEY)
+            .build();
+    public static final Token MUTABLE_FUNGIBLE_TOKEN =
+            FUNGIBLE_TOKEN.copyBuilder().adminKey(AN_ED25519_KEY).build();
     public static final CustomFee FIXED_HBAR_FEES = CustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(2).build())
             .feeCollectorAccountId(SENDER_ID)
@@ -585,8 +592,7 @@ public class TestHelpers {
         assertEquals(expected.getGasCost(), actual.getGasCost());
     }
 
-    public static void assertSamePrecompileResult(
-            final HederaSystemContract.FullResult expected, final HederaSystemContract.FullResult actual) {
+    public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {
         assertEquals(expected.gasRequirement(), actual.gasRequirement());
         final var expectedResult = expected.result();
         final var actualResult = actual.result();

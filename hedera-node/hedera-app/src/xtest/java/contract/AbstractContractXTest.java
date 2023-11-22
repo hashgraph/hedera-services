@@ -21,6 +21,12 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CO
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_ALIAS;
+import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.TYPICAL_SENDER_ACCOUNT;
+import static contract.XTestConstants.TYPICAL_SENDER_CONTRACT;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -36,6 +42,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
@@ -72,6 +80,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -128,6 +137,26 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
+    }
+
+    protected Map<ProtoBytes, AccountID> withSenderAlias(final Map<ProtoBytes, AccountID> aliases) {
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        return aliases;
+    }
+
+    protected Map<ProtoBytes, AccountID> withSenderAddress(final Map<ProtoBytes, AccountID> aliases) {
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        return aliases;
+    }
+
+    protected Map<AccountID, Account> withSenderAccount(final Map<AccountID, Account> accounts) {
+        accounts.put(SENDER_ID, TYPICAL_SENDER_ACCOUNT);
+        return accounts;
+    }
+
+    protected Map<AccountID, Account> withSenderContractAccount(final Map<AccountID, Account> accounts) {
+        accounts.put(SENDER_ID, TYPICAL_SENDER_CONTRACT);
+        return accounts;
     }
 
     protected TransactionID transactionIdWith(@NonNull final AccountID payerId) {
@@ -213,7 +242,11 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                     Optional.ofNullable(context).orElse("An unspecified operation") + " should have reverted");
             final var actualReason =
                     ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
-            assertEquals(status, actualReason);
+            assertEquals(
+                    status,
+                    actualReason,
+                    "'" + Optional.ofNullable(context).orElse("An unspecified operation")
+                            + "' should have reverted with " + status + " but instead reverted with " + actualReason);
         }));
     }
 
@@ -264,9 +297,10 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
 
-        final var call = callAttemptFactory.createCallFrom(input, frame);
+        final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var call = attempt.asExecutableCall();
 
-        final var pricedResult = call.execute(frame);
+        final var pricedResult = requireNonNull(call).execute(frame);
         resultAssertions.accept(pricedResult);
         // Note that committing a reverted calls should have no effect on state
         ((SavepointStackImpl) context.savepointStack()).commitFullStack();
@@ -307,12 +341,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     protected Consumer<Response> assertingCallLocalResultIsBuffer(
             @NonNull final ByteBuffer expectedResult, @NonNull final String orElseMessage) {
-        return response -> assertThat(expectedResult.array())
-                .withFailMessage(orElseMessage)
-                .isEqualTo(response.contractCallLocalOrThrow()
-                        .functionResultOrThrow()
-                        .contractCallResult()
-                        .toByteArray());
+        return response -> {
+            assertThat(expectedResult.array())
+                    .withFailMessage(orElseMessage)
+                    .isEqualTo(response.contractCallLocalOrThrow()
+                            .functionResultOrThrow()
+                            .contractCallResult()
+                            .toByteArray());
+        };
     }
 
     private Consumer<HtsCall.PricedResult> resultOnlyAssertion(

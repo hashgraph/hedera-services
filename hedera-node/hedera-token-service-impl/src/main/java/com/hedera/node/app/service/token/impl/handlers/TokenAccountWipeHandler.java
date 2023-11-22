@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -205,9 +206,10 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
         final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType = readableTokenStore
-                .get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT))
-                .tokenType();
+        final var tokenType = Optional.ofNullable(
+                        readableTokenStore.get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT)))
+                .map(Token::tokenType)
+                .orElse(TokenType.FUNGIBLE_COMMON);
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
         return feeContext
                 .feeCalculator(
