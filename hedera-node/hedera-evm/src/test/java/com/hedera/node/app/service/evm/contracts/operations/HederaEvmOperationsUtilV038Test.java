@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -46,6 +47,9 @@ class HederaEvmOperationsUtilV038Test {
     private LongSupplier gasSupplier;
 
     @Mock
+    private EvmProperties evmProperties;
+
+    @Mock
     private Supplier<Operation.OperationResult> executionSupplier;
 
     private final long expectedHaltGas = 10L;
@@ -65,7 +69,8 @@ class HederaEvmOperationsUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 a -> false,
-                () -> mock(Operation.OperationResult.class));
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
 
         // then:
         assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
@@ -84,10 +89,17 @@ class HederaEvmOperationsUtilV038Test {
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
-                messageFrame, () -> Address.ZERO, gasSupplier, executionSupplier, (a, b) -> true, a -> true, () -> {
+                messageFrame,
+                () -> Address.ZERO,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                a -> true,
+                () -> {
                     messageFrame.pushStackItem(Bytes.EMPTY);
                     return mock(Operation.OperationResult.class);
-                });
+                },
+                evmProperties);
         // then:
         assertEquals(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS, result.getHaltReason());
         assertEquals(expectedHaltGas, result.getGasCost());
@@ -111,7 +123,8 @@ class HederaEvmOperationsUtilV038Test {
                 executionSupplier,
                 (a, b) -> false,
                 a -> false,
-                () -> mock(Operation.OperationResult.class));
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -136,7 +149,8 @@ class HederaEvmOperationsUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 a -> false,
-                () -> mock(Operation.OperationResult.class));
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
 
         // when:
         assertNull(result.getHaltReason());

@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -55,6 +56,9 @@ class HederaExtCodeCopyOperationV038Test {
     private EVM evm;
 
     @Mock
+    private EvmProperties evmProperties;
+
+    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     private HederaExtCodeCopyOperationV038 subject;
@@ -70,7 +74,7 @@ class HederaExtCodeCopyOperationV038Test {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
     }
 
     @Test
@@ -130,7 +134,7 @@ class HederaExtCodeCopyOperationV038Test {
     @Test
     void successfulExecutionPrecompileAddress() {
         // given:
-        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.getStackItem(0)).willReturn(ETH_ADDRESS_INSTANCE);
         given(mf.getStackItem(1)).willReturn(MEM_OFFSET);
         given(mf.getStackItem(2)).willReturn(MEM_OFFSET);
