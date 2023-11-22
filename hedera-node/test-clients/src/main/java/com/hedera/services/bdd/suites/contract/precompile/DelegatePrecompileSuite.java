@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -97,6 +98,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
         return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
     }
 
+    @HapiTest
     private HapiSpec delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -153,6 +155,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
+    @HapiTest
     private HapiSpec delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -201,6 +204,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
+    @HapiTest
     private HapiSpec delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
