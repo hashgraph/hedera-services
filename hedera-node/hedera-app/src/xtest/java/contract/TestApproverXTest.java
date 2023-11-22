@@ -92,6 +92,7 @@ public class TestApproverXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(SENDER_ID)
                         .expirationSecond(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .key(AN_ED25519_KEY)
                         .alias(SENDER_ADDRESS)
                         .tinybarBalance(123 * 100 * ONE_HBAR)
                         .build());

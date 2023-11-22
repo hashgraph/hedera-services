@@ -22,7 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.FREEZE;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.google.protobuf.ByteString;
-import com.swirlds.base.utility.Triple;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;

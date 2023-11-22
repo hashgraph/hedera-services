@@ -115,6 +115,8 @@ permissions:
 env:
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+  GRADLE_EXEC: cgexec -g cpu,memory:gradle --sticky ./gradlew
+  CG_EXEC: cgexec -g cpu,memory:gradle --sticky
 
 jobs:
   compile:
@@ -136,28 +138,66 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+        with:
+          gradle-home-cache-cleanup: true
+          cache-read-only: false
 
       - name: Setup NodeJS
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
         with:
           node-version: ${{ inputs.node-version }}
 
+      - name: Setup Control Groups
+        run: |
+          echo "::group::Get System Configuration"
+            USR_ID="$(id -un)"
+            GRP_ID="$(id -gn)"
+            GRADLE_MEM_LIMIT="30064771072"
+            AGENT_MEM_LIMIT="2147483648"
+          echo "::endgroup::"
+
+          echo "::group::Install Control Group Tools"
+            if ! command -v cgcreate >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y cgroup-tools
+            fi
+          echo "::endgroup::"
+
+          echo "::group::Create Control Groups"
+            sudo cgcreate -g cpu,memory:gradle -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+            sudo cgcreate -g cpu,memory:agent -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+          echo "::endgroup::"
+
+          echo "::group::Set Control Group Limits"
+            cgset -r cpu.shares=768 gradle
+            cgset -r cpu.shares=256 agent
+            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} gradle
+            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} agent
+            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} gradle
+            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} agent
+          echo "::endgroup::"
+
+          echo "::group::Move Runner Processes to Control Groups"
+            sudo cgclassify --sticky -g cpu,memory:agent $(pgrep 'Runner.Listener' | tr '\n' ' ')
+            sudo cgclassify --sticky -g cpu,memory:agent $(pgrep 'Runner.Worker' | tr '\n' ' ')
+          echo "::endgroup::"
+
       - name: Compile
         id: gradle-build
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew assemble --scan --no-daemon
+        run: ${GRADLE_EXEC} assemble --scan --no-daemon
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew spotlessCheck --scan --no-daemon
+        run: ${GRADLE_EXEC} spotlessCheck --scan --no-daemon
 
       - name: Gradle Dependency Scopes Check
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew checkAllModuleInfo --scan --continue --no-daemon
+        run: ${GRADLE_EXEC} checkAllModuleInfo --scan --continue --no-daemon
 
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew check --continue --scan --no-daemon
+        run: ${GRADLE_EXEC} check --continue --scan --no-daemon
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -176,12 +216,12 @@ jobs:
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew createDockerImage --scan --no-daemon
+        run: ${GRADLE_EXEC} createDockerImage --scan --no-daemon
 
       - name: Integration Testing
         id: gradle-itest
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew itest --scan --no-daemon
+        run: ${GRADLE_EXEC} itest --scan --no-daemon
 
       - name: Publish Integration Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -206,7 +246,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew hapiTest -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTest -Dfile.encoding=UTF-8 --scan --no-daemon
 
       - name: Publish HAPI Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -228,7 +268,7 @@ jobs:
       - name: E2E Testing
         id: gradle-eet
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ionice -c 2 -n 2 nice -n 19 ./gradlew eet --scan --no-daemon
+        run: ${GRADLE_EXEC} eet --scan --no-daemon
 
       - name: Publish E2E Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
@@ -282,11 +322,9 @@ jobs:
           echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
 
       - name: SonarCloud Scan
-        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
-          SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
         if: >-
           ${{
             inputs.enable-sonar-analysis &&
@@ -298,9 +336,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: sonar --info --scan --no-parallel ${{ steps.sonar-cloud.outputs.options }}
+        run: ${GRADLE_EXEC} sonar --info --scan --no-parallel ${{ steps.sonar-cloud.outputs.options }}
 
       - name: Setup Snyk
         env:
@@ -316,7 +352,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+        run: ${CG_EXEC} npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Snyk Scan
         id: snyk
@@ -333,7 +369,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ionice -c 2 -n 2 nice -n 19 snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
 
       - name: Snyk Code
         id: snyk-code
@@ -350,7 +386,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ionice -c 2 -n 2 nice -n 19 snyk code test --severity-threshold=high --json-file-output=snyk-code.json
+        run: ${CG_EXEC} snyk code test --severity-threshold=high --json-file-output=snyk-code.json
 
       - name: Publish Snyk Results
         if: >-

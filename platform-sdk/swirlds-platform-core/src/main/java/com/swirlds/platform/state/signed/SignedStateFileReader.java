@@ -25,7 +25,6 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
 
-import com.swirlds.base.utility.Triple;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -139,7 +138,9 @@ public final class SignedStateFileReader {
 
         final DeserializedSignedState returnState;
 
-        final Triple<State, Hash, SigSet> data = deserializeAndDebugOnFailure(
+        record StateFileData(State state, Hash hash, SigSet sigSet) {}
+
+        final StateFileData data = deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
                     readAndCheckVersion(in);
@@ -150,16 +151,16 @@ public final class SignedStateFileReader {
                     final Hash hash = in.readSerializable();
                     final SigSet sigSet = in.readSerializable();
 
-                    return Triple.of(state, hash, sigSet);
+                    return new StateFileData(state, hash, sigSet);
                 });
 
         final SignedState newSignedState =
-                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()", false);
+                new SignedState(platformContext, data.state(), "SignedStateFileReader.readStateFile()", false);
 
-        newSignedState.setSigSet(data.right());
+        newSignedState.setSigSet(data.sigSet());
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.middle());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
 
         return returnState;
     }

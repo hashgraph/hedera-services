@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -61,6 +62,11 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     @Mock
     private CryptoCreateRecordBuilder recordBuilder;
 
+    @Mock
+    private BlockValues blockValues;
+
+    private Wei value = Wei.MAX_WEI;
+
     private static final TransactionBody PRETEND_CREATE_TOKEN = TransactionBody.newBuilder()
             .tokenCreation(TokenCreateTransactionBody.newBuilder()
                     .symbol("FT")
@@ -76,7 +82,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -91,7 +97,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -106,7 +112,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -121,7 +127,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -136,7 +142,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -151,7 +157,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -166,7 +172,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -181,7 +187,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -196,7 +202,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -211,7 +217,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -226,7 +232,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -241,7 +247,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -256,26 +262,26 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(TOKEN_HAS_NO_SUPPLY_KEY);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(TOKEN_HAS_NO_SUPPLY_KEY.protoName().getBytes()), result.getOutput());
     }
 
     private void commonGivens() {
-        given(frame.getValue()).willReturn(Wei.ZERO);
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
-                .willReturn(A_NEW_ACCOUNT_ID);
-        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
-
         subject = new ClassicCreatesCall(
                 systemContractGasCalculator,
                 mockEnhancement(),
                 PRETEND_CREATE_TOKEN,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
-                addressIdConverter);
+                addressIdConverter,
+                blockValues,
+                value);
 
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),

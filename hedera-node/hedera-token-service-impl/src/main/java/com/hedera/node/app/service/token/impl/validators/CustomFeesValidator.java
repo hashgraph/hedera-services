@@ -275,7 +275,6 @@ public class CustomFeesValidator {
                 validateTrue(denominatingTokenId.tokenNum() != 0, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 validateExplicitTokenDenomination(
                         fee.feeCollectorAccountId(), denominatingTokenId, tokenRelationStore, tokenStore);
-                fees.add(fee);
             }
         }
     }

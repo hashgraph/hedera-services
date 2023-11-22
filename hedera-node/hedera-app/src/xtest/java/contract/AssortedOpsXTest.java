@@ -39,10 +39,10 @@ import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_ID;
 import static contract.AssortedOpsXTestConstants.SALT;
 import static contract.AssortedOpsXTestConstants.TAKE_FIVE;
 import static contract.AssortedOpsXTestConstants.VACATE_ADDRESS;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.MISC_PAYER_ID;
 import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
-import static contract.XTestConstants.SENDER_ALIAS;
 import static contract.XTestConstants.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -145,33 +145,27 @@ public class AssortedOpsXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        final var aliases = withSenderAlias(new HashMap<>());
         aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(SENDER_ID)
-                        .alias(SENDER_ALIAS)
-                        .tinybarBalance(100 * ONE_HBAR)
-                        .build());
+        final var accounts = withSenderAccount(new HashMap<>());
         accounts.put(
                 RELAYER_ID,
                 Account.newBuilder()
                         .accountId(RELAYER_ID)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(AN_ED25519_KEY)
                         .build());
         accounts.put(
                 MISC_PAYER_ID,
                 Account.newBuilder()
                         .accountId(MISC_PAYER_ID)
                         .tinybarBalance(100 * ONE_HBAR)
+                        .key(AN_ED25519_KEY)
                         .build());
         accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
         return accounts;
