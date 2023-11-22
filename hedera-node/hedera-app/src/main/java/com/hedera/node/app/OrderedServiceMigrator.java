@@ -71,13 +71,16 @@ public class OrderedServiceMigrator {
         requireNonNull(currentVersion);
         requireNonNull(versionedConfiguration);
         requireNonNull(networkInfo);
+        logger.info("State children before migration: {}", state.getNumberOfChildren());
 
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
                 .findFirst()
                 .orElseThrow();
+        final var entityIdService = new EntityIdService();
         final var entityIdRegistry = (MerkleSchemaRegistry) entityIdRegistration.registry();
+        entityIdService.registerSchemas(entityIdRegistry);
         entityIdRegistry.migrate(
                 state,
                 previousVersion,
@@ -87,6 +90,19 @@ public class OrderedServiceMigrator {
                 backendThrottle,
                 // We call with null here because we're migrating the entity ID service itself
                 null);
+
+        // The token service has a dependency on the entity ID service during genesis migrations, so we
+        // CAREFULLY create a different WritableStates specific to the entity ID service. The different
+        // WritableStates instances won't be able to "see" the changes made by each other, meaning that a
+        // change made with WritableStates instance X would _not_ be read by a separate WritableStates
+        // instance Y. However, since the inter-service dependencies are limited to the EntityIdService,
+        // there shouldn't be any changes made in any single WritableStates instance that would need to be
+        // read by any other separate WritableStates instances. This should hold true as long as the
+        // EntityIdService is not directly injected into any genesis generation code. Instead, we'll inject
+        // this entity ID writable states instance into the MigrationContext below, to enable generation of
+        // entity IDs through an appropriate API.
+        final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
+        final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
 
         // Now that the Entity ID Service is migrated, migrate the remaining services in name order. Note: the name
         // ordering itself isn't important, just that the ordering is deterministic
@@ -101,19 +117,6 @@ public class OrderedServiceMigrator {
                     final var serviceName = service.getServiceName();
                     logger.info("Migrating Service {}", serviceName);
                     final var registry = (MerkleSchemaRegistry) registration.registry();
-
-                    // The token service has a dependency on the entity ID service during genesis migrations, so we
-                    // CAREFULLY create a different WritableStates specific to the entity ID service. The different
-                    // WritableStates instances won't be able to "see" the changes made by each other, meaning that a
-                    // change made with WritableStates instance X would _not_ be read by a separate WritableStates
-                    // instance Y. However, since the inter-service dependencies are limited to the EntityIdService,
-                    // there shouldn't be any changes made in any single WritableStates instance that would need to be
-                    // read by any other separate WritableStates instances. This should hold true as long as the
-                    // EntityIdService is not directly injected into any genesis generation code. Instead, we'll inject
-                    // this entity ID writable states instance into the MigrationContext below, to enable generation of
-                    // entity IDs through an appropriate API.
-                    final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
-                    final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
 
                     registry.migrate(
                             state,

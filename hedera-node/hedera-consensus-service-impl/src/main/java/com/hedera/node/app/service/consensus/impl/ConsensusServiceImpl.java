@@ -31,6 +31,8 @@ import java.util.Set;
  */
 public final class ConsensusServiceImpl implements ConsensusService {
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
+
     public static final long RUNNING_HASH_VERSION = 3L;
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
@@ -41,7 +43,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private Schema consensusSchema() {
-        return new Schema(GENESIS_VERSION) {
+        return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

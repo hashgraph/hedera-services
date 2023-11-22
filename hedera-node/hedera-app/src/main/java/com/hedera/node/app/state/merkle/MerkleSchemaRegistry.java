@@ -115,7 +115,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(requireNonNull(schema));
-        logger.debug(
+        logger.info(
                 "Registering schema {} for service {} ",
                 () -> HapiUtils.toString(schema.getVersion()),
                 () -> serviceName);
@@ -167,8 +167,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
-
         for (final var schema : schemasToApply) {
+            logger.info(
+                    "Migrating schema {} for service {}",
+                    () -> HapiUtils.toString(schema.getVersion()),
+                    () -> serviceName);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap
@@ -185,7 +188,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
                     .forEach(def -> {
                         final var stateKey = def.stateKey();
-                        logger.debug("Creating state {} for {}", stateKey, serviceName);
+                        logger.info("Creating state {} for {}", stateKey, serviceName);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
                             hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
@@ -218,11 +221,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
-            final var writeableStates = hederaState.createWritableStates(serviceName);
+            final var writableStates = hederaState.createWritableStates(serviceName);
             final var statesToRemove = schema.statesToRemove();
-            final var remainingStates = new HashSet<>(writeableStates.stateKeys());
+            final var remainingStates = new HashSet<>(writableStates.stateKeys());
             remainingStates.removeAll(statesToRemove);
-            final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
+            final var newStates = new FilteredWritableStates(writableStates, remainingStates);
 
             // For any changes to state that depend on other services outside the current service, we need a reference
             // to the overall state that we can pass into the context. This reference to overall state will be strictly
@@ -243,7 +246,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 schema.migrate(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration
-            if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+            if (writableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }
 
@@ -269,7 +272,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     @NonNull
     private List<Schema> computeApplicableSchemas(
             @Nullable final SemanticVersion previousVersion, @NonNull final SemanticVersion currentVersion) {
-
+        logger.info("previousVersion: {}", () -> HapiUtils.toString(previousVersion)+
+                " currentVersion: {}", () -> HapiUtils.toString(currentVersion));
         // The previous version MUST be strictly less than or equal to the current version
         if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
@@ -278,11 +282,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // Evaluate each of the schemas (which are in ascending order by version, thanks
         // to the tree-set nature of our set) and select the subset that are newer than
         // the "previousVersion" and no newer than the currentVersion.
+        logger.info("Computing applicable schemas {}", () -> schemas);
         final var applicableSchemas = new ArrayList<Schema>();
         for (Schema schema : schemas) {
             final var ver = schema.getVersion();
             if (isSameVersion(ver, currentVersion) || isBetween(previousVersion, ver, currentVersion)) {
                 applicableSchemas.add(schema);
+                logger.info("Adding schema {} for service {}", () -> HapiUtils.toString(ver), () -> serviceName);
             }
         }
 

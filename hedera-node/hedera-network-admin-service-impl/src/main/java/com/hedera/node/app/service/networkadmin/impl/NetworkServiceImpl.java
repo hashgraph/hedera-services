@@ -41,6 +41,7 @@ public final class NetworkServiceImpl implements NetworkService {
     public static final String CONTEXT_KEY = "CONTEXT";
     public static final String STAKING_KEY = "STAKING";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     @Override
     public void registerSchemas(final @NonNull SchemaRegistry registry) {
@@ -48,7 +49,7 @@ public final class NetworkServiceImpl implements NetworkService {
     }
 
     private Schema networkSchema() {
-        return new Schema(GENESIS_VERSION) {
+        return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

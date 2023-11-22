@@ -42,6 +42,7 @@ public class CongestionThrottleService implements Service {
     public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
     public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     @NonNull
     @Override
@@ -51,7 +52,7 @@ public class CongestionThrottleService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(GENESIS_VERSION) {
+        registry.register(new Schema(CURRENT_VERSION) {
             /** {@inheritDoc} */
             @NonNull
             @Override

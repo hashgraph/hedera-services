@@ -43,6 +43,7 @@ public final class BlockRecordService implements Service {
 
     /** The original version of the state */
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
     /** The original hash, only used at genesis */
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
 
@@ -54,7 +55,7 @@ public final class BlockRecordService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(GENESIS_VERSION) {
+        registry.register(new Schema(CURRENT_VERSION) {
             /** {@inheritDoc} */
             @NonNull
             @Override

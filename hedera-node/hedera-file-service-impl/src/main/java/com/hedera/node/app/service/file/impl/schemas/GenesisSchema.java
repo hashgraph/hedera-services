@@ -73,6 +73,7 @@ import org.apache.logging.log4j.Logger;
 public class GenesisSchema extends Schema {
     private static final Logger logger = LogManager.getLogger(GenesisSchema.class);
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
     /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
      * changed, then the database has to be rebuilt.

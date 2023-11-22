@@ -33,6 +33,7 @@ public class FeeService implements Service {
 
     public static final String NAME = "FeeService";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
     static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
 
     @NonNull
@@ -43,7 +44,7 @@ public class FeeService implements Service {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new Schema(GENESIS_VERSION) {
+        registry.register(new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

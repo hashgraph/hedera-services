@@ -33,6 +33,7 @@ public final class FreezeServiceImpl implements FreezeService {
     public static final String FREEZE_TIME_KEY = "FREEZE_TIME";
     public static final String LAST_FROZEN_TIME_KEY = "LAST_FROZEN_TIME";
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
@@ -40,7 +41,7 @@ public final class FreezeServiceImpl implements FreezeService {
     }
 
     private Schema networkAdminSchema() {
-        return new Schema(GENESIS_VERSION) {
+        return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
