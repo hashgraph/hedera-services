@@ -82,7 +82,8 @@ public class UtilStateChange {
         final var newSpecKey = new NewSpecKey(secp256k1Key).shape(secp256k1Shape);
         final var cryptoTransfer = new HapiCryptoTransfer(
                         tinyBarsFromAccountToAlias(GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))
-                .via(txnName);
+                .via(txnName)
+                .payingWith(GENESIS);
         final var idLookup = getTxnRecord(txnName).andAllChildRecords().assertingNothing();
 
         newSpecKey.execFor(spec);
