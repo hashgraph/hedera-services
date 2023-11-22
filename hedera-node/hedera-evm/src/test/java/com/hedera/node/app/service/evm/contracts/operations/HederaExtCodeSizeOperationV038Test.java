@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -59,6 +60,9 @@ class HederaExtCodeSizeOperationV038Test {
     EVM evm;
 
     @Mock
+    EvmProperties evmProperties;
+
+    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     HederaExtCodeSizeOperationV038 subject;
@@ -68,7 +72,7 @@ class HederaExtCodeSizeOperationV038Test {
         given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 
-        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
     }
 
     @Test
@@ -116,7 +120,7 @@ class HederaExtCodeSizeOperationV038Test {
     @Test
     void successfulExecutionPrecompileAddress() {
         // given:
-        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.getStackItem(0)).willReturn(ethAddressInstance);
         // when:
         var opResult = subject.execute(mf, evm);

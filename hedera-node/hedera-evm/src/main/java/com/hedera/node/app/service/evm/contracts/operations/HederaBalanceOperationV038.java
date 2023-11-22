@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -37,14 +38,17 @@ public class HederaBalanceOperationV038 extends BalanceOperation {
 
     private BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
+    private final EvmProperties evmProperties;
 
     public HederaBalanceOperationV038(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> systemAccountDetector) {
+            Predicate<Address> systemAccountDetector,
+            EvmProperties evmProperties) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
         this.systemAccountDetector = systemAccountDetector;
+        this.evmProperties = evmProperties;
     }
 
     @Override
@@ -61,7 +65,8 @@ public class HederaBalanceOperationV038 extends BalanceOperation {
                 () -> super.execute(frame, evm),
                 addressValidator,
                 systemAccountDetector,
-                systemAccountExecutionSupplier);
+                systemAccountExecutionSupplier,
+                evmProperties);
     }
 
     @VisibleForTesting

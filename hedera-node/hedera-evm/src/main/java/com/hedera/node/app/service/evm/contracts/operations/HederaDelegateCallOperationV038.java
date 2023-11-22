@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,14 +36,17 @@ public class HederaDelegateCallOperationV038 extends DelegateCallOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
+    private final EvmProperties evmProperties;
 
     public HederaDelegateCallOperationV038(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> systemAccountDetector) {
+            Predicate<Address> systemAccountDetector,
+            EvmProperties evmProperties) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
         this.systemAccountDetector = systemAccountDetector;
+        this.evmProperties = evmProperties;
     }
 
     @Override
@@ -54,6 +58,7 @@ public class HederaDelegateCallOperationV038 extends DelegateCallOperation {
                 () -> super.execute(frame, evm),
                 addressValidator,
                 systemAccountDetector,
-                () -> super.execute(frame, evm));
+                () -> super.execute(frame, evm),
+                evmProperties);
     }
 }

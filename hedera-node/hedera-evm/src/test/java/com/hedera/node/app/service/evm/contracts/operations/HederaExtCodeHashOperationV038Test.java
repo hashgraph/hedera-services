@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -62,6 +63,9 @@ class HederaExtCodeHashOperationV038Test {
     private EVM evm;
 
     @Mock
+    private EvmProperties evmProperties;
+
+    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     private HederaExtCodeHashOperationV038 subject;
@@ -74,7 +78,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
         given(gasCalculator.extCodeHashOperationGasCost()).willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
     }
@@ -115,7 +119,7 @@ class HederaExtCodeHashOperationV038Test {
     @Test
     void executeHappyPathWithPrecompileAccount() {
         // given
-        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         // when
         var opResult = subject.execute(mf, evm);
@@ -160,7 +164,7 @@ class HederaExtCodeHashOperationV038Test {
     @Test
     void executeThrowsTooManyStackItems() {
         // given
-        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         doThrow(OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
         // when

@@ -19,14 +19,15 @@ package com.hedera.node.app.service.mono.contracts;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
-import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV045;
-import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperationV045;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV038;
+import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperationV045;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperationV045;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperationV045;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperationV038;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperationV038;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperationV038;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_45;
@@ -191,8 +192,10 @@ public interface ContractsV_0_45Module {
     static Operation bindDelegateCallOperation(
             GasCalculator gasCalculator,
             @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaDelegateCallOperationV045(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaDelegateCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -215,8 +218,10 @@ public interface ContractsV_0_45Module {
     static Operation bindBalanceOperation(
             GasCalculator gasCalculator,
             @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaBalanceOperationV045(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaBalanceOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -226,8 +231,10 @@ public interface ContractsV_0_45Module {
     static Operation bindExtCodeCopyOperation(
             GasCalculator gasCalculator,
             @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeCopyOperationV045(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeCopyOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -237,8 +244,10 @@ public interface ContractsV_0_45Module {
     static Operation bindExtCodeHashOperation(
             GasCalculator gasCalculator,
             @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeHashOperationV045(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeHashOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -248,8 +257,10 @@ public interface ContractsV_0_45Module {
     static Operation bindExtCodeSizeOperation(
             GasCalculator gasCalculator,
             @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeSizeOperationV045(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeSizeOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides

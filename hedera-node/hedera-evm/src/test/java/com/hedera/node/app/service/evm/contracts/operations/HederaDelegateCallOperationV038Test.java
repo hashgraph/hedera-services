@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,6 +53,9 @@ class HederaDelegateCallOperationV038Test {
     private EVM evm;
 
     @Mock
+    private EvmProperties evmProperties;
+
+    @Mock
     private WorldUpdater worldUpdater;
 
     @Mock
@@ -66,7 +70,7 @@ class HederaDelegateCallOperationV038Test {
 
     @BeforeEach
     void setup() {
-        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> false);
+        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> false, evmProperties);
         given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(acc);
     }
@@ -114,7 +118,7 @@ class HederaDelegateCallOperationV038Test {
 
     @Test
     void executesPrecompileAsExpected() {
-        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> true);
+        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> true, evmProperties);
         given(calc.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
