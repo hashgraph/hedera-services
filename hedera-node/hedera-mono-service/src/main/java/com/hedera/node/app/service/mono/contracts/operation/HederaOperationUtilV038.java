@@ -24,17 +24,12 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -84,8 +79,8 @@ public final class HederaOperationUtilV038 {
             // and let HederaEvmMessageCallProcessor#start() handle those calls accordingly
             return supplierExecution.get();
         }
-        if (!globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_45) ||
-                !globalDynamicProperties.allowCallsToNonContractAccounts()) {
+        if (!globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_45)
+                || !globalDynamicProperties.allowCallsToNonContractAccounts()) {
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return failingOperationResultFrom(
                         supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
@@ -122,6 +117,14 @@ public final class HederaOperationUtilV038 {
         final var account = updater.get(address);
         final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
         boolean sigReqIsMet;
+
+        if (globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_45)
+                && globalDynamicProperties.allowCallsToNonContractAccounts()) {
+            if (account == null) {
+                return true;
+            }
+        }
+
         // if this is a delegate call activeContract should be the recipient address
         // otherwise it should be the contract address
         if (isDelegateCall) {
