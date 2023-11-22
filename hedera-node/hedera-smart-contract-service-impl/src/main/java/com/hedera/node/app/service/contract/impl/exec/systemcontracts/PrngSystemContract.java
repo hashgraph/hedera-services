@@ -139,7 +139,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         if (entropy.equals(Bytes.wrap(ZERO_ENTROPY.toByteArray()))) {
             return null;
         }
-        return entropy;
+        return entropy.slice(0, 32);
     }
 
     long calculateGas(@NonNull final Instant now) {
