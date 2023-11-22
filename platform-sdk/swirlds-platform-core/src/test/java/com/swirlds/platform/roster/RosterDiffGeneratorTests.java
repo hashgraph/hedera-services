@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.roster;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
@@ -32,7 +48,8 @@ class RosterDiffGeneratorTests {
     void noChangesTest() {
         final Random random = getRandomPrintSeed();
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
         final AddressBook roster = new RandomAddressBookGenerator(random).build();
@@ -60,29 +77,30 @@ class RosterDiffGeneratorTests {
 
     @Test
     void randomChangesTest() {
-        final Random random = getRandomPrintSeed(0); // TODO
+        final Random random = getRandomPrintSeed();
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
-        AddressBook previousRoster = new RandomAddressBookGenerator(random).setSize(32).build();
+        AddressBook previousRoster =
+                new RandomAddressBookGenerator(random).setSize(8).build();
+        platformContext.getCryptography().digestSync(previousRoster);
         assertNull(generator.generateDiff(new UpdatedRoster(0, previousRoster)));
 
-        for (int round = 1; round < 100; round++) { // TODO can we use more rounds?
+        for (int round = 1; round < 1000; round++) {
 
             final AddressBook newRoster = previousRoster.copy();
 
             final int addedNodeCount;
-            if (random.nextDouble() < 1.0 / 3.0) {
-                // 1/3 chance of adding a few nodes
+            if (random.nextDouble() < 0.2) {
                 addedNodeCount = random.nextInt(1, 3);
             } else {
                 addedNodeCount = 0;
             }
 
             final int removedNodeCount;
-            if (random.nextDouble() < 1.0 / 3.0) {
-                // 1/3 chance of removing up to 3 nodes
+            if (random.nextDouble() < 0.2) {
                 final int newRosterSize = Math.max(1, previousRoster.getSize() - random.nextInt(1, 3));
                 removedNodeCount = previousRoster.getSize() - newRosterSize;
             } else {
@@ -90,8 +108,7 @@ class RosterDiffGeneratorTests {
             }
 
             final int modifiedNodeCount;
-            if (random.nextDouble() < 1.0 / 3.0) {
-                // 1/3 chance of modifying a few of the remaining nodes
+            if (random.nextDouble() < 0.2) {
                 final int remainingNodes = previousRoster.getSize() - removedNodeCount;
                 modifiedNodeCount = Math.min(remainingNodes, random.nextInt(1, 3));
             } else {
@@ -133,9 +150,7 @@ class RosterDiffGeneratorTests {
                 addedNodes.add(nodeToAdd);
 
                 final Address address = RandomAddressBookGenerator.addressWithRandomData(
-                        random,
-                        nodeToAdd,
-                        random.nextLong(1, 100_000_000));
+                        random, nodeToAdd, random.nextLong(1, 100_000_000));
 
                 newRoster.add(address);
             }
@@ -159,7 +174,8 @@ class RosterDiffGeneratorTests {
             assertEquals(addedNodes, new HashSet<>(diff.addedNodes()));
             assertEquals(removedNodes, new HashSet<>(diff.removedNodes()));
             assertEquals(modifiedNodes, new HashSet<>(diff.modifiedNodes()));
+
+            previousRoster = newRoster;
         }
     }
-
 }
