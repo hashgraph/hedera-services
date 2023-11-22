@@ -122,6 +122,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-007 & TEST-016
     // Should fail on insufficient value sent
+    @HapiTest
     private HapiSpec tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec("tokenCreateWithEmptyKeysReverts")
                 .given(
@@ -233,6 +234,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-010 & TEST-017
     // Should fail on insufficient value sent
+    @HapiTest
     private HapiSpec createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct")
                 .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
@@ -359,6 +361,7 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     // TEST-018
     // Should fail on insufficient value sent
+    @HapiTest
     private HapiSpec createTokenWithInsufficientValueSent() {
         return defaultHapiSpec("createTokenWithInsufficientValueSent")
                 .given(

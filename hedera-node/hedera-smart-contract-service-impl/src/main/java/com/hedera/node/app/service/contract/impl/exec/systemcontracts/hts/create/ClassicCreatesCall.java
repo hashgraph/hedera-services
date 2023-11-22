@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
@@ -36,10 +36,10 @@ import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -69,7 +69,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(systemContractGasCalculator, enhancement);
+        super(systemContractGasCalculator, enhancement, false);
         this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.addressIdConverter = requireNonNull(addressIdConverter);
@@ -100,8 +100,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
         final var tokenType =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), MINIMUM_TINYBAR_PRICE));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(status, MINIMUM_TINYBAR_PRICE), status, false);
         } else {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
@@ -123,7 +124,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
-            return gasOnly(successResult(encodedOutput, gasRequirement));
+            return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
         }
     }
 
@@ -137,14 +138,13 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
     // @TODO extract externalizeResult() calls into a single location on a higher level
     private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        final var result = gasOnly(revertResult(responseCode, gasRequirement));
-        final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        final var result = gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
+        final var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
 
         enhancement
                 .systemOperations()
                 .externalizeResult(
                         contractFunctionResultFailedFor(MINIMUM_TINYBAR_PRICE, responseCode.toString(), contractID),
-                        ResultStatus.IS_ERROR,
                         responseCode);
         return result;
     }
