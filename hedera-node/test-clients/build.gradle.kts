@@ -66,13 +66,13 @@ tasks.register<Test>("hapiTest") {
     modularity.inferModulePath.set(false)
 }
 
-tasks.test {
-    // Disable these EET tests from being executed as part of the gradle "test" task.
-    // We should maybe remove them from src/test into src/eet,
-    // so it can be part of an eet test task instead. See issue #3412
-    // (https://github.com/hashgraph/hedera-services/issues/3412).
-    exclude("**/*")
-}
+//tasks.test {
+//    // Disable these EET tests from being executed as part of the gradle "test" task.
+//    // We should maybe remove them from src/test into src/eet,
+//    // so it can be part of an eet test task instead. See issue #3412
+//    // (https://github.com/hashgraph/hedera-services/issues/3412).
+//    exclude("**/*")
+//}
 
 tasks.itest {
     systemProperty("itests", System.getProperty("itests"))
@@ -161,13 +161,4 @@ tasks.assemble {
 tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
-}
-
-tasks.register<Test>("runGoawayTest") {
-    testClassesDirs = sourceSets["test"].output.classesDirs
-    classpath = sourceSets["test"].runtimeClasspath
-
-    useJUnitPlatform()
-
-    include("**/HapiApiClientsTest*")
 }

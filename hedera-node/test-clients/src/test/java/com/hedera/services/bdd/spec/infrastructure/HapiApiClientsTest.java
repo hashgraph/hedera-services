@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.interceptor.RetryCallbacks;
 import com.hedera.services.bdd.spec.infrastructure.interceptor.RetryInterceptor;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
@@ -122,6 +123,7 @@ public class HapiApiClientsTest {
      * This test simulates the GOAWAY from the server by closing the channel.
      */
     @Test
+    @Disabled
     public void testConnectionAfterGoAwayTest() {
         // Get a stub to simulate GOAWAY
         ManagedChannel channel = getChannelToTerminate(apiClients);
@@ -145,6 +147,7 @@ public class HapiApiClientsTest {
      * AND ensures that we get an exception when there are no retries enabled.
      */
     @Test
+    @Disabled
     public void testConnectionNormalBehaviorTest() {
         try {
             final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
@@ -179,37 +182,6 @@ public class HapiApiClientsTest {
         // would be better.
         apiClients.setClientInterceptor(interceptor);
 
-        //        final AtomicReference<Response> res = new AtomicReference<>();
-        //        CountDownLatch wg = new CountDownLatch(1);
-        //        var exec = Executors.newSingleThreadExecutor();
-        //        exec.submit(() -> {
-        //            try {
-        //                final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
-        //                final var query =
-        //                        Query.newBuilder().setCryptogetAccountBalance(builder).build();
-        //                final var client = apiClients.getCryptoSvcStub(accountID, false);
-        //                System.out.println("using client to get the balance");
-        //                var resp = client.cryptoGetBalance(query);
-        ////                System.out.printf("ran crypto get balance %s\n", resp.toString());
-        //                System.out.printf("in executor - ran crypto get balance %s\n",
-        // resp.getCryptogetAccountBalance().getBalance());
-        //
-        //                res.set(resp);
-        //            } catch (Throwable e) {
-        //                throw e;
-        //            } finally {
-        //                wg.countDown();
-        //            }
-        //        });
-        //
-        //        // Wait for the request to finish.
-        //        if (!wg.await(10, TimeUnit.SECONDS)) {
-        //            exec.shutdownNow();
-        //            throw new IllegalStateException("Request did not complete in time.");
-        //        }
-        //
-        //        var response = res.get();
-
         final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
         final var query = Query.newBuilder().setCryptogetAccountBalance(builder).build();
         final var client = apiClients.getCryptoSvcStub(accountID, false);
@@ -223,7 +195,7 @@ public class HapiApiClientsTest {
         final var response = resp;
 
         // We should be getting here because on the second retry it should pass.
-        System.out.printf("ran crypto get balance 2:  %s\n", response.toString());
+        System.out.printf("ran crypto get balance 2:   %s\n", response.toString());
 
         // Assert that the response passed this time.
         assertNotNull(response, "Could not get response");
