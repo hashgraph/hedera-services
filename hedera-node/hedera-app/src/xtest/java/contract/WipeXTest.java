@@ -74,15 +74,15 @@ import org.jetbrains.annotations.NotNull;
  * <ol>
  *     <li>Wipe {@code ERC721_TOKEN} serial 1234 from Owner's account and verify successful operation</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1 and verify successful operation</li>*
- *     <li>Via {@code assertExpectedAccounts} verify that owner's nft supply was decreased by 1.</li>*
- *     <li>Via {@code assertExpectedTokenRelations} verify that owner's token balance was decreased by 20.</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2 and verify successful operation</li>*
  *     <li>Wipe {@code ERC721_TOKEN} serial 1234 from Owner's account. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
- *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
- *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
  *     <li>Wipe {@code ERC721_TOKEN} serial 1234 from Owner's account. This should fail with TOKEN_HAS_NO_WIPE_KEY</li>*
+ *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1. This should fail with TOKEN_HAS_NO_WIPE_KEY</li>*
+ *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2. This should fail with TOKEN_HAS_NO_WIPE_KEY</li>*
+ *     <li>Via {@code assertExpectedAccounts} verify that owner's nft supply was decreased by 1.</li>*
+ *     <li>Via {@code assertExpectedTokenRelations} verify that owner's token balance was decreased by 20.</li>*
  * </ol>
  */
 public class WipeXTest extends AbstractContractXTest {
@@ -176,7 +176,7 @@ public class WipeXTest extends AbstractContractXTest {
                         output,
                         "Expected INVALID_ACCOUNT_ID when trying to execute with invalid account address (V2)"));
 
-        // WIPE NFT from OWNER's account
+        // WIPE NFT from OWNER's account  with invalid key
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_NFT
@@ -189,7 +189,7 @@ public class WipeXTest extends AbstractContractXTest {
                         output,
                         "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
 
-        // WIPE NFT from OWNER's account
+        // WIPE NFT from OWNER's account without wipe key
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_NFT
@@ -199,9 +199,9 @@ public class WipeXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_WIPE_KEY).array()),
                         output,
-                        "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
+                        "Expected TOKEN_HAS_NO_WIPE_KEY when trying to execute with invalid wipe key"));
 
-        // WIPE 10 Tokens via wipeTokenAccountV1
+        // WIPE 10 Tokens via wipeTokenAccountV1  with invalid key
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
@@ -213,7 +213,7 @@ public class WipeXTest extends AbstractContractXTest {
                         output,
                         "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
 
-        // WIPE 10 Tokens via wipeTokenAccountV1
+        // WIPE 10 Tokens via wipeTokenAccountV1 without wipe key
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
@@ -222,9 +222,9 @@ public class WipeXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_WIPE_KEY).array()),
                         output,
-                        "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
+                        "Expected TOKEN_HAS_NO_WIPE_KEY when trying to execute with invalid wipe key"));
 
-        // WIPE 10 Tokens via wipeTokenAccountV2
+        // WIPE 10 Tokens via wipeTokenAccountV2 with invalid key
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
@@ -236,7 +236,7 @@ public class WipeXTest extends AbstractContractXTest {
                         output,
                         "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
 
-        // WIPE 10 Tokens via wipeTokenAccountV2
+        // WIPE 10 Tokens via wipeTokenAccountV2 without wipe key
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
@@ -245,7 +245,7 @@ public class WipeXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_WIPE_KEY).array()),
                         output,
-                        "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
+                        "Expected TOKEN_HAS_NO_WIPE_KEY when trying to execute with invalid wipe key"));
     }
 
     @Override

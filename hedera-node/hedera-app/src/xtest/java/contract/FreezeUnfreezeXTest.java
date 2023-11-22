@@ -73,7 +73,6 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code INVALID_TOKEN_ID.</li>
  *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from  SENDER to RECEIVER.  This should now succeed</li>
- *     <li>Freeze {@code ERC721_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
  *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
  *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
  *     <li>Unfreeze {@code ERC20_TOKEN} with different freeze key via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.</li>
