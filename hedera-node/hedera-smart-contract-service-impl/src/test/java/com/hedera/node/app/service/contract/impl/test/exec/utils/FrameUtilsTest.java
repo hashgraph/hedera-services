@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -55,6 +56,7 @@ class FrameUtilsTest {
     private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
             FrameUtils.class,
             ConversionUtils.class,
+            TransferEventLoggingUtils.class,
             OpUtils.class,
             OpcodeUtils.class,
             SynthTxnUtils.class,

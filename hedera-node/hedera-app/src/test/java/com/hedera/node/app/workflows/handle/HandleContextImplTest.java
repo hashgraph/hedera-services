@@ -60,6 +60,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -174,6 +175,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock
+    private ChildRecordFinalizer childRecordFinalizer;
+
+    @Mock
     private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
@@ -218,7 +222,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 exchangeRateManager,
                 DEFAULT_CONSENSUS_NOW,
                 authorizer,
-                solvencyPreCheck);
+                solvencyPreCheck,
+                childRecordFinalizer);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -246,7 +251,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             exchangeRateManager,
             DEFAULT_CONSENSUS_NOW,
             authorizer,
-            solvencyPreCheck
+            solvencyPreCheck,
+            childRecordFinalizer
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -311,7 +317,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         }
 
         @Test
@@ -827,7 +834,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         }
 
         @SuppressWarnings("ConstantConditions")

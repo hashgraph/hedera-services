@@ -21,6 +21,10 @@ package com.hedera.services.bdd.spec.utilops.records;
  */
 public enum SnapshotMatchMode {
     /**
+     * Allows for gas calculations to differ from the snapshot.
+     */
+    ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+    /**
      * Allows for non-deterministic contract call results.
      */
     NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
