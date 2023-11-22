@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.node.app.service.file.impl.schemas.GenesisSchema.readThrottleDefinitionsBytes;
+import static com.hedera.node.app.service.file.impl.schemas.FileSchema.readThrottleDefinitionsBytes;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -41,8 +40,6 @@ public class CongestionThrottleService implements Service {
     public static final String NAME = "CongestionThrottleService";
     public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
     public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     @NonNull
     @Override

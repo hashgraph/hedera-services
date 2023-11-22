@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -32,8 +31,6 @@ public final class FreezeServiceImpl implements FreezeService {
     public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
     public static final String FREEZE_TIME_KEY = "FREEZE_TIME";
     public static final String LAST_FROZEN_TIME_KEY = "LAST_FROZEN_TIME";
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {

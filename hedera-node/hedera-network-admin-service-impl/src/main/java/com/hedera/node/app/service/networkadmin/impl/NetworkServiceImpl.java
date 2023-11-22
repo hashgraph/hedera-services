@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -40,8 +39,6 @@ import java.util.Set;
 public final class NetworkServiceImpl implements NetworkService {
     public static final String CONTEXT_KEY = "CONTEXT";
     public static final String STAKING_KEY = "STAKING";
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     @Override
     public void registerSchemas(final @NonNull SchemaRegistry registry) {

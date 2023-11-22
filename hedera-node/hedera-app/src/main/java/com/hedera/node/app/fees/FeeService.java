@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.fees;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -32,8 +31,6 @@ import java.util.Set;
 public class FeeService implements Service {
 
     public static final String NAME = "FeeService";
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
     static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
 
     @NonNull

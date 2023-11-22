@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.ids;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -35,8 +34,6 @@ import java.util.Set;
 public class EntityIdService implements Service {
     public static final String NAME = "EntityIdService";
     public static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
-    public static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
 
     /** {@inheritDoc} */
     @NonNull

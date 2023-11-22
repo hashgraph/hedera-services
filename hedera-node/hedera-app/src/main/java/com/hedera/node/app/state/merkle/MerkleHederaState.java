@@ -290,7 +290,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public WritableStates createWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
         final var stateMetadata = services.get(serviceName);
-        logger.info("Keys in services"+ services.keySet());
+        logger.info("Keys in services" + services.keySet());
         return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
     }
 

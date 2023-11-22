@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.schemas;
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
+import static com.hedera.node.app.spi.Service.CURRENT_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -33,7 +34,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NodeAddress;
 import com.hedera.hapi.node.base.NodeAddressBook;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
@@ -70,10 +70,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * The initial schema definition for the file service.
  */
-public class GenesisSchema extends Schema {
-    private static final Logger logger = LogManager.getLogger(GenesisSchema.class);
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
+public class FileSchema extends Schema {
+    private static final Logger logger = LogManager.getLogger(FileSchema.class);
     /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
      * changed, then the database has to be rebuilt.
@@ -81,8 +79,8 @@ public class GenesisSchema extends Schema {
     private static final int MAX_FILES_HINT = 50_000_000;
 
     /** Create a new instance */
-    public GenesisSchema() {
-        super(GENESIS_VERSION);
+    public FileSchema() {
+        super(CURRENT_VERSION);
     }
 
     @NonNull

@@ -36,10 +36,6 @@ public class RecordCacheService implements Service {
     /** The name of the queue that stores the transaction records */
     static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
 
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
-
-
     /** {@inheritDoc} */
     @NonNull
     @Override

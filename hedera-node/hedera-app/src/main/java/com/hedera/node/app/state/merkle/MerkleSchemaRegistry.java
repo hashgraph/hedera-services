@@ -72,7 +72,7 @@ import org.apache.logging.log4j.Logger;
  * a {@link SemanticVersion}.
  *
  * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
- * SemanticVersion, Configuration, NetworkInfo)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * SemanticVersion, Configuration, NetworkInfo, HandleThrottleParser, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -162,16 +162,18 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(handleThrottling);
+        logger.info(
+                "Previous version: {}" + (previousVersion == null ? "null" : previousVersion) + " Current Version "
+                                        + currentVersion
+                                == null
+                        ? "null"
+                        : currentVersion + "for service " + serviceName);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
         for (final var schema : schemasToApply) {
-            logger.info(
-                    "Migrating schema {} for service {}",
-                    () -> HapiUtils.toString(schema.getVersion()),
-                    () -> serviceName);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap
@@ -272,8 +274,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     @NonNull
     private List<Schema> computeApplicableSchemas(
             @Nullable final SemanticVersion previousVersion, @NonNull final SemanticVersion currentVersion) {
-        logger.info("previousVersion: {}", () -> HapiUtils.toString(previousVersion)+
-                " currentVersion: {}", () -> HapiUtils.toString(currentVersion));
         // The previous version MUST be strictly less than or equal to the current version
         if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
@@ -286,6 +286,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         final var applicableSchemas = new ArrayList<Schema>();
         for (Schema schema : schemas) {
             final var ver = schema.getVersion();
+            logger.info(
+                    " IsSameVersion {} {} ", () -> isSameVersion(ver, currentVersion), () -> HapiUtils.toString(ver));
+            logger.info(
+                    " isBetween {} {} ",
+                    () -> isBetween(previousVersion, ver, currentVersion),
+                    () -> HapiUtils.toString(ver));
             if (isSameVersion(ver, currentVersion) || isBetween(previousVersion, ver, currentVersion)) {
                 applicableSchemas.add(schema);
                 logger.info("Adding schema {} for service {}", () -> HapiUtils.toString(ver), () -> serviceName);

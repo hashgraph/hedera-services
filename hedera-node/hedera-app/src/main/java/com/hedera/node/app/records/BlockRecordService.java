@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -41,9 +40,6 @@ public final class BlockRecordService implements Service {
     /** The key for the {@link BlockInfo} object in state */
     public static final String BLOCK_INFO_STATE_KEY = "BLOCKS";
 
-    /** The original version of the state */
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0,45,0, "", "");
     /** The original hash, only used at genesis */
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
 
