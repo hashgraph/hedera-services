@@ -22,6 +22,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logCompactStats;
+import static com.swirlds.merkledb.files.DataFileMetadata.MAX_COMPACTION_LEVEL;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.units.UnitConstants;
@@ -90,6 +91,8 @@ public class DataFileCompactor {
     @Nullable
     private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
 
+    private final BiConsumer<Integer, Double> reportTotalSpaceMetricFunction;
+
     /**
      * A function that updates statistics of total usage of disk space and off-heap space
      */
@@ -143,14 +146,13 @@ public class DataFileCompactor {
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
     /**
-     *
-     * @param storeName name of the store to compact
-     * @param dataFileCollection data file collection to compact
-     * @param index index to update during compaction
+     * @param storeName                      name of the store to compact
+     * @param dataFileCollection             data file collection to compact
+     * @param index                          index to update during compaction
      * @param reportDurationMetricFunction   function to report how long compaction took, in ms
      * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
-     * @param updateTotalStatsFunction A function that updates statistics of total usage of disk space and off-heap space
-     *
+     * @param reportTotalSpaceMetricFunction function to report how much spaсе is used by the store by compaction level, in Mb
+     * @param updateTotalStatsFunction       A function that updates statistics of total usage of disk space and off-heap space
      */
     public DataFileCompactor(
             String storeName,
@@ -158,12 +160,14 @@ public class DataFileCompactor {
             CASableLongIndex index,
             @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
+            @Nullable final BiConsumer<Integer, Double> reportTotalSpaceMetricFunction,
             @Nullable Runnable updateTotalStatsFunction) {
         this.storeName = storeName;
         this.dataFileCollection = dataFileCollection;
         this.index = index;
         this.reportDurationMetricFunction = reportDurationMetricFunction;
         this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
+        this.reportTotalSpaceMetricFunction = reportTotalSpaceMetricFunction;
         this.updateTotalStatsFunction = updateTotalStatsFunction;
     }
 
@@ -438,6 +442,18 @@ public class DataFileCompactor {
                     (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
+        if (reportTotalSpaceMetricFunction != null) {
+            Map<Integer, List<DataFileReader<?>>> readersByLevel =
+                    getReadersByLevel(dataFileCollection.getAllCompletedFiles());
+            for (int i = 0; i < MAX_COMPACTION_LEVEL; i++) {
+                List<DataFileReader<?>> readers = readersByLevel.get(i);
+                if (readers != null) {
+                    reportTotalSpaceMetricFunction.accept(
+                            i, getSizeOfFiles(readers) * UnitConstants.BYTES_TO_MEBIBYTES);
+                }
+            }
+        }
+
         logCompactStats(
                 storeName,
                 tookMillis,
@@ -487,8 +503,7 @@ public class DataFileCompactor {
             return dataFileReaders;
         }
 
-        Map<Integer, List<DataFileReader<?>>> readersByLevel = dataFileReaders.stream()
-                .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
+        Map<Integer, List<DataFileReader<?>>> readersByLevel = getReadersByLevel(dataFileReaders);
 
         List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
         if (nonCompactedReaders == null || nonCompactedReaders.size() < minNumberOfFilesToCompact) {
@@ -508,5 +523,11 @@ public class DataFileCompactor {
             readersToCompact.addAll(readers);
         }
         return readersToCompact;
+    }
+
+    private static Map<Integer, List<DataFileReader<?>>> getReadersByLevel(
+            List<? extends DataFileReader<?>> dataFileReaders) {
+        return dataFileReaders.stream()
+                .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
     }
 }

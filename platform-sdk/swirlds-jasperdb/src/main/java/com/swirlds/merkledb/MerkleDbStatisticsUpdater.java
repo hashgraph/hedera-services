@@ -221,6 +221,10 @@ public class MerkleDbStatisticsUpdater {
         statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionLevel, savedSpace);
     }
 
+    void setLeafKeysStoreTotalSpaceMb(Integer compactionLevel, Double savedSpace) {
+        statistics.setLeafKeysStoreTotalSpaceMb(compactionLevel, savedSpace);
+    }
+
     void setHashesStoreCompactionTimeMs(Integer compactionLevel, Long time) {
         statistics.setHashesStoreCompactionTimeMs(compactionLevel, time);
     }
@@ -229,11 +233,19 @@ public class MerkleDbStatisticsUpdater {
         statistics.setHashesStoreCompactionSavedSpaceMb(compactionLevel, savedSpace);
     }
 
+    void setHashesStoreTotalSpaceMb(Integer compactionLevel, Double savedSpace) {
+        statistics.setHashesStoreCompactionSavedSpaceMb(compactionLevel, savedSpace);
+    }
+
     void setLeavesStoreCompactionTimeMs(Integer compactionType, Long time) {
         statistics.setLeavesStoreCompactionTimeMs(compactionType, time);
     }
 
     void setLeavesStoreCompactionSavedSpaceMb(Integer compactionType, Double savedSpace) {
+        statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, savedSpace);
+    }
+
+    void setLeavesStoreTotalSpaceMb(Integer compactionType, Double savedSpace) {
         statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, savedSpace);
     }
 }
