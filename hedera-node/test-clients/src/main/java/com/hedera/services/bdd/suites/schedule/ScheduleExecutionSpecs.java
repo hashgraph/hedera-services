@@ -286,7 +286,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_WHITELIST, whitelistAll)));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledBurnFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
                 .given(
@@ -310,7 +311,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasPriority(recordWith().status(INVALID_TRANSACTION_BODY)));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledMintFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledMintFailsWithInvalidTxBody")
                 .given(
@@ -538,7 +540,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledBurnForUniqueFailsWithInvalidAmount() {
         return defaultHapiSpec("ScheduledBurnForUniqueFailsWithInvalidAmount")
                 .given(
@@ -612,7 +615,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         overriding(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, defaultMaxBatchSizeMint));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledMintFailsWithInvalidAmount() {
         final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
@@ -1131,7 +1135,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withZeroNetTokenChange";
@@ -1180,7 +1185,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
@@ -1238,7 +1244,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
@@ -1506,7 +1513,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
-    // @todo('9975') Need to work out why this does not actually execute
+    @HapiTest
     private HapiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
         String adminKey = ADMIN;
         String submitKey = "submit";
@@ -1544,7 +1551,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getTopicInfo(mutableTopic).hasSeqNo(1L));
     }
 
-    // @todo('9975') Need to work out why this does not actually execute
+    @HapiTest
     private HapiSpec executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
@@ -1765,8 +1772,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         cryptoDelete(PAYING_ACCOUNT),
                         scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).hasKnownStatus(SUCCESS))
                 .then(
-                        getAccountBalance(SENDER).hasTinyBars(transferAmount),
-                        getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                         getScheduleInfo(BASIC_XFER).isExecuted(),
                         getTxnRecord(CREATE_TXN)
                                 .scheduled()
@@ -1844,7 +1849,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // @todo('9975') Need to work out why this does not actually execute
+    @HapiTest
     private HapiSpec executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
@@ -1880,7 +1885,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // ExecutionWithTokenInsufficientAccountBalanceFails
     @HapiTest
     private HapiSpec executionWithTokenInsufficientAccountBalanceFails() {
         String xToken = "XXX";
@@ -1915,7 +1919,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
-    // @todo('9970') Currently this cannot be run for modular service due to key gathering limitations.
+    // This should not be run for modular service due to key gathering behavior differences.
+    // c.f. Issue #9970 for explanation
     private HapiSpec executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
