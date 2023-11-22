@@ -238,49 +238,48 @@ public class MerkleDbStatistics {
 
         // Compaction
 
-        for (int i = 0; i < config.maxCompactionLevel(); i++) {
-            int level = i + 1;
+        for (int i = 0; i <= config.maxCompactionLevel(); i++) {
             // Hashes store
             hashesStoreCompactionTimeMsList.add(buildLongAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_hashesTimeMs_" + label,
-                    "Compactions time of level %s, hashes store, %s, ms".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_hashesTimeMs_" + label,
+                    "Compactions time of level %s, hashes store, %s, ms".formatted(i, label)));
             hashesStoreCompactionSavedSpaceMbList.add(buildDoubleAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_hashesSavedSpaceMb_" + label,
-                    "Saved space during compactions of level %s, hashes store, %s, Mb".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_hashesSavedSpaceMb_" + label,
+                    "Saved space during compactions of level %s, hashes store, %s, Mb".formatted(i, label)));
             hashesStoreTotalSpaceMbList.add(buildDoubleAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_hashesTotalSpaceMb_" + label,
-                    "Total space taken by files of level %s, hashes store, %s, Mb".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_hashesTotalSpaceMb_" + label,
+                    "Total space taken by files of level %s, hashes store, %s, Mb".formatted(i, label)));
 
             // Leaves store
             leavesStoreCompactionTimeMsList.add(buildLongAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leavesTimeMs_" + label,
-                    "Compactions time of level %s, leaves store, %s, ms".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_leavesTimeMs_" + label,
+                    "Compactions time of level %s, leaves store, %s, ms".formatted(i, label)));
             leavesStoreCompactionSavedSpaceMbList.add(buildDoubleAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leavesSavedSpaceMb_" + label,
-                    "Saved space during compactions of level %s, leaves store, %s, Mb".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_leavesSavedSpaceMb_" + label,
+                    "Saved space during compactions of level %s, leaves store, %s, Mb".formatted(i, label)));
             leavesStoreTotalSpaceMbList.add(buildDoubleAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leavesTotalSpaceMb_" + label,
-                    "Total space taken by files of level %s, leaves store, %s, Mb".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_leavesTotalSpaceMb_" + label,
+                    "Total space taken by files of level %s, leaves store, %s, Mb".formatted(i, label)));
 
             // Leaf keys store
             leafKeysStoreCompactionTimeMsList.add(buildLongAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leafKeysTimeMs_" + label,
-                    "Compactions time of level %s, leaf keys store, %s, ms".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_leafKeysTimeMs_" + label,
+                    "Compactions time of level %s, leaf keys store, %s, ms".formatted(i, label)));
             leafKeysStoreCompactionSavedSpaceMbList.add(buildDoubleAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leafKeysSavedSpaceMb_" + label,
-                    "Saved space during compactions of level %s, leaf keys store, %s, Mb".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_leafKeysSavedSpaceMb_" + label,
+                    "Saved space during compactions of level %s, leaf keys store, %s, Mb".formatted(i, label)));
             leafKeysStoreTotalSpaceMbList.add(buildDoubleAccumulator(
                     metrics,
-                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leafKeysTotalSpaceMb_" + label,
-                    "Total space taken by files of level %s, leaf keys store, %s, Mb".formatted(level, label)));
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + i + "_leafKeysTotalSpaceMb_" + label,
+                    "Total space taken by files of level %s, leaf keys store, %s, Mb".formatted(i, label)));
         }
 
         // Off-heap usage
@@ -464,12 +463,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreCompactionTimeMs(final Integer compactionLevel, final long value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (hashesStoreCompactionTimeMsList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        hashesStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
+        hashesStoreCompactionTimeMsList.get(compactionLevel).update(value);
     }
 
     /**
@@ -479,12 +478,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >=0 && compactionLevel <= config.maxCompactionLevel();
         if (hashesStoreCompactionSavedSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        hashesStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
+        hashesStoreCompactionSavedSpaceMbList.get(compactionLevel).update(value);
     }
 
     /**
@@ -494,12 +493,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreTotalSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (hashesStoreTotalSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        hashesStoreTotalSpaceMbList.get(compactionLevel - 1).update(value);
+        hashesStoreTotalSpaceMbList.get(compactionLevel).update(value);
     }
 
     /**
@@ -509,12 +508,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreCompactionTimeMs(final int compactionLevel, final long value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (leavesStoreCompactionTimeMsList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        leavesStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
+        leavesStoreCompactionTimeMsList.get(compactionLevel).update(value);
     }
 
     /**
@@ -523,12 +522,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (leavesStoreCompactionSavedSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        leavesStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
+        leavesStoreCompactionSavedSpaceMbList.get(compactionLevel).update(value);
     }
 
     /**
@@ -537,12 +536,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreTotalSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (leavesStoreTotalSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        leavesStoreTotalSpaceMbList.get(compactionLevel - 1).update(value);
+        leavesStoreTotalSpaceMbList.get(compactionLevel).update(value);
     }
 
     /**
@@ -552,12 +551,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreCompactionTimeMs(final int compactionLevel, final long value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (leafKeysStoreCompactionTimeMsList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        leafKeysStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
+        leafKeysStoreCompactionTimeMsList.get(compactionLevel).update(value);
     }
 
     /**
@@ -567,12 +566,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (leafKeysStoreCompactionSavedSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        leafKeysStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
+        leafKeysStoreCompactionSavedSpaceMbList.get(compactionLevel).update(value);
     }
 
     /**
@@ -582,12 +581,12 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreTotalSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
         if (leafKeysStoreTotalSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
         }
-        leafKeysStoreTotalSpaceMbList.get(compactionLevel - 1).update(value);
+        leafKeysStoreTotalSpaceMbList.get(compactionLevel).update(value);
     }
 
     /**
