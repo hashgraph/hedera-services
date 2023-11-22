@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -100,8 +101,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ERCPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
@@ -1250,7 +1253,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)));
     }
 
-    @HapiTest
+    // Expects revert
     private HapiSpec getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 

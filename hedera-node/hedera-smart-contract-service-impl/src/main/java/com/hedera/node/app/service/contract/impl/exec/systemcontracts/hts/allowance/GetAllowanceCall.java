@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;

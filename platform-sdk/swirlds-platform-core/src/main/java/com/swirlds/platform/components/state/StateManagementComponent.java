@@ -99,14 +99,6 @@ public interface StateManagementComponent
     long getFirstStateRound();
 
     /**
-     * Get the round of the latest state written to disk, or {@link com.swirlds.common.system.UptimeData#NO_ROUND} if no
-     * states have been written to disk since booting up.
-     *
-     * @return the latest saved state round
-     */
-    long getLatestSavedStateRound();
-
-    /**
      * Get the signed state manager.
      */
     @NonNull

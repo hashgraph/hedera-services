@@ -40,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -98,7 +99,8 @@ class HtsCallFactoryTest extends HtsCallTestBase {
 
         final var input = bytesForRedirect(
                 BALANCE_OF.encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)), FUNGIBLE_TOKEN_ID);
-        final var call = subject.createCallFrom(input, frame);
+        final var attempt = subject.createCallAttemptFrom(input, frame);
+        final var call = Objects.requireNonNull(attempt.asExecutableCall());
 
         assertInstanceOf(BalanceOfCall.class, call);
     }
