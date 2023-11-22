@@ -46,7 +46,6 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -62,7 +61,6 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
@@ -91,7 +89,7 @@ class EmergencyReconnectTests {
     private final NodeId learnerId = new NodeId(0L);
     private final NodeId teacherId = new NodeId(1L);
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
-    private final SignedStateManager signedStateManager = mock(SignedStateManager.class);
+    private final Supplier<ReservedSignedState> emergencyState = mock(Supplier.class);
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
     private EmergencyReconnectProtocol learnerProtocol;
     private EmergencyReconnectProtocol teacherProtocol;
@@ -107,6 +105,7 @@ class EmergencyReconnectTests {
         if (executor.isMutable()) {
             executor.start();
         }
+        when(emergencyState.get()).thenReturn(null);
     }
 
     @DisplayName("Verify learner-teacher interaction when teacher does not has a compatible state")
@@ -177,7 +176,7 @@ class EmergencyReconnectTests {
         learnerProtocol = createLearnerProtocol(notificationEngine, emergencyRecoveryFile, reconnectController);
         teacherProtocol = createTeacherProtocol(notificationEngine, reconnectController);
 
-        mockTeacherHasCompatibleState(emergencyRecoveryFile, teacherState);
+        mockTeacherHasCompatibleState(teacherState);
 
         AssertionUtils.completeBeforeTimeout(
                 this::executeReconnect, Duration.ofSeconds(5), "Reconnect should have completed or failed");
@@ -221,8 +220,8 @@ class EmergencyReconnectTests {
     }
 
     private void assertTeacherSearchedForState(final EmergencyRecoveryFile emergencyRecoveryFile) {
-        verify(signedStateManager, times(1).description("Teacher did not search for the correct state"))
-                .find(any(), any());
+        verify(emergencyState, times(1).description("Teacher did not search for the correct state"))
+                .get();
     }
 
     private ReconnectController createReconnectController(
@@ -289,11 +288,10 @@ class EmergencyReconnectTests {
                 teacherId,
                 mock(EmergencyRecoveryManager.class),
                 reconnectThrottle,
-                signedStateManager,
+                emergencyState::get,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class),
                 mock(StatusActionSubmitter.class),
                 configuration);
     }
@@ -312,18 +310,16 @@ class EmergencyReconnectTests {
                 learnerId,
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
-                mock(SignedStateManager.class),
+                emergencyState::get,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class),
                 mock(StatusActionSubmitter.class),
                 configuration);
     }
 
-    private void mockTeacherHasCompatibleState(
-            final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-        when(signedStateManager.find(any(), any())).thenAnswer(i -> teacherState.reserve("test"));
+    private void mockTeacherHasCompatibleState(final SignedState teacherState) {
+        when(emergencyState.get()).thenAnswer(i -> teacherState.reserve("test"));
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
@@ -336,7 +332,7 @@ class EmergencyReconnectTests {
     }
 
     private void mockTeacherDoesNotHaveCompatibleState() {
-        when(signedStateManager.find(any(), any())).thenReturn(createNullReservation());
+        when(emergencyState.get()).thenReturn(null);
     }
 
     private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {

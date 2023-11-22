@@ -29,6 +29,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * An asynchronous component which manages platform status.
@@ -54,24 +55,24 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param time               a source of time
-     * @param threadManager      the thread manager
-     * @param notificationEngine the notification engine
+     * @param platformContext      the platform context
+     * @param time                 a source of time
+     * @param threadManager        the thread manager
+     * @param statusChangeConsumer consumes any status changes
      */
     public PlatformStatusManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
-            @NonNull final NotificationEngine notificationEngine) {
+            @NonNull final Consumer<PlatformStatus> statusChangeConsumer) {
 
         this.time = Objects.requireNonNull(time);
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(notificationEngine);
+        Objects.requireNonNull(statusChangeConsumer);
 
         final PlatformStatusConfig config =
                 platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class);
-        this.stateMachine = new PlatformStatusStateMachine(time, config, notificationEngine);
+        this.stateMachine = new PlatformStatusStateMachine(time, config, statusChangeConsumer);
 
         this.queue = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform")

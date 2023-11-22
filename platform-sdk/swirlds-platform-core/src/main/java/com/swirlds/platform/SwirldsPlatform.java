@@ -48,6 +48,8 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.notification.listeners.StateLoadedFromDiskCompleteListener;
@@ -171,6 +173,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.state.signed.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
@@ -194,6 +197,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -390,8 +394,14 @@ public class SwirldsPlatform implements Platform {
         this.selfId = id;
         this.currentAddressBook = initialState.getAddressBook();
 
+        final SignedStateNexus emergencyState = new SignedStateNexus();
+        final Consumer<PlatformStatus> statusChangeConsumer = s->{
+            notificationEngine.dispatch(
+                    PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(s));
+            emergencyState.clear();
+        };
         platformStatusManager =
-                components.add(new PlatformStatusManager(platformContext, time, threadManager, notificationEngine));
+                components.add(new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
 
         this.metrics = platformContext.getMetrics();
 
@@ -794,7 +804,8 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 this::loadReconnectState,
                 this::clearAllPipelines,
-                intakeEventCounter);
+                intakeEventCounter,
+                () -> emergencyState.getState("emergency reconnect"));
 
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),

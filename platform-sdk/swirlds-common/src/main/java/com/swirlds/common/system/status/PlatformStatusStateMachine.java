@@ -45,6 +45,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,9 +64,9 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
     private final Time time;
 
     /**
-     * For passing notifications between the platform and the application.
+     * Consumes any status changes
      */
-    private final NotificationEngine notificationEngine;
+    private final Consumer<PlatformStatus> statusChangeConsumer;
 
     /**
      * The object containing the state machine logic for the current status
@@ -85,17 +86,17 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
     /**
      * Constructor
      *
-     * @param time               a source of time
-     * @param config             the platform status config
-     * @param notificationEngine the notification engine
+     * @param time                 a source of time
+     * @param config               the platform status config
+     * @param statusChangeConsumer consumes any status changes
      */
     public PlatformStatusStateMachine(
             @NonNull final Time time,
             @NonNull final PlatformStatusConfig config,
-            @NonNull final NotificationEngine notificationEngine) {
+            @NonNull final Consumer<PlatformStatus> statusChangeConsumer) {
 
         this.time = Objects.requireNonNull(time);
-        this.notificationEngine = Objects.requireNonNull(notificationEngine);
+        this.statusChangeConsumer = Objects.requireNonNull(statusChangeConsumer);
         this.currentStatusLogic = new StartingUpStatusLogic(config);
         this.currentStatus = new AtomicReference<>(currentStatusLogic.getStatus());
         this.currentStatusStartTime = time.now();
@@ -185,8 +186,7 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
 
         currentStatusStartTime = time.now();
 
-        notificationEngine.dispatch(
-                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
+        statusChangeConsumer.accept(newLogic.getStatus());
     }
 
     /**

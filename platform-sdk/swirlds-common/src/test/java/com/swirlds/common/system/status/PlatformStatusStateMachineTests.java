@@ -35,6 +35,7 @@ import com.swirlds.common.system.status.actions.TimeElapsedAction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class PlatformStatusStateMachineTests {
                 .getOrCreateConfig();
 
         stateMachine = new PlatformStatusStateMachine(
-                time, configuration.getConfigData(PlatformStatusConfig.class), mock(NotificationEngine.class));
+                time, configuration.getConfigData(PlatformStatusConfig.class), mock(Consumer.class));
     }
 
     @Test
