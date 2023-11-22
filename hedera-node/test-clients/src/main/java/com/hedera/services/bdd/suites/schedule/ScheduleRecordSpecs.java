@@ -43,6 +43,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_NODE_REWARD_PERCENTAGE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -75,9 +79,6 @@ public class ScheduleRecordSpecs extends HapiSuite {
     private static final String PAYING_SENDER = "payingSender";
     private static final String OTHER_PAYER = "otherPayer";
     private static final String SIMPLE_UPDATE = "SimpleUpdate";
-    private static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
-    private static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
-    private static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
     private static final String TRIGGER = "trigger";
     private static final String INSOLVENT_PAYER = "insolventPayer";
     private static final String SCHEDULE = "schedule";
@@ -91,14 +92,14 @@ public class ScheduleRecordSpecs extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(() -> List.of(
-                executionTimeIsAvailable(),
-                deletionTimeIsAvailable(),
                 allRecordsAreQueryable(),
-                schedulingTxnIdFieldsNotAllowed(),
                 canonicalScheduleOpsHaveExpectedUsdFees(),
                 canScheduleChunkedMessages(),
+                deletionTimeIsAvailable(),
+                executionTimeIsAvailable(),
                 noFeesChargedIfTriggeredPayerIsInsolvent(),
-                noFeesChargedIfTriggeredPayerIsUnwilling()));
+                noFeesChargedIfTriggeredPayerIsUnwilling(),
+                schedulingTxnIdFieldsNotAllowed()));
     }
 
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
@@ -201,6 +202,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                         overridingAllOf(Map.of(
                                 STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
                                 STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10")),
+                        overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
                         createTopic(ofGeneralInterest))
                 .when(
@@ -313,6 +315,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 .then(getScheduleInfo("ntb").wasDeletedAtConsensusTimeOf("deletion"));
     }
 
+    @HapiTest
     public HapiSpec allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(

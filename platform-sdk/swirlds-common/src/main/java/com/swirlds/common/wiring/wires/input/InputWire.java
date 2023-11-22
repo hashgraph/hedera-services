@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.input;
 
-import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
