@@ -83,7 +83,11 @@ jobs:
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
       enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}
-      enable-hapi-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
+      enable-hapi-tests-misc: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
+      enable-hapi-tests-crypto: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
+      enable-hapi-tests-token: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
+      enable-hapi-tests-smart-contract: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
+      enable-hapi-tests-time-consuming: ${{ github.event_name == 'push' || github.event.inputs.enable-hapi-tests == 'true' }}
       enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
       enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
       enable-snyk-scan: ${{ github.event_name == 'push' || github.event.inputs.enable-snyk-scan == 'true' }}

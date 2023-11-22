@@ -136,11 +136,21 @@ public class PlatformCli extends AbstractCommand {
                         + DOCUMENTATION_PURPOSES_ONLY);
     }
 
+    @CommandLine.Option(
+            names = {"-B", "--bootstrap"},
+            scope = CommandLine.ScopeType.INHERIT,
+            description = "The fully qualified name of the function to run before the command is executed."
+                    + "Can be used to do arbitrary bootstrapping. Should be a static method "
+                    + "that implements the interface Runnable. "
+                    + "e.g. '-B com.swirlds.cli.utility.PlatformCliPreParser.exampleBootstrapFunction'")
+    private void setBoostrapFunction(final String boostrapFunction) {
+        throw buildParameterException("This argument is parsed by the pre-parser. " + DOCUMENTATION_PURPOSES_ONLY);
+    }
+
     /**
      * Before we do the main parsing pass, we first need to extract a small selection of parameters.
      *
-     * @param args
-     * 		the program arguments
+     * @param args the program arguments
      * @return the arguments that weren't handled by pre-parsing
      */
     private static PlatformCliPreParser preParse(final String[] args) {
@@ -157,8 +167,7 @@ public class PlatformCli extends AbstractCommand {
     /**
      * Main entrypoint for the platform CLI.
      *
-     * @param args
-     * 		program arguments
+     * @param args program arguments
      */
     @SuppressWarnings("java:S106")
     public static void main(final String[] args) throws InterruptedException {
@@ -170,6 +179,8 @@ public class PlatformCli extends AbstractCommand {
         System.out.println(PlatformCliLogo.getColorizedLogo());
 
         final CountDownLatch log4jLatch = Log4jSetup.startLoggingFramework(preParser.getLog4jPath());
+
+        preParser.runBootstrapFunction();
 
         whitelistCliPackage("com.swirlds.platform.cli");
         whitelistCliPackage("com.swirlds.platform.state.editor");
