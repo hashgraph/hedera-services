@@ -276,11 +276,12 @@ public final class RecordListBuilder {
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
         final var consensusNow = prevConsensusNow.plusNanos(1L);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer)
-                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
         // Only set parent consensus timestamp for child records if one is not provided
         if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
             recordBuilder.parentConsensus(parentConsensusTimestamp);
+        } else {
+            recordBuilder.exchangeRate(userTxnRecordBuilder.exchangeRate());
         }
         if (!customizer.shouldSuppressRecord()) {
             childRecordBuilders.add(recordBuilder);

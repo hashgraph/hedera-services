@@ -86,6 +86,7 @@ public class CustomRoyaltyFeeAssessor {
                 if (!royaltyFee.hasFallbackFee()) {
                     continue;
                 }
+                // Skip if the receiver has already paid the fallback fee for this token
                 if (result.getRoyaltiesPaid().contains(Pair.of(receiver, tokenId))) {
                     continue;
                 }
