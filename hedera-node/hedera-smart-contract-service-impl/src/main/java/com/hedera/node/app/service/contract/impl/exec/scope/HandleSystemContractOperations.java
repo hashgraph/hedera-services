@@ -97,6 +97,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
                 .contractID(result.contractID())
+                .entropyBytes(result.contractCallResult())
                 .status(responseStatus)
                 .contractCallResult(result);
     }
