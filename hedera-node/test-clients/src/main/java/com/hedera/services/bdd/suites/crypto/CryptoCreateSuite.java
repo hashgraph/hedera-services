@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -64,9 +65,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class CryptoCreateSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -263,7 +265,6 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
@@ -271,9 +272,6 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
                         cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
-        // In modular code this error is thrown in handle, but it is fixed using dynamic property
-        // spec.streamlinedIngestChecks
-        // to accommodate error codes moved from Ingest to handle
     }
 
     @HapiTest

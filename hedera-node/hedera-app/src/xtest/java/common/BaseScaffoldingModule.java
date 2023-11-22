@@ -40,8 +40,10 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -55,9 +57,12 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.validation.ExpiryValidation;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -129,6 +134,10 @@ public interface BaseScaffoldingModule {
 
     @Binds
     @Singleton
+    HederaRecordCache bindHederaRecordCache(RecordCacheImpl cacheImpl);
+
+    @Binds
+    @Singleton
     BlockRecordStreamProducer bindBlockRecordStreamProducer(StreamFileProducerSingleThreaded producer);
 
     @Binds
@@ -181,6 +190,10 @@ public interface BaseScaffoldingModule {
         return () -> new VersionedConfigImpl(configuration, 1L);
     }
 
+    @Binds
+    @Singleton
+    ChildRecordFinalizer provideChildRecordFinalizer(@NonNull FinalizeChildRecordHandler childRecordFinalizer);
+
     @Provides
     @Singleton
     static BiFunction<Query, AccountID, QueryContext> provideQueryContextFactory(
@@ -204,7 +217,7 @@ public interface BaseScaffoldingModule {
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final RecordCache recordCache,
+            @NonNull final HederaRecordCache recordCache,
             @NonNull final Configuration configuration,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ServiceScopeLookup scopeLookup,
@@ -213,7 +226,8 @@ public interface BaseScaffoldingModule {
             @NonNull final HederaState state,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
@@ -222,9 +236,12 @@ public interface BaseScaffoldingModule {
             final HederaFunctionality function;
             try {
                 function = functionOf(body);
-            } catch (UnknownHederaFunctionality e) {
+            } catch (final UnknownHederaFunctionality e) {
                 throw new RuntimeException(e);
             }
+            final var expiryValidation = new ExpiryValidation(configProvider);
+            final var solvencyPreCheck =
+                    new SolvencyPreCheck(exchangeRateManager, feeManager, expiryValidation, authorizer);
             return new HandleContextImpl(
                     body,
                     function,
@@ -246,7 +263,9 @@ public interface BaseScaffoldingModule {
                     feeManager,
                     exchangeRateManager,
                     consensusTime,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         };
     }
 }

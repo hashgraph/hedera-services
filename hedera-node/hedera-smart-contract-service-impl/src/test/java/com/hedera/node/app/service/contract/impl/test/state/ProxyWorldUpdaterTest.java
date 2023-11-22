@@ -42,6 +42,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
@@ -56,7 +57,6 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.List;
 import java.util.Optional;
@@ -501,8 +501,8 @@ class ProxyWorldUpdaterTest {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
                 0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
 
-        subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS);
-        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
+        subject.externalizeSystemContractResults(contractFunctionResult, ResponseCodeEnum.SUCCESS);
+        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
     }
 
     @Test

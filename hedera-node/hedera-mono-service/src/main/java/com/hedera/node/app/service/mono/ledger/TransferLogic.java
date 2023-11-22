@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -111,25 +112,32 @@ public class TransferLogic {
         var autoCreationFee = 0L;
         var updatedPayerBalance = Long.MIN_VALUE;
         boolean failedAutoCreation = false;
+        boolean hasSuccessfulAutoCreation = false;
+        int numAutoCreationsSoFar = 0;
         for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
             replaceAliasWithIdIfExisting(change);
-
             // create a new account for alias when the no account is already created using the alias
             if (change.hasAlias()) {
                 if (autoCreationLogic == null) {
                     throw new IllegalStateException(
                             "Cannot auto-create account from " + change + " with null autoCreationLogic");
                 }
-                final var result = autoCreationLogic.create(change, accountsLedger, changes);
-                validity = result.getKey();
-                // We break this loop on the first non-OK validity
-                failedAutoCreation = validity != OK;
-                autoCreationFee += result.getValue();
-                if (validity == OK && (change.isForToken())) {
-                    validity = tokenStore.tryTokenChange(change);
+                numAutoCreationsSoFar++;
+                if (recordsHistorian.canTrackPrecedingChildRecords(numAutoCreationsSoFar)) {
+                    final var result = autoCreationLogic.create(change, accountsLedger, changes);
+                    validity = result.getKey();
+                    // We break this loop on the first non-OK validity
+                    hasSuccessfulAutoCreation |= validity == OK;
+                    autoCreationFee += result.getValue();
+                    if (validity == OK && (change.isForToken())) {
+                        validity = tokenStore.tryTokenChange(change);
+                    }
+                } else {
+                    validity = MAX_CHILD_RECORDS_EXCEEDED;
                 }
+                failedAutoCreation = validity != OK;
             } else if (change.isForHbar()) {
                 validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
                 if (change.affectsAccount(topLevelPayer)) {
@@ -160,6 +168,10 @@ public class TransferLogic {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
                 payAutoCreationFee(autoCreationFee);
+            }
+            // If the auto creation is successful submit the records to historian,
+            // even if auto creation fee is 0 (which can be the case if the payer is a superuser)
+            if (hasSuccessfulAutoCreation) {
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
             }
         } else {

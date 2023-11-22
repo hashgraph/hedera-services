@@ -175,7 +175,7 @@ public abstract class AbstractAutoCreationLogic {
         customizer.maxAutomaticAssociations(maxAutoAssociations);
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
-            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);
             customizer.key(EMPTY_KEY);
             memo = LAZY_MEMO;
         } else {
@@ -194,10 +194,15 @@ public abstract class AbstractAutoCreationLogic {
                 .isReceiverSigRequired(false)
                 .isSmartContract(false)
                 .alias(alias);
-
-        var fee = autoCreationFeeFor(syntheticCreation);
-        if (isAliasEVMAddress) {
-            fee += getLazyCreationFinalizationFee();
+        var fee = 0L;
+        final var isSuperUser = txnCtx.activePayer().getAccountNum() == 2L
+                || txnCtx.activePayer().getAccountNum() == 50L;
+        // If superuser is the payer don't charge fee
+        if (!isSuperUser) {
+            fee = autoCreationFeeFor(syntheticCreation);
+            if (isAliasEVMAddress) {
+                fee += getLazyCreationFinalizationFee();
+            }
         }
 
         final var newId = ids.newAccountId();

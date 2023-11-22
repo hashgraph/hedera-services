@@ -95,7 +95,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
                     .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
             System.out.printf("Writing modified state to %s %n", outputDir.toAbsolutePath());
-            writeSignedStateFilesToDirectory(NO_NODE_ID, outputDir, reservedSignedState.get(), configuration);
+            writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, outputDir, reservedSignedState.get());
         }
 
         return 0;

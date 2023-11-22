@@ -28,7 +28,6 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
@@ -57,7 +56,6 @@ class SyncProtocolTests {
     private ShadowGraphSynchronizer shadowGraphSynchronizer;
     private FallenBehindManager fallenBehindManager;
     private SyncPermitProvider permitProvider;
-    private CriticalQuorum criticalQuorum;
     private PeerAgnosticSyncChecks peerAgnosticSyncChecks;
     private Duration sleepAfterSync;
     private SyncMetrics syncMetrics;
@@ -70,7 +68,6 @@ class SyncProtocolTests {
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
         permitProvider = new SyncPermitProvider(2, mock(IntakeEventCounter.class));
-        criticalQuorum = mock(CriticalQuorum.class);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
         time = new FakeTime();
@@ -81,8 +78,6 @@ class SyncProtocolTests {
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
         // only peer with ID 1 is needed for fallen behind
         Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
-        // all nodes are in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(true);
         // peer agnostic sync checks pass
         peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(() -> true));
 
@@ -98,7 +93,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -120,7 +114,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 Duration.ofMillis(100),
                 syncMetrics,
@@ -158,7 +151,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -183,7 +175,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
@@ -207,7 +198,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -221,8 +211,6 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol initiates if peer is needed for fallen behind")
     void initiateForFallenBehind() {
-        // peer isn't in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(false);
 
         // peer *is* needed for fallen behind (by default)
         final SyncProtocol protocol = new SyncProtocol(
@@ -231,7 +219,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -252,7 +239,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -277,7 +263,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -298,7 +283,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 Duration.ofMillis(100),
                 syncMetrics,
@@ -344,7 +328,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -363,7 +346,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
@@ -387,7 +369,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -407,7 +388,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -429,7 +409,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -451,7 +430,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -473,7 +451,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
@@ -496,14 +473,13 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
 
         // mock synchronize to throw a ParallelExecutionException
-        Mockito.when(shadowGraphSynchronizer.synchronize(any()))
+        Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
                 .thenThrow(new ParallelExecutionException(mock(Throwable.class)));
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -525,14 +501,13 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
-        Mockito.when(shadowGraphSynchronizer.synchronize(any()))
+        Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
                 .thenThrow(new ParallelExecutionException(new IOException()));
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -553,14 +528,13 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
                 time);
 
         // mock synchronize to throw a SyncException
-        Mockito.when(shadowGraphSynchronizer.synchronize(any())).thenThrow(new SyncException(""));
+        Mockito.when(shadowGraphSynchronizer.synchronize(any(), any())).thenThrow(new SyncException(""));
 
         assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldAccept();
@@ -580,7 +554,6 @@ class SyncProtocolTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
-                criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,

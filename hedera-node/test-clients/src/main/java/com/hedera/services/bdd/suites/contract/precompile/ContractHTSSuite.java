@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -39,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -47,8 +49,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractHTSSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
@@ -89,6 +93,7 @@ public class ContractHTSSuite extends HapiSuite {
         return List.of();
     }
 
+    @HapiTest
     private HapiSpec nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec("NonZeroTransfersFail")

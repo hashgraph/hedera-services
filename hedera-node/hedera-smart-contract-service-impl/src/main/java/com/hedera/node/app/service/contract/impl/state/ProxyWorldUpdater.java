@@ -29,12 +29,12 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -118,6 +118,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.enhancement = requireNonNull(enhancement);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
+    }
+
+    /**
+     * Returns the pending creation, if any, for this updater.
+     *
+     * @return the pending creation, if any, for this updater
+     */
+    public @Nullable PendingCreation getPendingCreation() {
+        return pendingCreation;
     }
 
     @Override
@@ -448,8 +457,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void externalizeSystemContractResults(
-            @NonNull final ContractFunctionResult result, final ResultStatus status) {
-        enhancement.systemOperations().externalizeResult(result, status);
+            @NonNull final ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {
+        enhancement.systemOperations().externalizeResult(result, responseStatus);
     }
 
     /**
@@ -490,10 +499,5 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
                 number,
                 origin != null ? evmFrameState.getIdNumber(origin) : MISSING_ENTITY_NUMBER,
                 body);
-    }
-
-    // Visible for testing
-    public @Nullable PendingCreation getPendingCreation() {
-        return pendingCreation;
     }
 }

@@ -16,10 +16,17 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_ALIAS;
+import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.TYPICAL_SENDER_ACCOUNT;
+import static contract.XTestConstants.TYPICAL_SENDER_CONTRACT;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -35,6 +42,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
@@ -50,6 +59,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -69,6 +80,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -82,8 +94,8 @@ import org.mockito.Mock;
 public abstract class AbstractContractXTest extends AbstractXTest {
     private static final SyntheticIds LIVE_SYNTHETIC_IDS = new SyntheticIds();
     private static final VerificationStrategies LIVE_VERIFICATION_STRATEGIES = new VerificationStrategies();
-    static final long GAS_TO_OFFER = 2_000_000L;
-    static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
+    protected static final long GAS_TO_OFFER = 2_000_000L;
+    protected static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
 
     @Mock
     private MessageFrame frame;
@@ -99,7 +111,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     private HtsCallFactory callAttemptFactory;
 
-    private ContractScaffoldingComponent component;
+    protected ContractScaffoldingComponent component;
 
     @BeforeEach
     void setUp() {
@@ -125,6 +137,26 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
+    }
+
+    protected Map<ProtoBytes, AccountID> withSenderAlias(final Map<ProtoBytes, AccountID> aliases) {
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ALIAS).build(), SENDER_ID);
+        return aliases;
+    }
+
+    protected Map<ProtoBytes, AccountID> withSenderAddress(final Map<ProtoBytes, AccountID> aliases) {
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        return aliases;
+    }
+
+    protected Map<AccountID, Account> withSenderAccount(final Map<AccountID, Account> accounts) {
+        accounts.put(SENDER_ID, TYPICAL_SENDER_ACCOUNT);
+        return accounts;
+    }
+
+    protected Map<AccountID, Account> withSenderContractAccount(final Map<AccountID, Account> accounts) {
+        accounts.put(SENDER_ID, TYPICAL_SENDER_CONTRACT);
+        return accounts;
     }
 
     protected TransactionID transactionIdWith(@NonNull final AccountID payerId) {
@@ -182,6 +214,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         internalRunHtsCallAndExpectRevert(sender, input, status, null);
     }
 
+    protected ContractCreateHandler createHandler() {
+        return CONTRACT_SERVICE.handlers().contractCreateHandler();
+    }
+
+    protected ContractCallHandler callHandler() {
+        return CONTRACT_SERVICE.handlers().contractCallHandler();
+    }
+
     protected void runHtsCallAndExpectRevert(
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
@@ -202,7 +242,11 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                     Optional.ofNullable(context).orElse("An unspecified operation") + " should have reverted");
             final var actualReason =
                     ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
-            assertEquals(status, actualReason);
+            assertEquals(
+                    status,
+                    actualReason,
+                    "'" + Optional.ofNullable(context).orElse("An unspecified operation")
+                            + "' should have reverted with " + status + " but instead reverted with " + actualReason);
         }));
     }
 
@@ -253,9 +297,10 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
 
-        final var call = callAttemptFactory.createCallFrom(input, frame);
+        final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var call = attempt.asExecutableCall();
 
-        final var pricedResult = call.execute();
+        final var pricedResult = requireNonNull(call).execute(frame);
         resultAssertions.accept(pricedResult);
         // Note that committing a reverted calls should have no effect on state
         ((SavepointStackImpl) context.savepointStack()).commitFullStack();
@@ -296,12 +341,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     protected Consumer<Response> assertingCallLocalResultIsBuffer(
             @NonNull final ByteBuffer expectedResult, @NonNull final String orElseMessage) {
-        return response -> assertThat(expectedResult.array())
-                .withFailMessage(orElseMessage)
-                .isEqualTo(response.contractCallLocalOrThrow()
-                        .functionResultOrThrow()
-                        .contractCallResult()
-                        .toByteArray());
+        return response -> {
+            assertThat(expectedResult.array())
+                    .withFailMessage(orElseMessage)
+                    .isEqualTo(response.contractCallLocalOrThrow()
+                            .functionResultOrThrow()
+                            .contractCallResult()
+                            .toByteArray());
+        };
     }
 
     private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
@@ -311,6 +358,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             final var result = fullResult.result();
             resultAssertion.accept(result);
         };
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final AccountID accountID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(accountID.accountNumOrThrow())));
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final TokenID tokenID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(tokenID.tokenNum())));
     }
 
     public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {

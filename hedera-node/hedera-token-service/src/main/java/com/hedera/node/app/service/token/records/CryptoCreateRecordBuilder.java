@@ -45,6 +45,19 @@ public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilde
     @NonNull
     CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress);
 
+    /**
+     * The transactionFee charged for this transaction.
+     * @param transactionFee the transaction fee
+     * @return this builder
+     */
     @NonNull
     CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee);
+
+    /**
+     * The memo associated with the transaction.
+     * @param memo the memo
+     * @return this builder
+     */
+    @NonNull
+    CryptoCreateRecordBuilder memo(@NonNull final String memo);
 }

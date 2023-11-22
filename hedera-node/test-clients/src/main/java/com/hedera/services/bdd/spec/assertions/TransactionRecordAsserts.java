@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +45,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.opentest4j.AssertionFailedError;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
 
@@ -176,6 +178,24 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 return List.of(t);
             }
             return EMPTY_LIST;
+        });
+        return this;
+    }
+
+    public TransactionRecordAsserts statusFrom(@NonNull final ResponseCodeEnum... expectedStatuses) {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
+            final var actual = receipt.getStatus();
+            try {
+                for (final var expected : expectedStatuses) {
+                    if (actual == expected) {
+                        return Collections.emptyList();
+                    }
+                }
+                throw new AssertionFailedError(
+                        "Expected status in " + List.of(expectedStatuses) + " but was " + actual);
+            } catch (Throwable t) {
+                return List.of(t);
+            }
         });
         return this;
     }

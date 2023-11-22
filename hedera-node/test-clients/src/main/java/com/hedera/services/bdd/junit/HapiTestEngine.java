@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
+import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
@@ -23,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
@@ -32,13 +35,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
@@ -76,14 +81,14 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      * Tests whether a class is annotated with {@link HapiTestSuite}.
      */
     private static final Predicate<Class<?>> IS_HAPI_TEST_SUITE =
-            classCandidate -> AnnotationSupport.isAnnotated(classCandidate, HapiTestSuite.class);
+            classCandidate -> isAnnotated(classCandidate, HapiTestSuite.class);
 
     /**
      * Tests whether a method is annotated with {@link HapiTest}, or whether it is a no-arg method that returns a
      * {@link HapiSpec}. Any of the former type of method will be executed, while any of the latter will be skipped.
      */
     private static final Predicate<Method> IS_HAPI_TEST =
-            methodCandidate -> AnnotationSupport.isAnnotated(methodCandidate, HapiTest.class)
+            methodCandidate -> isAnnotated(methodCandidate, HapiTest.class)
                     || (methodCandidate.getParameterCount() == 0 && methodCandidate.getReturnType() == HapiSpec.class);
 
     private static final Comparator<Method> noSorting = (m1, m2) -> 0;
@@ -177,8 +182,13 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 return context;
             }
 
-            env = new HapiTestEnv("HAPI Tests", true);
-            env.start();
+            // Allow for a simple switch to enable in-process Alice node for debugging
+            final String debugEnv = System.getenv("HAPI_DEBUG_NODE");
+            final boolean useInProcessAlice = Boolean.parseBoolean(debugEnv);
+            // For now, switching to non-in process servers, because in process doesn't work for the
+            // restart and reconnect testing.
+            env = new HapiTestEnv("HAPI Tests", true, useInProcessAlice);
+            context.setEnv(env);
 
             final var tmpDir = Path.of("data");
             final var defaultProperties = JutilPropertySource.getDefaultInstance();
@@ -186,7 +196,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             final var parameters =
                     Map.of("recordStream.path", recordStreamPath, "ci.properties.map", "secondsWaitingServerUp=300");
             HapiSpec.runInCiMode(
-                    String.valueOf(env.getNodes()),
+                    String.valueOf(env.getNodeInfo()),
                     defaultProperties.get("default.payer"),
                     defaultProperties.get("default.node").split("\\.")[2],
                     defaultProperties.get("tls"),
@@ -198,7 +208,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public void after(HapiTestEngineExecutionContext context) throws Exception {
-            if (env != null) {
+            if (env != null && env.started()) {
                 env.terminate();
                 env = null;
             }
@@ -216,6 +226,10 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         private final Class<?> testClass;
         /** We will skip initialization of a {@link Hedera} instance if there are no test methods */
         private final boolean skip;
+        /** Whether a separate cluster of nodes should be created for this test class (or reset the normal cluster) */
+        private final boolean isolated;
+
+        private final Set<TestTag> testTags;
 
         /** Creates a new descriptor for the given test class. */
         public ClassTestDescriptor(Class<?> testClass, TestDescriptor parent, EngineDiscoveryRequest discoveryRequest) {
@@ -224,6 +238,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     testClass.getSimpleName(),
                     ClassSource.from(testClass));
             this.testClass = testClass;
+            this.testTags = getTagsIfAny(testClass);
             setParent(parent);
 
             // Currently we support only ASC MethodOrderer.OrderAnnotation sorting
@@ -251,6 +266,16 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             // Skip construction of the Hedera instance if there are no test methods
             skip = getChildren().isEmpty();
+
+            // Determine whether this test class (suite) should be isolated in its own cluster of nodes
+            final var annotation =
+                    findAnnotation(testClass, HapiTestSuite.class).orElseThrow();
+            this.isolated = annotation.isolated();
+        }
+
+        @Override
+        public Set<TestTag> getTags() {
+            return this.testTags;
         }
 
         @Override
@@ -262,6 +287,37 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             return skip ? SkipResult.skip("No test methods") : SkipResult.doNotSkip();
         }
+
+        @Override
+        public HapiTestEngineExecutionContext execute(
+                HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor) throws Exception {
+
+            // If we are isolated AND there is already a started set of nodes, then we have to stop and destroy them
+            // and get rid of all state, so when we bring them back up, it is genesis again.
+            final var env = context.getEnv();
+            if (isolated && (env.started())) {
+                env.terminate();
+                env.getNodes().forEach(HapiTestNode::clearState);
+            }
+
+            // If it hasn't been started, start it. The very first suite will find it isn't started, or any suite that
+            // follows one that was isolated will find it wasn't started.
+            if (!env.started()) {
+                env.start();
+            }
+
+            return Node.super.execute(context, dynamicTestExecutor);
+        }
+
+        @Override
+        public void after(HapiTestEngineExecutionContext context) throws Exception {
+            // If we are isolated, then stop and destroy everything to prepare for a new genesis startup.
+            final var env = context.getEnv();
+            if (env != null && env.started() && isolated) {
+                env.terminate();
+                env.getNodes().forEach(HapiTestNode::clearState);
+            }
+        }
     }
 
     /**
@@ -269,6 +325,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     private static final class MethodTestDescriptor extends AbstractTestDescriptor
             implements Node<HapiTestEngineExecutionContext> {
+        private final Logger classLogger = LogManager.getLogger(getClass());
 
         /** The method under test */
         private final Method testMethod;
@@ -282,26 +339,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     MethodSource.from(testMethod));
             this.testMethod = testMethod;
             this.testTags = getTagsIfAny(testMethod);
+            this.testTags.addAll(parent.getTags());
             setParent(parent);
-        }
-
-        private Set<TestTag> getTagsIfAny(Method testMethod) {
-            // When a method has a single @Tag annotation, we retrieve it by filtering for Tag.class.
-            // In cases where a method has multiple @Tag annotations, we use Tags.class to access all of them.
-            // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
-            // but the current implementation does not support this.
-            final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
-            final var tagAnnotation = testMethod.getAnnotation(Tag.class);
-
-            final var tags = new HashSet<TestTag>();
-            if (tagsAnnotation != null) {
-                tags.addAll(Arrays.stream(tagsAnnotation.value())
-                        .map(t -> TestTag.create(t.value()))
-                        .toList());
-            } else if (tagAnnotation != null) {
-                tags.add(TestTag.create(tagAnnotation.value()));
-            }
-            return tags;
         }
 
         @Override
@@ -311,35 +350,46 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
-            final var isHapiTestAnnotated = AnnotationSupport.isAnnotated(testMethod, HapiTest.class);
-            final var disabledAnnotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
+            final var isHapiTestAnnotated = isAnnotated(testMethod, HapiTest.class);
+            final var disabledAnnotation = findAnnotation(testMethod, Disabled.class);
 
             if (!isHapiTestAnnotated) {
                 return SkipResult.skip(testMethod.getName() + " No @HapiTest annotation");
             } else if (disabledAnnotation.isPresent()) {
                 final var msg = disabledAnnotation.get().value();
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);
+            } else if (testMethod.getParameterCount() != 0) {
+                final String message =
+                        "%s requires %d parameters.".formatted(testMethod.getName(), testMethod.getParameterCount());
+                return SkipResult.skip(message);
             }
-
             return SkipResult.doNotSkip();
         }
 
         @Override
         public HapiTestEngineExecutionContext execute(
-                HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor) throws Exception {
+                HapiTestEngineExecutionContext context, DynamicTestExecutor dynamicTestExecutor)
+                throws NoSuchMethodException, InvocationTargetException, InstantiationException,
+                        IllegalAccessException {
             // First, create an instance of the HapiSuite class (the class that owns this method).
             final var parent = (ClassTestDescriptor) getParent().get();
             final var suite =
                     (HapiSuite) parent.testClass.getDeclaredConstructor().newInstance();
             // Second, call the method to get the HapiSpec
             testMethod.setAccessible(true);
-            final var spec = (HapiSpec) testMethod.invoke(suite);
-            spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
-            // Third, call `runSuite` with just the one HapiSpec.
-            final var result = suite.runSpecSync(spec);
-            // Fourth, report the result. YAY!!
-            if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
-                throw new AssertionError();
+            if (testMethod.getParameterCount() == 0) {
+                final var spec = (HapiSpec) testMethod.invoke(suite);
+                spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+                final var env = context.getEnv();
+                // Third, call `runSuite` with just the one HapiSpec.
+                final var result = suite.runSpecSync(spec, env.getNodes());
+                // Fourth, report the result. YAY!!
+                if (result == HapiSuite.FinalOutcome.SUITE_FAILED) {
+                    throw new AssertionError();
+                }
+            } else {
+                final String message = "Not running spec {}.  Method requires {} parameters.";
+                classLogger.log(Level.INFO, message, testMethod.getName(), testMethod.getParameterCount());
             }
             return context;
         }
@@ -348,5 +398,40 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public Set<TestTag> getTags() {
             return this.testTags;
         }
+    }
+
+    private static Set<TestTag> getTagsIfAny(Class<?> testClass) {
+        // When a class has a single @Tag annotation, we retrieve it by filtering for Tag.class.
+        // In cases where a class has multiple @Tag annotations, we use Tags.class to access all of them.
+        // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
+        // but the current implementation does not support this.
+        final var tagsAnnotation = testClass.getAnnotation(Tags.class);
+        final var tagAnnotation = testClass.getAnnotation(Tag.class);
+
+        return extractTags(tagsAnnotation, tagAnnotation);
+    }
+
+    private static Set<TestTag> getTagsIfAny(Method testMethod) {
+        // When a method has a single @Tag annotation, we retrieve it by filtering for Tag.class.
+        // In cases where a method has multiple @Tag annotations, we use Tags.class to access all of them.
+        // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
+        // but the current implementation does not support this.
+        final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
+        final var tagAnnotation = testMethod.getAnnotation(Tag.class);
+
+        return extractTags(tagsAnnotation, tagAnnotation);
+    }
+
+    // A helper method that extracts the value from either a @Tags annotation or a @Tag annotation
+    private static Set<TestTag> extractTags(Tags tagsAnnotation, Tag tagAnnotation) {
+        final var tags = new HashSet<TestTag>();
+        if (tagsAnnotation != null) {
+            tags.addAll(Arrays.stream(tagsAnnotation.value())
+                    .map(t -> TestTag.create(t.value()))
+                    .toList());
+        } else if (tagAnnotation != null) {
+            tags.add(TestTag.create(tagAnnotation.value()));
+        }
+        return tags;
     }
 }
