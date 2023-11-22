@@ -388,6 +388,7 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
+    @HapiTest
     private HapiSpec rejectsInsufficientFee() {
         return defaultHapiSpec("RejectsInsufficientFee")
                 .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -495,6 +496,7 @@ public class ContractCreateSuite extends HapiSuite {
                         .hasKnownStatus(INSUFFICIENT_GAS));
     }
 
+    @HapiTest
     HapiSpec blockTimestampChangesWithinFewSeconds() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
