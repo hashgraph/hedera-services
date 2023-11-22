@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -41,6 +42,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Note that we cannot test the behavior of the network when the auto-created account expires,
@@ -49,6 +51,7 @@ import org.apache.logging.log4j.Logger;
  * the auto-created account is about to expire.
  */
 @HapiTestSuite(fuzzyMatch = true)
+@Tag(CRYPTO)
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
     public static final long INITIAL_BALANCE = 1000L;

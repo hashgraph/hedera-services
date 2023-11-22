@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -88,8 +89,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractKeysHTSSuite extends HapiSuite {
 
     private static final long GAS_TO_OFFER = 1_500_000L;
