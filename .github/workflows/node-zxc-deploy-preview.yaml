@@ -135,7 +135,7 @@ jobs:
           PRE_JSON_REQUEST: ${{ toJSON(github.event) }}
         run: echo "request=$(jq --compact-output '.ref = "v${{ inputs.new-version }}"' <<<"${PRE_JSON_REQUEST}")" >>"${GITHUB_OUTPUT}"
 
-      - name: Notify Jenkins of Release (Preview)
+      - name: Notify Jenkins of Release (Preview Network)
         id: jenkins-preview
         uses: fjogeleit/http-request-action@25a5a55111f57b7eeaaff0ba0c6a457ce1895b90 # v1.14.2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
@@ -150,13 +150,13 @@ jobs:
           jq '.' <<<"${JSON_RESPONSE}"
           printf "### Jenkins Response Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${JSON_RESPONSE}")" >>"${GITHUB_STEP_SUMMARY}"
 
-      - name: Check for Jenkins Failures (Preview)
+      - name: Check for Jenkins Failures (Preview Network)
         env:
           JSON_RESPONSE: ${{ steps.jenkins-preview.outputs.response }}
         run: |
-          PREVIEW_TRIGGERED="$(jq '.jobs."build-preview-testnet".triggered' <<<"${JSON_RESPONSE}")"
+          PREVIEW_TRIGGERED="$(jq '.jobs."build-previewnet".triggered' <<<"${JSON_RESPONSE}")"
 
           if [[ "${PREVIEW_TRIGGERED}" != true ]]; then
-            echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-preview-testnet' job via the Jenkins 'preview' pipeline!"
+            echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-previewnet' pipeline in Jenkins!"
             exit 1
           fi
