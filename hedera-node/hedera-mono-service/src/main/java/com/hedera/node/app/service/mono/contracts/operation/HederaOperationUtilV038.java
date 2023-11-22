@@ -84,12 +84,12 @@ public final class HederaOperationUtilV038 {
             // and let HederaEvmMessageCallProcessor#start() handle those calls accordingly
             return supplierExecution.get();
         }
-        if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
-            return failingOperationResultFrom(
-                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
-        }
-        if (globalDynamicProperties.evmVersion() == EVM_VERSION_0_45) {
-            // 45 logic
+        if (!globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_45) ||
+                !globalDynamicProperties.allowCallsToNonContractAccounts()) {
+            if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
+                return failingOperationResultFrom(
+                        supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+            }
         }
         // static frames are guaranteed to be read-only and cannot change state, so no signature verification is needed
         if (supplierIsChildStatic.getAsBoolean()) {
