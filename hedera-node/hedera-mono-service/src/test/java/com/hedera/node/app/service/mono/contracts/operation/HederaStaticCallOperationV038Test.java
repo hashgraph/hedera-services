@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -64,12 +65,16 @@ class HederaStaticCallOperationV038Test {
     @Mock
     private Predicate<Address> systemAccountDetector;
 
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
+
     private final long cost = 100L;
     private HederaStaticCallOperationV038 subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaStaticCallOperationV038(calc, addressValidator, systemAccountDetector);
+        subject = new HederaStaticCallOperationV038(
+                calc, addressValidator, systemAccountDetector, globalDynamicProperties);
     }
 
     @Test

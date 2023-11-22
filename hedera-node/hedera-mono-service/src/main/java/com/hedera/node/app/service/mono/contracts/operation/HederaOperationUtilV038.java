@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_45Module.EVM_VERSION_0_45;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
@@ -73,7 +75,8 @@ public final class HederaOperationUtilV038 {
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Predicate<Address> systemAccountDetector,
-            final BooleanSupplier supplierIsChildStatic) {
+            final BooleanSupplier supplierIsChildStatic,
+            final GlobalDynamicProperties globalDynamicProperties) {
         if (systemAccountDetector.test(address)) {
             // all calls to system addresses are treated as precompile calls;
             // let them through here, so a frame is created and there is adequate traceability info for the attempted
@@ -85,12 +88,15 @@ public final class HederaOperationUtilV038 {
             return failingOperationResultFrom(
                     supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
+        if (globalDynamicProperties.evmVersion() == EVM_VERSION_0_45) {
+            // 45 logic
+        }
         // static frames are guaranteed to be read-only and cannot change state, so no signature verification is needed
         if (supplierIsChildStatic.getAsBoolean()) {
             return supplierExecution.get();
         }
         // non-static frame, sig check required
-        final var isSigReqMet = isSigReqMetFor(address, frame, sigsVerifier);
+        final var isSigReqMet = isSigReqMetFor(address, frame, sigsVerifier, globalDynamicProperties);
         if (!isSigReqMet) {
             return failingOperationResultFrom(
                     supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SIGNATURE);
@@ -110,7 +116,8 @@ public final class HederaOperationUtilV038 {
     public static boolean isSigReqMetFor(
             @NonNull final Address address,
             @NonNull final MessageFrame frame,
-            @NonNull final EvmSigsVerifier sigsVerifier) {
+            @NonNull final EvmSigsVerifier sigsVerifier,
+            @NonNull final GlobalDynamicProperties globalDynamicProperties) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var account = updater.get(address);
         final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
@@ -125,22 +132,6 @@ public final class HederaOperationUtilV038 {
                     false, account.getAddress(), frame.getContractAddress(), updater.trackingLedgers(), ContractCall);
         }
         return sigReqIsMet;
-    }
-
-    public static void cacheExistingValue(
-            final MessageFrame frame, final Address address, final Bytes32 key, final UInt256 storageValue) {
-        // Store the read if it is the first read for the slot/address
-        var updater = frame.getMessageFrameStack()
-                .getLast()
-                .getWorldUpdater()
-                .parentUpdater()
-                .orElse(null);
-        if (updater != null) {
-            final var addressSlots = ((HederaWorldState.Updater) updater)
-                    .getStateChanges()
-                    .computeIfAbsent(address, addr -> new TreeMap<>());
-            addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
-        }
     }
 
     private static Operation.OperationResult failingOperationResultFrom(

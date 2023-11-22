@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -93,6 +94,9 @@ class HederaOperationUtilV038Test {
     @Mock
     private PrecompileContractRegistry precompileContractRegistry;
 
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
+
     private final long expectedHaltGas = 10L;
 
     @Test
@@ -109,7 +113,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         assertSame(degenerateResult, result);
         verifyNoInteractions(sigsVerifier);
@@ -129,7 +134,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> false,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -163,7 +169,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -193,7 +200,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
         // then:
         assertEquals(operationResult, result);
         verify(executionSupplier).get();
@@ -223,7 +231,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -262,7 +271,8 @@ class HederaOperationUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 systemAccountDetector,
-                isChildStatic);
+                isChildStatic,
+                globalDynamicProperties);
 
         // then:
         assertNull(result.getHaltReason());
