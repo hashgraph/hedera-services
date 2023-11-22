@@ -22,12 +22,6 @@ plugins {
 }
 
 dependencies.components {
-    // TODO remove, once a new version of 'com.hedera.pbj.runtime' has been
-    //  published with fix from https://github.com/hashgraph/pbj/pull/92
-    withModule("com.hedera.pbj:pbj-runtime") {
-        allVariants { withDependencies { removeAll { it.name != "antlr4-runtime" } } }
-    }
-
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-netty")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf-lite")

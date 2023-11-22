@@ -16,16 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,9 +47,8 @@ public class TokenUriCall extends AbstractNftViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
+    protected @NonNull FullResult resultOfViewingNft(@NonNull final Token token, final Nft nft) {
         requireNonNull(token);
-        validateFalse(token.tokenType() == TokenType.FUNGIBLE_COMMON, FAIL_INVALID);
         String metadata;
         if (nft != null) {
             metadata = new String(nft.metadata().toByteArray());
@@ -64,7 +60,7 @@ public class TokenUriCall extends AbstractNftViewCall {
     }
 
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
 

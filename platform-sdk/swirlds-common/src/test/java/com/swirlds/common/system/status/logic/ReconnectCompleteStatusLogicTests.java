@@ -60,7 +60,7 @@ class ReconnectCompleteStatusLogicTests {
     void toCheckingWithPreciseRoundMatch() {
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(reconnectStateRound),
+                new StateWrittenToDiskAction(reconnectStateRound, false),
                 PlatformStatus.CHECKING);
     }
 
@@ -69,7 +69,7 @@ class ReconnectCompleteStatusLogicTests {
     void toCheckingWithImpreciseRoundMatch() {
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(reconnectStateRound + 3),
+                new StateWrittenToDiskAction(reconnectStateRound + 3, false),
                 PlatformStatus.CHECKING);
     }
 
@@ -87,7 +87,7 @@ class ReconnectCompleteStatusLogicTests {
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(reconnectStateRound),
+                new StateWrittenToDiskAction(reconnectStateRound, false),
                 PlatformStatus.FREEZING);
     }
 
@@ -98,7 +98,7 @@ class ReconnectCompleteStatusLogicTests {
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(reconnectStateRound + 5),
+                new StateWrittenToDiskAction(reconnectStateRound + 5, false),
                 PlatformStatus.FREEZING);
     }
 
@@ -112,7 +112,7 @@ class ReconnectCompleteStatusLogicTests {
 
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(reconnectStateRound),
+                new StateWrittenToDiskAction(reconnectStateRound, false),
                 PlatformStatus.FREEZING);
     }
 
@@ -135,6 +135,15 @@ class ReconnectCompleteStatusLogicTests {
     }
 
     @Test
+    @DisplayName("Go to FREEZE_COMPLETE")
+    void toFreezeComplete() {
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(0, true),
+                PlatformStatus.FREEZE_COMPLETE);
+    }
+
+    @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(
@@ -146,7 +155,7 @@ class ReconnectCompleteStatusLogicTests {
         // if the state written is prior to the reconnect state, it should be ignored
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction,
-                new StateWrittenToDiskAction(reconnectStateRound - 1),
+                new StateWrittenToDiskAction(reconnectStateRound - 1, false),
                 logic.getStatus());
     }
 
