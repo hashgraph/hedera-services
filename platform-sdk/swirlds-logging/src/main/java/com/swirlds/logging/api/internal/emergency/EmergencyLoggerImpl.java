@@ -97,6 +97,8 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      */
     private final LogEventFactory logEventFactory;
 
+    private final LineBasedFormat lineBasedFormat;
+
     /**
      * Creates the singleton instance of the logger.
      */
@@ -106,6 +108,13 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         supportedLevel = new AtomicReference<>();
         logEventsAddLock = new ReentrantLock();
         logEventFactory = new SimpleLogEventFactory();
+
+        final PrintStream printStream = Optional.ofNullable(System.err).orElse(System.out);
+        if (printStream != null) {
+            lineBasedFormat = new LineBasedFormat(new PrintWriter(printStream));
+        } else {
+            throw new IllegalStateException("System.err & System.out are null");
+        }
     }
 
     /**
@@ -253,10 +262,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
             logNPE("logEvent");
             return;
         }
-        final PrintStream printStream = Optional.ofNullable(System.err).orElse(System.out);
-        if (printStream != null) {
-            new LineBasedFormat(new PrintWriter(printStream, true)).print(logEvent);
-        }
+        lineBasedFormat.printAndFlush(logEvent);
         logEventsAddLock.lock();
         try {
             while (logEvents.remainingCapacity() <= 0) {

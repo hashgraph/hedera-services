@@ -94,11 +94,11 @@ public class LineBasedFormat {
             printWriter.print(" - C:");
             printWriter.print(context);
         }
-        printWriter.println();
+        printWriter.print(System.lineSeparator());
 
         Throwable throwable = event.throwable();
         if (throwable != null) {
-            throwable.printStackTrace(printWriter);
+            StackTracePrinter.print(printWriter, throwable);
         }
     }
 
@@ -181,5 +181,17 @@ public class LineBasedFormat {
         } else {
             return String.join(", ", marker.getAllMarkerNames());
         }
+    }
+
+    /**
+     * Calls flush on the underlying print writer.
+     */
+    public void flush() {
+        printWriter.flush();
+    }
+
+    public void printAndFlush(@NonNull final LogEvent event) {
+        print(event);
+        flush();
     }
 }
