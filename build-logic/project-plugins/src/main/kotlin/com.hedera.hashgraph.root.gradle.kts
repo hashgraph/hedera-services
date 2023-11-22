@@ -23,7 +23,6 @@ plugins {
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
     id("com.hedera.hashgraph.dependency-analysis")
-    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 spotless { kotlinGradle { target("build-logic/**/*.gradle.kts") } }
@@ -32,65 +31,98 @@ val productVersion = layout.projectDirectory.versionTxt().asFile.readText().trim
 
 tasks.register("githubVersionSummary") {
     group = "github"
-    doLast {
-        val ghStepSummaryPath: String =
-            providers.environmentVariable("GITHUB_STEP_SUMMARY").orNull
-                ?: throw IllegalArgumentException(
-                    "This task may only be run in a Github Actions CI environment!" +
-                        "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
-                )
 
+    inputs.property("version", productVersion)
+    outputs.file(
+        providers
+            .environmentVariable("GITHUB_STEP_SUMMARY")
+            .orElse(
+                provider {
+                    throw IllegalArgumentException(
+                        "This task may only be run in a Github Actions CI environment! " +
+                            "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
+                    )
+                }
+            )
+    )
+
+    doLast {
         Utils.generateProjectVersionReport(
-            rootProject,
-            File(ghStepSummaryPath).outputStream().buffered()
+            inputs.properties["version"] as String,
+            outputs.files.singleFile.outputStream().buffered()
         )
     }
 }
 
 tasks.register("showVersion") {
     group = "versioning"
-    doLast { println(productVersion) }
+
+    inputs.property("version", productVersion)
+
+    doLast { println(inputs.properties["version"]) }
 }
 
 tasks.register("versionAsPrefixedCommit") {
     group = "versioning"
+
+    @Suppress("UnstableApiUsage")
+    inputs.property(
+        "commit",
+        providers
+            .exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+            .standardOutput
+            .asText
+            .map { it.trim() }
+    )
+    inputs.property("commitPrefix", providers.gradleProperty("commitPrefix").orElse("adhoc"))
+    inputs.property("version", productVersion)
+    outputs.file(layout.projectDirectory.versionTxt())
+
     doLast {
-        gitData.lastCommitHash?.let {
-            val prefix = providers.gradleProperty("commitPrefix").getOrElse("adhoc")
-            val newPrerel = prefix + ".x" + it.take(8)
-            val currVer = SemVer.parse(productVersion)
-            try {
-                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
-                Utils.updateVersion(rootProject, newVer)
-            } catch (e: java.lang.IllegalArgumentException) {
-                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
-            }
-        }
+        val newPrerel =
+            inputs.properties["commitPrefix"].toString() +
+                ".x" +
+                inputs.properties["commit"].toString().take(8)
+        val currVer = SemVer.parse(inputs.properties["version"] as String)
+        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
+        outputs.files.singleFile.writeText(newVer.toString())
     }
 }
 
 tasks.register("versionAsSnapshot") {
     group = "versioning"
+
+    inputs.property("version", productVersion)
+    outputs.file(layout.projectDirectory.versionTxt())
+
     doLast {
-        val currVer = SemVer.parse(productVersion)
+        val currVer = SemVer.parse(inputs.properties["version"] as String)
         val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
 
-        Utils.updateVersion(rootProject, newVer)
+        outputs.files.singleFile.writeText(newVer.toString())
     }
 }
 
 tasks.register("versionAsSpecified") {
     group = "versioning"
-    doLast {
-        val verStr = providers.gradleProperty("newVersion")
 
-        if (!verStr.isPresent) {
-            throw IllegalArgumentException(
-                "No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task."
+    inputs.property(
+        "newVersion",
+        providers
+            .gradleProperty("newVersion")
+            .orElse(
+                provider {
+                    throw IllegalArgumentException(
+                        "No newVersion property provided! " +
+                            "Please add the parameter -PnewVersion=<version> when running this task."
+                    )
+                }
             )
-        }
+    )
+    outputs.file(layout.projectDirectory.versionTxt())
 
-        val newVer = SemVer.parse(verStr.get())
-        Utils.updateVersion(rootProject, newVer)
+    doLast {
+        val newVer = SemVer.parse(inputs.properties["newVersion"] as String)
+        outputs.files.singleFile.writeText(newVer.toString())
     }
 }

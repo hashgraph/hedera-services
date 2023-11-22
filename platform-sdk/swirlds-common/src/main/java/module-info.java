@@ -76,10 +76,10 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
-    exports com.swirlds.common.wiring;
-    exports com.swirlds.common.wiring.builders;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;
+    exports com.swirlds.common.wiring.schedulers;
+    exports com.swirlds.common.wiring.schedulers.builders;
     exports com.swirlds.common.wiring.transformers;
     exports com.swirlds.common.wiring.wires;
     exports com.swirlds.common.wiring.wires.input;
@@ -166,12 +166,12 @@ module com.swirlds.common {
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
 
-    requires transitive com.fasterxml.jackson.core;
-    requires transitive com.fasterxml.jackson.databind;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.logging;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.fasterxml.jackson.core;
+    requires transitive com.fasterxml.jackson.databind;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;

@@ -17,17 +17,17 @@
 package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
-import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
+import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -45,7 +45,7 @@ import java.util.Set;
  */
 public class StandardWiringModel implements WiringModel {
 
-    private final PlatformContext platformContext;
+    private final Metrics metrics;
     private final Time time;
 
     /**
@@ -81,11 +81,11 @@ public class StandardWiringModel implements WiringModel {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param time            provides wall clock time
+     * @param metrics provides metrics
+     * @param time    provides wall clock time
      */
-    public StandardWiringModel(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        this.platformContext = Objects.requireNonNull(platformContext);
+    public StandardWiringModel(@NonNull final Metrics metrics, @NonNull final Time time) {
+        this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
     }
 
@@ -104,22 +104,34 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
-        return new TaskSchedulerMetricsBuilder(platformContext.getMetrics(), time);
+        return new TaskSchedulerMetricsBuilder(metrics, time);
     }
 
     /**
-     * {@inheritDoc}
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
+     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
+     *               are not supported.
+     * @return the output wire
+     * @throws IllegalStateException if start() has already been called
      */
     @NonNull
-    @Override
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
         return getHeartbeatScheduler().buildHeartbeatWire(period);
     }
 
     /**
-     * {@inheritDoc}
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
+     *                  and so frequencies greater than 1000hz are not supported.
+     * @return the output wire
      */
-    @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
