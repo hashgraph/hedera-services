@@ -254,7 +254,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     private boolean shouldThrottleTxn(
-            final boolean isChild,
+            final boolean isScheduled,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant now,
             @NonNull final HederaState state) {
@@ -286,14 +286,14 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
         return switch (function) {
             case SCHEDULE_CREATE -> {
-                if (isChild) {
+                if (isScheduled) {
                     throw new IllegalStateException("ScheduleCreate cannot be a child!");
                 }
 
                 yield shouldThrottleScheduleCreate(manager, txnInfo, now, state);
             }
             case SCHEDULE_SIGN -> {
-                if (isChild) {
+                if (isScheduled) {
                     throw new IllegalStateException("ScheduleSign cannot be a child!");
                 }
 
