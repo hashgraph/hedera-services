@@ -243,90 +243,6 @@ public class TokenAssociationSpecs extends HapiSuite {
                                         .freeze(FreezeNotApplicable)));
     }
 
-    // Enable when token expiration is implemented
-    // @HapiTest
-    public HapiSpec dissociationFromExpiredTokensAsExpected() {
-        final String treasury = "accountA";
-        final String frozenAccount = "frozen";
-        final String unfrozenAccount = "unfrozen";
-        final String expiringToken = "expiringToken";
-        long lifetimeSecs = 10;
-
-        AtomicLong now = new AtomicLong();
-        return defaultHapiSpec("DissociationFromExpiredTokensAsExpected")
-                .given(
-                        newKeyNamed(FREEZE_KEY),
-                        cryptoCreate(treasury),
-                        cryptoCreate(frozenAccount).via(CREATION),
-                        cryptoCreate(unfrozenAccount).via(CREATION),
-                        withOpContext((spec, opLog) -> {
-                            var subOp = getTxnRecord(CREATION);
-                            allRunFor(spec, subOp);
-                            var record = subOp.getResponseRecord();
-                            now.set(record.getConsensusTimestamp().getSeconds());
-                        }),
-                        sourcing(() -> tokenCreate(expiringToken)
-                                .freezeKey(FREEZE_KEY)
-                                .freezeDefault(true)
-                                .treasury(treasury)
-                                .initialSupply(1000L)
-                                .expiry(now.get() + lifetimeSecs)))
-                .when(
-                        tokenAssociate(unfrozenAccount, expiringToken),
-                        tokenAssociate(frozenAccount, expiringToken),
-                        tokenUnfreeze(expiringToken, unfrozenAccount),
-                        cryptoTransfer(moving(100L, expiringToken).between(treasury, unfrozenAccount)))
-                .then(
-                        getAccountBalance(treasury).hasTokenBalance(expiringToken, 900L),
-                        sleepFor(lifetimeSecs * 1_000L),
-                        tokenDissociate(treasury, expiringToken).hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        tokenDissociate(unfrozenAccount, expiringToken).via("dissociateTxn"),
-                        getTxnRecord("dissociateTxn")
-                                .hasPriority(recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
-                                    @Override
-                                    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
-                                        return tokenXfers -> {
-                                            try {
-                                                assertEquals(
-                                                        1,
-                                                        tokenXfers.size(),
-                                                        "Wrong number of" + TOKENS + " transferred!");
-                                                TokenTransferList xfers = tokenXfers.get(0);
-                                                assertEquals(
-                                                        spec.registry().getTokenID(expiringToken),
-                                                        xfers.getToken(),
-                                                        "Wrong token" + " transferred!");
-                                                AccountAmount toTreasury = xfers.getTransfers(0);
-                                                assertEquals(
-                                                        spec.registry().getAccountID(treasury),
-                                                        toTreasury.getAccountID(),
-                                                        "Treasury should" + " come" + " first!");
-                                                assertEquals(
-                                                        100L,
-                                                        toTreasury.getAmount(),
-                                                        "Treasury should" + " get 100" + TOKENS + " back!");
-                                                AccountAmount fromAccount = xfers.getTransfers(1);
-                                                assertEquals(
-                                                        spec.registry().getAccountID(unfrozenAccount),
-                                                        fromAccount.getAccountID(),
-                                                        "Account should" + " come" + " second!");
-                                                assertEquals(
-                                                        -100L,
-                                                        fromAccount.getAmount(),
-                                                        "Account should" + " send 100" + TOKENS + " back!");
-                                            } catch (Exception error) {
-                                                return List.of(error);
-                                            }
-                                            return Collections.emptyList();
-                                        };
-                                    }
-                                })),
-                        getAccountBalance(treasury).hasTokenBalance(expiringToken, 1000L),
-                        getAccountInfo(frozenAccount)
-                                .hasToken(relationshipWith(expiringToken).freeze(Frozen)),
-                        tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
-    }
-
     @HapiTest
     public HapiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
         final String aNonTreasuryAcquaintance = "aNonTreasuryAcquaintance";
@@ -373,6 +289,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
     }
 
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
