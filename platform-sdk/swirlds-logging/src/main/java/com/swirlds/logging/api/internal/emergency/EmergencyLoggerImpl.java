@@ -96,6 +96,8 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      */
     private final LogEventFactory logEventFactory;
 
+    private final Lock handleLock;
+
     /**
      * Creates the singleton instance of the logger.
      */
@@ -105,6 +107,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         supportedLevel = new AtomicReference<>();
         logEventsAddLock = new ReentrantLock();
         logEventFactory = new SimpleLogEventFactory();
+        handleLock = new ReentrantLock();
     }
 
     /**
@@ -254,7 +257,12 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         }
         final PrintStream printStream = Optional.ofNullable(System.err).orElse(System.out);
         if (printStream != null) {
-            LineBasedFormat.print(printStream, logEvent);
+            handleLock.lock();
+            try {
+                LineBasedFormat.print(printStream, logEvent);
+            } finally {
+                handleLock.unlock();
+            }
             printStream.flush();
         } else {
             // LET'S HOPE THAT THIS NEVER HAPPENS...
