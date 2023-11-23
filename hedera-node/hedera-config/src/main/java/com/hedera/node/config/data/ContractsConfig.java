@@ -21,12 +21,11 @@ import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.Set;
-import org.hyperledger.besu.datatypes.Address;
 
 @ConfigData("contracts")
 public record ContractsConfig(
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean itemizeStorageFees,
-        @ConfigProperty(defaultValue = "1062787,1461860") Set<Address> permittedDelegateCallers,
+        @ConfigProperty(defaultValue = "1062787,1461860") Set<Long> permittedDelegateCallers,
         @ConfigProperty(defaultValue = "31536000") @NetworkProperty long referenceSlotLifetime,
         @ConfigProperty(defaultValue = "100") @NetworkProperty int freeStorageTierLimit,
         @ConfigProperty(defaultValue = "0til100M,2000til450M") @NetworkProperty String storageSlotPriceTiers,

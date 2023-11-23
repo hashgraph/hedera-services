@@ -23,7 +23,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
-import com.hedera.node.config.converter.AddressTypeConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
@@ -208,7 +207,6 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                 .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new PermissionedAccountsRangeConverter())
                 .withConverter(new SidecarTypeConverter())
-                .withConverter(new AddressTypeConverter())
                 .withConverter(new SemanticVersionConverter())
                 .withConverter(new LongPairConverter())
                 .withConverter(new KeyValuePairConverter())

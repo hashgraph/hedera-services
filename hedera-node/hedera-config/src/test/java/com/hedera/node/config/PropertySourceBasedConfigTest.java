@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.config.converter.AccountIDConverter;
-import com.hedera.node.config.converter.AddressTypeConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
@@ -109,7 +108,6 @@ class PropertySourceBasedConfigTest {
                 .withConverter(new FileIDConverter())
                 .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new SidecarTypeConverter())
-                .withConverter(new AddressTypeConverter())
                 .withConverter(new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();

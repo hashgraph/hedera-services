@@ -19,7 +19,6 @@ package com.hedera.node.config.testfixtures;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
-import com.hedera.node.config.converter.AddressTypeConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
@@ -195,7 +194,6 @@ public final class HederaTestConfigBuilder {
                 .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new PermissionedAccountsRangeConverter())
                 .withConverter(new SidecarTypeConverter())
-                .withConverter(new AddressTypeConverter())
                 .withConverter(new SemanticVersionConverter())
                 .withConverter(new KeyValuePairConverter())
                 .withConverter(new LongPairConverter())
