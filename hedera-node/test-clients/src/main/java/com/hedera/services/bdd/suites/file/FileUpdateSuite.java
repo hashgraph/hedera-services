@@ -184,7 +184,8 @@ public class FileUpdateSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec associateHasExpectedSemantics() {
-        return defaultHapiSpec("AssociateHasExpectedSemantics")
+        return propertyPreservingHapiSpec("AssociateHasExpectedSemantics")
+                .preserving("tokens.maxRelsPerInfoQuery")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
                 .when(
                         cryptoCreate("misc").balance(0L),
