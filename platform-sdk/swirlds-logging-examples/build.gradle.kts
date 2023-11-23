@@ -15,3 +15,5 @@
  */
 
 plugins { id("com.hedera.hashgraph.sdk.conventions") }
+
+mainModuleInfo { runtimeOnly("com.swirlds.config.impl") }
