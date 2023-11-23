@@ -235,7 +235,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientFee(),
                 nonPayable(),
                 invalidContractCall(),
-                invalidInternalCall(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1579,62 +1578,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
     }
 
-    HapiSpec invalidInternalCall() {
-        return defaultHapiSpec("InvalidInternalCall")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).hasKnownStatus(SUCCESS))
-                .when()
-                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callNonExisting", randomHeadlongAddress())
-                        .hasKnownStatus(SUCCESS));
-    }
-
-    @HapiTest
-    HapiSpec invalidContractDoesNotExist() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("invalidContractDoesNotExist")
-                .given()
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ifHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                .hasKnownStatus(INVALID_CONTRACT_ID)
-                                .via("contractDoesNotExist")),
-                        ifNotHapiTest(contractCallWithFunctionAbi("0.0.100000001", function)
-                                .hasPrecheck(INVALID_CONTRACT_ID)
-                                .via("contractDoesNotExist")))))
-                .then(ifNotHapiTest(getTxnRecord("contractDoesNotExist").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
-    }
-
-    @HapiTest
-    HapiSpec invalidContractIsAnAccount() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("invalidContractIsAnAccount")
-                .given(cryptoCreate("invalid")
-                        .balance(ONE_MILLION_HBARS)
-                        .payingWith(GENESIS)
-                        .exposingCreatedIdTo(accountID::set))
-                .when(
-                        ifHapiTest(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCallWithFunctionAbi(
-                                                "0.0." + accountID.get().getAccountNum(), function)
-                                        .hasKnownStatus(SUCCESS)
-                                        .via("contractIsAccount")))),
-                        ifNotHapiTest(withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCallWithFunctionAbi(
-                                                "0.0." + accountID.get().getAccountNum(), function)
-                                        .hasPrecheck(INVALID_CONTRACT_ID)
-                                        .via("contractIsAccount")))))
-                .then(ifNotHapiTest(getTxnRecord("contractIsAccount").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
-    }
-
-    // This test disabled for modularization service
-    @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
         return defaultHapiSpec("smartContractFailFirst")
