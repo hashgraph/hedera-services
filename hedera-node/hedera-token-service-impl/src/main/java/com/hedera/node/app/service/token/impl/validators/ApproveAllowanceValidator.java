@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_DOES
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
@@ -49,6 +48,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -79,10 +79,10 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         final var tokenAllowances = op.tokenAllowancesOrElse(emptyList());
         final var nftAllowances = op.nftAllowancesOrElse(emptyList());
 
-        // feature flag for allowances. Will probably be moved to some other place in app in the future.
+        // feature flag for allowances. FUTURE: Will probably be moved to some other place in app in the future.
         validateTrue(hederaConfig.allowancesIsEnabled(), NOT_SUPPORTED);
 
-        // validate total count of allowances
+        // validate total count of allowances does not exceed the configured maximum
         validateAllowanceCount(cryptoAllowances, tokenAllowances, nftAllowances, hederaConfig);
         // validate all allowances
         final var expiryValidator = context.expiryValidator();
@@ -105,8 +105,8 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator) {
         for (final var allowance : cryptoAllowances) {
-            final var owner = allowance.ownerOrElse(AccountID.DEFAULT);
-            final var spender = allowance.spenderOrElse(AccountID.DEFAULT);
+            final var owner = allowance.owner();
+            final var spender = allowance.spenderOrThrow(); // validated in pure checks to not be null
 
             // check if owner specified in allowances exists.
             // If not set, owner will be treated as payer for the transaction
@@ -115,7 +115,6 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var spenderAccount = accountStore.getAccountById(spender);
 
             validateSpender(allowance.amount(), spenderAccount);
-            validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateFalse(spender.equals(effectiveOwner.accountId()), SPENDER_ACCOUNT_SAME_AS_OWNER);
         }
     }
@@ -144,7 +143,6 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             // validate token amount
             final var amount = allowance.amount();
             validateSpender(amount, spenderAccount);
-            validateTrue(amount >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateFalse(
                     TokenSupplyType.FINITE.equals(token.supplyType()) && amount > token.maxSupply(),
                     AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
@@ -179,7 +177,12 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             validateFalse(TokenType.FUNGIBLE_COMMON.equals(token.tokenType()), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
             final var spenderAccount = accountStore.getAccountById(spender);
-            validateNFTSpender(serialNums, spenderAccount);
+
+            if (Boolean.TRUE.equals(allowance.approvedForAll())) {
+                validateNFTSpender(spenderAccount);
+            } else {
+                validateNFTSpender(serialNums, spenderAccount);
+            }
 
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore, expiryValidator);
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
@@ -235,14 +238,25 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
     }
 
-    private void validateSpender(long amount, Account spenderAccount) {
+    /**
+     * Validates that either the amount to be approved is 0, or the spender account actually exists and has not been
+     * deleted.
+     *
+     * @param amount If 0, then always valid. Otherwise, we check the spender account.
+     * @param spenderAccount If the amount is not zero, then this must be non-null and not deleted.
+     */
+    private void validateSpender(final long amount, @Nullable final Account spenderAccount) {
         validateTrue(
                 amount == 0 || (spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
-    private void validateNFTSpender(List<Long> serialNumbers, Account spenderAccount) {
+    private void validateNFTSpender(final List<Long> serialNumbers, final Account spenderAccount) {
         validateTrue(
                 serialNumbers.isEmpty() || (spenderAccount != null && !spenderAccount.deleted()),
                 INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    private void validateNFTSpender(final Account spenderAccount) {
+        validateTrue((spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
     }
 }

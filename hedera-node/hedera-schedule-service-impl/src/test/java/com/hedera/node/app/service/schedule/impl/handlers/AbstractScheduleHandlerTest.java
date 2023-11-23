@@ -19,6 +19,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.assertj.core.api.BDDAssertions.assertThatNoException;
 import static org.assertj.core.api.BDDAssertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -29,6 +30,7 @@ import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.AbstractScheduleHandler.ScheduleKeysResult;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -54,7 +56,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
         setUpBase();
-        testHandler = new testScheduleHandler();
+        testHandler = new TestScheduleHandler();
     }
 
     @Test
@@ -132,19 +134,19 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void verifyCheckTxnId() throws PreCheckException {
-        assertThatThrownBy(new callCheckValid(null, testHandler))
+        assertThatThrownBy(new CallCheckValid(null, testHandler))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_ID));
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionID idToTest = next.originalCreateTransaction().transactionID();
-            assertThatNoException().isThrownBy(new callCheckValid(idToTest, testHandler));
+            assertThatNoException().isThrownBy(new CallCheckValid(idToTest, testHandler));
             TransactionID brokenId = idToTest.copyBuilder().scheduled(true).build();
-            assertThatThrownBy(new callCheckValid(brokenId, testHandler))
+            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST));
             brokenId = idToTest.copyBuilder().accountID((AccountID) null).build();
-            assertThatThrownBy(new callCheckValid(brokenId, testHandler))
+            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID));
             brokenId = idToTest.copyBuilder().transactionValidStart(nullTime).build();
-            assertThatThrownBy(new callCheckValid(brokenId, testHandler))
+            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_START));
         }
     }
@@ -166,23 +168,21 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
                 mockStoreFactory, scheduleInState.originalCreateTransaction(), testConfig, mockDispatcher);
         PreHandleContext spiedContext = BDDMockito.spy(spyableContext);
         // given...return fails because it calls the real method before it can be replaced.
-        BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(BDDMockito.any(), BDDMockito.any());
+        BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(any(), any());
         final Set<Key> keysObtained = testHandler.allKeysForTransaction(scheduleInState, spiedContext);
         assertThat(keysObtained).isNotEmpty();
-        assertThat(keysObtained).containsExactlyInAnyOrder(payerKey, schedulerKey, adminKey, optionKey, otherKey);
+        assertThat(keysObtained).containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
     }
 
     @Test
     void verifyKeysForHandle() throws PreCheckException {
         final TransactionKeys testKeys =
                 new TestTransactionKeys(schedulerKey, Set.of(payerKey, adminKey), Set.of(optionKey, schedulerKey));
-        BDDMockito.given(mockContext.allKeysForTransaction(BDDMockito.any(), BDDMockito.any()))
-                .willReturn(testKeys);
+        BDDMockito.given(mockContext.allKeysForTransaction(any(), any())).willReturn(testKeys);
         final AccountID payerAccountId = schedulerAccount.accountId();
         BDDMockito.given(mockContext.payer()).willReturn(payerAccountId);
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        BDDMockito.given((mockContext).verificationFor(BDDMockito.any(), BDDMockito.any()))
-                .will(new VerificationForAnswer(testKeys));
+        BDDMockito.given((mockContext).verificationFor(any(), any())).will(new VerificationForAnswer(testKeys));
         // For this test, Context must mock `payer()`, `allKeysForTransaction()`, and `verificationFor`
         // `verificationFor` is needed because we check verification in allKeysForTransaction to reduce
         // the required keys set (potentially to empty) during handle.  We must use an "Answer" for verification
@@ -195,8 +195,8 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             // we *mock* verificationFor side effects, which is what fills in/clears the sets,
             // so results should all be the same, despite empty signatories and mocked HandleContext.
             // We do so based on verifier calls, so it still exercises the code to be tested, however.
-            assertThat(keysRequired).isNotEmpty().hasSize(2).containsExactlyInAnyOrder(optionKey, schedulerKey);
-            assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactlyInAnyOrder(payerKey, adminKey);
+            assertThat(keysRequired).isNotEmpty().hasSize(2).containsExactly(optionKey, schedulerKey);
+            assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactly(payerKey, adminKey);
         }
     }
 
@@ -205,7 +205,11 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     void verifyTryExecute() {
         final var mockRecordBuilder = Mockito.mock(SingleTransactionRecordBuilderImpl.class);
         BDDMockito.given(mockContext.dispatchChildTransaction(
-                        Mockito.any(TransactionBody.class), Mockito.any(), Mockito.any(Predicate.class)))
+                        any(TransactionBody.class),
+                        any(),
+                        any(Predicate.class),
+                        any(AccountID.class),
+                        any(TransactionCategory.class)))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {
             Set<Key> testRemaining = Set.of();
@@ -224,18 +228,18 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
                             mockContext, testItem, testRemaining, testSignatories, priorResponse, true))
                     .isFalse();
             BDDMockito.given(mockRecordBuilder.status()).willReturn(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
-            assertThatThrownBy(() -> testHandler.tryToExecuteSchedule(
-                            mockContext, testItem, testRemaining, testSignatories, ResponseCodeEnum.OK, false))
-                    .is(new HandleExceptionMatch(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE));
+            assertThatNoException()
+                    .isThrownBy(() -> testHandler.tryToExecuteSchedule(
+                            mockContext, testItem, testRemaining, testSignatories, ResponseCodeEnum.OK, false));
         }
     }
 
     // Callable required by AssertJ throw assertions; unavoidable due to limitations on lambda syntax.
-    private static final class callCheckValid implements ThrowingCallable {
+    private static final class CallCheckValid implements ThrowingCallable {
         private final TransactionID idToTest;
         private final AbstractScheduleHandler testHandler;
 
-        callCheckValid(final TransactionID idToTest, final AbstractScheduleHandler testHandler) {
+        CallCheckValid(final TransactionID idToTest, final AbstractScheduleHandler testHandler) {
             this.idToTest = idToTest;
             this.testHandler = testHandler;
         }
@@ -246,7 +250,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         }
     }
 
-    private static final class testScheduleHandler extends AbstractScheduleHandler {}
+    private static final class TestScheduleHandler extends AbstractScheduleHandler {}
 
     private static final class PreCheckExceptionMatch extends Condition<Throwable> {
         private final ResponseCodeEnum codeToMatch;

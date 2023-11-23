@@ -18,12 +18,14 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -34,7 +36,6 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.QuerySystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.ResultTranslator;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
@@ -85,22 +86,12 @@ class QuerySystemContractOperationsTest {
     void doesNotSupportAnyMutations() {
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.getNftAndExternalizeResult(nftID, 1L, nftResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.getTokenAndExternalizeResult(1L, 2L, tokenResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.getAccountAndExternalizeResult(1L, 2L, accountResultTranslator));
-        assertThrows(
-                UnsupportedOperationException.class,
                 () -> subject.dispatch(
                         TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY, AccountID.DEFAULT, Object.class));
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));
-        assertThrows(
                 UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(MOCK_VERIFICATION_STRATEGY));
+
+        assertDoesNotThrow(() -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResponseCodeEnum.SUCCESS));
     }
 
     @Test

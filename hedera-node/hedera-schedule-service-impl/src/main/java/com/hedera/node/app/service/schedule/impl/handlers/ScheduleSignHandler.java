@@ -146,11 +146,13 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                             scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
                                     scheduleToSign, updatedSignatories, currentConsensusTime));
                         } else {
+                            verifyHasNewSignatures(scheduleToSign.signatories(), updatedSignatories);
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
                         final ScheduleRecordBuilder scheduleRecords =
                                 context.recordBuilder(ScheduleRecordBuilder.class);
-                        scheduleRecords.scheduleID(idToSign);
+                        // Based on fuzzy-record matching this field is not set in mono-service records
+                        //                        scheduleRecords.scheduleID(idToSign);
                     } else {
                         // Note, this will never happen, but Sonar static analysis can't figure that out.
                         throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);

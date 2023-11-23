@@ -18,8 +18,10 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +41,7 @@ import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.H
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -59,7 +62,11 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     private CryptoCreateRecordBuilder recordBuilder;
 
     private static final TransactionBody PRETEND_CREATE_TOKEN = TransactionBody.newBuilder()
-            .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+            .tokenCreation(TokenCreateTransactionBody.newBuilder()
+                    .symbol("FT")
+                    .treasury(A_NEW_ACCOUNT_ID)
+                    .autoRenewAccount(SENDER_ID)
+                    .build())
             .build();
 
     private ClassicCreatesCall subject;
@@ -69,7 +76,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -84,7 +91,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -99,7 +106,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -114,7 +121,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -129,7 +136,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -144,7 +151,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -159,7 +166,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -174,7 +181,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -189,7 +196,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -204,7 +211,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -219,7 +226,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -234,7 +241,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -249,13 +256,18 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         commonGivens();
         given(recordBuilder.status()).willReturn(TOKEN_HAS_NO_SUPPLY_KEY);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(TOKEN_HAS_NO_SUPPLY_KEY.protoName().getBytes()), result.getOutput());
     }
 
     private void commonGivens() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
+                .willReturn(A_NEW_ACCOUNT_ID);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(ALIASED_SOMEBODY);
+
         subject = new ClassicCreatesCall(
                 systemContractGasCalculator,
                 mockEnhancement(),
@@ -264,8 +276,6 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);
 
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
-                .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),

@@ -18,6 +18,8 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
@@ -26,12 +28,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.FeeService;
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
+import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
+import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.NetworkInfoImpl;
@@ -41,7 +47,6 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
@@ -50,10 +55,10 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
@@ -95,6 +100,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -160,6 +166,10 @@ public final class Hedera implements SwirldMain {
      * The exchange rate manager
      */
     private ExchangeRateManager exchangeRateManager;
+    /**
+     * The fee manager
+     */
+    private FeeManager feeManager;
     /** The class responsible for remembering objects created in genesis cases */
     private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
@@ -175,7 +185,7 @@ public final class Hedera implements SwirldMain {
 
     private ThrottleAccumulator backendThrottle;
     private ThrottleAccumulator frontendThrottle;
-    private MonoMultiplierSources monoMultiplierSources;
+    private CongestionMultipliers congestionMultipliers;
 
     /**
      * The application name from the platform's perspective. This is currently locked in at the old main class name and
@@ -187,6 +197,8 @@ public final class Hedera implements SwirldMain {
      * The swirld name. Currently, there is only one swirld.
      */
     public static final String SWIRLD_NAME = "123";
+
+    private static final IntSupplier SUPPLY_ONE = () -> 1;
 
     /*==================================================================================================================
     *
@@ -226,17 +238,19 @@ public final class Hedera implements SwirldMain {
         version = new HederaSoftwareVersion(versionConfig.hapiVersion(), versionConfig.servicesVersion());
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
-                () -> HapiUtils.toString(version.getHapiVersion()),
-                () -> HapiUtils.toString(version.getServicesVersion()));
+                () -> HapiUtils.toString(version.getServicesVersion()),
+                () -> HapiUtils.toString(version.getHapiVersion()));
 
         // Create a record builder for any genesis records that need to be created
         this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
 
         // Create all the service implementations
         logger.info("Registering services");
+
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
         Set.of(
+                        new EntityIdService(),
                         new ConsensusServiceImpl(),
                         CONTRACT_SERVICE,
                         new FileServiceImpl(),
@@ -247,7 +261,6 @@ public final class Hedera implements SwirldMain {
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
-                        new EntityIdService(),
                         new FeeService(),
                         new CongestionThrottleService())
                 .forEach(servicesRegistry::register);
@@ -279,6 +292,14 @@ public final class Hedera implements SwirldMain {
     public boolean isActive() {
         return platformStatus == PlatformStatus.ACTIVE
                 && daggerApp.grpcServerManager().isRunning();
+    }
+
+    /**
+     * Indicates whether this node is FROZEN.
+     * @return True if the platform is frozen
+     */
+    public boolean isFrozen() {
+        return platformStatus == PlatformStatus.FREEZE_COMPLETE;
     }
 
     /**
@@ -412,21 +433,31 @@ public final class Hedera implements SwirldMain {
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
-        for (final var registration : servicesRegistry.registrations()) {
-            // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
-            final var service = registration.service();
-            final var serviceName = service.getServiceName();
-            logger.info("Migrating Service {}", serviceName);
-            final var registry = (MerkleSchemaRegistry) registration.registry();
-            registry.migrate(
-                    state,
-                    previousVersion,
-                    currentVersion,
-                    configProvider.getConfiguration(),
-                    networkInfo,
-                    backendThrottle);
-        }
+
+        final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
+        migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
+
+        // Now that the migrations have happened, we need to give the node a chance to publish any records that need to
+        // be created as a result of the migration. We'll do this by unsetting the `migrationRecordsStreamed` flag.
+        // Then, when the handle workflow has its first consensus timestamp, it will handle publishing these records (if
+        // needed), and re-set this flag to prevent duplicate publishing.
+        unmarkMigrationRecordsStreamed(state);
+
         logger.info("Migration complete");
+    }
+
+    /**
+     * Unsets the `migrationRecordsStreamed` flag in state, giving the handle workflow an opportunity
+     * to publish any necessary records from the node's startup migration.
+     */
+    private void unmarkMigrationRecordsStreamed(HederaState state) {
+        final var blockServiceState = state.createWritableStates(BlockRecordService.NAME);
+        final var blockInfoState = blockServiceState.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        final var currentBlockInfo = requireNonNull(blockInfoState.get());
+        final var nextBlockInfo =
+                currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
+        blockInfoState.put(nextBlockInfo);
+        ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 
     /*==================================================================================================================
@@ -488,26 +519,33 @@ public final class Hedera implements SwirldMain {
             // server when we fall behind or ISS.
             final var notifications = platform.getNotificationEngine();
             notifications.register(PlatformStatusChangeListener.class, notification -> {
+                final var wasActive = platformStatus == PlatformStatus.ACTIVE;
                 platformStatus = notification.getNewStatus();
-                switch (notification.getNewStatus()) {
-                    case ACTIVE -> logger.info("Hederanode#{} is ACTIVE", nodeId);
+                switch (platformStatus) {
+                    case ACTIVE -> {
+                        logger.info("Hederanode#{} is ACTIVE", nodeId);
+                        startGrpcServer();
+                    }
                     case BEHIND -> {
                         logger.info("Hederanode#{} is BEHIND", nodeId);
-                        shutdownGrpcServer();
+                        if (wasActive) shutdownGrpcServer();
                     }
-                    case FREEZE_COMPLETE -> {
-                        logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
-                        shutdownGrpcServer();
-                    }
+                    case FREEZE_COMPLETE -> logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
                     case REPLAYING_EVENTS -> logger.info("Hederanode#{} is REPLAYING_EVENTS", nodeId);
                     case STARTING_UP -> logger.info("Hederanode#{} is STARTING_UP", nodeId);
                     case CATASTROPHIC_FAILURE -> {
                         logger.info("Hederanode#{} is in CATASTROPHIC_FAILURE", nodeId);
-                        shutdownGrpcServer();
+                        if (wasActive) shutdownGrpcServer();
                     }
-                    case CHECKING -> logger.info("Hederanode#{} is CHECKING", nodeId);
+                    case CHECKING -> {
+                        logger.info("Hederanode#{} is CHECKING", nodeId);
+                        if (wasActive) shutdownGrpcServer();
+                    }
                     case OBSERVING -> logger.info("Hederanode#{} is OBSERVING", nodeId);
-                    case FREEZING -> logger.info("Hederanode#{} is FREEZING", nodeId);
+                    case FREEZING -> {
+                        logger.info("Hederanode#{} is FREEZING", nodeId);
+                        if (wasActive) shutdownGrpcServer();
+                    }
                     case RECONNECT_COMPLETE -> logger.info("Hederanode#{} is RECONNECT_COMPLETE", nodeId);
                 }
             });
@@ -580,7 +618,7 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void run() {
-        startGrpcServer();
+        logger.info("Starting the Hedera node");
     }
 
     /**
@@ -600,6 +638,9 @@ public final class Hedera implements SwirldMain {
             logger.debug("Shutting down the block manager");
             daggerApp.blockRecordManager().close();
         }
+
+        platform = null;
+        daggerApp = null;
     }
 
     /**
@@ -641,7 +682,9 @@ public final class Hedera implements SwirldMain {
      * Start the gRPC Server if it is not already running.
      */
     void startGrpcServer() {
-        daggerApp.grpcServerManager().start();
+        if (!daggerApp.grpcServerManager().isRunning()) {
+            daggerApp.grpcServerManager().start();
+        }
     }
 
     /**
@@ -675,13 +718,16 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
+        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
         this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
-        this.monoMultiplierSources = createMultiplierSources();
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
+        this.congestionMultipliers = createCongestionMultipliers(state);
 
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
+
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager);
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -692,17 +738,16 @@ public final class Hedera implements SwirldMain {
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
-        initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeFeeManager(state);
         initializeThrottles(state);
     }
 
-    private MonoMultiplierSources createMultiplierSources() {
-        final var genericFeeMultiplier = new ThrottleMultiplierSource(
+    private CongestionMultipliers createCongestionMultipliers(HederaState state) {
+        final var genericFeeMultiplier = new ThrottleMultiplier(
                 "logical TPS",
                 "TPS",
                 "CryptoTransfer throughput",
-                logger,
                 () -> configProvider
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
@@ -712,11 +757,13 @@ public final class Hedera implements SwirldMain {
                         .getConfigData(FeesConfig.class)
                         .percentCongestionMultipliers(),
                 () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
-        final var gasFeeMultiplier = new ThrottleMultiplierSource(
+
+        final var txnRateMultiplier = new EntityUtilizationMultiplier(genericFeeMultiplier, configProvider);
+
+        final var gasFeeMultiplier = new ThrottleMultiplier(
                 "EVM gas/sec",
                 "gas/sec",
                 "EVM utilization",
-                logger,
                 () -> configProvider
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
@@ -727,7 +774,7 @@ public final class Hedera implements SwirldMain {
                         .percentCongestionMultipliers(),
                 () -> List.of(backendThrottle.gasLimitThrottle()));
 
-        return new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
+        return new CongestionMultipliers(txnRateMultiplier, gasFeeMultiplier);
     }
 
     /*==================================================================================================================
@@ -758,13 +805,16 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
+        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
         this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
-        this.monoMultiplierSources = createMultiplierSources();
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
+        this.congestionMultipliers = createCongestionMultipliers(state);
 
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
+
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager);
 
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
@@ -777,8 +827,8 @@ public final class Hedera implements SwirldMain {
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
-        initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeFeeManager(state);
         initializeThrottles(state);
         // TODO We may need to update the config with the latest version in file 121
     }
@@ -810,15 +860,17 @@ public final class Hedera implements SwirldMain {
                     .configuration(configProvider)
                     .throttleManager(throttleManager)
                     .exchangeRateManager(exchangeRateManager)
+                    .feeManager(feeManager)
                     .systemFileUpdateFacility(new SystemFileUpdateFacility(
                             configProvider,
                             throttleManager,
                             exchangeRateManager,
-                            monoMultiplierSources,
+                            feeManager,
+                            congestionMultipliers,
                             backendThrottle,
                             frontendThrottle))
                     .networkUtilizationManager(
-                            new NetworkUtilizationManagerImpl(backendThrottle, monoMultiplierSources))
+                            new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
                     .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(frontendThrottle))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .platform(platform)
@@ -890,7 +942,7 @@ public final class Hedera implements SwirldMain {
             this.frontendThrottle.applyGasConfig();
 
             // Updating the multiplier source to use the new throttle definitions
-            this.monoMultiplierSources.resetExpectations();
+            this.congestionMultipliers.resetExpectations();
         }
         logger.info("Throttles initialized");
     }

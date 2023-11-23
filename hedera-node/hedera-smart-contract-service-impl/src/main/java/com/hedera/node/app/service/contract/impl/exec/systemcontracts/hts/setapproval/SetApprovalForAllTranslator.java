@@ -27,7 +27,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -64,11 +63,13 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall<>(
+        final var result = bodyForClassic(attempt);
+        // @Future remove to revert #9214 after modularization is completed
+        return new SetApprovalForAllCall(
                 attempt,
-                bodyForClassic(attempt),
-                SingleTransactionRecordBuilder.class,
-                SetApprovalForAllTranslator::gasRequirement);
+                result,
+                SetApprovalForAllTranslator::gasRequirement,
+                selectorMatches(attempt, ERC721_SET_APPROVAL_FOR_ALL));
     }
 
     public static long gasRequirement(

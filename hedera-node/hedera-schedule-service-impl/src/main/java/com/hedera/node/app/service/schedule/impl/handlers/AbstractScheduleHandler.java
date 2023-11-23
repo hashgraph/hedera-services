@@ -28,25 +28,24 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
@@ -78,27 +77,58 @@ abstract class AbstractScheduleHandler {
     @NonNull
     protected ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
+        // note, payerAccount should never be null, but we're playing it safe here.
+        final AccountID payer = scheduleInState.payerAccountIdOrElse(context.payer());
+        final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
+        TransactionKeys keyStructure = null;
         try {
-            // note, payerAccount should never be null, but we're playing it safe here.
-            final AccountID payer = scheduleInState.payerAccountIdOrElse(context.payer());
-            final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
-            final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payer);
-            final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
-            final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
-            scheduledRequiredKeys.removeAll(currentSignatories);
-            // Ensure the payer is required, some rare corner cases may not require it otherwise.
-            final Key payerKey = getKeyForAccount(context, payer);
-            if (payerKey != null) scheduledRequiredKeys.add(payerKey);
-            final Set<Key> remainingRequiredKeys = scheduledRequiredKeys.parallelStream()
-                    .map(new ValidatedKeysMapping(context, currentSignatories))
-                    .flatMap(Set::stream)
-                    .collect(Collectors.toSet());
-            // This works ONLY because ValidatedKeysMapping observes the validation process and
-            // modifies currentSignatories to add any newly validated primitive keys.
-            return new ScheduleKeysResult(currentSignatories, remainingRequiredKeys);
+            keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payer);
+            // @todo('9447') We have an issue here.  Currently, allKeysForTransaction fails in many cases where a
+            //     key is currently unavailable, but could be in the future.  We need the keys, even
+            //     if the transaction is currently invalid, because we may creates and signs schedules for
+            //     invalid transactions, then only fail when the transaction is executed.  This would allow
+            //     (e.g.) scheduling the transfer of a service fee from a newly created account to be
+            //     signed by that account before it's created; then the new account, once funded, signs
+            //     the scheduled transaction and the funds are immediately transferred.  Currently that
+            //     would fail on create.  Long-term we should fix that.
         } catch (final PreCheckException translated) {
             throw new HandleException(translated.responseCode());
         }
+        final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
+        // Ensure the payer is required, some rare corner cases may not require it otherwise.
+        final Key payerKey = getKeyForAccount(context, payer);
+        if (payerKey != null) scheduledRequiredKeys.add(payerKey);
+        final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
+        scheduledRequiredKeys.removeAll(currentSignatories);
+        final Set<Key> remainingRequiredKeys =
+                filterRemainingRequiredKeys(context, scheduledRequiredKeys, currentSignatories);
+        // Mono doesn't store extra signatures, so for now we mustn't either.
+        // This is structurally wrong for long term schedules, so we must remove this later.
+        // @todo('9447') Stop removing currently unused signatures, just store all the verified signatures until
+        //     there are enough to execute, so we don't discard a signature now that would be required later.
+        HandlerUtility.filterSignatoriesToRequired(currentSignatories, scheduledRequiredKeys);
+        return new ScheduleKeysResult(currentSignatories, remainingRequiredKeys);
+    }
+
+    /**
+     * Verify that at least one "new" required key signed the transaction.
+     * <p>
+     * If there exists a {@link Key} nKey, a member of newSignatories, such that nKey is <em>not
+     * in</em> existingSignatories, then a new key signed.  Otherwise an {@link HandleException} is
+     * thrown with status {@link ResponseCodeEnum#NO_NEW_VALID_SIGNATURES}.
+     *
+     * @param existingSignatories a List of signatories representing all prior signatures before the current
+     *        ScheduleSign transaction.
+     * @param newSignatories a Set of signatories representing all signatures following the current ScheduleSign
+     *        transaction.
+     * @throws HandleException if there are no new signatures compared to the prior state.
+     */
+    protected void verifyHasNewSignatures(
+            @NonNull final List<Key> existingSignatories, @NonNull final Set<Key> newSignatories)
+            throws HandleException {
+        SortedSet<Key> preExisting = setOfKeys(existingSignatories);
+        if (preExisting.containsAll(newSignatories))
+            throw new HandleException(ResponseCodeEnum.NO_NEW_VALID_SIGNATURES);
     }
 
     @Nullable
@@ -242,18 +272,22 @@ abstract class AbstractScheduleHandler {
             final boolean isLongTermEnabled) {
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
             final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
+            // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
-            final ScheduleRecordBuilder recordBuilder =
-                    context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
-            // set the schedule ref for the child transaction
+            final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(
+                    childTransaction,
+                    ScheduleRecordBuilder.class,
+                    assistant,
+                    scheduleToExecute.payerAccountId(),
+                    TransactionCategory.SCHEDULED);
+            // If the child failed, we would prefer to fail with the same result.
+            //     We do not fail, however, at least mono service code does not.
+            //     We succeed and the record of the child transaction is failed.
+            // set the schedule ref for the child transaction to the schedule that we're executing
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
-            recordBuilder.scheduledTransactionID(childTransaction.transactionID());
-            // If the child failed, we fail with the same result.
-            // @note the interface below should always be implemented by all record builders,
-            //       but we still need to cast it.
-            if (recordBuilder instanceof SingleTransactionRecordBuilder base && !validationOk(base.status())) {
-                throw new HandleException(base.status());
-            }
+            // also set the child transaction ID as scheduled transaction ID in the parent record.
+            final ScheduleRecordBuilder parentRecordBuilder = context.recordBuilder(ScheduleRecordBuilder.class);
+            parentRecordBuilder.scheduledTransactionID(childTransaction.transactionID());
             return true;
         } else {
             return false;
@@ -267,44 +301,53 @@ abstract class AbstractScheduleHandler {
     }
 
     @NonNull
-    private Set<Key> getKeySetFromTransactionKeys(final TransactionKeys requiredKeys) {
-        final Set<Key> scheduledRequiredKeys = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+    private SortedSet<Key> getKeySetFromTransactionKeys(final TransactionKeys requiredKeys) {
+        final SortedSet<Key> scheduledRequiredKeys = new ConcurrentSkipListSet<>(new KeyComparator());
         scheduledRequiredKeys.addAll(requiredKeys.requiredNonPayerKeys());
         scheduledRequiredKeys.addAll(requiredKeys.optionalNonPayerKeys());
         scheduledRequiredKeys.add(requiredKeys.payerKey());
         return scheduledRequiredKeys;
     }
 
+    private SortedSet<Key> filterRemainingRequiredKeys(
+            final HandleContext context, final Set<Key> scheduledRequiredKeys, final Set<Key> currentSignatories) {
+        // the final output must be a sorted/ordered set.
+        final SortedSet<Key> remainingKeys = new ConcurrentSkipListSet<>(new KeyComparator());
+        final Set<Key> currentUnverifiedKeys = new HashSet<>(1);
+        final var assistant = new ScheduleVerificationAssistant(currentSignatories, currentUnverifiedKeys);
+        for (final Key next : scheduledRequiredKeys) {
+            // The schedule verification assistant observes each primitive key in the tree
+            final SignatureVerification isVerified = context.verificationFor(next, assistant);
+            // unverified primitive keys only count if the top-level key failed verification.
+            if (!isVerified.passed()) {
+                remainingKeys.addAll(currentUnverifiedKeys);
+            }
+            currentUnverifiedKeys.clear();
+        }
+        return remainingKeys;
+    }
+
     /**
-     * Given an arbitrary {@link Iterable<Key>}, return a <strong>modifiable</strong> {@link Set<Key>} containing
+     * Given an arbitrary {@link Iterable<Key>}, return a <strong>modifiable</strong> {@link SortedSet<Key>} containing
      * the same objects as the input.
+     * This set must be sorted to ensure a deterministic order of values in state.
      * If there are any duplicates in the input, only one of each will be in the result.
      * If there are any null values in the input, those values will be excluded from the result.
-     * Note: The return value of this method is always safe to be read and written by multiple threads
-     *     concurrently, and operates as close to lock-free as possible.
-     * Implementation Note: we use ConcurrentSkipListSet that orders the entries by hash code.  This means that
-     *   object order will be very different from a reasonable natural ordering, but it should (if hashCode is defined
-     *   properly) be consistent with equals, and have sufficient diffusion to work well with the random
-     *   functions inherent in the Skip List data structure. Order is not important, so this approach is reasonable.
-     *   The alternative is a CopyOnWriteArraySet, which has significant GC performance issues.
      * @param keyCollection an Iterable of Key values.
-     * @return a {@link Set<Key>} containing the same contents as the input.  Duplicates and null values are excluded
-     * from this Set.  This Set is always a modifiable set.
+     * @return a {@link SortedSet<Key>} containing the same contents as the input.
+     * Duplicates and null values are excluded from this Set.  This Set is always a modifiable set.
      */
     @NonNull
-    private Set<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {
-        // We only permit Concurrent sets for this method.
-        if (keyCollection instanceof ConcurrentSkipListSet<Key>) {
-            return (Set<Key>) keyCollection;
-        } else if (keyCollection != null) {
-            final Set<Key> results = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+    private SortedSet<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {
+        if (keyCollection != null) {
+            final SortedSet<Key> results = new ConcurrentSkipListSet<>(new KeyComparator());
             for (final Key next : keyCollection) {
                 if (next != null) results.add(next);
             }
             return results;
         } else {
-            // cannot use Set.of() or Collections.emptySet() here because those are unmodifiable.
-            return new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+            // cannot use Set.of() or Collections.emptySet() here because those are unmodifiable and unsorted.
+            return new ConcurrentSkipListSet<>(new KeyComparator());
         }
     }
 
@@ -313,74 +356,10 @@ abstract class AbstractScheduleHandler {
             final boolean isLongTermEnabled,
             final ResponseCodeEnum validationResult,
             final Schedule scheduleToExecute) {
-        return (remainingSignatories == null || remainingSignatories.isEmpty())
-                && (!isLongTermEnabled
-                        || (scheduleToExecute.waitForExpiry()
-                                && validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION));
-    }
-
-    /**
-     * A mapping function implementation that validates a single account key and maps that to a
-     * set of "primitive" keys that are needed (in whole or in part) to meet the full signature
-     * requirements of that key.  This function, as a side effect, adds additional "primitive"
-     * keys to the existing signatories set for each such key that has a valid signature for the
-     * current transaction.
-     */
-    private static class ValidatedKeysMapping implements Function<Key, Set<Key>> {
-        private final HandleContext context;
-        private final Set<Key> signatories;
-
-        /**
-         * Create a mapping function with a given context and set of signatories.
-         *
-         * @param context a HandleContext for a particular ScheduleCreate or ScheduleSign transaction.
-         * @param signatories a Set of "primitive" keys that were previously validated, and therefore
-         *     are "deemed" to have signed the child transaction.  <strong>This set is modified by the
-         *     apply method</strong> of the object created, so it must not be an unmodifiable set.
-         */
-        protected ValidatedKeysMapping(@NonNull final HandleContext context, @NonNull final Set<Key> signatories) {
-            this.context = context;
-            this.signatories = signatories;
-        }
-
-        /**
-         * Apply the mapping function to a particular Account key.
-         * The function here checks if the key is valid while providing a verification assistant that
-         * considers all keys in "signatories" to be valid.  The mapping, as a side effect, also
-         * records all newly validated "primitive" keys and adds those to "signatories".  If the
-         * Account key is still not validated, then all remaining required "primitive" keys are
-         * returned.
-         *
-         * Note, it is possible that not all values in the returned key set are required, particularly
-         * in the case of threshold keys, it may be that only some of the keys are required, but all
-         * of the keys returned <strong>can</strong> be used to meet the signature requirements for
-         * the Account key.
-         *
-         * @param key a single Account key to validate against the signatures on the current transaction
-         *     as well as the "signatories" set of previously validated signatures.
-         * @return a {@link Set<Key>} of "primitive" keys that still must be validated
-         *     (in whole or in part) to consider the Account key fully validated.
-         */
-        @Override
-        public Set<Key> apply(final Key key) {
-            final Set<Key> remainingUnverifiedKeys = new LinkedHashSet<>();
-            final var assistant = new ScheduleVerificationAssistant(signatories, remainingUnverifiedKeys);
-            final SignatureVerification isVerified = context.verificationFor(key, assistant);
-            // unverified primitive keys only count if the top-level key failed verification.
-            return isVerified.passed() ? Collections.emptySet() : remainingUnverifiedKeys;
-        }
-    }
-
-    /**
-     * Comparator implementation for Records that orders by hash code.  This is not useful if order actually
-     * matters, but it is useful to use an ordered set when order does not matter and performance does.
-     * We use this to enable storing a Record (Key) in a ConcurrentSkipListSet which is used in a highly
-     * parallel operation that both reads and modifies the set on, ideally, several threads at once.
-     */
-    private static class RecordIdentityComparator implements Comparator<Record> {
-        @Override
-        public int compare(final Record left, final Record right) {
-            return Objects.hashCode(left) - Objects.hashCode(right);
-        }
+        // either we're waiting and pending, or not waiting and not pending
+        final boolean longTermReady =
+                scheduleToExecute.waitForExpiry() == (validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION);
+        final boolean allSignturesGathered = remainingSignatories == null || remainingSignatories.isEmpty();
+        return allSignturesGathered && (!isLongTermEnabled || longTermReady);
     }
 }

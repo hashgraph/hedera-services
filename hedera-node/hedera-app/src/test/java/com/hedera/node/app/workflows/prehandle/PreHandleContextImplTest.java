@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.workflows.prehandle.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -189,10 +190,10 @@ class PreHandleContextImplTest implements Scenarios {
                     .when(dispatcher)
                     .dispatchPreHandle(any());
 
-            // then
+            // gathering keys should not throw exceptions except for inability to read a key.
             assertThatThrownBy(() -> subject.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE));
+                    .has(responseCode(UNRESOLVABLE_REQUIRED_SIGNERS));
         }
     }
 }

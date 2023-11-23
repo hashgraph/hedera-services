@@ -17,8 +17,8 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
@@ -146,7 +146,10 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
             final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
-                    eventStreamDirectory, initialState.get().getRound() + 1, allowPartialRounds);
+                    initialState.get().getAddressBook(),
+                    eventStreamDirectory,
+                    initialState.get().getRound() + 1,
+                    allowPartialRounds);
 
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
@@ -165,7 +168,10 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
-                    selfId, resultingStateDirectory, recoveredState.state().get(), platformContext.getConfiguration());
+                    platformContext,
+                    selfId,
+                    resultingStateDirectory,
+                    recoveredState.state().get());
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             updateEmergencyRecoveryFile(
                     stateConfig, resultingStateDirectory, initialState.get().getConsensusTimestamp());

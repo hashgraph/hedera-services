@@ -41,15 +41,12 @@ final class ScheduleStoreUtility {
         if (scheduleToHash.adminKey() != null) {
             addToHash(hasher, scheduleToHash.adminKey());
         }
-        if (scheduleToHash.payerAccountId() != null) {
-            addToHash(hasher, scheduleToHash.payerAccountId());
-        }
-        if (scheduleToHash.schedulerAccountId() != null) {
-            addToHash(hasher, scheduleToHash.schedulerAccountId());
-        }
+        // @note We should check scheduler here, but mono doesn't, so we cannot either, yet.
         if (scheduleToHash.scheduledTransaction() != null) {
             addToHash(hasher, scheduleToHash.scheduledTransaction());
         }
+        // @todo('9447') This should be modified to use calculated expiration once
+        //               differential testing completes
         hasher.putLong(scheduleToHash.providedExpirationSecond());
         hasher.putBoolean(scheduleToHash.waitForExpiry());
         return hasher.hash().toString();

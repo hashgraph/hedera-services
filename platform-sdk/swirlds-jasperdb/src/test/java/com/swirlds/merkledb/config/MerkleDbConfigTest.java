@@ -16,9 +16,9 @@
 
 package com.swirlds.merkledb.config;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.validation.ConfigViolationException;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,29 +34,11 @@ class MerkleDbConfigTest {
     }
 
     @Test
-    public void testMaxNumberOfFilesInMergeViolation() {
+    public void testMinNumberOfFilesInCompactionViolation() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withConfigDataTypes(MerkleDbConfig.class)
-                .withSources(new SimpleConfigSource("merkleDb.maxNumberOfFilesInMerge", 3))
-                .withSources(new SimpleConfigSource("merkleDb.minNumberOfFilesInMerge", 10));
-
-        // when
-        final ConfigViolationException configViolationException = Assertions.assertThrows(
-                ConfigViolationException.class,
-                () -> configurationBuilder.build(),
-                "A violation should cancel the initialization");
-
-        // then
-        Assertions.assertEquals(1, configViolationException.getViolations().size());
-    }
-
-    @Test
-    public void testMinNumberOfFilesInMergeViolation() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withConfigDataTypes(MerkleDbConfig.class)
-                .withSources(new SimpleConfigSource("merkleDb.minNumberOfFilesInMerge", 1));
+                .withSources(new SimpleConfigSource("merkleDb.minNumberOfFilesInCompaction", 1));
 
         // when
         final ConfigViolationException configViolationException = Assertions.assertThrows(

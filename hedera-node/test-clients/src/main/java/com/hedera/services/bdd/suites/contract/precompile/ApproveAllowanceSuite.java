@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -69,8 +70,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ApproveAllowanceSuite extends HapiSuite {
 
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
@@ -126,6 +129,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec htsTokenApproveToInnerContract() {
         final var approveTxn = "NestedChildren";
         final var nestedContract = DIRECT_ERC_CALLEE;
@@ -192,6 +196,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
@@ -248,6 +253,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .withAllowance(2)))));
     }
 
+    @HapiTest
     private HapiSpec htsTokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
@@ -308,6 +314,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
@@ -395,6 +402,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .withIsApprovedForAll(SUCCESS, false)))));
     }
 
+    @HapiTest
     private HapiSpec hapiNftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
@@ -454,6 +462,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                 .getAccountID(theSpender)))))))));
     }
 
+    @HapiTest
     private HapiSpec hapiNftSetApprovalForAll() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
@@ -525,6 +534,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return testIndirectApprovalWith("DelegatePrecompileCallee", DELEGATE_PRECOMPILE_CALLEE, false);
     }
 
+    @HapiTest
     private HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
         return testIndirectApprovalWith("DirectPrecompileCallee", DIRECT_PRECOMPILE_CALLEE, true);
     }

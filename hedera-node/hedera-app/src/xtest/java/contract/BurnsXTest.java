@@ -17,7 +17,7 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
@@ -32,6 +32,7 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
@@ -42,6 +43,8 @@ import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.addErc20Relation;
+import static contract.XTestConstants.addErc721Relation;
+import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -55,6 +58,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
@@ -77,12 +81,7 @@ public class BurnsXTest extends AbstractContractXTest {
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                                .getOutputs()
-                                .encodeElements((long) SUCCESS.ordinal(), TOKEN_BALANCE - TOKENS_TO_BURN)
-                                .array()),
-                        output));
+                assertSuccess());
 
         // should successfully burn fungible token with V2
         runHtsCallAndExpectOnSuccess(
@@ -90,36 +89,49 @@ public class BurnsXTest extends AbstractContractXTest {
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, TOKENS_TO_BURN, new long[] {})
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
-                                .getOutputs()
-                                .encodeElements((long) SUCCESS.ordinal(), TOKEN_BALANCE - 2 * TOKENS_TO_BURN)
-                                .array()),
-                        output));
+                assertSuccess());
 
-        // should revert when token has no supplyKey
-        runHtsCallAndExpectRevert(
+        // should fail when token has no supplyKey
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
-                TOKEN_HAS_NO_SUPPLY_KEY);
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(TOKEN_HAS_NO_SUPPLY_KEY).array()),
+                        output));
 
-        // should revert when token is not associated to account
-        runHtsCallAndExpectRevert(
+        // should fail when token is not associated to account
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
-                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                                .array()),
+                        output));
 
-        // should revert on totalSupply < amountToBurn
-        runHtsCallAndExpectRevert(
+        // should fail on totalSupply < amountToBurn
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
                         .array()),
-                INVALID_TOKEN_BURN_AMOUNT);
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(INVALID_TOKEN_BURN_AMOUNT).array()),
+                        output));
+
+        // should fail on invalid token id
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
 
         // should successfully burn NFT with V1
         runHtsCallAndExpectOnSuccess(
@@ -128,12 +140,7 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS, BigInteger.valueOf(0L), new long[] {SN_1234.serialNumber()})
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
-                                .getOutputs()
-                                .encodeElements((long) SUCCESS.ordinal(), TOKEN_BALANCE - 1L)
-                                .array()),
-                        output));
+                assertSuccess());
 
         // should successfully burn NFT with V2
         runHtsCallAndExpectOnSuccess(
@@ -141,12 +148,7 @@ public class BurnsXTest extends AbstractContractXTest {
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, 0L, new long[] {SN_2345.serialNumber()})
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
-                                .getOutputs()
-                                .encodeElements((long) SUCCESS.ordinal(), TOKEN_BALANCE - 2L)
-                                .array()),
-                        output));
+                assertSuccess());
     }
 
     @Override
@@ -170,9 +172,9 @@ public class BurnsXTest extends AbstractContractXTest {
 
     @Override
     protected Map<ProtoBytes, AccountID> initialAliases() {
-        final var aliases = new HashMap<ProtoBytes, AccountID>();
-        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
+        final var aliases = withSenderAlias(new HashMap<>());
         aliases.put(ProtoBytes.newBuilder().value(OWNER_ADDRESS).build(), OWNER_ID);
+        aliases.put(ProtoBytes.newBuilder().value(SENDER_ADDRESS).build(), SENDER_ID);
         return aliases;
     }
 
@@ -241,20 +243,13 @@ public class BurnsXTest extends AbstractContractXTest {
     protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
         final var tokenRelationships = new HashMap<EntityIDPair, TokenRelation>();
         addErc20Relation(tokenRelationships, OWNER_ID, TOKEN_BALANCE);
-        XTestConstants.addErc721Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, TOKEN_BALANCE);
+        addErc721Relation(tokenRelationships, UNAUTHORIZED_SPENDER_ID, TOKEN_BALANCE);
         return tokenRelationships;
     }
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(OWNER_ID)
-                        .alias(SENDER_ADDRESS)
-                        .smartContract(true)
-                        .build());
+        final var accounts = withSenderAccount(new HashMap<>());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

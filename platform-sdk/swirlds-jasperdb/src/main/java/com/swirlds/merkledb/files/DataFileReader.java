@@ -171,34 +171,43 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     }
 
     /**
-     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
-     * requested.
+     * Read data item bytes from file at dataLocation.
      *
      * @param dataLocation The file index combined with the offset for the starting block of the
      *     data in the file
-     * @return Deserialized data item, or {@code null} if deserialization is not requested
+     * @return Data item bytes
      * @throws IOException If there was a problem reading from data file
      * @throws ClosedChannelException if the data file was closed
      */
-    public D readDataItem(final long dataLocation) throws IOException {
-        long serializationVersion = metadata.getSerializationVersion();
-        final ByteBuffer data = readDataItemBytes(dataLocation);
-        return dataItemSerializer.deserialize(data, serializationVersion);
-    }
-
-    public ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
+    ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
         final long serializationVersion = metadata.getSerializationVersion();
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         final int bytesToRead;
         if (dataItemSerializer.isVariableSize()) {
             // read header to get size
             final ByteBuffer serializedHeader = read(byteOffset, dataItemSerializer.getHeaderSize());
+            if (serializedHeader == null) {
+                return null;
+            }
             final DataItemHeader header = dataItemSerializer.deserializeHeader(serializedHeader);
             bytesToRead = header.getSizeBytes();
         } else {
             bytesToRead = dataItemSerializer.getSerializedSizeForVersion(serializationVersion);
         }
         return read(byteOffset, bytesToRead);
+    }
+
+    /**
+     * Read data item from file at dataLocation and deserialize it to a Java object.
+     *
+     * @param dataLocation Data item location, which combines data file index and offset in the file
+     * @return Deserialized data item
+     * @throws IOException If there was a problem reading from data file
+     * @throws ClosedChannelException if the data file was closed
+     */
+    D readDataItem(final long dataLocation) throws IOException {
+        final ByteBuffer dataItemBytes = readDataItemBytes(dataLocation);
+        return dataItemSerializer.deserialize(dataItemBytes, metadata.getSerializationVersion());
     }
 
     /**
@@ -370,6 +379,11 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         for (int retries = 3; retries > 0; retries--) {
             final int fcIndex = leaseFileChannel();
             final FileChannel fileChannel = fileChannels.get(fcIndex);
+            if (fileChannel == null) {
+                // On rare occasions, if we have a race condition with compaction, the file channel
+                // may be closed. We need to return null, so that the caller can retry with a new reader
+                return null;
+            }
             try {
                 buffer.position(0);
                 buffer.limit(bytesToRead);

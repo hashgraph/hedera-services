@@ -176,12 +176,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null, null);
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null, null, null);
         } else if (payerAccount.deleted()) {
             // this check is not guaranteed, it should be checked again in handle phase. If the payer account is
             // deleted, we skip the signature verification.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null);
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null, null);
         }
+
         // 3. Expand and verify signatures
         return expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory);
     }
@@ -204,19 +205,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
 
-        // 1. Expand the Payer signature
-        final Key payerKey;
-        if (!isHollow(payerAccount)) {
-            // If the account IS a hollow account, then we will discover all such possible signatures when expanding
-            // all "full prefix" keys above, so we already have it covered. We only need to do this if the payer is
-            // NOT a hollow account (which is the common case).
-            payerKey = payerAccount.keyOrThrow();
-            signatureExpander.expand(payerKey, originals, expanded);
-        } else {
-            payerKey = null;
-        }
-
-        // 2a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        // 1a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         final VersionedConfiguration configuration = configProvider.getConfiguration();
         try {
@@ -233,9 +222,25 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
         }
 
+        // 2. Expand the Payer signature
+        final Key payerKey;
+        if (!isHollow(payerAccount)) {
+            // If the account IS a hollow account, then we will discover all such possible signatures when expanding
+            // all "full prefix" keys above, so we already have it covered. We only need to do this if the payer is
+            // NOT a hollow account (which is the common case).
+            payerKey = payerAccount.keyOrThrow();
+            signatureExpander.expand(payerKey, originals, expanded);
+        } else {
+            payerKey = null;
+            // If the account is hollow and since it is the payer that needs to sign the transaction, we need to
+            // add to the list of requiredHollowAccounts so that we can finalize the hollow accounts in handle workflow
+            context.requireSignatureForHollowAccount(payerAccount);
+        }
+
         // 2b. Call Pre-Transaction Handlers
         try {
-            // FUTURE: First, perform semantic checks on the transaction (TBD)
+            // First, perform semantic checks on the transaction
+            dispatcher.dispatchPureChecks(txInfo.txBody());
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
             // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
@@ -243,8 +248,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
             // verifications that we have determined so far.
+            logger.debug("Transaction failed pre-check", preCheck);
             final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
-            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), results);
+            return preHandleFailure(
+                    payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), Set.of(), results);
         }
 
         // 3. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
@@ -263,6 +270,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 OK,
                 txInfo,
                 context.requiredNonPayerKeys(),
+                context.optionalNonPayerKeys(),
                 context.requiredHollowAccounts(),
                 results,
                 null,

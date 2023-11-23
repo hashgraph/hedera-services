@@ -79,12 +79,12 @@ import com.hedera.node.config.sources.PropertyConfigSource;
 import com.hedera.node.config.sources.SettingsConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
-import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -135,16 +135,19 @@ public class ConfigProviderImpl extends ConfigProviderBase {
     }
 
     /**
-     * This method must be called if a property has changed. It will update the configuration and increase the version.
+     * This method must be called when the network properties or permissions are overridden.
+     * It will update the configuration and increase the version.
      *
-     * @param propertyFileContent the new property file content
+     * @param networkProperties the network properties file content
+     * @param permissions the permissions file content
      */
-    public void update(@NonNull final Bytes propertyFileContent) {
-        logger.info("Updating configuration based on new property file content.");
+    public void update(@NonNull final Bytes networkProperties, @NonNull final Bytes permissions) {
+        logger.info("Updating configuration caused by properties or permissions override.");
         try (final var ignoredLock = updateLock.lock()) {
             final var builder = createConfigurationBuilder();
             addFileSources(builder, false);
-            addByteSource(builder, propertyFileContent);
+            addByteSource(builder, networkProperties);
+            addByteSource(builder, permissions);
             final Configuration config = builder.build();
             configuration.set(
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1));

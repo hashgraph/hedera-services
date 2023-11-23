@@ -19,19 +19,18 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.ConsensusTimeHook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -55,8 +54,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
     private Map<Account, CryptoCreateTransactionBody.Builder> stakingAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> miscAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
-
-    private Instant consensusTimeOfLastHandledTxn = null;
+    private Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccounts = new HashMap<>();
 
     /**
      * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,
@@ -67,12 +65,13 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
      */
     @Override
     public void process(@NonNull final TokenContext context) {
+        final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
+
         // This process should only run ONCE, when a node receives its first transaction after startup
-        if (consensusTimeOfLastHandledTxn != null) return;
+        if (blockStore.getLastBlockInfo().consTimeOfLastHandledTxn() != null) return;
 
         // First we set consensusTimeOfLastHandledTxn so that this process won't run again
         final var consensusTime = context.consensusTime();
-        consensusTimeOfLastHandledTxn = consensusTime;
 
         if (!systemAccounts.isEmpty()) {
             createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
@@ -93,6 +92,11 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
         if (!treasuryClones.isEmpty()) {
             createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
             treasuryClones = Collections.emptyMap();
+        }
+
+        if (!blocklistAccounts.isEmpty()) {
+            createAccountRecordBuilders(blocklistAccounts, context, null);
+            blocklistAccounts = Collections.emptyMap();
         }
     }
 
@@ -116,9 +120,9 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
         treasuryClones.putAll(requireNonNull(accounts));
     }
 
-    @VisibleForTesting
-    void setLastConsensusTime(@Nullable final Instant lastConsensusTime) {
-        consensusTimeOfLastHandledTxn = lastConsensusTime;
+    @Override
+    public void blocklistAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        blocklistAccounts.putAll(requireNonNull(accounts));
     }
 
     private void createAccountRecordBuilders(
@@ -137,7 +141,10 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
                 .sorted(Comparator.comparingLong(acct -> acct.accountId().accountNum()))
                 .toList();
         for (final Account key : orderedAccts) {
-            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
+            // we create preceding records on genesis for each system account created.
+            // This is an exception and should not fail with MAX_CHILD_RECORDS_EXCEEDED
+            final var recordBuilder =
+                    context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
             final var accountId = requireNonNull(key.accountId());
             recordBuilder.accountID(accountId);
             if (recordMemo != null) {

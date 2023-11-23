@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -24,14 +26,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -62,6 +66,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -143,6 +148,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
+        }
+
+        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+        if (!transferContext.getAutomaticAssociations().isEmpty()) {
+            transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
+        }
+        if (!transferContext.getAssessedCustomFees().isEmpty()) {
+            recordBuilder.assessedCustomFees(transferContext.getAssessedCustomFees());
         }
     }
 
@@ -274,8 +287,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
-                final var accountKey = account.key();
-                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
+                if (isStakingAccount(ctx.configuration(), account.accountId())
+                        && (isDebit || (isCredit && !hbarTransfer))) {
                     // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     throw new PreCheckException(INVALID_ACCOUNT_ID);
                 }
@@ -286,8 +299,15 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
                 // because I'm approved which you will see when you handle this transaction").
                 if (isDebit && !accountAmount.isApproval()) {
-                    // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
-                    ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
+                    // If the account is a hollow account, then we require a signature for it.
+                    // It is possible that the hollow account has signed this transaction, in which case
+                    // we need to finalize the hollow account by setting its key.
+                    if (isHollow(account)) {
+                        ctx.requireSignatureForHollowAccount(account);
+                    } else {
+                        ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
+                    }
+
                 } else if (isCredit && account.receiverSigRequired()) {
                     ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
                 }
@@ -349,7 +369,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
         final var receiverKey = receiverAccount.key();
-        if (isEmpty(receiverKey)) {
+        if (isStakingAccount(meta.configuration(), receiverAccount.accountId())) {
             // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
             // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
             throw new PreCheckException(INVALID_ACCOUNT_ID);
@@ -456,9 +476,15 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var involvedTokens = new ArrayList<TokenID>();
         final var customFeeAssessor = new CustomFeeAssessmentStep(op);
         List<AssessedCustomFee> assessedCustomFees;
+        boolean triedAndFailedToUseCustomFees = false;
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
         } catch (HandleException ignore) {
+            final var status = ignore.getStatus();
+            // If the transaction tried and failed to use custom fees, enable this flag.
+            // This is used to charge a different canonical fees.
+            triedAndFailedToUseCustomFees = (status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
+                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             assessedCustomFees = new ArrayList<>();
         }
         totalXfers += assessedCustomFees.size();
@@ -478,19 +504,41 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         /* Get subType based on the above information */
         final var subType = getSubType(
-                numNftOwnershipChanges, totalTokenTransfers, customFeeHbarTransfers, customFeeTokenTransfers);
-        return feeContext
+                numNftOwnershipChanges,
+                totalTokenTransfers,
+                customFeeHbarTransfers,
+                customFeeTokenTransfers,
+                triedAndFailedToUseCustomFees);
+        final var ans = feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
+        return ans;
     }
 
+    /**
+     * Get the subType based on the number of NFT ownership changes, number of fungible token transfers,
+     * number of custom fee hbar transfers, number of custom fee token transfers and whether the transaction
+     * tried and failed to use custom fees.
+     * @param numNftOwnershipChanges number of NFT ownership changes
+     * @param numFungibleTokenTransfers number of fungible token transfers
+     * @param customFeeHbarTransfers number of custom fee hbar transfers
+     * @param customFeeTokenTransfers number of custom fee token transfers
+     * @param triedAndFailedToUseCustomFees whether the transaction tried and failed while validating custom fees.
+     *                                      If the failure includes custom fee error codes, the fee charged should not
+     *                                      use SubType.DEFAULT.
+     * @return the subType
+     */
     private SubType getSubType(
             final int numNftOwnershipChanges,
             final int numFungibleTokenTransfers,
             final int customFeeHbarTransfers,
-            final int customFeeTokenTransfers) {
+            final int customFeeTokenTransfers,
+            final boolean triedAndFailedToUseCustomFees) {
+        if (triedAndFailedToUseCustomFees) {
+            return TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+        }
         if (numNftOwnershipChanges != 0) {
             if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
                 return TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
@@ -499,7 +547,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
         if (numFungibleTokenTransfers != 0) {
             if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
-                return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+                return TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
             }
             return TOKEN_FUNGIBLE_COMMON;
         }

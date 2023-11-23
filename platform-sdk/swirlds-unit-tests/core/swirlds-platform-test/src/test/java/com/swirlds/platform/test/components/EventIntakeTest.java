@@ -102,7 +102,11 @@ class EventIntakeTest {
         when(consensus.addEvent(any(EventImpl.class))).thenAnswer(i -> {
             minNonAncient.set(20);
             return List.of(new ConsensusRound(
-                    List.of(consEvent1, consEvent2), added, generations, mock(ConsensusSnapshot.class)));
+                    mock(AddressBook.class),
+                    List.of(consEvent1, consEvent2),
+                    added,
+                    generations,
+                    mock(ConsensusSnapshot.class)));
         });
 
         // add an event

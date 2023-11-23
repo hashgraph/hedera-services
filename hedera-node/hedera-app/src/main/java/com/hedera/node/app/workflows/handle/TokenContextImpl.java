@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.TokenService;
@@ -83,6 +85,11 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     }
 
     @Override
+    public boolean hasChildRecords() {
+        return !recordListBuilder.childRecordBuilders().isEmpty();
+    }
+
+    @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         requireNonNull(consumer, "consumer must not be null");
         final var childRecordBuilders = recordListBuilder.childRecordBuilders();
@@ -92,11 +99,18 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration());
+        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
-    private static <T> T castRecordBuilder(
+    @NonNull
+    @Override
+    public <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = recordListBuilder.addPreceding(configuration(), UNLIMITED_CHILD_RECORDS);
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    static <T> T castRecordBuilder(
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {

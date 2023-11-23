@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
@@ -37,11 +38,12 @@ import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -59,7 +61,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 
-// TODO: Make this extend ScheduleTestBase in the enclosing package
 @SuppressWarnings("ProtectedField")
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
@@ -165,7 +166,12 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(mockContext.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
         given(mockContext.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
         given(mockContext.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
-        given(mockContext.dispatchChildTransaction(any(), eq(ScheduleRecordBuilder.class), any(Predicate.class)))
+        given(mockContext.dispatchChildTransaction(
+                        any(),
+                        eq(ScheduleRecordBuilder.class),
+                        any(Predicate.class),
+                        any(AccountID.class),
+                        any(TransactionCategory.class)))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
         given(mockContext.recordBuilder(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));

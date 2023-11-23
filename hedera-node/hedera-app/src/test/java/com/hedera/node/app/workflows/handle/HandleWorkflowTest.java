@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static java.lang.Boolean.FALSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,6 +47,7 @@ import com.hedera.node.app.fixtures.workflows.handle.record.SingleTransactionRec
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -86,6 +89,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -102,7 +106,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleWorkflowTest extends AppTestBase {
 
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
-    private static final Instant TX_CONSENSUS_NOW = CONSENSUS_NOW.minusNanos(1000 + 3);
+    private static final Instant TX_CONSENSUS_NOW = CONSENSUS_NOW.minusNanos(1000 - 3);
 
     private static final long CONFIG_VERSION = 11L;
 
@@ -127,6 +131,7 @@ class HandleWorkflowTest extends AppTestBase {
                 status,
                 code,
                 new TransactionScenarioBuilder().txInfo(),
+                Set.of(),
                 Set.of(),
                 Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
@@ -189,6 +194,9 @@ class HandleWorkflowTest extends AppTestBase {
     private ParentRecordFinalizer finalizer;
 
     @Mock
+    private ChildRecordFinalizer childRecordFinalizer;
+
+    @Mock(strictness = LENIENT)
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Mock
@@ -197,7 +205,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private DualStateUpdateFacility dualStateUpdateFacility;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock(strictness = LENIENT)
@@ -209,7 +217,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setup() {
+    void setup() throws PreCheckException {
         setupStandardStates();
 
         accountsState.put(
@@ -238,6 +246,8 @@ class HandleWorkflowTest extends AppTestBase {
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
+        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
+
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);
                     context.writableStore(WritableAccountStore.class)
@@ -255,6 +265,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
         when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
                 .thenReturn(SystemPrivilege.UNNECESSARY);
+        when(systemFileUpdateFacility.handleTxBody(any(), any())).thenReturn(SUCCESS);
 
         workflow = new HandleWorkflow(
                 networkInfo,
@@ -271,6 +282,7 @@ class HandleWorkflowTest extends AppTestBase {
                 stakingPeriodTimeHook,
                 feeManager,
                 exchangeRateManager,
+                childRecordFinalizer,
                 finalizer,
                 systemFileUpdateFacility,
                 dualStateUpdateFacility,
@@ -297,6 +309,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -319,6 +332,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -341,6 +355,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -363,6 +378,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -385,6 +401,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -407,6 +424,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -429,6 +447,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -451,6 +470,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -473,6 +493,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -495,6 +516,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -517,6 +539,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -539,6 +562,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -561,6 +585,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         null,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -583,6 +608,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         null,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -605,6 +631,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         null,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -627,6 +654,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         null,
                         dualStateUpdateFacility,
@@ -649,6 +677,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         null,
@@ -671,6 +700,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -693,6 +723,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -715,6 +746,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -736,6 +768,7 @@ class HandleWorkflowTest extends AppTestBase {
         // then
         assertThat(accountsState.isModified()).isFalse();
         assertThat(aliasesState.isModified()).isFalse();
+        verify(blockRecordManager, never()).advanceConsensusClock(any(), any());
         verify(blockRecordManager, never()).startUserTransaction(any(), any());
         verify(blockRecordManager, never()).endUserTransaction(any(), any());
     }
@@ -747,6 +780,7 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, dualState, round);
 
         // then
+        verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
@@ -774,6 +808,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
         }
 
@@ -787,6 +822,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
         }
 
@@ -800,6 +836,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
         }
 
@@ -814,6 +851,7 @@ class HandleWorkflowTest extends AppTestBase {
                     Status.SO_FAR_SO_GOOD,
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
+                    Set.of(),
                     Set.of(),
                     Set.of(),
                     Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
@@ -838,6 +876,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
             assertThat(alice).isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
@@ -855,6 +894,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
         }
@@ -871,6 +911,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check that record was created
         }
@@ -886,6 +927,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.isModified()).isFalse();
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check receipt
@@ -901,6 +943,7 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, dualState, round);
 
         // then
+        verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
         assertThat(aliasesState.isModified()).isFalse();
         // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
     }
@@ -925,6 +968,7 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
+                    Set.of(),
                     Set.of(),
                     verificationResults,
                     null,
@@ -980,6 +1024,7 @@ class HandleWorkflowTest extends AppTestBase {
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(bobsKey),
                     Set.of(),
+                    Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
@@ -1021,6 +1066,13 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
@@ -1102,11 +1154,13 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(bobsKey),
                     Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+            doReturn(ALICE.account()).when(solvencyPreCheck).getPayerAccount(any(), eq(ALICE.accountID()));
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -1156,10 +1210,12 @@ class HandleWorkflowTest extends AppTestBase {
                     ResponseCodeEnum.OK,
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(),
+                    Set.of(bobsKey),
                     Set.of(),
                     verificationResults,
                     null,
                     CONFIG_VERSION);
+            doReturn(ALICE.account()).when(solvencyPreCheck).getPayerAccount(any(), eq(ALICE.accountID()));
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
@@ -1211,6 +1267,13 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
                         return null;
                     })
@@ -1255,6 +1318,13 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
                         return null;
                     })
@@ -1287,7 +1357,7 @@ class HandleWorkflowTest extends AppTestBase {
         }
 
         @Test
-        void testComplexCase() throws PreCheckException, TimeoutException {
+        void testComplexCase() throws PreCheckException {
             // given
             final var alicesKey = ALICE.account().keyOrThrow();
             final var bobsKey = BOB.account().keyOrThrow();
@@ -1305,6 +1375,7 @@ class HandleWorkflowTest extends AppTestBase {
                     new TransactionScenarioBuilder().txInfo(),
                     Set.of(erinsKey),
                     Set.of(),
+                    Set.of(),
                     preHandleVerificationResults,
                     null,
                     CONFIG_VERSION);
@@ -1317,6 +1388,13 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
@@ -1383,6 +1461,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
             assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance())
                     .isEqualTo(DEFAULT_FEES.totalFee() + DEFAULT_FEES.nodeFee());
@@ -1399,6 +1478,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
             assertThat(accountsState.get(nodeSelfAccountId).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
         }
@@ -1416,6 +1496,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1427,8 +1508,15 @@ class HandleWorkflowTest extends AppTestBase {
         @EnumSource(names = {"INVALID_ACCOUNT_ID", "ACCOUNT_DELETED"})
         @DisplayName("Reject transaction, if the payer account is not valid")
         void testInvalidPayerAccountFails(final ResponseCodeEnum responseCode) throws PreCheckException {
+            final var numInvocations = new AtomicLong();
             // given
-            doThrow(new PreCheckException(responseCode))
+            doAnswer(invocation -> {
+                        if (numInvocations.incrementAndGet() == 1L) {
+                            return ALICE.account();
+                        } else {
+                            throw new PreCheckException(responseCode);
+                        }
+                    })
                     .when(solvencyPreCheck)
                     .getPayerAccount(any(), eq(ALICE.accountID()));
 
@@ -1436,6 +1524,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1447,7 +1536,7 @@ class HandleWorkflowTest extends AppTestBase {
                 names = {
                     "INSUFFICIENT_TX_FEE",
                     "INVALID_TRANSACTION_BODY",
-                    "INSUFFICIENT_PAYER_BALANCE",
+                    "INSUFFICIENT_ACCOUNT_BALANCE",
                     "ACCOUNT_EXPIRED_AND_PENDING_REMOVAL"
                 })
         @DisplayName("Reject transaction, if the payer cannot pay the fees")
@@ -1455,12 +1544,13 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(solvencyPreCheck)
-                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES));
+                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(FALSE));
 
             // when
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(responseCode));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isEqualTo(DEFAULT_FEES.totalFee());
@@ -1478,6 +1568,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(UNAUTHORIZED));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1499,6 +1590,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(AUTHORIZATION_FAILED));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1520,6 +1612,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(ENTITY_NOT_ALLOWED_TO_DELETE));
             assertThat(accountsState.get(ALICE.accountID()).tinybarBalance()).isLessThan(DEFAULT_FEES.totalFee());
@@ -1542,6 +1635,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             final var block = getRecordFromStream();
             assertThat(block).has(SingleTransactionRecordConditions.status(SUCCESS));
         }
@@ -1560,6 +1654,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check that record was created
         }
@@ -1572,6 +1667,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             assertThat(accountsState.isModified()).isFalse();
             assertThat(aliasesState.isModified()).isFalse();
             // TODO: Check receipt
@@ -1591,6 +1687,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
+            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
             verify(blockRecordManager).startUserTransaction(TX_CONSENSUS_NOW, state);
             verify(blockRecordManager).endUserTransaction(any(), eq(state));
             verify(blockRecordManager).endRound(state);

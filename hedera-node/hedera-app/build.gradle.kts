@@ -26,7 +26,8 @@ mainModuleInfo {
     annotationProcessor("dagger.compiler")
 
     // This is needed to pick up and include the native libraries for the netty epoll transport
-    runtimeOnly("io.netty.transport.epoll")
+    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
+    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 testModuleInfo {
@@ -61,12 +62,13 @@ itestModuleInfo {
     requires("grpc.netty")
     requires("grpc.stub")
     requires("io.grpc")
-    requires("io.netty.transport.epoll")
     requires("org.apache.logging.log4j")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
+    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 xtestModuleInfo {
@@ -74,6 +76,7 @@ xtestModuleInfo {
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.app.hapi.fees")
+    requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.app.service.consensus.impl")
     requires("com.hedera.node.app.service.contract.impl")
     requires("com.hedera.node.app.service.file.impl")
@@ -95,11 +98,16 @@ xtestModuleInfo {
     requires("com.swirlds.test.framework")
     requires("dagger")
     requires("headlong")
-    requires("io.netty.transport.epoll")
     requires("javax.inject")
+    requires("org.assertj.core")
+    requires("org.hyperledger.besu.datatypes")
+    requires("org.hyperledger.besu.evm")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("tuweni.bytes")
+    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
+    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 jmhModuleInfo {
@@ -119,30 +127,29 @@ tasks.withType<Test> {
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
     inputs.files(configurations.runtimeClasspath)
-    manifest {
-        attributes(
-            "Main-Class" to "com.hedera.node.app.ServicesMain",
+    manifest { attributes("Main-Class" to "com.hedera.node.app.ServicesMain") }
+    doFirst {
+        manifest.attributes(
             "Class-Path" to
-                configurations.runtimeClasspath.get().elements.map { entry ->
-                    entry
-                        .map { "../../data/lib/" + it.asFile.name }
-                        .sorted()
-                        .joinToString(separator = " ")
-                }
+                inputs.files
+                    .filter { it.extension == "jar" }
+                    .map { "../../data/lib/" + it.name }
+                    .sorted()
+                    .joinToString(separator = " ")
         )
     }
 }
 
 // Copy dependencies into `data/lib`
 val copyLib =
-    tasks.register<Copy>("copyLib") {
+    tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
         into(layout.projectDirectory.dir("../data/lib"))
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp =
-    tasks.register<Copy>("copyApp") {
+    tasks.register<Sync>("copyApp") {
         from(tasks.jar)
         into(layout.projectDirectory.dir("../data/apps"))
         rename { "HederaNode.jar" }
@@ -167,8 +174,8 @@ tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
     workingDir = layout.projectDirectory.dir("..").asFile
-    jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
-    mainClass.set("com.swirlds.platform.Browser")
+    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
+    mainClass.set("com.hedera.node.app.ServicesMain")
 }
 
 val cleanRun =

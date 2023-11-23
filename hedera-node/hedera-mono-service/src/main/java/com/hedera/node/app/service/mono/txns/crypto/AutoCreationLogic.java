@@ -127,8 +127,10 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     }
 
     public void submitRecordsTo(final RecordsHistorian recordsHistorian) {
-        submitRecords((syntheticBody, recordSoFar) ->
-                recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticBody, recordSoFar));
+        submitRecords((syntheticBody, recordSoFar) -> {
+            recordSoFar.onlyExternalizeIfSuccessful();
+            recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticBody, recordSoFar);
+        });
     }
 
     @VisibleForTesting

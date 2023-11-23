@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.config.internal;
 
-import com.swirlds.common.config.sources.ConfigMapping;
-import com.swirlds.common.config.sources.MappedConfigSource;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.config.extensions.sources.ConfigMapping;
+import com.swirlds.config.extensions.sources.MappedConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

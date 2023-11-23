@@ -17,7 +17,7 @@
 package com.swirlds.common.io.streams;
 
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 
 import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.streams.internal.MerkleSerializationProtocol;

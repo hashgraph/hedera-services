@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.config.internal;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
-import com.swirlds.common.config.sources.ConfigMapping;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.sources.ConfigMapping;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;

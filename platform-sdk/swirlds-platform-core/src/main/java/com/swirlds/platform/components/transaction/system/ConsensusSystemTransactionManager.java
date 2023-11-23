@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;

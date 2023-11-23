@@ -40,6 +40,7 @@ import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_FOR_TO
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -48,11 +49,13 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -73,14 +76,17 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,6 +102,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
+    private TokenAccountWipeRecordBuilder recordBuilder;
 
     @BeforeEach
     public void setUp() {
@@ -104,6 +111,32 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
+        recordBuilder = new TokenAccountWipeRecordBuilder() {
+            private long newTotalSupply;
+
+            @Override
+            public long getNewTotalSupply() {
+                return newTotalSupply;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
+                newTotalSupply = supply;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public ResponseCodeEnum status() {
+                return OK;
+            }
+        };
     }
 
     @Nested
@@ -159,10 +192,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         @Test
         void emptyNftSerialNumbers() {
+            // This is a success case
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0);
-            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_WIPING_AMOUNT));
+            assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
         }
 
         @Test
@@ -910,6 +942,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(context.configuration()).willReturn(configuration);
 
             given(context.expiryValidator()).willReturn(validator);
+            lenient()
+                    .when(context.recordBuilder(TokenAccountWipeRecordBuilder.class))
+                    .thenReturn(recordBuilder);
 
             return context;
         }

@@ -17,11 +17,11 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static com.swirlds.virtualmap.internal.Path.FIRST_LEFT_PATH;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
@@ -699,6 +699,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     protected void destroyNode() {
         if (pipeline != null) {
             pipeline.destroyCopy(this);
+        } else {
+            logger.info(
+                    VIRTUAL_MERKLE_STATS.getMarker(),
+                    "Destroying virtual root node at route {}, but its pipeline is null. It may happen during failed reconnect",
+                    getRoute());
+            closeDataSource();
         }
     }
 
@@ -953,19 +959,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void onShutdown(final boolean immediately) {
-
         if (immediately) {
             // If immediate shutdown is required then let the hasher know it is being stopped. If shutdown
             // is not immediate, the hasher will eventually stop once it finishes all of its work.
             hasher.shutdown();
         }
+        closeDataSource();
+    }
 
-        // We can now try to shut down the data source. If this doesn't shut things down, then there
-        // isn't much we can do aside from logging the fact. The node may well die before too long.
+    private void closeDataSource() {
+        // Shut down the data source. If this doesn't shut things down, then there isn't
+        // much we can do aside from logging the fact. The node may well die before too long
         if (dataSource != null) {
             try {
                 dataSource.close();
-            } catch (final IOException e) {
+            } catch (final Exception e) {
                 logger.error(
                         EXCEPTION.getMarker(), "Could not close the dataSource after all copies were destroyed", e);
             }
@@ -1360,7 +1368,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // shutdown background compaction on original data source as it is no longer needed to be running as all data
         // in that data source is only there as a starting point for reconnect now. So compacting it further is not
         // helpful and will just burn resources.
-        originalMap.dataSource.stopBackgroundCompaction();
+        originalMap.dataSource.stopAndDisableBackgroundCompaction();
 
         // Take a snapshot, and use the snapshot database as my data source
         this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true);
@@ -1485,7 +1493,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             learnerTreeView = null;
             postInit(fullyReconnectedState);
             // Start up data source compaction now
-            dataSource.startBackgroundCompaction();
+            dataSource.enableBackgroundCompaction();
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during learner reconnect";
             throw new MerkleSynchronizationException(message, e);

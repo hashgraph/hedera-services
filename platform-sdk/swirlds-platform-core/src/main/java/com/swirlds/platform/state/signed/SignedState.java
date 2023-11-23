@@ -17,8 +17,9 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.utility.Threshold.MAJORITY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
@@ -36,6 +37,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
@@ -160,16 +162,33 @@ public class SignedState implements SignedStateInfo {
      * @param freezeState     specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
-            @NonNull PlatformContext platformContext,
+            @NonNull final PlatformContext platformContext,
             @NonNull final State state,
-            @NonNull String reason,
+            @NonNull final String reason,
+            final boolean freezeState) {
+        this(platformContext.getConfiguration().getConfigData(StateConfig.class), state, reason, freezeState);
+    }
+
+    /**
+     * Instantiate a signed state.
+     *
+     * @param stateConfig state configuration
+     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
+     *                    with received rounds up through the round this SignedState represents
+     * @param reason      a short description of why this SignedState is being created. Each location where a
+     *                    SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
+     * @param freezeState specifies whether this state is the last one saved before the freeze
+     */
+    public SignedState(
+            @NonNull final StateConfig stateConfig,
+            @NonNull final State state,
+            @NonNull final String reason,
             final boolean freezeState) {
 
         state.reserve();
 
         this.state = state;
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
@@ -540,18 +559,35 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public boolean isComplete() {
-        return recoveryState
-                | MAJORITY.isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
+        return recoveryState | signedBy(SUPER_MAJORITY);
     }
 
     /**
-     * Throw an exception if this state has not been completely signed. This method does not validate signatures, call
-     * {@link #pruneInvalidSignatures()} to guarantee that only valid signatures are considered.
-     *
-     * @throws SignedStateInvalidException if this state lacks sufficient signatures to be considered complete
+     * @return true if the state has enough signatures so that it can be trusted to be valid
      */
-    public void throwIfIncomplete() {
-        if (!isComplete()) {
+    public boolean isVerifiable() {
+        return recoveryState | signedBy(MAJORITY);
+    }
+
+    /**
+     * Checks if this state is signed by a supplied threshold
+     *
+     * @param threshold the threshold to check
+     * @return true if this state is signed by the threshold, false otherwise
+     */
+    private boolean signedBy(@NonNull final Threshold threshold) {
+        return Objects.requireNonNull(threshold)
+                .isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
+    }
+
+    /**
+     * Throw an exception if this state has not been signed by the majority. This method does not validate signatures,
+     * call {@link #pruneInvalidSignatures()} to guarantee that only valid signatures are considered.
+     *
+     * @throws SignedStateInvalidException if this has not been signed by the majority
+     */
+    public void throwIfNotVerifiable() {
+        if (!isVerifiable()) {
             throw new SignedStateInvalidException(
                     "Signed state lacks sufficient valid signatures. This state has " + sigSet.size()
                             + " valid signatures representing " + signingWeight + "/"

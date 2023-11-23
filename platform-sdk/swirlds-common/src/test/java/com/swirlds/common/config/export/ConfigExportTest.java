@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,7 +60,6 @@ class ConfigExportTest {
         Assertions.assertTrue(lines.size() > 10);
 
         // Verify properties in file are listed
-        assertContains(regexForLine("verifyEventSigs", "false", true), lines);
         assertContains(regexForLine("showInternalStats", "true", true), lines);
         assertContains(regexForLine("state.saveStatePeriod", "0", true), lines);
         assertContains(regexForLine("loadKeysFromPfxFiles", "false", true), lines);
@@ -69,7 +68,7 @@ class ConfigExportTest {
 
         // Verify properties not in file are listed (spot check only)
         assertContains(regexForLine("state.signedStateDisk", "5", true), lines);
-        assertContains(regexForLine("numConnections", "40", true), lines);
+        assertContains(regexForLine("numConnections", "1000", true), lines);
         assertContains(regexForLine("verboseStatistics", "false", true), lines);
     }
 

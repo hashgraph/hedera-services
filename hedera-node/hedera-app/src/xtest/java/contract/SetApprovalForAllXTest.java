@@ -16,14 +16,18 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
+import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -169,6 +173,34 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                                 SENDER_HEADLONG_ADDRESS, false),
                         ERC721_TOKEN_ID),
                 assertSuccess());
+
+        // @Future remove to revert #9214 after modularization is completed
+        // Those tests ensure that the precompile matches mono behaviour
+        // Try SetApproveForAll with Invalid Account address
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, true)
+                        .array()),
+                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+        // Try SetApproveForAll with Invalid Account address, ERC Call
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                bytesForRedirect(
+                        SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.encodeCallWithArgs(
+                                INVALID_SENDER_HEADLONG_ADDRESS, true),
+                        ERC721_TOKEN_ID),
+                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+        // Try SetApproveForAll with Invalid Token
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, SENDER_HEADLONG_ADDRESS, true)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
     }
 
     @Override
@@ -227,14 +259,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
 
     @Override
     protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = new HashMap<AccountID, Account>();
-        accounts.put(
-                SENDER_ID,
-                Account.newBuilder()
-                        .accountId(SENDER_ID)
-                        .alias(SENDER_ADDRESS)
-                        .smartContract(true)
-                        .build());
+        final var accounts = withSenderContractAccount(new HashMap<>());
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()

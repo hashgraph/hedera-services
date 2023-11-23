@@ -23,7 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -106,7 +106,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void assertValidStakingElection(
+    public void assertValidStakingElectionForCreation(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
@@ -115,6 +115,25 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
         stakingValidator.validateStakedIdForCreation(
+                isStakingEnabled,
+                hasDeclineRewardChange,
+                stakedIdKind,
+                stakedAccountIdInOp,
+                stakedNodeIdInOp,
+                accountStore,
+                networkInfo);
+    }
+
+    @Override
+    public void assertValidStakingElectionForUpdate(
+            final boolean isStakingEnabled,
+            final boolean hasDeclineRewardChange,
+            @NonNull final String stakedIdKind,
+            @Nullable final AccountID stakedAccountIdInOp,
+            @Nullable final Long stakedNodeIdInOp,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkInfo networkInfo) {
+        stakingValidator.validateStakedIdForUpdate(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
@@ -162,11 +181,37 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void deleteAndMaybeUnaliasContract(@NonNull final ContractID contractId) {
+    public void deleteContract(@NonNull final ContractID contractId) {
         requireNonNull(contractId);
-        final var contract = requireNonNull(accountStore.getContractById(contractId));
 
+        // If the contractId cannot find a contract, then we have nothing to do here. But that would be an error
+        // condition -- it really should never happen.
+        final var contract = accountStore.getContractById(contractId);
+        if (contract == null) {
+            logger.warn("Contract {} does not exist, so cannot be deleted", contractId);
+            return;
+        }
+
+        // It may be that the contract exists, but has already been deleted. In that case, there really shouldn't
+        // be anything to do here. But we'll log a warning just in case, because it would indicate a very probable
+        // bug somewhere. And we'll go ahead and do the cleanup anyway.
+        if (contract.deleted()) {
+            logger.warn("Trying to delete Contract {}, which is already deleted", contractId);
+        }
+
+        // The contract account may or may not have an alias on it. Normally they do, but if they are created using
+        // the HAPI ContractCreate, they don't necessarily have an alias (the user has to choose to do so). This means
+        // If there is an alias, then we need to remove it from the account store, and we need to remove the alias
+        // from the contract account.
         final var evmAddress = contract.alias();
+        accountStore.removeAlias(evmAddress);
+        accountStore.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
+
+        // It may be (but should never happen) that the alias in the given contractId does not match the alias on the
+        // contract account itself. This shouldn't happen because it means that somehow we were able to look up the
+        // contract from the store using alias A, but then the contract we got back had alias B. Since the alias
+        // cannot be changed once set, this shouldn't be possible. We will log an error and remove the alias in the
+        // contract ID from the store.
         final var usedEvmAddress = contractId.evmAddressOrElse(Bytes.EMPTY);
         if (!usedEvmAddress.equals(evmAddress)) {
             logger.error(
@@ -174,11 +219,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                     contractId,
                     evmAddress,
                     usedEvmAddress);
+            accountStore.removeAlias(usedEvmAddress);
         }
-        maybeRemoveAlias(accountStore, evmAddress);
-        maybeRemoveAlias(accountStore, usedEvmAddress);
-
-        accountStore.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
     }
 
     /**
@@ -273,15 +315,18 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void chargeNetworkFee(@NonNull AccountID payerId, long amount, @NonNull FeeRecordBuilder rb) {
+    public boolean chargeNetworkFee(
+            @NonNull final AccountID payerId, final long amount, @NonNull final FeeRecordBuilder rb) {
         requireNonNull(rb);
         requireNonNull(payerId);
 
         final var payerAccount = lookupAccount("Payer", payerId);
         final var amountToCharge = Math.min(amount, payerAccount.tinybarBalance());
         chargePayer(payerAccount, amountToCharge);
-        rb.transactionFee(amountToCharge);
+        // We may be charging for preceding child record fees, which are additive to the base fee
+        rb.transactionFee(rb.transactionFee() + amountToCharge);
         distributeToNetworkFundingAccounts(amountToCharge, rb);
+        return amountToCharge == amount;
     }
 
     @Override
@@ -337,6 +382,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     public long originalKvUsageFor(@NonNull final AccountID id) {
         final var oldAccount = accountStore.getOriginalValue(id);
         return oldAccount == null ? 0 : oldAccount.contractKvPairsNumber();
+    }
+
+    @Override
+    public void updateContract(Account contract) {
+        accountStore.put(contract);
     }
 
     /**
@@ -506,12 +556,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     private EntityType getEntityType(@NonNull final Account account) {
         return account.smartContract() ? EntityType.CONTRACT : EntityType.ACCOUNT;
-    }
-
-    private void maybeRemoveAlias(@NonNull final WritableAccountStore store, @NonNull final Bytes alias) {
-        if (!Bytes.EMPTY.equals(alias)) {
-            store.removeAlias(alias);
-        }
     }
 
     private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeRecordBuilder rb) {

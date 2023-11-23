@@ -21,6 +21,8 @@ import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.state.notifications.IssNotification;
@@ -50,13 +52,15 @@ public class IssHandler {
     private final HaltRequestedConsumer haltRequestedConsumer;
     private final IssConsumer issConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
+    private final Scratchpad<IssScratchpad> issScratchpad;
 
     private boolean halted;
 
     private final NodeId selfId;
 
     /**
-     * Allows for submitting {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusActions}
+     * Allows for submitting
+     * {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusActions}
      */
     private final StatusActionSubmitter statusActionSubmitter;
 
@@ -70,6 +74,7 @@ public class IssHandler {
      * @param haltRequestedConsumer consumer to invoke when a system halt is desired
      * @param fatalErrorConsumer    consumer to invoke if a fatal error occurs
      * @param issConsumer           consumer to invoke if an ISS is detected
+     * @param issScratchpad         scratchpad for ISS data, is persistent across restarts
      */
     public IssHandler(
             @NonNull final Time time,
@@ -79,7 +84,8 @@ public class IssHandler {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final IssConsumer issConsumer) {
+            @NonNull final IssConsumer issConsumer,
+            @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
 
         this.issConsumer = Objects.requireNonNull(issConsumer, "issConsumer must not be null");
         this.haltRequestedConsumer =
@@ -94,6 +100,8 @@ public class IssHandler {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+
+        this.issScratchpad = Objects.requireNonNull(issScratchpad);
     }
 
     /**
@@ -140,6 +148,27 @@ public class IssHandler {
     }
 
     /**
+     * Record the latest ISS round in the scratchpad. Does nothing if this is not the latest ISS that has been
+     * observed.
+     *
+     * @param issRound the round of the observed ISS
+     */
+    private void updateIssRoundInScratchpad(final long issRound) {
+        issScratchpad.atomicOperation(data -> {
+            final SerializableLong lastIssRound = (SerializableLong) data.get(IssScratchpad.LAST_ISS_ROUND);
+
+            if (lastIssRound == null || lastIssRound.getValue() < issRound) {
+                data.put(IssScratchpad.LAST_ISS_ROUND, new SerializableLong(issRound));
+                return true;
+            }
+
+            // Data was not modified, no need to flush data to disk. It is possible to observe ISS rounds out of order,
+            // and we only want to increment this number.
+            return false;
+        });
+    }
+
+    /**
      * This method is called when there is a self ISS.
      *
      * @param round         the round of the ISS
@@ -155,6 +184,7 @@ public class IssHandler {
             return;
         }
 
+        updateIssRoundInScratchpad(round);
         statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
 
         issConsumer.iss(round, IssNotification.IssType.SELF_ISS, selfId);
@@ -240,6 +270,7 @@ public class IssHandler {
             return;
         }
 
+        updateIssRoundInScratchpad(round);
         statusActionSubmitter.submitStatusAction(new CatastrophicFailureAction());
 
         issConsumer.iss(round, IssNotification.IssType.CATASTROPHIC_ISS, null);

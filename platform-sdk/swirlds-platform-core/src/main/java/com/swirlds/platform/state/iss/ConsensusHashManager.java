@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.state.iss;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.logging.LogMarker.STATE_HASH;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
@@ -32,7 +32,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.throttle.RateLimiter;
-import com.swirlds.logging.payloads.IssPayload;
+import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
@@ -87,6 +87,16 @@ public class ConsensusHashManager {
     private final RateLimiter catastrophicIssRateLimiter;
 
     /**
+     * If true, ignore signatures from the preconsensus event stream, otherwise validate them like normal.
+     */
+    private final boolean ignorePreconsensusSignatures;
+
+    /**
+     * Set to false once all preconsensus events have been replayed.
+     */
+    private boolean replayingPreconsensusStream = true;
+
+    /**
      * Use this constant if the consensus hash manager should not ignore any rounds.
      */
     public static final int DO_NOT_IGNORE_ROUNDS = -1;
@@ -103,14 +113,15 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
-     * @param platformContext        the platform context
-     * @param time                   provides the current wall clock time
-     * @param dispatchBuilder        responsible for building dispatchers
-     * @param addressBook            the address book for the network
-     * @param currentEpochHash       the current epoch hash
-     * @param currentSoftwareVersion the current software version
-     * @param ignoredRound           a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all
-     *                               rounds should be validated.
+     * @param time                         provides the current wall clock time
+     * @param dispatchBuilder              responsible for building dispatchers
+     * @param addressBook                  the address book for the network
+     * @param currentEpochHash             the current epoch hash
+     * @param currentSoftwareVersion       the current software version
+     * @param ignorePreconsensusSignatures If true, ignore signatures from the preconsensus event stream, otherwise
+     *                                     validate them like normal.
+     * @param ignoredRound                 a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if
+     *                                     all rounds should be validated.
      */
     public ConsensusHashManager(
             @NonNull final PlatformContext platformContext,
@@ -119,6 +130,7 @@ public class ConsensusHashManager {
             final AddressBook addressBook,
             final Hash currentEpochHash,
             final SoftwareVersion currentSoftwareVersion,
+            final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
 
         final ConsensusConfig consensusConfig =
@@ -144,10 +156,22 @@ public class ConsensusHashManager {
         this.roundData = new ConcurrentSequenceMap<>(
                 -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
 
+        this.ignorePreconsensusSignatures = ignorePreconsensusSignatures;
+        if (ignorePreconsensusSignatures) {
+            logger.info(STARTUP.getMarker(), "State signatures from the preconsensus event stream will be ignored.");
+        }
+
         this.ignoredRound = ignoredRound;
         if (ignoredRound != DO_NOT_IGNORE_ROUNDS) {
             logger.warn(STARTUP.getMarker(), "No ISS detection will be performed for round {}", ignoredRound);
         }
+    }
+
+    /**
+     * This method is called once all preconsensus events have been replayed.
+     */
+    public void signalEndOfPreconsensusReplay() {
+        replayingPreconsensusStream = false;
     }
 
     /**
@@ -230,6 +254,11 @@ public class ConsensusHashManager {
 
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
+
+        if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
+            // We are still replaying preconsensus events and we are configured to ignore signatures during replay
+            return;
+        }
 
         if (!Objects.equals(currentSoftwareVersion, eventVersion)) {
             // this is a signature from a different software version, ignore it

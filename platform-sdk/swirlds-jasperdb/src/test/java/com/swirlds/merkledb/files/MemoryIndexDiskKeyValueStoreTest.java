@@ -21,12 +21,10 @@ import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.deleteDirectoryAndContents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.metrics.atomic.AtomicDouble;
+import com.swirlds.common.threading.atomic.AtomicDouble;
 import com.swirlds.common.units.UnitConstants;
-import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;
@@ -40,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -149,7 +146,6 @@ class MemoryIndexDiskKeyValueStoreTest {
     @EnumSource(FilesTestType.class)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     void createDataAndCheck(final FilesTestType testType) throws Exception {
-        MemoryIndexDiskKeyValueStore.enableDeepValidation = false;
         // keep track of base direct-memory usage, so we can check we did not leak
         final long directMemoryUsedAtStart = getDirectMemoryUsedBytes();
         // run test in a background thread that we can shut down.
@@ -174,8 +170,24 @@ class MemoryIndexDiskKeyValueStoreTest {
         // let's store hashes as easy test class
         final Path tempDir = testDirectory.resolve("DataFileTest");
         final LongListOffHeap index = new LongListOffHeap();
-        final MemoryIndexDiskKeyValueStore<long[]> store = new MemoryIndexDiskKeyValueStore<>(
-                tempDir, "MemoryIndexDiskKeyValueStoreTest", null, testType.dataItemSerializer, null, index);
+        final AtomicLong timeSpent = new AtomicLong(0);
+        final AtomicDouble savedSpace = new AtomicDouble(0.0);
+        String storeName = "MemoryIndexDiskKeyValueStoreTest";
+        final MemoryIndexDiskKeyValueStore<long[]> store =
+                new MemoryIndexDiskKeyValueStore<>(tempDir, storeName, null, testType.dataItemSerializer, null, index);
+        final DataFileCompactor dataFileCompactor =
+                new DataFileCompactor(
+                        storeName,
+                        store.fileCollection,
+                        index,
+                        (type, time) -> timeSpent.set(time),
+                        (type, space) -> savedSpace.set(space),
+                        null) {
+                    @Override
+                    int getMinNumberOfFilesToCompact() {
+                        return 1;
+                    }
+                };
         // write some batches of data, then check all the contents, we should end up with 3 files
         writeBatch(testType, store, 0, 1000, 1000, 1234);
         checkRange(testType, store, 0, 1000, 1234);
@@ -185,10 +197,8 @@ class MemoryIndexDiskKeyValueStoreTest {
         checkRange(testType, store, 0, 2000, 1234);
         // check number of files created
         assertEquals(3, Files.list(tempDir).count(), "unexpected # of files #1");
-        // merge all files
-        final AtomicLong timeSpent = new AtomicLong(0);
-        final AtomicDouble savedSpace = new AtomicDouble(0.0);
-        store.merge(dataFileReaders -> dataFileReaders, 2, timeSpent::set, savedSpace::set);
+        // compact all files
+        dataFileCompactor.compact();
         // check number of files after merge
         assertEquals(1, Files.list(tempDir).count(), "unexpected # of files #2");
         // check all data
@@ -215,7 +225,7 @@ class MemoryIndexDiskKeyValueStoreTest {
                 }
             } else {
                 try {
-                    store.merge(dataFileReaders -> dataFileReaders, 2, null, null);
+                    dataFileCompactor.compact();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -259,12 +269,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
         final MemoryIndexDiskKeyValueStore<long[]> storeFromSnapshot = new MemoryIndexDiskKeyValueStore<>(
-                tempSnapshotDir,
-                "MemoryIndexDiskKeyValueStoreTest",
-                null,
-                testType.dataItemSerializer,
-                null,
-                snapshotIndex);
+                tempSnapshotDir, storeName, null, testType.dataItemSerializer, null, snapshotIndex);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);
         checkRange(testType, storeFromSnapshot, 2000, 48_000, 56_000);
         storeFromSnapshot.close();
@@ -274,57 +279,5 @@ class MemoryIndexDiskKeyValueStoreTest {
         index.close();
         deleteDirectoryAndContents(tempDir);
         deleteDirectoryAndContents(tempSnapshotDir);
-    }
-
-    @ParameterizedTest
-    @EnumSource(FilesTestType.class)
-    void createDataAndCheckWithDeepValidation(final FilesTestType testType) throws Exception {
-        MemoryIndexDiskKeyValueStore.enableDeepValidation = true;
-        // let's store hashes as easy test class
-        final Path tempDir = testDirectory.resolve("DataFileTest");
-        final LongListOffHeap index = new LongListOffHeap();
-        final MemoryIndexDiskKeyValueStore<long[]> store = new MemoryIndexDiskKeyValueStore<>(
-                tempDir, "MemoryIndexDiskKeyValueStoreTest", null, testType.dataItemSerializer, null, index);
-        // write some batches of data, then check all the contents, we should end up with 3 files
-        writeBatch(testType, store, 0, 10, 10, 1234);
-        writeBatch(testType, store, 10, 20, 30, 1234);
-        checkRange(testType, store, 0, 20, 1234);
-        // start writing new range
-        store.startWriting(10, 30);
-        writeDataBatch(testType, store, 10, 30, 5678);
-        // merge all files
-        store.merge(dataFileReaders -> dataFileReaders, 2, null, null);
-        // finish writing range
-        store.endWriting();
-        checkRange(testType, store, 10, 20, 5678);
-        // check get out of range
-        assertNull(store.get(1), "Getting a value that is below valid key range should return null.");
-        assertNull(store.get(100), "Getting a value that is above valid key range should return null.");
-        // clean up and delete files
-        store.close();
-        index.close();
-        deleteDirectoryAndContents(tempDir);
-        MemoryIndexDiskKeyValueStore.enableDeepValidation = false;
-    }
-
-    @Test
-    void legacyStoreNameTest() throws Exception {
-        final Path tempDir = testDirectory.resolve("legacyStoreNameTest");
-        final FilesTestType testType = FilesTestType.fixed;
-        final LongListHeap index1 = new LongListHeap();
-        final MemoryIndexDiskKeyValueStore<long[]> store1 = new MemoryIndexDiskKeyValueStore<>(
-                tempDir, "store:name", null, new ExampleFixedSizeDataSerializer(), null, index1);
-        writeBatch(testType, store1, 0, 100, 100, 11);
-        checkRange(testType, store1, 0, 100, 11);
-        store1.close();
-        index1.close();
-
-        final LongListHeap index3 = new LongListHeap();
-        final MemoryIndexDiskKeyValueStore<long[]> store3 = new MemoryIndexDiskKeyValueStore<>(
-                tempDir, "store_name", "store:name", new ExampleFixedSizeDataSerializer(), null, index3);
-        checkRange(testType, store3, 0, 100, 11);
-        assertNull(store3.get(101));
-        store3.close();
-        index3.close();
     }
 }

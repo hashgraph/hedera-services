@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit;
 
-import java.nio.file.Path;
 import org.junit.platform.engine.support.hierarchical.EngineExecutionContext;
 
 /**
@@ -28,19 +27,19 @@ import org.junit.platform.engine.support.hierarchical.EngineExecutionContext;
  */
 public class HapiTestEngineExecutionContext implements EngineExecutionContext {
 
-    private final Path savedStateDirectory;
-    private final Path eventsLogDir;
+    private HapiTestEnv env;
 
-    public HapiTestEngineExecutionContext(final Path savedStateDirectory, final Path eventsLogDir) {
-        this.savedStateDirectory = savedStateDirectory;
-        this.eventsLogDir = eventsLogDir;
+    /**
+     * Set the {@link HapiTestEnv} associated with this test run.
+     */
+    public void setEnv(HapiTestEnv env) {
+        this.env = env;
     }
 
-    public Path getSavedStateDirectory() {
-        return savedStateDirectory;
-    }
-
-    public Path getEventsLogDir() {
-        return eventsLogDir;
+    /**
+     * Get the {@link HapiTestEnv} associated with this test run.
+     */
+    public HapiTestEnv getEnv() {
+        return env;
     }
 }

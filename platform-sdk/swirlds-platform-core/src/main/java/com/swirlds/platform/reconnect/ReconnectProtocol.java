@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -73,6 +73,8 @@ public class ReconnectProtocol implements Protocol {
     /** A rate limited logger for when rejecting teacher role due to not having a status of ACTIVE */
     private final RateLimitedLogger notActiveLogger;
 
+    private final Time time;
+
     /**
      * @param threadManager           responsible for creating and managing threads
      * @param peerId                  the ID of the peer we are communicating with
@@ -122,6 +124,7 @@ public class ReconnectProtocol implements Protocol {
         stateIncompleteLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
         fallenBehindLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
         notActiveLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
+        this.time = Objects.requireNonNull(time);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +159,7 @@ public class ReconnectProtocol implements Protocol {
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} because this node has fallen behind",
                     peerId);
-            reconnectMetrics.recordReconnectRejection(peerId);
+            reconnectRejected();
             return false;
         }
 
@@ -166,7 +169,7 @@ public class ReconnectProtocol implements Protocol {
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} because this node isn't ACTIVE",
                     peerId);
-            reconnectMetrics.recordReconnectRejection(peerId);
+            reconnectRejected();
             return false;
         }
 
@@ -178,35 +181,52 @@ public class ReconnectProtocol implements Protocol {
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",
                     peerId);
-            reconnectMetrics.recordReconnectRejection(peerId);
+            reconnectRejected();
             return false;
         }
 
         if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
-            teacherState.close();
-            teacherState = null;
             stateIncompleteLogger.error(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state."
                             + " The signed state manager attempted to provide a state that was not"
                             + " fully signed, which should not be possible.",
                     peerId);
-            reconnectMetrics.recordReconnectRejection(peerId);
+            reconnectRejected();
+            return false;
+        }
+
+        // we should not become a learner while we are teaching
+        // this can happen if we fall behind while we are teaching
+        // in this case, we want to finish teaching before we start learning
+        // so we acquire the learner permit and release it when we are done teaching
+        if (!reconnectController.blockLearnerPermit()) {
+            reconnectRejected();
             return false;
         }
 
         // Check if a reconnect with the learner is permitted by the throttle.
         final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId);
-        if (reconnectPermittedByThrottle) {
-            initiatedBy = InitiatedBy.PEER;
-            return true;
-        } else {
-            teacherState.close();
-            teacherState = null;
-            reconnectMetrics.recordReconnectRejection(peerId);
+        if (!reconnectPermittedByThrottle) {
+            reconnectRejected();
+            reconnectController.cancelLearnerPermit();
             return false;
         }
+
+        initiatedBy = InitiatedBy.PEER;
+        return true;
+    }
+
+    /**
+     * Called when we reject a reconnect as a teacher
+     */
+    private void reconnectRejected() {
+        if (teacherState != null) {
+            teacherState.close();
+            teacherState = null;
+        }
+        reconnectMetrics.recordReconnectRejection(peerId);
     }
 
     /** {@inheritDoc} */
@@ -215,6 +235,8 @@ public class ReconnectProtocol implements Protocol {
         teacherState.close();
         teacherState = null;
         teacherThrottle.reconnectAttemptFinished();
+        // cancel the permit acquired in shouldAccept() so that we can start learning if we need to
+        reconnectController.cancelLearnerPermit();
     }
 
     /** {@inheritDoc} */
@@ -259,19 +281,21 @@ public class ReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try (final ReservedSignedState state = teacherState) {
             new ReconnectTeacher(
+                            time,
                             threadManager,
                             connection,
                             reconnectSocketTimeout,
                             connection.getSelfId(),
                             connection.getOtherId(),
                             state.get().getRound(),
-                            fallenBehindManager::hasFallenBehind,
                             reconnectMetrics,
                             configuration)
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();
             teacherState = null;
+            // cancel the permit acquired in shouldAccept() so that we can start learning if we need to
+            reconnectController.cancelLearnerPermit();
         }
     }
 

@@ -252,6 +252,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .amount(childRecordTransfer)
                                         .build())
                         .build());
+        given(context.hasChildRecords()).willReturn(true);
         doAnswer(invocation -> {
                     final var consumer = invocation.getArgument(1, Consumer.class);
                     consumer.accept(childRecord);
@@ -744,7 +745,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                         .token(TOKEN_321)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .serialNumber(1)
-                                .senderAccountID((AccountID) null)
+                                .senderAccountID(AccountID.newBuilder().accountNum(0))
                                 .receiverAccountID(ACCOUNT_3434_ID)
                                 .build())
                         .build()));

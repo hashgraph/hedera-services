@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Objects.requireNonNull;
 
@@ -36,6 +37,8 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
@@ -47,7 +50,9 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
@@ -55,14 +60,17 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
@@ -75,6 +83,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -109,13 +118,20 @@ public class SingleTransactionRecordBuilderImpl
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
+                ContractUpdateRecordBuilder,
                 EthereumTransactionRecordBuilder,
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
                 NodeStakeUpdateRecordBuilder,
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
-                GenesisAccountRecordBuilder {
+                GenesisAccountRecordBuilder,
+                GasFeeRecordBuilder,
+                TokenAccountWipeRecordBuilder,
+                CryptoUpdateRecordBuilder {
+    private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
+                    .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -151,27 +167,70 @@ public class SingleTransactionRecordBuilderImpl
     private ContractFunctionResult contractFunctionResult;
 
     // Used for some child records builders.
-    private final boolean removable;
+    private final ReversingBehavior reversingBehavior;
+
+    // Used to customize the externalized form of a dispatched child transaction, right before
+    // its record stream item is built; lets the contract service externalize certain dispatched
+    // CryptoCreate transactions as ContractCreate synthetic transactions
+    private final ExternalizedRecordCustomizer customizer;
 
     /**
-     * Creates new transaction record builder.
+     * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
+     * and it is asked to be reverted
+     */
+    public enum ReversingBehavior {
+        /**
+         * Changes are not committed. The record is kept in the record stream,
+         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
+         */
+        REVERSIBLE,
+
+        /**
+         * Changes are not committed and the record is removed from the record stream.
+         */
+        REMOVABLE,
+
+        /**
+         * Changes are committed independent of the user and parent transactions.
+         */
+        IRREVERSIBLE
+    }
+
+    /**
+     * Creates new transaction record builder where reversion will leave its record in the stream
+     * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
      *
      * @param consensusNow the consensus timestamp for the transaction
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.removable = false;
+        this(consensusNow, ReversingBehavior.REVERSIBLE);
     }
 
     /**
      * Creates new transaction record builder.
      *
      * @param consensusNow the consensus timestamp for the transaction
-     * @param removable    whether the record is removable (see {@link RecordListBuilder}
+     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
      */
-    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow, final boolean removable) {
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
+        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
+
+    /**
+     * Creates new transaction record builder with both explicit reversing behavior and
+     * transaction construction finishing.
+     *
+     * @param consensusNow the consensus timestamp for the transaction
+     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
+     */
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow,
+            @NonNull final ReversingBehavior reversingBehavior,
+            @NonNull final ExternalizedRecordCustomizer customizer) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.removable = removable;
+        this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
+        this.customizer = requireNonNull(customizer, "customizer must not be null");
     }
 
     /**
@@ -180,10 +239,16 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        final var transactionReceipt = transactionReceiptBuilder
-                .exchangeRate(exchangeRate)
-                .serialNumbers(serialNumbers)
-                .build();
+        if (customizer != null) {
+            transaction = customizer.apply(transaction);
+        }
+        final var builder = transactionReceiptBuilder.serialNumbers(serialNumbers);
+        // FUTURE : In mono-service exchange rate is not set in preceding child records.
+        // This should be changed after differential testing
+        if (exchangeRate != null && exchangeRate.hasCurrentRate() && exchangeRate.hasNextRate()) {
+            builder.exchangeRate(exchangeRate);
+        }
+        final var transactionReceipt = builder.build();
 
         final Bytes transactionHash;
         try {
@@ -197,6 +262,12 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
+        // sort the automatic associations to match the order of mono-service records
+        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+
         final var transactionRecord = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
@@ -206,7 +277,7 @@ public class SingleTransactionRecordBuilderImpl
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
-                .automaticTokenAssociations(automaticTokenAssociations)
+                .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
                 .build();
 
@@ -237,8 +308,8 @@ public class SingleTransactionRecordBuilderImpl
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
-    public boolean removable() {
-        return removable;
+    public ReversingBehavior reversingBehavior() {
+        return reversingBehavior;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
@@ -293,6 +364,30 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
         this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
+    }
+
+    /**
+     * When we update nonce on the record, we need to update the body as well with the same transactionID.
+     *
+     * @return the builder
+     */
+    @NonNull
+    public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
+        final var newTransactionID = transactionID;
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            final var existingTransactionBody =
+                    TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+            final var body = existingTransactionBody
+                    .copyBuilder()
+                    .transactionID(newTransactionID)
+                    .build();
+            this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+            return this;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -413,6 +508,11 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
         return this;
+    }
+
+    @Override
+    public List<TokenTransferList> tokenTransferLists() {
+        return tokenTransferLists;
     }
 
     /**
@@ -825,6 +925,11 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    @Override
+    public List<Long> serialNumbers() {
+        return serialNumbers;
+    }
+
     /**
      * Adds a serialNumber to the receipt.
      *
@@ -858,7 +963,7 @@ public class SingleTransactionRecordBuilderImpl
      * Adds contractStateChanges to sidecar records.
      *
      * @param contractStateChanges the contractStateChanges to add
-     * @param isMigration          flag indicating whether sidecar is from migration
+     * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
     @NonNull
@@ -887,7 +992,7 @@ public class SingleTransactionRecordBuilderImpl
      * Adds contractActions to sidecar records.
      *
      * @param contractActions the contractActions to add
-     * @param isMigration     flag indicating whether sidecar is from migration
+     * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
     @NonNull
@@ -916,7 +1021,7 @@ public class SingleTransactionRecordBuilderImpl
      * Adds contractBytecodes to sidecar records.
      *
      * @param contractBytecode the contractBytecode to add
-     * @param isMigration      flag indicating whether sidecar is from migration
+     * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
     @NonNull
@@ -932,6 +1037,7 @@ public class SingleTransactionRecordBuilderImpl
     /**
      * Adds a beneficiary for a deleted account into the map. This is needed while computing staking rewards.
      * If the deleted account receives staking reward, it is transferred to the beneficiary.
+     *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID
      * @return the builder
@@ -948,6 +1054,7 @@ public class SingleTransactionRecordBuilderImpl
 
     /**
      * Gets number of deleted accounts in this transaction.
+     *
      * @return number of deleted accounts in this transaction
      */
     @Override
@@ -957,6 +1064,7 @@ public class SingleTransactionRecordBuilderImpl
 
     /**
      * Gets the beneficiary account ID for deleted account ID.
+     *
      * @return the beneficiary account ID of deleted account ID
      */
     @Override

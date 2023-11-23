@@ -49,6 +49,7 @@ public final class SignedStateCommand extends AbstractCommand {
 
     @Option(
             names = {"-f", "--file"},
+            required = true,
             arity = "1",
             description = "Input signed state file")
     Path inputFile;

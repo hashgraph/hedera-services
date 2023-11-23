@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.NETWORK;
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
-import static com.swirlds.logging.LogMarker.TCP_CONNECT_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.NETWORK;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
 import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -59,24 +59,24 @@ public class OutboundConnectionCreator {
     private final AddressBook addressBook;
     private final boolean doVersionCheck;
     private final SoftwareVersion softwareVersion;
-    private final Configuration configuration;
+    private final PlatformContext platformContext;
 
     public OutboundConnectionCreator(
+            @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final SocketFactory socketFactory,
             @NonNull final AddressBook addressBook,
             final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Configuration configuration) {
+            @NonNull final SoftwareVersion softwareVersion) {
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.socketFactory = Objects.requireNonNull(socketFactory);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        this.configuration = Objects.requireNonNull(configuration);
-        this.socketConfig = configuration.getConfigData(SocketConfig.class);
+        this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
     }
 
     /**
@@ -99,8 +99,10 @@ public class OutboundConnectionCreator {
         try {
             clientSocket = socketFactory.createClientSocket(hostname, port);
 
-            dos = SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
-            dis = SyncInputStream.createSyncInputStream(clientSocket.getInputStream(), socketConfig.bufferSize());
+            dos = SyncOutputStream.createSyncOutputStream(
+                    platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());
+            dis = SyncInputStream.createSyncInputStream(
+                    platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
 
             if (doVersionCheck) {
                 dos.writeSerializable(softwareVersion, true);
@@ -125,7 +127,14 @@ public class OutboundConnectionCreator {
             logger.debug(NETWORK.getMarker(), "`connect` : finished, {} connected to {}", selfId, otherId);
 
             return SocketConnection.create(
-                    selfId, otherId, connectionTracker, true, clientSocket, dis, dos, configuration);
+                    selfId,
+                    otherId,
+                    connectionTracker,
+                    true,
+                    clientSocket,
+                    dis,
+                    dos,
+                    platformContext.getConfiguration());
         } catch (final SocketTimeoutException | SocketException e) {
             NetworkUtils.close(clientSocket, dis, dos);
             logger.debug(

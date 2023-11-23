@@ -136,11 +136,7 @@ class StartupStateUtilsTests {
         final Path savedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, round);
 
         writeSignedStateToDisk(
-                selfId,
-                savedStateDirectory,
-                signedState,
-                StateToDiskReason.PERIODIC_SNAPSHOT,
-                platformContext.getConfiguration());
+                platformContext, selfId, savedStateDirectory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
 
         if (corrupted) {
             final Path stateFilePath = savedStateDirectory.resolve("SignedState.swh");
@@ -776,7 +772,7 @@ class StartupStateUtilsTests {
         final PlatformContext platformContext = buildContext(false);
 
         final Scratchpad<RecoveryScratchpad> scratchpad =
-                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
         scratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
 
         final AtomicInteger recycleCount = new AtomicInteger(0);
@@ -880,7 +876,7 @@ class StartupStateUtilsTests {
         doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, epochRound);
 
         final Scratchpad<RecoveryScratchpad> scratchpad =
-                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
 
         assertEquals(epoch, scratchpad.get(RecoveryScratchpad.EPOCH_HASH));
 

@@ -18,8 +18,8 @@ package com.swirlds.common.metrics.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,8 +33,8 @@ class MetricsConfigTest {
 
     static final String DEFAULT_METRICS_UPDATE_PERIOD_MILLIS = "1000";
     static final String DEFAULT_DISABLE_METRICS_OUTPUT = "false";
-    static final String DEFAULT_CSV_OUTPUT_FOLDER = "";
-    static final String DEFAULT_CSV_FILE_NAME = "";
+    static final String DEFAULT_CSV_OUTPUT_FOLDER = "data/stats";
+    static final String DEFAULT_CSV_FILE_NAME = "MainNetStats";
     static final String DEFAULT_CSV_APPEND = "false";
     static final String DEFAULT_CSV_WRITE_FREQUENCY = "3000";
     static final String DEFAULT_METRICS_DOC_FILE_NAME = "metricsDoc.tsv";

@@ -32,8 +32,6 @@ import java.time.Duration;
  * into config records with a prefix defined by a {@link ConfigData @ConfigData("prefix")} tag. Adding
  * settings to this record pollutes the top level namespace.
  *
- * @param verifyEventSigs
- * 		verify event signatures (rather than just trusting they are correct)?
  * @param showInternalStats
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
@@ -74,10 +72,9 @@ import java.time.Duration;
  */
 @ConfigData
 public record BasicConfig(
-        @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
         @ConfigProperty(defaultValue = "true") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
-        @ConfigProperty(defaultValue = "40") int numConnections,
+        @ConfigProperty(defaultValue = "1000") int numConnections,
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
