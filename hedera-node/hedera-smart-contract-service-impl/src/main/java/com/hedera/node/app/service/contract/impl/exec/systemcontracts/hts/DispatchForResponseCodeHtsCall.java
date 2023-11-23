@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.OutputFn.STANDARD_OUTPUT_FN;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.Function;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
@@ -207,14 +209,16 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     }
 
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(MessageFrame frame) {
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();
         if (status != SUCCESS) {
-            status = failureCustomizer.customize(syntheticBody, standardized(status), enhancement);
+            if (isDelegateCall(frame)) {
+                status = failureCustomizer.customize(syntheticBody, standardized(status), enhancement);
+            }
             recordBuilder.status(status);
         }
         return completionWith(gasRequirement, recordBuilder, outputFn.apply(recordBuilder));
