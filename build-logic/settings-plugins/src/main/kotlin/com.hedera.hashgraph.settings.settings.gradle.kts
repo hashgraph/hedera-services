@@ -22,12 +22,7 @@ pluginManagement {
     }
 }
 
-plugins {
-    id("com.gradle.enterprise")
-    // Use GIT plugin to clone HAPI protobuf files
-    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-    id("me.champeau.includegit")
-}
+plugins { id("com.gradle.enterprise") }
 
 // Enable Gradle Build Scan
 gradleEnterprise {

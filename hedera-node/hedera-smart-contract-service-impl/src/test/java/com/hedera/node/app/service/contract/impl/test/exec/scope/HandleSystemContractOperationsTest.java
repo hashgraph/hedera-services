@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,7 +28,6 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -39,12 +37,10 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,13 +78,6 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void getNftNotImplementedYet() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.getNftAndExternalizeResult(NftID.DEFAULT, 1L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
     @SuppressWarnings("unchecked")
     void dispatchesRespectingGivenStrategy() {
         final var captor = ArgumentCaptor.forClass(Predicate.class);
@@ -119,16 +108,6 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void getTokenNotImplementedYet() {
-        assertThrows(AssertionError.class, () -> subject.getTokenAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
-    void getAccountNotImplementedYet() {
-        assertThrows(AssertionError.class, () -> subject.getAccountAndExternalizeResult(1L, 2L, entity -> Bytes.EMPTY));
-    }
-
-    @Test
     void externalizeSuccessfulResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
                 0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
@@ -140,7 +119,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
@@ -161,7 +140,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_ERROR, ResponseCodeEnum.FAIL_INVALID);
+        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);

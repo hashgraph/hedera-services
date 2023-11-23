@@ -16,16 +16,21 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An object capable of writing preconsensus events to disk.
  */
 public interface PreconsensusEventWriter extends Startable, Stoppable {
+    Logger logger = LogManager.getLogger();
 
     /**
      * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events
@@ -63,6 +68,19 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
      * @param minimumGenerationToStore the minimum generation required to be stored on disk
      */
     void setMinimumGenerationToStore(long minimumGenerationToStore) throws InterruptedException;
+
+    /**
+     * Same as {@link #setMinimumGenerationToStore(long)} but does not throw an {@link InterruptedException}. If
+     * interrupted, it will set the interrupted flag and log an error.
+     */
+    default void setMinimumGenerationToStoreUninterruptably(final long minimumGenerationToStore) {
+        try {
+            setMinimumGenerationToStore(minimumGenerationToStore);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation to store");
+        }
+    }
 
     /**
      * Request that the event writer perform a flush as soon as all events currently added have been written.
