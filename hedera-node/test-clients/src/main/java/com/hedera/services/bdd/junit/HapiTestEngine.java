@@ -229,6 +229,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         /** Whether a separate cluster of nodes should be created for this test class (or reset the normal cluster) */
         private final boolean isolated;
 
+        private final boolean fuzzyMatch;
+
         private final Set<TestTag> testTags;
 
         /** Creates a new descriptor for the given test class. */
@@ -271,6 +273,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             final var annotation =
                     findAnnotation(testClass, HapiTestSuite.class).orElseThrow();
             this.isolated = annotation.isolated();
+            this.fuzzyMatch = annotation.fuzzyMatch();
         }
 
         @Override
@@ -380,6 +383,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             if (testMethod.getParameterCount() == 0) {
                 final var spec = (HapiSpec) testMethod.invoke(suite);
                 spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
+                if (parent.fuzzyMatch) {
+                    spec.addOverrideProperties(Map.of("recordStream.autoSnapshotManagement", "true"));
+                }
                 final var env = context.getEnv();
                 // Third, call `runSuite` with just the one HapiSpec.
                 final var result = suite.runSpecSync(spec, env.getNodes());
