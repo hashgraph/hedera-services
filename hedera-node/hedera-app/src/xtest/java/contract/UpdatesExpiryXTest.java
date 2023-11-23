@@ -82,7 +82,7 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                                 A_TOKEN_ADDRESS, Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong admin key"));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
 
         // Successfully update token via UPDATE_TOKEN_EXPIRY_INFO_V2
         runHtsCallAndExpectOnSuccess(

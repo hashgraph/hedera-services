@@ -106,7 +106,7 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Test"));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
 
         // Successfully update token via TOKEN_UPDATE_INFO V2
         runHtsCallAndExpectOnSuccess(

@@ -57,7 +57,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
-public class UpdateKeysXTest extends AbstractContractXTest {
+public class UpdatesKeysXTest extends AbstractContractXTest {
     private final Tuple[] TOKEN_KEY = new Tuple[] {
         Tuple.of(
                 BigInteger.valueOf(1),
@@ -85,7 +85,7 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, TOKEN_KEY)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong admin key"));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
         // Should throw `INVALID_ADMIN_KEY` as we are passing an invalid key with key type admin key
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
