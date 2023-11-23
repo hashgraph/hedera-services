@@ -1585,7 +1585,7 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).hasKnownStatus(SUCCESS))
                 .when()
-                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callContract", randomHeadlongAddress())
+                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callNonExisting", randomHeadlongAddress())
                         .hasKnownStatus(SUCCESS));
     }
 
