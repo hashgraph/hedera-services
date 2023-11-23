@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.ethereum;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -76,8 +77,10 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
     private static final long depositAmount = 20_000L;

@@ -26,10 +26,10 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,7 +55,7 @@ public final class PreconsensusEventReplayWorkflow {
      * @param threadManager                      the thread manager for this node
      * @param preconsensusEventFileManager       manages the preconsensus event files on disk
      * @param preconsensusEventWriter            writes preconsensus events to disk
-     * @param eventValidator                     validates events and passes valid events further down the pipeline
+     * @param intakeHandler                      validates events and passes valid events further down the pipeline
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
@@ -68,7 +68,7 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final Time time,
             @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
-            @NonNull final EventValidator eventValidator,
+            @NonNull final InterruptableConsumer<GossipEvent> intakeHandler,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
@@ -80,7 +80,7 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(time);
         Objects.requireNonNull(preconsensusEventFileManager);
         Objects.requireNonNull(preconsensusEventWriter);
-        Objects.requireNonNull(eventValidator);
+        Objects.requireNonNull(intakeHandler);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
@@ -98,7 +98,7 @@ public final class PreconsensusEventReplayWorkflow {
                     preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
 
             final PreconsensusEventReplayPipeline eventReplayPipeline =
-                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, eventValidator);
+                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, intakeHandler);
             eventReplayPipeline.replayEvents();
 
             waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue);

@@ -16,6 +16,7 @@
 
 package com.swirlds.cli.utility;
 
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
 import picocli.CommandLine;
@@ -30,6 +31,9 @@ public class PlatformCliPreParser implements Runnable {
     private Path log4jPath;
     private String[] unparsedArgs;
     private boolean colorDisabled;
+    private String bootstrapFunction;
+
+    private static final ClassLoader classLoader = PlatformCliPreParser.class.getClassLoader();
 
     @CommandLine.Option(names = {"-C", "--cli"})
     private void setCliPackagePrefixes(final List<String> cliPackagePrefixes) {
@@ -47,6 +51,11 @@ public class PlatformCliPreParser implements Runnable {
     @CommandLine.Option(names = {"--no-color"})
     private void setColorDisabled(final boolean colorDisabled) {
         this.colorDisabled = colorDisabled;
+    }
+
+    @CommandLine.Option(names = {"-B", "--bootstrap"})
+    private void setBoostrapFunction(final String boostrapFunction) {
+        this.bootstrapFunction = boostrapFunction;
     }
 
     /**
@@ -82,6 +91,38 @@ public class PlatformCliPreParser implements Runnable {
      */
     public void setUnparsedArgs(final String[] unparsedArgs) {
         this.unparsedArgs = unparsedArgs;
+    }
+
+    /**
+     * An example bootstrap function.
+     */
+    public static void exampleBootstrapFunction() {
+        System.out.println("running example bootstrap function");
+    }
+
+    /**
+     * Run the bootstrap function if one was provided.
+     */
+    public void runBootstrapFunction() {
+        if (bootstrapFunction == null) {
+            return;
+        }
+
+        try {
+            final int lastPeriodIndex = bootstrapFunction.lastIndexOf('.');
+            final String className = bootstrapFunction.substring(0, lastPeriodIndex);
+            final String methodName = bootstrapFunction.substring(lastPeriodIndex + 1);
+
+            final Class<?> clazz = classLoader.loadClass(className);
+            final Method method = clazz.getMethod(methodName);
+
+            method.invoke(null);
+
+        } catch (final Throwable t) {
+            System.err.println("Error running bootstrap function " + bootstrapFunction);
+            t.printStackTrace();
+            System.exit(1);
+        }
     }
 
     /**
