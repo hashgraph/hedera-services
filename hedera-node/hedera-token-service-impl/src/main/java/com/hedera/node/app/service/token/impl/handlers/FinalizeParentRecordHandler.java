@@ -85,8 +85,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
         // Hbar changes from transaction including staking rewards
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
-        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
         final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
+        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore, nftChanges);
+
         if (context.hasChildRecords()) {
             // All the above changes maps are mutable
             deductChangesFromChildRecords(context, fungibleChanges, nftChanges, hbarChanges);

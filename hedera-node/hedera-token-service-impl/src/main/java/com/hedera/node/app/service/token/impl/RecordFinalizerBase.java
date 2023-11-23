@@ -83,13 +83,15 @@ public class RecordFinalizerBase {
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
      * @param tokenStore the {@link ReadableTokenStore} to get the token from
+     * @param nftChanges the map of nft changes from previous step
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
     protected Map<EntityIDPair, Long> fungibleChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore) {
+            @NonNull final ReadableTokenStore tokenStore,
+            final Map<TokenID, List<NftTransfer>> nftChanges) {
         final var fungibleChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
