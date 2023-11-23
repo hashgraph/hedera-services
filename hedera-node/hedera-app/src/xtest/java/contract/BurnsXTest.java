@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -25,6 +26,8 @@ import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.B_TOKEN_ID;
+import static contract.AssociationsXTestConstants.C_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.C_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
@@ -59,6 +62,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -152,6 +156,19 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
+        // should fail when token has wrong supplyKey
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
         // should successfully burn NFT with V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -234,6 +251,15 @@ public class BurnsXTest extends AbstractContractXTest {
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyKey(AN_ED25519_KEY)
+                        .totalSupply(TOKEN_BALANCE)
+                        .build());
+        tokens.put(
+                C_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(C_TOKEN_ID)
+                        .treasuryAccountId(OWNER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyKey(Scenarios.ALICE.account().key())
                         .totalSupply(TOKEN_BALANCE)
                         .build());
         tokens.put(
