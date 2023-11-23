@@ -64,7 +64,7 @@ public class UpdateDecoder {
                             return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
                         }
                     }
-                } else if (code == INVALID_SIGNATURE || code == INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE) {
+                } else if (code == INVALID_SIGNATURE) {
                     final var op = body.tokenUpdateOrThrow();
                     final var tokenStore = enhancement.nativeOperations().readableTokenStore();
                     if (isKnownImmutable(tokenStore.get(op.tokenOrElse(TokenID.DEFAULT)))) {
