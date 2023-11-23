@@ -382,7 +382,6 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
-    @HapiTest
     private HapiSpec zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
         return defaultHapiSpec("ZeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP")
                 .given(
