@@ -40,18 +40,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_ENTITIES_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_TOKENS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_ENTITIES_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_TOKENS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEV_CHAIN_ID_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
@@ -148,8 +144,6 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 DEFAULT_LEDGER_CONFIG,
-                DEFAULT_TOKENS_CONFIG,
-                DEFAULT_ENTITIES_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
@@ -274,15 +268,6 @@ class HevmTransactionFactoryTest {
         assertCreateFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, b -> b.gas(
                         DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
                 .maxAutomaticTokenAssociations(AUTO_ASSOCIATING_LEDGER_CONFIG.maxAutoAssociations() + 1)
-                .autoRenewPeriod(SOME_DURATION));
-    }
-
-    @Test
-    void fromHapiCreationDoesNotPermitExcessAutoAssociationsPerAccount() {
-        givenInsteadAutoAssociatingPerAccountSubject();
-        assertCreateFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, b -> b.gas(
-                        DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
-                .maxAutomaticTokenAssociations(AUTO_ASSOCIATING_LEDGER_CONFIG.maxAutoAssociations())
                 .autoRenewPeriod(SOME_DURATION));
     }
 
@@ -617,27 +602,6 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
-                DEFAULT_TOKENS_CONFIG,
-                DEFAULT_ENTITIES_CONFIG,
-                DEFAULT_HEDERA_CONFIG,
-                gasCalculator,
-                DEFAULT_STAKING_CONFIG,
-                AUTO_ASSOCIATING_CONTRACTS_CONFIG,
-                null,
-                accountStore,
-                expiryValidator,
-                fileStore,
-                attributeValidator,
-                tokenServiceApi,
-                ethereumSignatures);
-    }
-
-    private void givenInsteadAutoAssociatingPerAccountSubject() {
-        subject = new HevmTransactionFactory(
-                networkInfo,
-                AUTO_ASSOCIATING_LEDGER_CONFIG,
-                AUTO_ASSOCIATING_TOKENS_CONFIG,
-                AUTO_ASSOCIATING_ENTITIES_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
@@ -655,8 +619,6 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
-                DEFAULT_TOKENS_CONFIG,
-                DEFAULT_ENTITIES_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
@@ -674,8 +636,6 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
-                DEFAULT_TOKENS_CONFIG,
-                DEFAULT_ENTITIES_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
@@ -693,8 +653,6 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
-                DEFAULT_TOKENS_CONFIG,
-                DEFAULT_ENTITIES_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,

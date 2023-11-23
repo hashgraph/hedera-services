@@ -83,11 +83,9 @@ import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
-import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -126,29 +124,17 @@ public class TestHelpers {
     public static final EthTxData ETH_DATA_WITHOUT_TO_ADDRESS = ETH_DATA_WITH_TO_ADDRESS.replaceTo(new byte[0]);
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);
-    public static final TokensConfig DEFAULT_TOKENS_CONFIG = DEFAULT_CONFIG.getConfigData(TokensConfig.class);
-    public static final EntitiesConfig DEFAULT_ENTITIES_CONFIG = DEFAULT_CONFIG.getConfigData(EntitiesConfig.class);
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
     public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
-    public static final Configuration AUTO_ASSOCIATING_PER_ACCOUNT_CONFIG = HederaTestConfigBuilder.create()
-            .withValue("contracts.allowAutoAssociations", true)
-            .withValue("ledger.maxAutoAssociations", 5)
-            .withValue("tokens.maxPerAccount", 3)
-            .withValue("entities.limitTokenAssociations", true)
-            .getOrCreateConfig();
 
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
-    public static final EntitiesConfig AUTO_ASSOCIATING_ENTITIES_CONFIG =
-            AUTO_ASSOCIATING_PER_ACCOUNT_CONFIG.getConfigData(EntitiesConfig.class);
-    public static final TokensConfig AUTO_ASSOCIATING_TOKENS_CONFIG =
-            AUTO_ASSOCIATING_PER_ACCOUNT_CONFIG.getConfigData(TokensConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(ContractsConfig.class);
     public static final ContractsConfig DEV_CHAIN_ID_CONTRACTS_CONFIG =

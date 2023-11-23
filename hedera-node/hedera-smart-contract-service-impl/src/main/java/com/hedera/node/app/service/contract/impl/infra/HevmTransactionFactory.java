@@ -67,11 +67,9 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
-import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -84,8 +82,6 @@ public class HevmTransactionFactory {
 
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
-    private final TokensConfig tokensConfig;
-    private final EntitiesConfig entitiesConfig;
     private final HederaConfig hederaConfig;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
@@ -102,8 +98,6 @@ public class HevmTransactionFactory {
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final TokensConfig tokensConfig,
-            @NonNull final EntitiesConfig entitiesConfig,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
@@ -121,8 +115,6 @@ public class HevmTransactionFactory {
         this.networkInfo = requireNonNull(networkInfo);
         this.accountStore = requireNonNull(accountStore);
         this.ledgerConfig = requireNonNull(ledgerConfig);
-        this.tokensConfig = requireNonNull(tokensConfig);
-        this.entitiesConfig = requireNonNull(entitiesConfig);
         this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
@@ -275,11 +267,6 @@ public class HevmTransactionFactory {
         validateTrue(
                 body.maxAutomaticTokenAssociations() <= ledgerConfig.maxAutoAssociations(),
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-        validateFalse(
-                entitiesConfig.limitTokenAssociations()
-                        && body.maxAutomaticTokenAssociations() > tokensConfig.maxPerAccount(),
-                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
         final var usesNonDefaultProxyId = body.hasProxyAccountID() && !AccountID.DEFAULT.equals(body.proxyAccountID());
         validateFalse(usesNonDefaultProxyId, PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         tokenServiceApi.assertValidStakingElectionForCreation(
@@ -295,7 +282,7 @@ public class HevmTransactionFactory {
         if (!isEmpty(effectiveKey)) {
             try {
                 attributeValidator.validateKey(body.adminKeyOrElse(Key.DEFAULT));
-            } catch (final HandleException | NullPointerException ignore) {
+            } catch (HandleException | NullPointerException ignore) {
                 throw new HandleException(SERIALIZATION_FAILED);
             }
         }
@@ -317,7 +304,7 @@ public class HevmTransactionFactory {
             try {
                 return Bytes.fromHex(new String(initcode.contents().toByteArray())
                         + body.constructorParameters().toHex());
-            } catch (final IllegalArgumentException | NullPointerException ignore) {
+            } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
         }
