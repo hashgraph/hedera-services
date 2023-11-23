@@ -342,7 +342,6 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         final var configuration = configProvider.getConfiguration();
         final boolean areLongTermSchedulesEnabled =
                 configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
-        log.warn("Long term scheduling is {}.", areLongTermSchedulesEnabled ? "enabled" : "disabled");
         if (!areLongTermSchedulesEnabled) {
             final boolean isAutoCreationEnabled =
                     configuration.getConfigData(AutoCreationConfig.class).enabled();
@@ -366,6 +365,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             }
             return !manager.allReqsMetAt(now);
         } else {
+            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
             if (!manager.allReqsMetAt(now)) {
                 return true;
             }
@@ -401,13 +401,12 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
         // maintain legacy behaviour
         final var configuration = configProvider.getConfiguration();
-
         final boolean areLongTermSchedulesEnabled =
                 configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
-        log.warn("Long term scheduling is {}.", areLongTermSchedulesEnabled ? "enabled" : "disabled");
         if (!areLongTermSchedulesEnabled) {
             return false;
         } else {
+            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
             // deeply check throttle only in the frontend throttle
             if (throttleType != FRONTEND_THROTTLE) {
                 return false;
