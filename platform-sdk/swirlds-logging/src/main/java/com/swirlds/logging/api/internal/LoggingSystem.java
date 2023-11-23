@@ -144,7 +144,12 @@ public class LoggingSystem implements LogEventConsumer {
         if (handlers.isEmpty()) {
             return levelConfig.isEnabled(name, level, marker);
         } else {
-            return handlers.stream().anyMatch(handler -> handler.isEnabled(name, level, marker));
+            for (final LogHandler handler : handlers) {
+                if (handler.isEnabled(name, level, marker)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

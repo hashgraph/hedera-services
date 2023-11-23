@@ -270,8 +270,10 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
 
         logEventsAddLock.lock();
         try {
-            while (logEvents.remainingCapacity() <= 0) {
-                logEvents.remove();
+            if (logEvents.remainingCapacity() == 0) {
+                while (logEvents.remainingCapacity() <= 100) {
+                    logEvents.remove();
+                }
             }
             logEvents.add(logEvent);
         } finally {

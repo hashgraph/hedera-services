@@ -19,6 +19,8 @@ package com.swirlds.sample;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 
 public class ExceptionPrinting {
@@ -45,8 +47,16 @@ public class ExceptionPrinting {
         } catch (Exception e) {
             Configuration configuration = ConfigurationBuilder.create().build();
             LoggingSystem loggingSystem = new LoggingSystem(configuration);
+            loggingSystem.addHandler(new LogHandler() {
+                @Override
+                public void accept(LogEvent logEvent) {
+                    // NOOP
+                }
+            });
             Logger logger = loggingSystem.getLogger(ExceptionPrinting.class.getSimpleName());
-            logger.error("Exception caught", e);
+            while (true) {
+                logger.error("Exception caught", e);
+            }
         }
     }
 }
