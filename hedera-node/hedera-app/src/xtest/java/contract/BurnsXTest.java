@@ -71,6 +71,18 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Exercises burnToken on a fungible and non-fungible token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Burns {@code ERC20_TOKEN} via BURN_TOKEN_V1 operation</li>
+ *     <li>Burns {@code ERC20_TOKEN} via BURN_TOKEN_V2 operation</li>
+ *     <li>Burns {@code ERC721_TOKEN} via BURN_TOKEN_V1 operation</li>
+ *     <li>Burns {@code ERC721_TOKEN} via BURN_TOKEN_V2 operation</li>
+ *     <li>Burns {@code ERC20_TOKEN} without supplyKey via BURN_TOKEN_V1 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Burns {@code ERC20_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
+ *     <li>Burns {@code ERC20_TOKEN} for invalid token address via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_ID</li>
+ * </ol>
+ */
 public class BurnsXTest extends AbstractContractXTest {
 
     private static final long TOKEN_BALANCE = 9L;
