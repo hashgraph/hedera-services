@@ -400,7 +400,7 @@ public class LoggingSystemTest {
         final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
-        final Instant startTime = Instant.now();
+        final long startTime = System.currentTimeMillis();
 
         // when
         logger.trace("trace-message"); // Should not be forwarded since INFO is configured as root level
@@ -421,8 +421,8 @@ public class LoggingSystemTest {
         Assertions.assertNull(event1.marker());
         Assertions.assertEquals(Thread.currentThread().getName(), event1.threadName());
         Assertions.assertNull(event1.throwable());
-        Assertions.assertTrue(event1.timestamp().isAfter(startTime));
-        Assertions.assertTrue(event1.timestamp().isBefore(Instant.now()));
+        Assertions.assertTrue(event1.timestamp() > startTime);
+        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
 
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("warn-message", event2.message().getMessage());
@@ -432,8 +432,9 @@ public class LoggingSystemTest {
         Assertions.assertNull(event2.marker());
         Assertions.assertEquals(Thread.currentThread().getName(), event2.threadName());
         Assertions.assertNull(event2.throwable());
-        Assertions.assertTrue(event2.timestamp().isAfter(startTime));
-        Assertions.assertTrue(event2.timestamp().isBefore(Instant.now()));
+        Assertions.assertTrue(event2.timestamp() > startTime);
+        Assertions.assertTrue(event2.timestamp() < System.currentTimeMillis());
+
 
         final LogEvent event3 = loggedEvents.get(2);
         Assertions.assertEquals("error-message", event3.message().getMessage());
@@ -443,11 +444,12 @@ public class LoggingSystemTest {
         Assertions.assertNull(event3.marker());
         Assertions.assertEquals(Thread.currentThread().getName(), event3.threadName());
         Assertions.assertNull(event3.throwable());
-        Assertions.assertTrue(event3.timestamp().isAfter(startTime));
-        Assertions.assertTrue(event3.timestamp().isBefore(Instant.now()));
+        Assertions.assertTrue(event3.timestamp() > startTime);
+        Assertions.assertTrue(event3.timestamp() < System.currentTimeMillis());
 
-        Assertions.assertTrue(event1.timestamp().isBefore(event2.timestamp()));
-        Assertions.assertTrue(event2.timestamp().isBefore(event3.timestamp()));
+
+        Assertions.assertTrue(event1.timestamp() < event2.timestamp());
+        Assertions.assertTrue(event2.timestamp() < event3.timestamp());
     }
 
     @Test
@@ -494,7 +496,7 @@ public class LoggingSystemTest {
         final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
-        final Instant startTime = Instant.now();
+        final long startTime = System.currentTimeMillis();
 
         // when
         Context.getGlobalContext().add("global", "global-value");
@@ -547,8 +549,9 @@ public class LoggingSystemTest {
         Assertions.assertNotNull(event1.throwable());
         Assertions.assertEquals("info-error", event1.throwable().getMessage());
         Assertions.assertEquals(RuntimeException.class, event1.throwable().getClass());
-        Assertions.assertTrue(event1.timestamp().isAfter(startTime));
-        Assertions.assertTrue(event1.timestamp().isBefore(Instant.now()));
+        Assertions.assertTrue(event1.timestamp() > startTime);
+        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
+
 
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("info-message2 ARG2", event2.message().getMessage());
@@ -560,10 +563,11 @@ public class LoggingSystemTest {
         Assertions.assertNotNull(event2.throwable());
         Assertions.assertEquals("info-error2", event2.throwable().getMessage());
         Assertions.assertEquals(RuntimeException.class, event2.throwable().getClass());
-        Assertions.assertTrue(event2.timestamp().isAfter(startTime));
-        Assertions.assertTrue(event2.timestamp().isBefore(Instant.now()));
+        Assertions.assertTrue(event1.timestamp() > startTime);
+        Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
 
-        Assertions.assertTrue(event1.timestamp().isBefore(event2.timestamp()));
+
+        Assertions.assertTrue(event1.timestamp() < event2.timestamp());
     }
 
     @Test
