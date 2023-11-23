@@ -144,9 +144,11 @@ public class FrameUtils {
         // Evaluate whether the recipient is either a token or on the permitted callers list.
         // This determines if we should treat this as a delegate call.
         // We accept delegates if the token redirect contract calls us.
-        if (isToken(frame, recipient) || (ConversionUtils.isLongZero(recipient) &&
-                contractsConfig.permittedDelegateCallers().contains(
-                        ConversionUtils.numberOfLongZero(recipient)))) {
+        if (isToken(frame, recipient)
+                || (ConversionUtils.isLongZero(recipient)
+                        && contractsConfig
+                                .permittedDelegateCallers()
+                                .contains(ConversionUtils.numberOfLongZero(recipient)))) {
             // make sure we have a parent calling context
             final var stack = frame.getMessageFrameStack();
             final var frames = stack.iterator();
