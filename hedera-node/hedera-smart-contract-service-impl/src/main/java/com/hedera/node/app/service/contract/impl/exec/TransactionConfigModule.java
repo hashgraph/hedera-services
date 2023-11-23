@@ -21,11 +21,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
-import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import dagger.Module;
 import dagger.Provides;
@@ -49,18 +47,6 @@ public interface TransactionConfigModule {
     @TransactionScope
     static HederaConfig provideHederaConfig(@NonNull final Configuration configuration) {
         return requireNonNull(configuration).getConfigData(HederaConfig.class);
-    }
-
-    @Provides
-    @TransactionScope
-    static EntitiesConfig provideEntitiesConfig(@NonNull final Configuration configuration) {
-        return requireNonNull(configuration).getConfigData(EntitiesConfig.class);
-    }
-
-    @Provides
-    @TransactionScope
-    static TokensConfig provideTokensConfig(@NonNull final Configuration configuration) {
-        return requireNonNull(configuration).getConfigData(TokensConfig.class);
     }
 
     @Provides
