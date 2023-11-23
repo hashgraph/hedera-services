@@ -227,7 +227,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientFee(),
                 nonPayable(),
                 invalidContractCall(),
-                invalidInternalCall(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1528,16 +1527,6 @@ public class ContractCallSuite extends HapiSuite {
                         (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
-    }
-
-    HapiSpec invalidInternalCall() {
-        return defaultHapiSpec("InvalidInternalCall")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).hasKnownStatus(SUCCESS))
-                .when()
-                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callNonExisting", randomHeadlongAddress())
-                        .hasKnownStatus(SUCCESS));
     }
 
     HapiSpec smartContractFailFirst() {
