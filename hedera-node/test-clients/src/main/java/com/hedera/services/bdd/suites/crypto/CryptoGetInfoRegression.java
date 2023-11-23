@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -52,8 +54,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class CryptoGetInfoRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetInfoRegression.class);
 
@@ -94,7 +98,8 @@ public class CryptoGetInfoRegression extends HapiSuite {
         final var token6 = "token6";
         final var token7 = "token7";
         final var token8 = "token8";
-        return defaultHapiSpec("FetchesOnlyALimitedTokenAssociations")
+        return propertyPreservingHapiSpec("FetchesOnlyALimitedTokenAssociations")
+                .preserving("tokens.maxRelsPerInfoQuery")
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
