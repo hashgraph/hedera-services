@@ -720,7 +720,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
-            when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -796,7 +796,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addPreceding(any(), eq(LIMITED_CHILD_RECORDS)))
                     .thenReturn(childRecordBuilder);
             when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
-            when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChildWithExternalizationCustomizer(any(), any()))
                     .thenReturn(childRecordBuilder);
