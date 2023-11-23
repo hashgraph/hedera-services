@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -199,7 +198,9 @@ public final class FeeManager {
 
     @NonNull
     public FeeCalculator createFeeCalculator(
-            @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime, @NonNull final ReadableStoreFactory storeFactory) {
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Instant consensusTime,
+            @NonNull final ReadableStoreFactory storeFactory) {
         // Determine which fee schedule to use, based on the consensus time
         final var feeData = getFeeData(functionality, consensusTime, SubType.DEFAULT);
 

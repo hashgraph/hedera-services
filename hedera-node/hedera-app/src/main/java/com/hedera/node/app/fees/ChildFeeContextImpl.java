@@ -74,10 +74,9 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public @NonNull FeeCalculator feeCalculator(@NonNull final SubType subType) {
         try {
-            var storeFactory = new ReadableStoreFactory((SavepointStackImpl)context.savepointStack());
+            var storeFactory = new ReadableStoreFactory((SavepointStackImpl) context.savepointStack());
             return feeManager.createFeeCalculator(
-                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true,
-                    storeFactory);
+                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true, storeFactory);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);

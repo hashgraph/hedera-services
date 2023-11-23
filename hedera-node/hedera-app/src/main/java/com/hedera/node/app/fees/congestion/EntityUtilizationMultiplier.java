@@ -29,7 +29,6 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.*;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
@@ -65,7 +64,8 @@ public class EntityUtilizationMultiplier {
      *
      * @return the current congestion multiplier
      */
-    public long currentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
+    public long currentMultiplier(
+            @NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
         final var throttleMultiplier = delegate.currentMultiplier();
         final var configuration = configProvider.getConfiguration();
         final var entityScaleFactors =

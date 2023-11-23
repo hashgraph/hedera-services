@@ -18,7 +18,6 @@ package com.hedera.node.app.fees.congestion;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,9 +57,11 @@ public class CongestionMultipliers {
      *
      * @return the max congestion multiplier
      */
-    public long maxCurrentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
+    public long maxCurrentMultiplier(
+            @NonNull final TransactionInfo txnInfo, @NonNull final ReadableStoreFactory storeFactory) {
         return Math.max(
-                throttleMultiplier.currentMultiplier(), entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory));
+                throttleMultiplier.currentMultiplier(),
+                entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory));
     }
 
     /**
