@@ -23,7 +23,6 @@ import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -43,7 +42,7 @@ public record DefaultLogEvent(
         @NonNull Level level,
         @NonNull String loggerName,
         @NonNull String threadName,
-        @NonNull Instant timestamp,
+        long timestamp,
         @NonNull LogMessage message,
         @Nullable Throwable throwable,
         @Nullable Marker marker,

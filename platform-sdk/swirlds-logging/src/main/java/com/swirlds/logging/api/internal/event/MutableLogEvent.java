@@ -22,7 +22,6 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 
@@ -49,7 +48,7 @@ public class MutableLogEvent implements LogEvent {
     /**
      * The initial timestamp that is used when the timestamp is undefined.
      */
-    private static final Instant INITIAL_INSTANT = Instant.now();
+    private static final long INITIAL_INSTANT = System.currentTimeMillis();
 
     /**
      * The initial message that is used when the message is undefined.
@@ -89,7 +88,7 @@ public class MutableLogEvent implements LogEvent {
     /**
      * The timestamp of the log event.
      */
-    private Instant timestamp;
+    private long timestamp;
 
     /**
      * The log message.
@@ -142,7 +141,7 @@ public class MutableLogEvent implements LogEvent {
             @NonNull final Level level,
             @NonNull final String loggerName,
             @NonNull final String threadName,
-            @NonNull final Instant timestamp,
+            @NonNull final long timestamp,
             @NonNull final LogMessage message,
             @Nullable final Throwable throwable,
             @Nullable final Marker marker,
@@ -177,7 +176,7 @@ public class MutableLogEvent implements LogEvent {
 
     @Override
     @NonNull
-    public Instant timestamp() {
+    public long timestamp() {
         return timestamp;
     }
 

@@ -21,7 +21,6 @@ import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.event.SimpleLogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -47,7 +46,7 @@ public interface LogEventFactory {
             @NonNull Level level,
             @NonNull String loggerName,
             @NonNull String threadName,
-            @NonNull Instant timestamp,
+            long timestamp,
             @NonNull LogMessage message,
             @Nullable Throwable throwable,
             @Nullable Marker marker,
@@ -76,7 +75,7 @@ public interface LogEventFactory {
                 level,
                 loggerName,
                 Thread.currentThread().getName(),
-                Instant.now(),
+                System.currentTimeMillis(),
                 message,
                 throwable,
                 marker,
@@ -101,7 +100,7 @@ public interface LogEventFactory {
             @NonNull Level level,
             @NonNull String loggerName,
             @NonNull String threadName,
-            @NonNull Instant timestamp,
+            long timestamp,
             @NonNull String message,
             @Nullable Throwable throwable,
             @Nullable Marker marker,
@@ -139,7 +138,7 @@ public interface LogEventFactory {
                 level,
                 loggerName,
                 Thread.currentThread().getName(),
-                Instant.now(),
+                System.currentTimeMillis(),
                 new SimpleLogMessage(message),
                 throwable,
                 null,

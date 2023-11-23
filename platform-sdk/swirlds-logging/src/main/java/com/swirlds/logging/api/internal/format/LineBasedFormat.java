@@ -58,7 +58,7 @@ public class LineBasedFormat {
             EMERGENCY_LOGGER.logNPE("printer");
         }
         try {
-            writer.append(asString(event.timestamp()));
+            writer.append(timestampAsString(event.timestamp()));
             writer.append(' ');
             writer.append(asString(event.level()));
             writer.append(' ');
@@ -144,19 +144,15 @@ public class LineBasedFormat {
     /**
      * Converts the given object to a string.
      *
-     * @param instant The instant
+     * @param timestamp The timestamp
      * @return The string
      */
-    private static String asString(Instant instant) {
-        if (instant == null) {
-            return "UNDEFINED-TIMESTAMP       ";
-        } else {
-            try {
-                return "%-26s".formatted(formatter.format(instant));
-            } catch (final Throwable e) {
-                EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
-                return "BROKEN-TIMESTAMP          ";
-            }
+    private static String timestampAsString(long timestamp) {
+        try {
+            return "%-26s".formatted(formatter.format(Instant.ofEpochMilli(timestamp)));
+        } catch (final Throwable e) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
+            return "BROKEN-TIMESTAMP          ";
         }
     }
 

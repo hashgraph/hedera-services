@@ -26,7 +26,6 @@ import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import jakarta.inject.Inject;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
@@ -110,7 +109,7 @@ public class EmergencyLoggerTest {
                 Level.INFO,
                 "loggerName",
                 "threadName",
-                Instant.now(),
+                System.currentTimeMillis(),
                 (String) null,
                 new RuntimeException(),
                 new Marker("marker"),
@@ -120,17 +119,8 @@ public class EmergencyLoggerTest {
         Assertions.assertDoesNotThrow(() -> emergencyLogger.log(logEventFactory.createLogEvent(
                 Level.INFO,
                 "loggerName",
-                "threadName",
                 null,
-                "message",
-                new RuntimeException(),
-                new Marker("marker"),
-                Map.of())));
-        Assertions.assertDoesNotThrow(() -> emergencyLogger.log(logEventFactory.createLogEvent(
-                Level.INFO,
-                "loggerName",
-                null,
-                Instant.now(),
+                System.currentTimeMillis(),
                 "message",
                 new RuntimeException(),
                 new Marker("marker"),
@@ -139,7 +129,7 @@ public class EmergencyLoggerTest {
                 Level.INFO,
                 null,
                 "threadName",
-                Instant.now(),
+                System.currentTimeMillis(),
                 "message",
                 new RuntimeException(),
                 new Marker("marker"),
@@ -148,7 +138,7 @@ public class EmergencyLoggerTest {
                 null,
                 "loggerName",
                 "threadName",
-                Instant.now(),
+                System.currentTimeMillis(),
                 "message",
                 new RuntimeException(),
                 new Marker("marker"),
@@ -157,7 +147,7 @@ public class EmergencyLoggerTest {
                 Level.INFO,
                 "loggerName",
                 "threadName",
-                Instant.now(),
+                System.currentTimeMillis(),
                 "message",
                 new RuntimeException(),
                 null,
@@ -166,7 +156,7 @@ public class EmergencyLoggerTest {
                 Level.INFO,
                 "loggerName",
                 "threadName",
-                Instant.now(),
+                System.currentTimeMillis(),
                 "message",
                 new RuntimeException(),
                 new Marker("marker"),
@@ -175,7 +165,7 @@ public class EmergencyLoggerTest {
                 Level.INFO,
                 "loggerName",
                 "threadName",
-                Instant.now(),
+                System.currentTimeMillis(),
                 "message",
                 null,
                 new Marker("marker"),

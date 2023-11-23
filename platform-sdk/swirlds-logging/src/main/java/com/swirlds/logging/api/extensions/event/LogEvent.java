@@ -20,7 +20,6 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -54,12 +53,12 @@ public interface LogEvent {
     String threadName();
 
     /**
-     * Returns the timestamp of the creation of the log event.
+     * Returns the timestamp of the creation of the log event (in ms).
      *
      * @return the timestamp
      */
     @NonNull
-    Instant timestamp();
+    long timestamp();
 
     /**
      * Returns the log message.

@@ -23,7 +23,6 @@ import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -43,7 +42,7 @@ public class ReuseableLogEventFactory implements LogEventFactory {
             @NonNull Level level,
             @NonNull String loggerName,
             @NonNull String threadName,
-            @NonNull Instant timestamp,
+            @NonNull long timestamp,
             @NonNull LogMessage message,
             @Nullable Throwable throwable,
             @Nullable Marker marker,

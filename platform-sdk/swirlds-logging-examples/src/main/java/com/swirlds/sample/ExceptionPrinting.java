@@ -22,6 +22,8 @@ import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class ExceptionPrinting {
 
@@ -41,16 +43,28 @@ public class ExceptionPrinting {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         try {
             createDeepStackTrace(100, 5, "This is a test exception");
         } catch (Exception e) {
             Configuration configuration = ConfigurationBuilder.create().build();
             LoggingSystem loggingSystem = new LoggingSystem(configuration);
+            FileWriter fileWriter = new FileWriter("log.txt");
             loggingSystem.addHandler(new LogHandler() {
                 @Override
                 public void accept(LogEvent logEvent) {
-                    // NOOP
+                    System.out.println(logEvent.toString());
+                }
+            });
+            loggingSystem.addHandler(new LogHandler() {
+                @Override
+                public void accept(LogEvent logEvent) {
+                    try {
+                        fileWriter.append(logEvent.toString());
+                        fileWriter.flush();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             });
             Logger logger = loggingSystem.getLogger(ExceptionPrinting.class.getSimpleName());
