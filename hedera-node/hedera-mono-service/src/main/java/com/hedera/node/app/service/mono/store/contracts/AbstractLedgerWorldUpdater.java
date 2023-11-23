@@ -111,6 +111,45 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
      */
     public abstract ContractCustomizer customizerForPendingCreation();
 
+    public abstract boolean hasPendingCreationCustomizer();
+
+    @Override
+    public MutableAccount getOrCreate(final Address address) {
+        final MutableAccount account = getAccount(address);
+        // if the account exists, return it
+        if (account != null) {
+            return account;
+        }
+        // if the customizer is set, that means we're creating a contract
+        if (hasPendingCreationCustomizer()) {
+            return createAccount(address);
+        }
+        // if the customizer is not set, that means we're creating a ghost account that will not be persisted
+        return createGhostAccount(address);
+    }
+
+    // todo edit this
+    // Only called for temporary accounts that will not be persisted
+    // We don't want to allocate a Hedera entity num for the new account
+    // We don't need a customizer for the new account
+    private MutableAccount createGhostAccount(final Address addressOrAlias) {
+        final var curAliases = aliases();
+        final var address = curAliases.resolveForEvm(addressOrAlias);
+
+        final var curAccounts = trackingAccounts();
+        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdateAccountTrackerImpl(curAccounts));
+
+        if (trackingLedgers.areMutable()) {
+            final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
+
+            if (curAliases.isInUse(addressOrAlias)) {
+                curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
+            }
+        }
+
+        return newMutable;
+    }
+
     @Override
     public MutableAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
         final var curAliases = aliases();

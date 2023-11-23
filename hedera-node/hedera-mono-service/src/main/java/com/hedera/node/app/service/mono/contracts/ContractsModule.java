@@ -27,7 +27,6 @@ import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExter
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV038;
-import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV045;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -214,7 +213,7 @@ public interface ContractsModule {
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaMessageCallProcessorV045(
+        return new HederaMessageCallProcessorV038(
                 evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
     }
 

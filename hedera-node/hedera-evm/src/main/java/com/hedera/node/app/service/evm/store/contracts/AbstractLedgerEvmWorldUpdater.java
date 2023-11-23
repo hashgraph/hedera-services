@@ -75,8 +75,6 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         this.tokenAccessor = tokenAccessor;
     }
 
-    public abstract void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias);
-
     /**
      * Given an address, returns an account that can be mutated <b>with the assurance</b> that these
      * mutations will be tracked in the change-set represented by this {@link WorldUpdater}; and
@@ -93,6 +91,11 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
 
     @Override
     public MutableAccount createAccount(Address address, long nonce, Wei balance) {
+        return null;
+    }
+
+    @Override
+    public MutableAccount getOrCreate(final Address address) {
         return null;
     }
 

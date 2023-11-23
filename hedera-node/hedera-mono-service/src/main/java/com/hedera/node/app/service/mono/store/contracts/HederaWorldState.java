@@ -221,8 +221,6 @@ public class HederaWorldState implements HederaMutableWorldState {
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
             implements HederaEvmWorldUpdater, HederaWorldUpdater {
 
-        public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {}
-
         Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
         GlobalDynamicProperties dynamicProperties;
 
@@ -274,6 +272,11 @@ public class HederaWorldState implements HederaMutableWorldState {
                 throw new IllegalStateException("Base updater asked for customizer, but no details from HAPI are set");
             }
             return hapiCustomizer;
+        }
+
+        @Override
+        public boolean hasPendingCreationCustomizer() {
+            return wrappedWorldView().hapiSenderCustomizer() != null;
         }
 
         @Override
