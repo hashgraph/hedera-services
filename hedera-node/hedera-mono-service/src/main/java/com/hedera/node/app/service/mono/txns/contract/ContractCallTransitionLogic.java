@@ -152,18 +152,22 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             if (!properties.allowCallsToNonContractAccounts() && targetAddressIsMissing) {
                 validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
             }
-            final var evmAddress = op.getContractID().getEvmAddress();
-            validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
-            // do not permit lazy create to mirror address, system accounts or zero address
-            final boolean isSystemAccount = entityNumbers.isSystemAccount(
-                    AccountID.newBuilder().setAccountNum(targetId.num()).build());
-            if (op.getAmount() > 0
-                    && aliasManager.isMirror(targetId.asEvmAddress())
-                    && !isSystemAccount
-                    && targetId.num() > 0) {
-                accountStore.loadAccountOrFailWith(targetId, INVALID_CONTRACT_ID);
+            if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
+                receiver = accountStore.loadContract(targetId);
+            } else {
+                final var evmAddress = op.getContractID().getEvmAddress();
+                validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
+                // do not permit lazy create to mirror address, system accounts or zero address
+                final boolean isSystemAccount = entityNumbers.isSystemAccount(
+                        AccountID.newBuilder().setAccountNum(targetId.num()).build());
+                if (op.getAmount() > 0
+                        && aliasManager.isMirror(targetId.asEvmAddress())
+                        && !isSystemAccount
+                        && targetId.num() > 0) {
+                    accountStore.loadAccountOrFailWith(targetId, INVALID_CONTRACT_ID);
+                }
+                receiver = new Account(evmAddress);
             }
-            receiver = new Account(evmAddress);
         } else {
             if (entityAccess.isTokenAccount(targetId.asEvmAddress())) {
                 receiver = new Account(targetId);
