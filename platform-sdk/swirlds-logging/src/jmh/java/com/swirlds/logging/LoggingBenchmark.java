@@ -123,6 +123,22 @@ public class LoggingBenchmark {
         }
     }
 
+    private static void createRecursiveDeepStackTrace(int levelsToGo, int throwModulo, String exceptionMessage) {
+        if (levelsToGo <= 0) {
+            throw new RuntimeException(exceptionMessage);
+        } else {
+            if (levelsToGo % throwModulo == 0) {
+                try {
+                    createRecursiveDeepStackTrace(levelsToGo - 1, throwModulo, exceptionMessage);
+                } catch (Exception e) {
+                    throw new RuntimeException(exceptionMessage + "in level " + levelsToGo, e);
+                }
+            } else {
+                createRecursiveDeepStackTrace(levelsToGo - 1, throwModulo, exceptionMessage);
+            }
+        }
+    }
+
     private Logger logger;
 
     private Exception exceptionWithNormalStackTrace;
@@ -130,6 +146,8 @@ public class LoggingBenchmark {
     private Exception exceptionWithNormalStackTraceAndLongMessage;
 
     private Exception exceptionWithDeepStackTrace;
+
+    private Exception exceptionWithDeepStackTraceAndDeepCause;
 
     @Param({"ONLY_EMERGENCY", "CONSOLE_HANDLER", "NOOP_HANDLER", "LEVEL_OFF"})
     public String setup;
@@ -180,6 +198,11 @@ public class LoggingBenchmark {
         } catch (final RuntimeException e) {
             exceptionWithDeepStackTrace = e;
         }
+        try {
+            createRecursiveDeepStackTrace(200, 10, EXCEPTION_MESSAGE);
+        } catch (final RuntimeException e) {
+            exceptionWithDeepStackTraceAndDeepCause = e;
+        }
     }
 
     @Benchmark
@@ -215,6 +238,11 @@ public class LoggingBenchmark {
     @Benchmark
     public void executeSimpleLogWithExceptionWithDeepStackTrace() {
         logger.info(MESSAGE, exceptionWithDeepStackTrace);
+    }
+
+    @Benchmark
+    public void executeSimpleLogWithExceptionWithDeepStackTraceAndDeepCause() {
+        logger.info(MESSAGE, exceptionWithDeepStackTraceAndDeepCause);
     }
 
     @Benchmark
