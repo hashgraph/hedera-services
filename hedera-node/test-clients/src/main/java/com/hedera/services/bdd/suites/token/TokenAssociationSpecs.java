@@ -82,7 +82,6 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String VANILLA_TOKEN = "TokenD";
     public static final String MULTI_KEY = "multiKey";
     public static final String TBD_TOKEN = "ToBeDeleted";
-    public static final String TOKENS = " tokens";
     public static final String CREATION = "creation";
     public static final String SIMPLE = "simple";
     public static final String FREEZE_KEY = "freezeKey";

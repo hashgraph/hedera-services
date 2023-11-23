@@ -83,15 +83,13 @@ public class RecordFinalizerBase {
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
      * @param tokenStore the {@link ReadableTokenStore} to get the token from
-     * @param nftChanges the map of nft changes from previous step
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
     protected Map<EntityIDPair, Long> fungibleChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            final Map<TokenID, List<NftTransfer>> nftChanges) {
+            @NonNull final ReadableTokenStore tokenStore) {
         final var fungibleChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
@@ -121,6 +119,45 @@ public class RecordFinalizerBase {
         }
 
         return fungibleChanges;
+    }
+
+    /**
+     * Gets all non-fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
+     *
+     * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
+     * @param tokenStore the {@link ReadableTokenStore} to get the token from
+     */
+    protected void nonFungibleChangesFrom(
+            @NonNull final WritableTokenRelationStore writableTokenRelStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            Map<EntityIDPair, Long> tokenChanges) {
+        for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
+            final var relAcctId = modifiedRel.accountId();
+            final var relTokenId = modifiedRel.tokenId();
+            final var token = tokenStore.get(relTokenId);
+
+            // Add this to fungible token transfer list only if this token is a fungible token
+            if (!token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+                continue;
+            }
+            final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
+            final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);
+
+            // It's possible the modified token rel was created in this transaction. If so, use a persisted balance of 0
+            // for the token rel that didn't exist
+            final var persistedBalance = persistedTokenRel != null ? persistedTokenRel.balance() : 0;
+            // It is possible that the account is dissociated with the token in this transaction. If so, use a
+            // balance of 0 for the token rel that didn't exist
+            final var modifiedTokenRelBalance = modifiedTokenRel != null ? modifiedTokenRel.balance() : 0;
+            // Never allow a fungible token's balance to be negative
+            validateTrue(modifiedTokenRelBalance >= 0, FAIL_INVALID);
+
+            // If the token rel's balance has changed, add it to the list of changes
+            final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
+            if (netFungibleChange != 0) {
+                tokenChanges.put(modifiedRel, netFungibleChange);
+            }
+        }
     }
 
     /**
