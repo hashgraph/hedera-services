@@ -19,11 +19,10 @@ package com.swirlds.logging;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
-import com.swirlds.logging.api.extensions.event.LogEvent;
-import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import com.swirlds.logging.console.ConsoleHandler;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Objects;
@@ -143,7 +142,6 @@ public class LoggingBenchmark {
                     .withConverter(new ConfigLevelConverter())
                     .withConverter(new MarkerStateConverter())
                     .withValue("logging.level", "trace")
-                    .withValue("logging.handlers.console.active", "false")
                     .build();
             loggingSystem = new LoggingSystem(configuration);
         } else if (Objects.equals(setup, "CONSOLE_HANDLER")) {
@@ -155,27 +153,22 @@ public class LoggingBenchmark {
                     .withValue("logging.handlers.console.level", "trace")
                     .build();
             loggingSystem = new LoggingSystem(configuration);
-        } else if (Objects.equals(setup, "CONSOLE_HANDLER")) {
+            loggingSystem.addHandler(new ConsoleHandler(configuration));
+        } else if (Objects.equals(setup, "NOOP_HANDLER")) {
             final Configuration configuration = ConfigurationBuilder.create()
                     .withConverter(new ConfigLevelConverter())
                     .withConverter(new MarkerStateConverter())
                     .withValue("logging.level", "trace")
-                    .withValue("logging.handlers.console.active", "false")
                     .build();
             loggingSystem = new LoggingSystem(configuration);
-            loggingSystem.addHandler(new LogHandler() {
-                @Override
-                public void accept(LogEvent logEvent) {
-                    // NOOP
-                }
+            loggingSystem.addHandler(logEvent -> {
+                // NOOP
             });
         } else {
             final Configuration configuration = ConfigurationBuilder.create()
                     .withConverter(new ConfigLevelConverter())
                     .withConverter(new MarkerStateConverter())
                     .withValue("logging.level", "off")
-                    .withValue("logging.handlers.console.active", "true")
-                    .withValue("logging.handlers.console.level", "off")
                     .build();
             loggingSystem = new LoggingSystem(configuration);
         }
