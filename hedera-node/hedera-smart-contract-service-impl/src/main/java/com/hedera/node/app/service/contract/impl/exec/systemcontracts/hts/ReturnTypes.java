@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -25,6 +29,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.FixedFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Literal representations of output types used by HTS system contract functions.
@@ -42,8 +47,6 @@ public class ReturnTypes {
     public static final TokenID ZERO_TOKEN_ID = TokenID.newBuilder().tokenNum(0).build();
     public static final Fraction ZERO_FRACTION = new Fraction(0, 1);
     public static final FixedFee ZERO_FIXED_FEE = new FixedFee(0, null);
-
-    private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
 
     public static final String INT = "(int)";
     public static final String INT_64 = "(int64)";
@@ -168,6 +171,10 @@ public class ReturnTypes {
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
 
+    public static Bytes tuweniEncodedRc(@NonNull final ResponseCodeEnum status) {
+        return Bytes.wrap(encodedRc(status).array());
+    }
+
     /**
      * Encodes the given {@code status} as a return value for a classic transfer call.
      *
@@ -176,5 +183,9 @@ public class ReturnTypes {
      */
     public static ByteBuffer encodedRc(@NonNull final ResponseCodeEnum status) {
         return RC_ENCODER.encodeElements((long) status.protoOrdinal());
+    }
+
+    public static ResponseCodeEnum standardized(@NonNull final ResponseCodeEnum status) {
+        return requireNonNull(status) == INVALID_SIGNATURE ? INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE : status;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers;
+package com.swirlds.common.wiring.schedulers.internal;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ForkJoinPool;
