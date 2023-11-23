@@ -25,8 +25,6 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaWor
 
     private final ContractCustomizer customizer;
 
-    public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {}
-
     public MockLedgerWorldUpdater(
             final HederaWorldState world, final WorldLedgers trackingLedgers, final ContractCustomizer customizer) {
         super(world, trackingLedgers);
@@ -36,6 +34,11 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaWor
     @Override
     public ContractCustomizer customizerForPendingCreation() {
         return customizer;
+    }
+
+    @Override
+    public boolean hasPendingCreationCustomizer() {
+        return false;
     }
 
     @Override
