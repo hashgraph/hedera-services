@@ -122,6 +122,8 @@ public class TestHelpers {
     public static final EthTxData ETH_DATA_WITH_CALL_DATA =
             requireNonNull(EthTxData.populateEthTxData(ETH_WITH_CALL_DATA.toByteArray()));
     public static final EthTxData ETH_DATA_WITHOUT_TO_ADDRESS = ETH_DATA_WITH_TO_ADDRESS.replaceTo(new byte[0]);
+    public static final EthTxData ETH_DATA_WITH_NON_EXISTING_LONG_ZERO_TO_ADDRESS =
+            ETH_DATA_WITH_TO_ADDRESS.replaceTo(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9});
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
