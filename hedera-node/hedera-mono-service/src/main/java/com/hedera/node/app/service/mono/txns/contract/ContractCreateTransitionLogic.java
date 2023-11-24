@@ -77,7 +77,6 @@ import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -116,7 +115,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final EntityCreator entityCreator,
             final RecordsHistorian recordsHistorian,
             final TransactionRecordService recordService,
-            final Map<String, Supplier<CreateEvmTxProcessor>> evmTxProcessor,
+            final CreateEvmTxProcessor evmTxProcessor,
             final GlobalDynamicProperties properties,
             final SigImpactHistorian sigImpactHistorian,
             final SyntheticTxnFactory syntheticTxnFactory,
@@ -133,7 +132,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         this.recordService = recordService;
         this.sigImpactHistorian = sigImpactHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
-        this.evmTxProcessor = evmTxProcessor.get(properties.evmVersion()).get();
+        this.evmTxProcessor = evmTxProcessor;
         this.properties = properties;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;

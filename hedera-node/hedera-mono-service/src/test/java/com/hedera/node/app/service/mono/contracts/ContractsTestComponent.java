@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -49,12 +50,10 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 public interface ContractsTestComponent {
 
     @Singleton
-    @V_0_30
-    Provider<MessageCallProcessor> messageCallProcessors();
+    Map<String, Provider<MessageCallProcessor>> messageCallProcessors();
 
     @Singleton
-    @V_0_30
-    Provider<ContractCreationProcessor> contractCreateProcessors();
+    Map<String, Provider<ContractCreationProcessor>> contractCreateProcessors();
 
     @Singleton
     @V_0_30

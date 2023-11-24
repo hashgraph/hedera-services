@@ -44,7 +44,6 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
@@ -73,12 +72,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -173,15 +170,13 @@ class ContractCallTransitionLogicTest {
 
     @BeforeEach
     void setup() {
-        final var callEvmProcessors = new HashMap<String, Supplier<CallEvmTxProcessor>>();
-        callEvmProcessors.put(ContractsV_0_30Module.EVM_VERSION_0_30, () -> evmTxProcessor);
 
         subject = new ContractCallTransitionLogic(
                 txnCtx,
                 accountStore,
                 worldState,
                 recordService,
-                callEvmProcessors,
+                evmTxProcessor,
                 properties,
                 codeCache,
                 sigImpactHistorian,
