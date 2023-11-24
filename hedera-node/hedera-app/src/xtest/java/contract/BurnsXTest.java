@@ -28,6 +28,8 @@ import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.B_TOKEN_ID;
 import static contract.AssociationsXTestConstants.C_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.C_TOKEN_ID;
+import static contract.AssociationsXTestConstants.D_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.D_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ADDRESS;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
@@ -81,6 +83,7 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Burns {@code ERC20_TOKEN} without supplyKey via BURN_TOKEN_V1 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
  *     <li>Burns {@code ERC20_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
  *     <li>Burns {@code ERC20_TOKEN} for invalid token address via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_ID</li>
+ *     <li>Burns {@code ERC721_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
  * </ol>
  */
 public class BurnsXTest extends AbstractContractXTest {
@@ -207,6 +210,20 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .encodeElements((long) SUCCESS.protoOrdinal(), TOKEN_BALANCE - 2)
                                 .array()),
                         output));
+
+        // should fail when NFT has wrong supplyKey
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                        .encodeCallWithArgs(
+                                D_TOKEN_ADDRESS, BigInteger.valueOf(0L), new long[] {SN_1234.serialNumber()})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(), 0L)
+                                .array()),
+                        output));
     }
 
     @Override
@@ -281,6 +298,15 @@ public class BurnsXTest extends AbstractContractXTest {
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .supplyKey(AN_ED25519_KEY)
+                        .totalSupply(TOKEN_BALANCE)
+                        .build());
+        tokens.put(
+                D_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(D_TOKEN_ID)
+                        .treasuryAccountId(OWNER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(Scenarios.ALICE.account().key())
                         .totalSupply(TOKEN_BALANCE)
                         .build());
         return tokens;
