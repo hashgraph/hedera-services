@@ -78,11 +78,13 @@ import org.jetbrains.annotations.NotNull;
  * <ol>
  *     <li>Burns {@code ERC20_TOKEN} via BURN_TOKEN_V1 operation</li>
  *     <li>Burns {@code ERC20_TOKEN} via BURN_TOKEN_V2 operation</li>
+ *     <li>Burns {@code ERC20_TOKEN} without supplyKey via BURN_TOKEN_V1 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Burns {@code ERC20_TOKEN} token which is not associated to account via BURN_TOKEN_V1 operation. This should fail with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</li>
+ *     <li>Burns {@code ERC20_TOKEN} token when totalSupply < amountToBurn via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_BURN_AMOUNT</li>
+ *     <li>Burns {@code ERC20_TOKEN} token with invalid id via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_ID</li>
+ *     <li>Burns {@code ERC20_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
  *     <li>Burns {@code ERC721_TOKEN} via BURN_TOKEN_V1 operation</li>
  *     <li>Burns {@code ERC721_TOKEN} via BURN_TOKEN_V2 operation</li>
- *     <li>Burns {@code ERC20_TOKEN} without supplyKey via BURN_TOKEN_V1 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
- *     <li>Burns {@code ERC20_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
- *     <li>Burns {@code ERC20_TOKEN} for invalid token address via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_ID</li>
  *     <li>Burns {@code ERC721_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
  * </ol>
  */
