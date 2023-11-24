@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 // import static
 // com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALL;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CREATE;
@@ -51,6 +52,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
+import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 
 public class HederaTracer implements HederaOperationTracer {
@@ -252,25 +254,22 @@ public class HederaTracer implements HederaOperationTracer {
                     final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
                     action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
                     // when a contract tries to call a non-existing address (resulting in a INVALID_SOLIDITY_ADDRESS
-                    // failure), we have to create a synthetic action recording this, otherwise the details of the
-                    // intended call (e.g. the targeted invalid address) and sequence of events leading to the failure
-                    // are lost
-                    //                    if (action.getCallType().equals(CALL) &&
-                    // exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                    //                        final var syntheticInvalidAction =
-                    //                                new SolidityAction(CALL, frame.getRemainingGas(), null, 0,
-                    // frame.getDepth() + 1);
-                    //                        syntheticInvalidAction.setCallingContract(
-                    //                                EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(),
-                    // frame)));
-                    //                        syntheticInvalidAction.setTargetedAddress(
-                    //                                Words.toAddress(frame.getStackItem(1)).toArray());
-                    //                        syntheticInvalidAction.setError(
-                    //                                INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
-                    //                        syntheticInvalidAction.setCallOperationType(
-                    //                                toCallOperationType(frame.getCurrentOperation().getOpcode()));
-                    //                        allActions.add(syntheticInvalidAction);
-                    //                    }
+                    // failure) for evm version < 0.45, we have to create a synthetic action recording this, otherwise
+                    // the details of the intended call (e.g. the targeted invalid address) and sequence of events
+                    // leading to the failure are lost
+                    if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+                        final var syntheticInvalidAction =
+                                new SolidityAction(CALL, frame.getRemainingGas(), null, 0, frame.getDepth() + 1);
+                        syntheticInvalidAction.setCallingContract(
+                                EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
+                        syntheticInvalidAction.setTargetedAddress(
+                                Words.toAddress(frame.getStackItem(1)).toArray());
+                        syntheticInvalidAction.setError(
+                                INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
+                        syntheticInvalidAction.setCallOperationType(
+                                toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                        allActions.add(syntheticInvalidAction);
+                    }
                 } else {
                     action.setError(new byte[0]);
                 }
