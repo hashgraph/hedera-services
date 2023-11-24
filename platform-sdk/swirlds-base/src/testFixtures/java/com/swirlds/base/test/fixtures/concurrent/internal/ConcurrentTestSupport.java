@@ -19,6 +19,7 @@ package com.swirlds.base.test.fixtures.concurrent.internal;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,9 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * A utility class for executing and waiting for concurrent tasks using a thread pool.
+ */
 public class ConcurrentTestSupport implements TestExecutor {
 
     private static final ExecutorService SINGLE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
@@ -56,15 +60,29 @@ public class ConcurrentTestSupport implements TestExecutor {
 
     private final Duration maxWaitTime;
 
-    public ConcurrentTestSupport(Duration maxWaitTime) {
+    /**
+     * Constructs a ConcurrentTestSupport instance with the specified maximum wait time.
+     *
+     * @param maxWaitTime The maximum time to wait for task completion.
+     *                    Must not be null.
+     */
+    public ConcurrentTestSupport(@NonNull final Duration maxWaitTime) {
         this.maxWaitTime = Objects.requireNonNull(maxWaitTime, "maxWaitTime must not be null");
     }
 
+    /**
+     * Constructs a ConcurrentTestSupport instance with a default maximum wait time of 1 minute.
+     */
     public ConcurrentTestSupport() {
         this(Duration.ofMinutes(1));
     }
 
-    public void executeAndWait(Collection<Runnable> runnables) {
+    /**
+     * Executes a collection of Runnables concurrently and waits for their completion.
+     *
+     * @param runnables The collection of Runnables to execute.
+     */
+    public void executeAndWait(@NonNull final Collection<Runnable> runnables) {
         final List<Callable<Void>> callables = runnables.stream()
                 .map(r -> (Callable<Void>) () -> {
                     r.run();
@@ -74,15 +92,39 @@ public class ConcurrentTestSupport implements TestExecutor {
         submitAndWait(callables);
     }
 
-    public void executeAndWait(Runnable... runnable) {
+    /**
+     * Executes an array of Runnables concurrently and waits for their completion.
+     *
+     * @param runnable An array of Runnables to execute.
+     */
+    public void executeAndWait(@NonNull final Runnable... runnable) {
         executeAndWait(List.of(runnable));
     }
 
-    public <V> List<V> submitAndWait(Collection<Callable<V>> callables) {
-        return submitAndWait(callables.toArray(new Callable[callables.size()]));
+    /**
+     * Submits a collection of Callables for execution concurrently and waits for their results.
+     *
+     * @param callables The collection of Callables to submit.
+     * @param <V>       The type of the results returned by the Callables.
+     * @return A list of results from the executed Callables.
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public <V> List<V> submitAndWait(@NonNull final Collection<Callable<V>> callables) {
+        Objects.requireNonNull(callables, "callables must not be null");
+        return submitAndWait(callables.toArray(new Callable[0]));
     }
 
-    public <V> List<V> submitAndWait(Callable<V>... callables) {
+    /**
+     * Submits an array of Callables for execution concurrently and waits for their results.
+     *
+     * @param callables An array of Callables to submit.
+     * @param <V>       The type of the results returned by the Callables.
+     * @return A list of results from the executed Callables.
+     */
+    @SafeVarargs
+    @NonNull
+    public final <V> List<V> submitAndWait(@NonNull final Callable<V>... callables) {
         final Lock callLock = new ReentrantLock();
         final Condition allPassedToExecutor = callLock.newCondition();
         callLock.lock();
@@ -91,7 +133,7 @@ public class ConcurrentTestSupport implements TestExecutor {
                 final List<Future<V>> futures = new ArrayList<>();
                 callLock.lock();
                 try {
-                    Arrays.stream(callables).map(c -> poolExecutor.submit(c)).forEach(futures::add);
+                    Arrays.stream(callables).map(poolExecutor::submit).forEach(futures::add);
                     allPassedToExecutor.signal(); // now all futures in results and the original method can return
                     // In the single executor singleton we will wait until all tasks are done.
                     // By doing so we ensure that only 1 call to this utils is executed in parallel. All other calls
@@ -119,11 +161,34 @@ public class ConcurrentTestSupport implements TestExecutor {
         }
     }
 
-    private <T> T waitForDone(Future<T> future) throws InterruptedException, ExecutionException, TimeoutException {
+    /**
+     * Waits for the completion of a Future and retrieves its result.
+     *
+     * @param future The Future to wait for.
+     * @param <T>    The type of the result.
+     * @return The result of the Future.
+     * @throws InterruptedException If the waiting thread is interrupted.
+     * @throws ExecutionException   If an exception occurs while executing the Future.
+     * @throws TimeoutException     If the waiting time exceeds the maximum wait time.
+     */
+    @NonNull
+    private <T> T waitForDone(@NonNull final Future<T> future)
+            throws InterruptedException, ExecutionException, TimeoutException {
         return waitForAllDone(List.of(future)).get(0);
     }
 
-    private <T> List<T> waitForAllDone(List<Future<T>> futures)
+    /**
+     * Waits for the completion of a list of Futures and retrieves their results.
+     *
+     * @param futures The list of Futures to wait for.
+     * @param <T>     The type of the results.
+     * @return A list of results from the Futures.
+     * @throws InterruptedException If the waiting thread is interrupted.
+     * @throws ExecutionException   If an exception occurs while executing any of the Futures.
+     * @throws TimeoutException     If the waiting time exceeds the maximum wait time.
+     */
+    @NonNull
+    private <T> List<T> waitForAllDone(@NonNull final List<Future<T>> futures)
             throws InterruptedException, ExecutionException, TimeoutException {
         final List<T> results = new ArrayList<>();
         final long startTime = System.currentTimeMillis();
