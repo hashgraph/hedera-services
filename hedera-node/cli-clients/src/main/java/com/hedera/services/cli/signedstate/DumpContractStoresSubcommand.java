@@ -20,11 +20,28 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static java.util.Comparator.naturalOrder;
 import static java.util.Map.Entry.comparingByKey;
 
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.memory.InMemoryKey;
+import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
+import com.hedera.services.cli.signedstate.DumpStateCommand.WithMigration;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithSlots;
+import com.hedera.services.cli.signedstate.DumpStateCommand.WithValidation;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
+import com.hedera.services.cli.signedstate.SignedStateHolder.Contracts;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -44,13 +61,20 @@ import org.apache.tuweni.units.bigints.UInt256;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractStoresSubcommand {
+
+    static final int ESTIMATED_NUMBER_OF_CONTRACT_SLOTS = 5_000_000;
+
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path storePath,
             @NonNull final EmitSummary emitSummary,
             @NonNull final WithSlots withSlots,
+            @NonNull final WithMigration withMigration,
+            @NonNull final WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
-        new DumpContractStoresSubcommand(state, storePath, emitSummary, withSlots, verbosity).doit();
+        new DumpContractStoresSubcommand(
+                        state, storePath, emitSummary, withSlots, withMigration, withValidation, verbosity)
+                .doit();
     }
 
     @NonNull
@@ -66,6 +90,12 @@ public class DumpContractStoresSubcommand {
     final WithSlots withSlots;
 
     @NonNull
+    final WithMigration withMigration;
+
+    @NonNull
+    final WithValidation withValidation;
+
+    @NonNull
     final Verbosity verbosity;
 
     DumpContractStoresSubcommand(
@@ -73,11 +103,15 @@ public class DumpContractStoresSubcommand {
             @NonNull final Path storePath,
             @NonNull final EmitSummary emitSummary,
             @NonNull final WithSlots withSlots,
+            @NonNull final WithMigration withMigration,
+            @NonNull final WithValidation withValidation,
             @NonNull final Verbosity verbosity) {
         this.state = state;
         this.storePath = storePath;
         this.emitSummary = emitSummary;
         this.withSlots = withSlots;
+        this.withMigration = withMigration;
+        this.withValidation = withValidation;
         this.verbosity = verbosity;
     }
 
@@ -187,6 +221,39 @@ public class DumpContractStoresSubcommand {
         }
 
         return didRunToCompletion;
+    }
+
+    /** First migrates the contract store from the mono-service representation to the modular-service representations,
+     *  and then returns all contracts with bytecodes from the migrated contract store, plus the ids of contracts with
+     *  0-length bytecodes.
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    Pair<Contracts, List<Integer>> getMigratedContractStore() {
+
+        // Start the migration with a clean writable KV store.  Use a nice, simple, in memory implementation
+
+        final var contractSchema = new ContractSchema();
+        final var contractSchemas = contractSchema.statesToCreate();
+        final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
+                .filter(sd -> sd.stateKey().equals(ContractSchema.STORAGE_KEY))
+                .findFirst()
+                .orElseThrow();
+        final var contractStoreSchemaMetadata = new StateMetadata<SlotKey, SlotValue>(
+                ContractService.NAME, contractSchema, contractStoreStateDefinition);
+        final var contractMerkleMap = new MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>(
+                ESTIMATED_NUMBER_OF_CONTRACT_SLOTS);
+        final var toStore =
+                new InMemoryWritableKVState<SlotKey, SlotValue>(contractStoreSchemaMetadata, contractMerkleMap);
+
+        // And now we can grab the fromStore and do the migration
+        final var fromStore = state.getRawContractStorage();
+        final var validationFailures = new ArrayList<String>();
+        final var migrationStatus =
+                ContractStateMigrator.migrateFromContractStoreVirtualMap(fromStore, toStore, validationFailures);
+        assert(migrationStatus == ContractStateMigrator.Status.SUCCESS);
+
+        return Pair.of(null, null);
     }
 
     // Produce a report, one line per contract, summarizing the #slot pairs and the min/max slot#
