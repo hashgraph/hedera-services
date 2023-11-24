@@ -16,14 +16,15 @@
 
 package com.hedera.node.app.service.mono.ledger.properties;
 
-import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import org.junit.jupiter.api.Test;
+
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class NftPropertyTest {
     private final byte[] aMeta = "abcdefgh".getBytes();
@@ -40,7 +41,7 @@ class NftPropertyTest {
 
         // expect:
         assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
-        assertEquals(aMeta, NftProperty.METADATA.getter().apply(aSubject));
+        assertArrayEquals(aMeta, (byte[]) NftProperty.METADATA.getter().apply(aSubject));
         assertEquals(
                 aSubject.getPackedCreationTime(),
                 NftProperty.CREATION_TIME.getter().apply(aSubject));

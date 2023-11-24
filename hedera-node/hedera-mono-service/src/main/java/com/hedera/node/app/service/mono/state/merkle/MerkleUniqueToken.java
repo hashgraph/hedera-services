@@ -36,10 +36,6 @@ package com.hedera.node.app.service.mono.state.merkle;
  * ‍
  */
 
-import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
-import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
-import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -52,12 +48,20 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
-/** Represents an uniqueToken entity. Part of the nft implementation. */
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+
+/**
+ * Represents an uniqueToken entity. Part of the nft implementation.
+ */
 public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<EntityNumPair>, MerkleLeaf {
     private static final int TREASURY_OWNER_CODE = 0;
 
@@ -83,8 +87,8 @@ public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<Entity
     /**
      * Constructs a Merkle-usable unique token from an explicit owner id.
      *
-     * @param owner the id of the entity which owns the unique token
-     * @param metadata metadata about the token
+     * @param owner        the id of the entity which owns the unique token
+     * @param metadata     metadata about the token
      * @param creationTime the consensus time at which the token was created
      */
     public MerkleUniqueToken(final EntityId owner, final byte[] metadata, final RichInstant creationTime) {
@@ -96,11 +100,11 @@ public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<Entity
     /**
      * Constructs a Merkle-usable unique token (NFT) from primitive values.
      *
-     * @param ownerCode the number of the owning entity as an unsigned {@code int}
-     * @param metadata the metadata of the unique token
+     * @param ownerCode          the number of the owning entity as an unsigned {@code int}
+     * @param metadata           the metadata of the unique token
      * @param packedCreationTime the "packed" representation of the consensus time at which the
-     *     token was minted
-     * @param numbers the packed representation of the token type number and serial number
+     *                           token was minted
+     * @param numbers            the packed representation of the token type number and serial number
      */
     public MerkleUniqueToken(
             final int ownerCode, final byte[] metadata, final long packedCreationTime, final long numbers) {
@@ -247,7 +251,9 @@ public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public byte[] getMetadata() {
-        return metadata;
+        return Optional.ofNullable(metadata)
+                .map(byte[]::clone)
+                .orElse(null);
     }
 
     public RichInstant getCreationTime() {
