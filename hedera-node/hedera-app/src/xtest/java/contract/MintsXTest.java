@@ -24,6 +24,10 @@ import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.B_TOKEN_ID;
+import static contract.AssociationsXTestConstants.C_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.C_TOKEN_ID;
+import static contract.AssociationsXTestConstants.D_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.D_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
@@ -72,8 +76,15 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Mints {@code ERC721_TOKEN} via MINT operation</li>
  *     <li>Mints {@code ERC721_TOKEN} via MINT_V2 operation</li>
  *     <li>Mints {@code ERC20_TOKEN} without supply key via MINT operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Mints {@code ERC20_TOKEN} without supply key via MINT_V2 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Mints {@code ERC721_TOKEN} without supply key via MINT operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Mints {@code ERC721_TOKEN} without supply key via MINT_V2 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
  *     <li>Mints {@code ERC20_TOKEN} with wrong supply key via MINT operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
- *     <li>Mints {@code ERC20_TOKEN} for invalid token address via MINT operation. This should fail with INVALID_TOKEN_ID</li>
+ *     <li>Mints {@code ERC20_TOKEN} with wrong supply key via MINT_V2 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
+ *     <li>Mints {@code ERC721_TOKEN} with wrong supply key via MINT operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
+ *     <li>Mints {@code ERC721_TOKEN} with wrong supply key via MINT_V2 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
+ *     <li>Mints token for invalid token address via MINT operation. This should fail with INVALID_TOKEN_ID</li>
+ *     <li>Mints token for invalid token address via MINT_V2 operation. This should fail with INVALID_TOKEN_ID</li>
  * </ol>
  */
 public class MintsXTest extends AbstractContractXTest {
@@ -153,11 +164,98 @@ public class MintsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
+        // should fail when token has no supplyKey
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT_V2
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, MINT_AMOUNT, EMPTY_METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_HAS_NO_SUPPLY_KEY.protoOrdinal(), 0L, new long[] {})
+                                .array()),
+                        output));
+
+        // should fail when token has no supplyKey
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(0), METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_HAS_NO_SUPPLY_KEY.protoOrdinal(), 0L, new long[] {})
+                                .array()),
+                        output));
+
+        // should fail when token has no supplyKey
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT_V2
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, 0L, METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_HAS_NO_SUPPLY_KEY.protoOrdinal(), 0L, new long[] {})
+                                .array()),
+                        output));
+
         // should fail when token has wrong supplyKey
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(MintTranslator.MINT
-                        .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), EMPTY_METADATA)
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), EMPTY_METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(),
+                                        0L,
+                                        new long[] {})
+                                .array()),
+                        output));
+
+        // should fail when token has wrong supplyKey
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT_V2
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, MINT_AMOUNT, EMPTY_METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(),
+                                        0L,
+                                        new long[] {})
+                                .array()),
+                        output));
+
+        // should fail when token has wrong supplyKey
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT
+                        .encodeCallWithArgs(D_TOKEN_ADDRESS, BigInteger.valueOf(0), METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements(
+                                        (long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(),
+                                        0L,
+                                        new long[] {})
+                                .array()),
+                        output));
+
+        // should fail when token has wrong supplyKey
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT_V2
+                        .encodeCallWithArgs(D_TOKEN_ADDRESS, 0L, METADATA)
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(MintTranslator.MINT
@@ -174,6 +272,19 @@ public class MintsXTest extends AbstractContractXTest {
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(MintTranslator.MINT
                         .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), EMPTY_METADATA)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) INVALID_TOKEN_ID.protoOrdinal(), 0L, new long[] {})
+                                .array()),
+                        output));
+
+        // should fail when token has invalid address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT_V2
+                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, MINT_AMOUNT, EMPTY_METADATA)
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(MintTranslator.MINT
@@ -222,14 +333,28 @@ public class MintsXTest extends AbstractContractXTest {
                         .treasuryAccountId(OWNER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .totalSupply(TOKEN_BALANCE)
-                        .treasuryAccountId(OWNER_ID)
                         .build());
         tokens.put(
                 B_TOKEN_ID,
                 Token.newBuilder()
                         .tokenId(B_TOKEN_ID)
+                        .treasuryAccountId(OWNER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .build());
+        tokens.put(
+                C_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(C_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyKey(INVALID_CONTRACT_ID_KEY)
+                        .build());
+        tokens.put(
+                D_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(D_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .supplyKey(INVALID_CONTRACT_ID_KEY)
                         .build());
         return tokens;
@@ -247,6 +372,17 @@ public class MintsXTest extends AbstractContractXTest {
                         .build(),
                 TokenRelation.newBuilder()
                         .tokenId(A_TOKEN_ID)
+                        .accountId(OWNER_ID)
+                        .balance(TOKEN_BALANCE)
+                        .kycGranted(true)
+                        .build());
+        tokenRelationships.put(
+                EntityIDPair.newBuilder()
+                        .tokenId(B_TOKEN_ID)
+                        .accountId(OWNER_ID)
+                        .build(),
+                TokenRelation.newBuilder()
+                        .tokenId(B_TOKEN_ID)
                         .accountId(OWNER_ID)
                         .balance(TOKEN_BALANCE)
                         .kycGranted(true)
