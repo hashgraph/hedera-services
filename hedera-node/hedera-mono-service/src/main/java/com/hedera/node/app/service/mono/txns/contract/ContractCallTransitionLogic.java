@@ -127,6 +127,71 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
     }
 
+    private Account extractReceiver(
+            Id relayerId, boolean targetAddressIsMissing, ContractCallTransactionBody op, Id targetId) {
+        // handle ethereum transaction flow
+        if (relayerId != null
+                && !properties.evmVersion().equals(EVM_VERSION_0_30)
+                && properties.isAutoCreationEnabled()
+                && properties.isLazyCreationEnabled()) {
+
+            // validate further lazy create amount only if
+            // the ff for calls to non existing contracts/accounts is disabled
+            if (!properties.allowCallsToNonContractAccounts() && targetAddressIsMissing) {
+                validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
+            }
+
+            // load the entity if the target is existing usable contract
+            if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
+                return accountStore.loadContract(targetId);
+            }
+
+            // validate contract address size
+            final var evmAddress = op.getContractID().getEvmAddress();
+            validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
+
+            // do not permit lazy create to mirror address, system accounts or zero address
+            final boolean isSystemAccount = entityNumbers.isSystemAccount(
+                    AccountID.newBuilder().setAccountNum(targetId.num()).build());
+            if (op.getAmount() > 0
+                    && aliasManager.isMirror(targetId.asEvmAddress())
+                    && !isSystemAccount
+                    && targetId.num() > 0) {
+                accountStore.loadAccountOrFailWith(targetId, INVALID_CONTRACT_ID);
+            }
+
+            return new Account(evmAddress);
+        }
+
+        // handle hapi transaction flow
+
+        // handle hapi calls to hts token address
+        if (entityAccess.isTokenAccount(targetId.asEvmAddress())) {
+            return new Account(targetId);
+        }
+
+        // handle hapi calls to existing contracts
+        if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
+            return accountStore.loadContract(targetId);
+        }
+
+        // reaching this step means that we have:
+        // - non ethereum transaction
+        // - no direct call to hts address
+        // - no direct call to existing contract
+        // so we have to check if the FF for calls to non existing contracts/accounts is 'true'
+        validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
+
+        // validate target address size if it's missing
+        if (targetAddressIsMissing) {
+            final var evmAddress = op.getContractID().getEvmAddress();
+            validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
+            return new Account(evmAddress);
+        }
+
+        return new Account(targetId);
+    }
+
     public void doStateTransitionOperation(
             final TransactionBody contractCallTxn,
             final Id senderId,
@@ -142,50 +207,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var sender = accountStore.loadAccount(senderId);
 
         final var target = targetOf(op);
-        final var targetId = target.toId();
-        Account receiver;
         final var targetAddressIsMissing = target.equals(EntityNum.MISSING_NUM);
-        if (relayerId != null
-                && !properties.evmVersion().equals(EVM_VERSION_0_30)
-                && properties.isAutoCreationEnabled()
-                && properties.isLazyCreationEnabled()) {
-            if (!properties.allowCallsToNonContractAccounts() && targetAddressIsMissing) {
-                validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
-            }
-            if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
-                receiver = accountStore.loadContract(targetId);
-            } else {
-                final var evmAddress = op.getContractID().getEvmAddress();
-                validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
-                // do not permit lazy create to mirror address, system accounts or zero address
-                final boolean isSystemAccount = entityNumbers.isSystemAccount(
-                        AccountID.newBuilder().setAccountNum(targetId.num()).build());
-                if (op.getAmount() > 0
-                        && aliasManager.isMirror(targetId.asEvmAddress())
-                        && !isSystemAccount
-                        && targetId.num() > 0) {
-                    accountStore.loadAccountOrFailWith(targetId, INVALID_CONTRACT_ID);
-                }
-                receiver = new Account(evmAddress);
-            }
-        } else {
-            if (entityAccess.isTokenAccount(targetId.asEvmAddress())) {
-                receiver = new Account(targetId);
-            } else {
-                if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
-                    receiver = accountStore.loadContract(targetId);
-                } else {
-                    validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
-                    if (targetAddressIsMissing) {
-                        final var evmAddress = op.getContractID().getEvmAddress();
-                        validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
-                        receiver = new Account(evmAddress);
-                    } else {
-                        receiver = new Account(targetId);
-                    }
-                }
-            }
-        }
+        Account receiver = extractReceiver(relayerId, targetAddressIsMissing, op, target.toId());
         if (!targetAddressIsMissing && op.getAmount() > 0) {
             // Since contracts cannot have receiverSigRequired=true, this can only
             // restrict us from sending value to an EOA
