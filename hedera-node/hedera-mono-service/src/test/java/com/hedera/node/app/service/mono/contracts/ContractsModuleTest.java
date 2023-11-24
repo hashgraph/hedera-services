@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.mono.contracts;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.provideCallLocalEvmTxProcessorFactory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +32,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperati
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -46,6 +49,7 @@ import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -169,6 +173,21 @@ class ContractsModuleTest {
                 .entityCreator(entityCreator)
                 .autoCreationLogic(autoCreationLogic)
                 .build();
+    }
+
+    @Test
+    void canManufactureCallLocalProcessors() {
+        final var pretendVersion = "0.0.1";
+        given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
+        final var supplier = provideCallLocalEvmTxProcessorFactory(
+                codeCache,
+                livePricesSource,
+                globalDynamicProperties,
+                gasCalculator,
+                Map.of(pretendVersion, () -> messageCallProcessor),
+                Map.of(pretendVersion, () -> contractCreationProcessor),
+                aliasManager);
+        assertInstanceOf(CallLocalEvmTxProcessor.class, supplier.get());
     }
 
     @Test
@@ -375,5 +394,16 @@ class ContractsModuleTest {
         assertNull(result.getHaltReason());
         assertEquals(2600, result.getGasCost());
         assertEquals(Bytes.EMPTY, bytesCaptor.getValue());
+    }
+
+    @Test
+    void allProcessorsLoad() {
+        var versions = subject.contractCreateProcessors().keySet();
+        assertEquals(versions, subject.messageCallProcessors().keySet());
+
+        for (var version : versions) {
+            subject.messageCallProcessors().get(version).get();
+            subject.contractCreateProcessors().get(version).get();
+        }
     }
 }

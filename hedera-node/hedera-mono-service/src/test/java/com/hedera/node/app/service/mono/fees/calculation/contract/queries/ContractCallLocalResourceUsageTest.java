@@ -134,7 +134,7 @@ class ContractCallLocalResourceUsageTest {
                 properties,
                 nodeLocalProperties,
                 accountStore,
-                callLocalEvmProcessors,
+                () -> evmTxProcessor,
                 ids,
                 validator,
                 aliasManager,

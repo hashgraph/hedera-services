@@ -135,8 +135,8 @@ class CreateEvmTxProcessorTest {
                 codeCache,
                 globalDynamicProperties,
                 gasCalculator,
-                mcps.get(globalDynamicProperties.evmVersion()),
-                ccps.get(globalDynamicProperties.evmVersion()),
+                mcps,
+                ccps,
                 aliasManager,
                 blockMetaSource);
     }

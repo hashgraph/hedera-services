@@ -18,6 +18,7 @@ package com.hedera.node.app.service.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,10 +36,10 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Provider<MessageCallProcessor> mcp,
-            final Provider<ContractCreationProcessor> ccp,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, blockMetaSource);
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
     }
 
     @Override
