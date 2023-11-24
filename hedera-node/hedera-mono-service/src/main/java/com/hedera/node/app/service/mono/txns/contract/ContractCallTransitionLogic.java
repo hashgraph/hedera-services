@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.service.mono.txns.contract;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -127,71 +131,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         doStateTransitionOperation(contractCallTxn, senderId, null, 0, null);
     }
 
-    private Account extractReceiver(
-            Id relayerId, boolean targetAddressIsMissing, ContractCallTransactionBody op, Id targetId) {
-        // handle ethereum transaction flow
-        if (relayerId != null
-                && !properties.evmVersion().equals(EVM_VERSION_0_30)
-                && properties.isAutoCreationEnabled()
-                && properties.isLazyCreationEnabled()) {
-
-            // validate further lazy create amount only if
-            // the ff for calls to non existing contracts/accounts is disabled
-            if (!properties.allowCallsToNonContractAccounts() && targetAddressIsMissing) {
-                validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
-            }
-
-            // load the entity if the target is existing usable contract
-            if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
-                return accountStore.loadContract(targetId);
-            }
-
-            // validate contract address size
-            final var evmAddress = op.getContractID().getEvmAddress();
-            validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
-
-            // do not permit lazy create to mirror address, system accounts or zero address
-            final boolean isSystemAccount = entityNumbers.isSystemAccount(
-                    AccountID.newBuilder().setAccountNum(targetId.num()).build());
-            if (op.getAmount() > 0
-                    && aliasManager.isMirror(targetId.asEvmAddress())
-                    && !isSystemAccount
-                    && targetId.num() > 0) {
-                accountStore.loadAccountOrFailWith(targetId, INVALID_CONTRACT_ID);
-            }
-
-            return new Account(evmAddress);
-        }
-
-        // handle hapi transaction flow
-
-        // handle hapi calls to hts token address
-        if (entityAccess.isTokenAccount(targetId.asEvmAddress())) {
-            return new Account(targetId);
-        }
-
-        // handle hapi calls to existing contracts
-        if (accountStore.isContractUsable(targetId) && !targetAddressIsMissing) {
-            return accountStore.loadContract(targetId);
-        }
-
-        // reaching this step means that we have:
-        // - non ethereum transaction
-        // - no direct call to hts address
-        // - no direct call to existing contract
-        // so we have to check if the FF for calls to non existing contracts/accounts is 'true'
-        validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
-
-        // validate target address size if it's missing
-        if (targetAddressIsMissing) {
-            final var evmAddress = op.getContractID().getEvmAddress();
-            validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
-            return new Account(evmAddress);
-        }
-
-        return new Account(targetId);
-    }
-
     public void doStateTransitionOperation(
             final TransactionBody contractCallTxn,
             final Id senderId,
@@ -205,17 +144,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
         // --- Load the model objects ---
         final var sender = accountStore.loadAccount(senderId);
-
         final var target = targetOf(op);
-        final var targetAddressIsMissing = target.equals(EntityNum.MISSING_NUM);
-        Account receiver = extractReceiver(relayerId, targetAddressIsMissing, op, target.toId());
-        if (!targetAddressIsMissing && op.getAmount() > 0) {
-            // Since contracts cannot have receiverSigRequired=true, this can only
-            // restrict us from sending value to an EOA
-            final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                    false, target.toEvmAddress(), NEVER_ACTIVE_CONTRACT_ADDRESS, worldLedgers, ContractCall);
-            validateTrue(sigReqIsMet, INVALID_SIGNATURE);
-        }
+
+        Account receiver = extractAndValidateReceiver(op, target, relayerId);
 
         final var callData = !op.getFunctionParameters().isEmpty()
                 ? Bytes.wrap(op.getFunctionParameters().toByteArray())
@@ -343,5 +274,77 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private EntityNum targetOf(final ContractCallTransactionBody op) {
         final var idOrAlias = op.getContractID();
         return EntityIdUtils.unaliased(idOrAlias, aliasManager);
+    }
+
+    private Account extractAndValidateReceiver(
+            ContractCallTransactionBody op, final EntityNum unaliasedTargetNum, final Id relayerId) {
+
+        final var unaliasedTargetId = unaliasedTargetNum.toId();
+        final var targetAliasIsMissing = unaliasedTargetNum.equals(EntityNum.MISSING_NUM);
+        final var targetEVMAddress = op.getContractID().getEvmAddress();
+        final var hasContractIdAsEvmAddress = targetEVMAddress != null;
+        final var isLongZeroAddress =
+                !isAlias(op.getContractID()) || (hasContractIdAsEvmAddress && isMirror(targetEVMAddress.toByteArray()));
+        final var isSystemAccount = entityNumbers.isSystemAccount(
+                AccountID.newBuilder().setAccountNum(unaliasedTargetId.num()).build());
+        final var isTokenAccount = entityAccess.isTokenAccount(unaliasedTargetId.asEvmAddress());
+        final var isUsableContract = accountStore.isContractUsable(unaliasedTargetId);
+
+        // the receiver account exists in the ledger or is a long-zero address
+        if (!targetAliasIsMissing) {
+
+            if (op.getAmount() > 0) {
+                // Since contracts cannot have receiverSigRequired=true, this can only
+                // restrict us from sending value to an EOA
+                final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false,
+                        unaliasedTargetNum.toEvmAddress(),
+                        NEVER_ACTIVE_CONTRACT_ADDRESS,
+                        worldLedgers,
+                        ContractCall);
+                validateTrue(sigReqIsMet, INVALID_SIGNATURE);
+                validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
+                validateTrue(!isTokenAccount, INVALID_FEE_SUBMITTED);
+                validateTrue(
+                        entityAccess.isExtant(unaliasedTargetNum.toEvmAddress()) || !isLongZeroAddress,
+                        INVALID_CONTRACT_ID);
+            }
+
+            if (isUsableContract) {
+                return accountStore.loadContract(unaliasedTargetId);
+            } else {
+                return new Account(unaliasedTargetId);
+            }
+        } else {
+            // target address may be missing if:
+            // 1. this is a lazy-create through an ethereum transaction
+            // 2. this is a call to a non-existing contract
+
+            // validate contract address size
+            validateTrue(isOfEvmAddressSize(targetEVMAddress), INVALID_CONTRACT_ID);
+
+            // lazy create flow
+            if (op.getAmount() > 0) {
+                // do not permit lazy creation from non-ethereum transaction
+                validateTrue(relayerId != null, INVALID_FEE_SUBMITTED);
+                // do not permit lazy creation in EVM version v030
+                validateTrue(!properties.evmVersion().equals(EVM_VERSION_0_30), INVALID_SOLIDITY_ADDRESS);
+                // do not permit lazy creation of mirror address
+                validateTrue(
+                        !aliasManager.isMirror(Address.wrap(Bytes.of(targetEVMAddress.toByteArray()))),
+                        INVALID_SOLIDITY_ADDRESS);
+                // do not permit lazy creation of system accounts
+                validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
+                // do not permit lazy creation if flags are disabled
+                validateTrue(
+                        properties.isAutoCreationEnabled() && properties.isLazyCreationEnabled(),
+                        INVALID_FEE_SUBMITTED);
+
+            } else {
+                // call to non-existing contract flow
+                validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
+            }
+            return new Account(targetEVMAddress);
+        }
     }
 }
