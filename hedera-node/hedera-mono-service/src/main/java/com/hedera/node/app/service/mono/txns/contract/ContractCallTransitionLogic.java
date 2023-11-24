@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.mono.txns.contract;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -253,17 +255,18 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var unaliasedTargetId = unaliasedTargetNum.toId();
         final var targetAliasIsMissing = unaliasedTargetNum.equals(EntityNum.MISSING_NUM);
         final var targetEVMAddress = op.getContractID().getEvmAddress();
+        final var hasContractIdAsEvmAddress = targetEVMAddress != null;
+        final var isLongZeroAddress =
+                !isAlias(op.getContractID()) || (hasContractIdAsEvmAddress && isMirror(targetEVMAddress.toByteArray()));
         final var isSystemAccount = entityNumbers.isSystemAccount(
                 AccountID.newBuilder().setAccountNum(unaliasedTargetId.num()).build());
         final var isTokenAccount = entityAccess.isTokenAccount(unaliasedTargetId.asEvmAddress());
         final var isUsableContract = accountStore.isContractUsable(unaliasedTargetId);
 
-        // the receiver account exists in the ledger
+        // the receiver account exists in the ledger or is a long-zero address
         if (!targetAliasIsMissing) {
 
             if (op.getAmount() > 0) {
-                validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
-                validateTrue(!isTokenAccount, INVALID_FEE_SUBMITTED);
                 // Since contracts cannot have receiverSigRequired=true, this can only
                 // restrict us from sending value to an EOA
                 final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
@@ -273,6 +276,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                         worldLedgers,
                         ContractCall);
                 validateTrue(sigReqIsMet, INVALID_SIGNATURE);
+                validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
+                validateTrue(!isTokenAccount, INVALID_FEE_SUBMITTED);
+                validateTrue(
+                        entityAccess.isExtant(unaliasedTargetNum.toEvmAddress()) || !isLongZeroAddress,
+                        INVALID_CONTRACT_ID);
             }
 
             if (isUsableContract) {
@@ -295,11 +303,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 // do not permit lazy creation in EVM version v030
                 validateTrue(!properties.evmVersion().equals(EVM_VERSION_0_30), INVALID_SOLIDITY_ADDRESS);
                 // do not permit lazy creation of mirror address
-                validateTrue(!aliasManager.isMirror(unaliasedTargetId.asEvmAddress()), INVALID_FEE_SUBMITTED);
+                validateTrue(
+                        !aliasManager.isMirror(Address.wrap(Bytes.of(targetEVMAddress.toByteArray()))),
+                        INVALID_SOLIDITY_ADDRESS);
                 // do not permit lazy creation of system accounts
                 validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
-                // do not permit lazy creation of zero address
-                validateTrue(unaliasedTargetId.num() > 0, INVALID_FEE_SUBMITTED);
                 // do not permit lazy creation if flags are disabled
                 validateTrue(
                         properties.isAutoCreationEnabled() && properties.isLazyCreationEnabled(),
