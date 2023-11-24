@@ -79,13 +79,19 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Burns {@code ERC20_TOKEN} via BURN_TOKEN_V1 operation</li>
  *     <li>Burns {@code ERC20_TOKEN} via BURN_TOKEN_V2 operation</li>
  *     <li>Burns {@code ERC20_TOKEN} without supplyKey via BURN_TOKEN_V1 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Burns {@code ERC20_TOKEN} without supplyKey via BURN_TOKEN_V2 operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
  *     <li>Burns {@code ERC20_TOKEN} token which is not associated to account via BURN_TOKEN_V1 operation. This should fail with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</li>
+ *     <li>Burns {@code ERC20_TOKEN} token which is not associated to account via BURN_TOKEN_V2 operation. This should fail with TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</li>
  *     <li>Burns {@code ERC20_TOKEN} token when totalSupply < amountToBurn via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_BURN_AMOUNT</li>
+ *     <li>Burns {@code ERC20_TOKEN} token when totalSupply < amountToBurn via BURN_TOKEN_V2 operation. This should fail with INVALID_TOKEN_BURN_AMOUNT</li>
  *     <li>Burns {@code ERC20_TOKEN} token with invalid id via BURN_TOKEN_V1 operation. This should fail with INVALID_TOKEN_ID</li>
+ *     <li>Burns {@code ERC20_TOKEN} token with invalid id via BURN_TOKEN_V2 operation. This should fail with INVALID_TOKEN_ID</li>
  *     <li>Burns {@code ERC20_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
+ *     <li>Burns {@code ERC20_TOKEN} with invalid supplyKey via BURN_TOKEN_V2 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
  *     <li>Burns {@code ERC721_TOKEN} via BURN_TOKEN_V1 operation</li>
  *     <li>Burns {@code ERC721_TOKEN} via BURN_TOKEN_V2 operation</li>
  *     <li>Burns {@code ERC721_TOKEN} with invalid supplyKey via BURN_TOKEN_V1 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
+ *     <li>Burns {@code ERC721_TOKEN} with invalid supplyKey via BURN_TOKEN_V2 operation. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>
  * </ol>
  */
 public class BurnsXTest extends AbstractContractXTest {
@@ -95,7 +101,7 @@ public class BurnsXTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
-        // should successfully burn fungible token with V1
+        // should successfully burn fungible token via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -108,7 +114,7 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should successfully burn fungible token with V2
+        // should successfully burn fungible token via V2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
@@ -121,7 +127,7 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should fail when token has no supplyKey
+        // should fail when token has no supplyKey via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -134,7 +140,20 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should fail when token is not associated to account
+        // should fail when token has no supplyKey via V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, TOKENS_TO_BURN, new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_HAS_NO_SUPPLY_KEY.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
+        // should fail when token is not associated to account via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -147,7 +166,20 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should fail on totalSupply < amountToBurn
+        // should fail when token is not associated to account via V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, TOKENS_TO_BURN, new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
+        // should fail on totalSupply < amountToBurn via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -160,7 +192,20 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should fail on invalid token id
+        // should fail on totalSupply < amountToBurn via V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, TOKEN_BALANCE + 1, new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                                .getOutputs()
+                                .encodeElements((long) INVALID_TOKEN_BURN_AMOUNT.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
+        // should fail on invalid token id via V2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -173,7 +218,20 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should fail when token has wrong supplyKey
+        // should fail on invalid token id via V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, TOKEN_BALANCE + 1, new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                                .getOutputs()
+                                .encodeElements((long) INVALID_TOKEN_ID.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
+        // should fail when token has wrong supplyKey via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -186,7 +244,20 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should successfully burn NFT with V1
+        // should fail when token has wrong supplyKey via V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, TOKENS_TO_BURN, new long[] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                                .getOutputs()
+                                .encodeElements((long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
+        // should successfully burn NFT via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -200,7 +271,7 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should successfully burn NFT with V2
+        // should successfully burn NFT via V2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
@@ -213,7 +284,7 @@ public class BurnsXTest extends AbstractContractXTest {
                                 .array()),
                         output));
 
-        // should fail when NFT has wrong supplyKey
+        // should fail when NFT has wrong supplyKey via V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
@@ -222,6 +293,19 @@ public class BurnsXTest extends AbstractContractXTest {
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
+                                .getOutputs()
+                                .encodeElements((long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(), 0L)
+                                .array()),
+                        output));
+
+        // should fail when NFT has wrong supplyKey via V2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
+                        .encodeCallWithArgs(D_TOKEN_ADDRESS, 0L, new long[] {SN_1234.serialNumber()})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(BurnTranslator.BURN_TOKEN_V2
                                 .getOutputs()
                                 .encodeElements((long) INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.protoOrdinal(), 0L)
                                 .array()),
