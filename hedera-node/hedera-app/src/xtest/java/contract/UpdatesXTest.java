@@ -59,6 +59,20 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
+/**
+ * Exercises update a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION}.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V2}.
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V2}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V3}.
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V3}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION}. This should fail with code INVALID_TREASURY_ACCOUNT_FOR_TOKEN.</li>
+ *     <li>Update {@code ERC721_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION}. This should fail with code INVALID_TOKEN_ID.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION}. This should fail with code INVALID_EXPIRATION_TIME.</li>
+ * </ol>
+ */
 public class UpdatesXTest extends AbstractContractXTest {
     private static final String NEW_NAME = "New name";
     private static final String NEW_SYMBOL = "New symbol";

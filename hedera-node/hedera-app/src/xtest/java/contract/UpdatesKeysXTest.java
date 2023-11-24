@@ -57,6 +57,15 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
+/**
+ * Exercises update a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}. This should fail with code INVALID_TOKEN_ID.</li>
+ * </ol>
+ */
 public class UpdatesKeysXTest extends AbstractContractXTest {
     private final Tuple[] TOKEN_KEY = new Tuple[] {
         Tuple.of(

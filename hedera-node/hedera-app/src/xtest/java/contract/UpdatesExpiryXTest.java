@@ -58,6 +58,18 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
+/**
+ * Exercises update a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}.
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_EXPIRATION_TIME.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1}. This should fail with code INVALID_TOKEN_ID.</li>
+ * </ol>
+ */
 public class UpdatesExpiryXTest extends AbstractContractXTest {
     private static final long EXPIRY_TIMESTAMP = Instant.now().plusSeconds(3600).toEpochMilli() / 1000;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
