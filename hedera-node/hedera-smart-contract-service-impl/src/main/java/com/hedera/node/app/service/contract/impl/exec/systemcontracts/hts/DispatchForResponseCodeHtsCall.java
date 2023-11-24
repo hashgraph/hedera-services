@@ -34,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.Function;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
