@@ -21,6 +21,11 @@ plugins {
 
 description = "Hedera Services Command-Line Clients"
 
+dependencies {
+    // For NoOpGenesisRecordsBuilder in DumpContractBytescodesSubcommand
+    implementation(project(mapOf("path" to ":app-spi")))
+}
+
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")

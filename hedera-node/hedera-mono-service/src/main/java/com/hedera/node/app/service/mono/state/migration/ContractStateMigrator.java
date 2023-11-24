@@ -358,11 +358,6 @@ public class ContractStateMigrator {
         return validationsFailed.isEmpty() ? Status.VALIDATION_ERRORS : Status.SUCCESS;
     }
 
-    //    @NonNull
-    //    static WritableKVState<SlotKey, SlotValue> getNewContractStore() {
-    //        return new InMemoryWritableKVState<SlotKey, SlotValue>();
-    //    }
-
     /** Convert int[] to byte[] and then to Bytes. If argument is null or 0-length then return `Bytes.EMPTY`. */
     @NonNull
     static Bytes bytesFromInts(@Nullable final int[] ints) {
