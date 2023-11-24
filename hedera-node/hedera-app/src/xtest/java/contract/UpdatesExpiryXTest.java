@@ -94,6 +94,16 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
+        // Should throw `INVALID_SIGNATURE`
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS, Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
+
         // Fails if the expiration time is invalid
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,

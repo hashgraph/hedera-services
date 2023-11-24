@@ -129,6 +129,28 @@ public class UpdatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess("V2 update failed"));
 
+        // Should throw `INVALID_SIGNATURE`
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS,
+                                Tuple.of(
+                                        NEW_NAME,
+                                        NEW_SYMBOL,
+                                        asHeadlongAddress(SENDER_ADDRESS.toByteArray()),
+                                        "memo",
+                                        true,
+                                        1000L,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(0L, asAddress(""), 0L)))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
+
         // Successfully update token via TOKEN_UPDATE_INFO V3
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -149,6 +171,28 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 assertSuccess("V3 update failed"));
+
+        // Should throw `INVALID_SIGNATURE`
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS,
+                                Tuple.of(
+                                        NEW_NAME,
+                                        NEW_SYMBOL,
+                                        asHeadlongAddress(SENDER_ADDRESS.toByteArray()),
+                                        "memo",
+                                        true,
+                                        1000L,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(0L, asAddress(""), 0L)))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
 
         // Fails if the treasury is invalid (owner address is not initialized)
         runHtsCallAndExpectOnSuccess(
