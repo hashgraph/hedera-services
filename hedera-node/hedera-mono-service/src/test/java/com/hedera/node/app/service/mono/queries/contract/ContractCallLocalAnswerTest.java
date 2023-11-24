@@ -132,7 +132,6 @@ class ContractCallLocalAnswerTest {
 
     @BeforeEach
     void setup() {
-
         subject = new ContractCallLocalAnswer(
                 ids,
                 aliasManager,
