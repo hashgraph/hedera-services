@@ -500,7 +500,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
-    @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
@@ -567,7 +566,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
-    @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(
