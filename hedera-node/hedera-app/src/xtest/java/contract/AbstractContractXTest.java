@@ -83,6 +83,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
@@ -296,6 +297,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         stack.addFirst(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
+        given(frame.getValue()).willReturn(Wei.MAX_WEI);
 
         final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
         final var call = attempt.asExecutableCall();
