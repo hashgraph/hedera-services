@@ -58,7 +58,7 @@ import org.apache.tuweni.bytes.Bytes;
  * Exercises delete on a fungible and non-fungible token via the following steps relative to an {@code OWNER} account:
  * <ol>
  *     <li>Deletes {@code ERC20_TOKEN} via DELETE operation</li>
- *     <li>Deletes {@code ERC721_TOKEN} via MINT operation</li>
+ *     <li>Deletes {@code ERC721_TOKEN} via DELETE operation</li>
  *     <li>Freezes a deleted {@code ERC20_TOKEN}. This should fail with TOKEN_WAS_DELETED</li>
  *     <li>Freezes a deleted {@code ERC721_TOKEN}. This should fail with TOKEN_WAS_DELETED</li>
  *     <li>Deletes {@code ERC20_TOKEN} without admin key. This should fail with TOKEN_IS_IMMUTABLE</li>
