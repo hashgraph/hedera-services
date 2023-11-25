@@ -97,6 +97,7 @@ public class Evm45ValidationSuite extends HapiSuite {
     private static final Long ENOUGH_GAS_LIMIT_FOR_CREATION = 900_000L;
     private static final String RECEIVER = "receiver";
     private static final String ECDSA_KEY = "ecdsaKey";
+    private static final String CUSTOM_PAYER = "customPayer";
 
     public static void main(String... args) {
         new Evm45ValidationSuite().runSuiteAsync();
@@ -494,9 +495,9 @@ public class Evm45ValidationSuite extends HapiSuite {
     }
 
     private HapiSpec internalTransferToNonExistingNonMirrorAddressResultsInRevert() {
-
         return defaultHapiSpec("internalTransferToNonExistingNonMirrorAddressResultsInRevert")
                 .given(
+                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
                 .when(contractCall(
@@ -504,6 +505,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                                 TRANSFER_TO_FUNCTION,
                                 nonMirrorAddrWith(new Random().nextLong()))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
+                        .payingWith(CUSTOM_PAYER)
                         .via(INNER_TXN)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
@@ -584,6 +586,7 @@ public class Evm45ValidationSuite extends HapiSuite {
 
         return defaultHapiSpec("internalSendToNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
+                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext((spec, op) -> {
                             final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
@@ -602,7 +605,8 @@ public class Evm45ValidationSuite extends HapiSuite {
                                         asHeadlongAddress(nonExistingNonMirrorAddress
                                                 .get()
                                                 .toArray()))
-                                .gas(GAS_LIMIT_FOR_CALL * 4))))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .payingWith(CUSTOM_PAYER))))
                 .then(
                         getAccountBalance(INTERNAL_CALLER_CONTRACT)
                                 .hasTinyBars(changeFromSnapshot("contractBalance", 0)),
