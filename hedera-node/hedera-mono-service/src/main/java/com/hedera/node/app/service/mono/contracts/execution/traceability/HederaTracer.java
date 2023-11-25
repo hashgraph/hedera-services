@@ -182,7 +182,7 @@ public class HederaTracer implements HederaOperationTracer {
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
             action.setTargetedAddress(contractAddress.toArray());
         } else {
-            final var recipient = EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
+            final var recipient = getEntityIdOrNullByAddressAndMessageFrame(contractAddress, messageFrame);
             if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
                 // code can be empty when calling precompiles too, but we handle
                 // that in tracePrecompileCall, after precompile execution is completed
@@ -213,12 +213,8 @@ public class HederaTracer implements HederaOperationTracer {
                         // we had a successful lazy create, replace targeted address with its new Hedera id
                         // or set it to null if it's noop for non existing account
                         Address recipientAddress = Address.wrap(Bytes.of(action.getInvalidSolidityAddress()));
-                        boolean recipientIsMirror = ((HederaStackedWorldStateUpdater) frame.getWorldUpdater())
-                                .aliases()
-                                .isMirror(recipientAddress);
-                        final var recipientAsHederaId = recipientIsMirror
-                                ? EntityId.fromAddress(asMirrorAddress(recipientAddress, frame))
-                                : null;
+                        final var recipientAsHederaId =
+                                getEntityIdOrNullByAddressAndMessageFrame(recipientAddress, frame);
                         action.setTargetedAddress(null);
                         action.setRecipientAccount(recipientAsHederaId);
                     }
@@ -378,13 +374,10 @@ public class HederaTracer implements HederaOperationTracer {
         return null != subject ? processor.compose(getter).apply(subject) : "null";
     }
 
-    private EntityId getEntityIdOrNullByAddressAndMessageFrame(
-            Address address, MessageFrame frame, SolidityAction action) {
-        try {
-            return EntityId.fromAddress(asMirrorAddress(address, frame));
-        } catch (IllegalArgumentException e) {
-            action.setTargetedAddress(address.toArray());
-            return null;
-        }
+    private EntityId getEntityIdOrNullByAddressAndMessageFrame(Address address, MessageFrame frame) {
+        boolean isMirror = ((HederaStackedWorldStateUpdater) frame.getWorldUpdater())
+                .aliases()
+                .isMirror(address);
+        return isMirror ? EntityId.fromAddress(asMirrorAddress(address, frame)) : null;
     }
 }
