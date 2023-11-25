@@ -375,9 +375,10 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     private EntityId getEntityIdOrNullByAddressAndMessageFrame(Address address, MessageFrame frame) {
-        boolean isMirror = ((HederaStackedWorldStateUpdater) frame.getWorldUpdater())
-                .aliases()
-                .isMirror(address);
-        return isMirror ? EntityId.fromAddress(asMirrorAddress(address, frame)) : null;
+        try {
+            return EntityId.fromAddress(asMirrorAddress(address, frame));
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
