@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -60,8 +61,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractUpdateSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
@@ -151,6 +154,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2877
+    @HapiTest
     private HapiSpec eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
@@ -323,6 +327,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
+    @HapiTest
     private HapiSpec givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid")

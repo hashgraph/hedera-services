@@ -84,7 +84,7 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     @Override
-    public void finishLifecycle() {
-        requireNonNull(delegate).finishLifecycle();
+    public void finishLifecycle(@NonNull final HapiSpec spec) {
+        requireNonNull(delegate).finishLifecycle(spec);
     }
 }
