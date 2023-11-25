@@ -121,7 +121,13 @@ public class TransferLogic {
                 validity = result.getKey();
                 autoCreationFee += result.getValue();
                 if (validity == OK && (change.isForToken())) {
-                    validity = tokenStore.tryTokenChange(change);
+                    if (change.isForNft()) {
+                        // An approved NFT transfer needs its allowances validated here
+                        validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
+                    }
+                    if (validity == OK) {
+                        validity = tokenStore.tryTokenChange(change);
+                    }
                 }
             } else if (change.isForHbar()) {
                 validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
