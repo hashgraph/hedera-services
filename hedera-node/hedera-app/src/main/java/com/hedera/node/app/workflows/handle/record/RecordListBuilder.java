@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -200,9 +201,12 @@ public final class RecordListBuilder {
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws HandleException if no more child slots are available
      */
-    public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addChild(
+            @NonNull final Configuration configuration,
+            @NonNull final HandleContext.TransactionCategory childCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return doAddChild(
+                configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, childCategory);
     }
 
     /**
@@ -210,7 +214,7 @@ public final class RecordListBuilder {
      * <p>
      * If a parent transaction of this child transaction is rolled back, the record builder is removed entirely. This is
      * only needed in a very few special cases. Under normal circumstances,
-     * {@link #addChild(Configuration)} should be used.
+     * {@link #addChild(Configuration, HandleContext.TransactionCategory)} should be used.
      *
      * @param configuration the current configuration
      * @return the record builder for the child transaction
@@ -219,7 +223,11 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, ReversingBehavior.REMOVABLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return doAddChild(
+                configuration,
+                ReversingBehavior.REMOVABLE,
+                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                HandleContext.TransactionCategory.CHILD);
     }
 
     /**
@@ -239,13 +247,15 @@ public final class RecordListBuilder {
             @NonNull final Configuration configuration, @NonNull final ExternalizedRecordCustomizer customizer) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         requireNonNull(customizer, "customizer must not be null");
-        return doAddChild(configuration, ReversingBehavior.REMOVABLE, customizer);
+        return doAddChild(
+                configuration, ReversingBehavior.REMOVABLE, customizer, HandleContext.TransactionCategory.CHILD);
     }
 
     private SingleTransactionRecordBuilderImpl doAddChild(
             @NonNull final Configuration configuration,
             final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final HandleContext.TransactionCategory childCategory) {
         // FUTURE: We should reuse the RecordListBuilder between handle calls, and we should reuse these lists, in
         // which case we will no longer have to create them lazily.
         if (childRecordBuilders == null) {
@@ -266,8 +276,13 @@ public final class RecordListBuilder {
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
         final var consensusNow = prevConsensusNow.plusNanos(1L);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer)
-                .parentConsensus(parentConsensusTimestamp);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        // Only set parent consensus timestamp for child records if one is not provided
+        if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
+            recordBuilder.parentConsensus(parentConsensusTimestamp);
+        } else {
+            recordBuilder.exchangeRate(userTxnRecordBuilder.exchangeRate());
+        }
         if (!customizer.shouldSuppressRecord()) {
             childRecordBuilders.add(recordBuilder);
         }
@@ -281,7 +296,7 @@ public final class RecordListBuilder {
      * happens, because there are no children after the last one.
      *
      * <p>If the given builder is the next to last of these 10, then if the last one was added by
-     * {@link #addChild(Configuration)} it will still be in the list, but will have a status of
+     * {@link #addChild(Configuration, HandleContext.TransactionCategory)} it will still be in the list, but will have a status of
      * {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already), otherwise it will
      * actually be removed from the list.
      *
