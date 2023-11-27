@@ -814,6 +814,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
