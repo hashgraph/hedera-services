@@ -25,7 +25,7 @@ val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
-val jacksonVersion = "2.13.5"
+val jacksonVersion = "2.16.0"
 val log4jVersion = "2.21.1"
 val mockitoVersion = "4.11.0"
 val nettyVersion = "4.1.87.Final"
@@ -95,7 +95,7 @@ moduleInfo {
     version("org.hamcrest", "2.2")
     version("org.hyperledger.besu.datatypes", besuVersion)
     version("org.hyperledger.besu.evm", besuVersion)
-    version("org.hyperledger.besu.secp256k1", besuNativeVersion)
+    version("org.hyperledger.besu.nativelib.secp256k1", besuNativeVersion)
     version("org.json", "20231013")
     version("org.junit.jupiter.api", "5.9.1")
     version("org.junit.platform.engine", "1.9.1")
@@ -106,7 +106,7 @@ moduleInfo {
     version("org.opentest4j", "1.2.0")
     version("org.testcontainers", testContainersVersion)
     version("org.testcontainers.junit.jupiter", testContainersVersion)
-    version("org.yaml.snakeyaml", "1.33")
+    version("org.yaml.snakeyaml", "2.2")
     version("tuweni.bytes", tuweniVersion)
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
