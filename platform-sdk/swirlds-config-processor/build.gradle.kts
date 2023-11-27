@@ -17,26 +17,21 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
-    id("java-test-fixtures")
+    // antlr
 }
 
-mainModuleInfo {
-    annotationProcessor("com.swirlds.config.processor")
+mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
-    runtimeOnly("resource.loader")
-    runtimeOnly("com.sun.jna")
-}
+testModuleInfo { requires("org.junit.jupiter.api") }
 
-testModuleInfo {
-    requires("com.swirlds.common.testing")
-    requires("com.swirlds.test.framework")
-    requires("com.swirlds.base.test.fixtures")
-    requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.config.extensions")
-    requires("org.assertj.core")
-    requires("org.junit.jupiter.api")
-    requires("org.junit.jupiter.params")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-    requiresStatic("com.github.spotbugs.annotations")
+tasks.register<AntlrTask>("generateParser") {
+    conventionMapping.map("antlrClasspath") {
+        configurations.detachedConfiguration(dependencies.create("org.antlr:antlr4:4.13.1"))
+    }
+    source(layout.projectDirectory.dir("src/main/antlr"))
+    outputDirectory =
+        File(
+            sourceSets.main.get().java.sourceDirectories.singleFile,
+            "com/swirlds/config/processor/antlr/generated"
+        )
 }
