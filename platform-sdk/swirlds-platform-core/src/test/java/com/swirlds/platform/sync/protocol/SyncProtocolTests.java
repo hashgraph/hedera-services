@@ -479,7 +479,7 @@ class SyncProtocolTests {
                 time);
 
         // mock synchronize to throw a ParallelExecutionException
-        Mockito.when(shadowGraphSynchronizer.synchronize(any()))
+        Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
                 .thenThrow(new ParallelExecutionException(mock(Throwable.class)));
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -507,7 +507,7 @@ class SyncProtocolTests {
                 time);
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
-        Mockito.when(shadowGraphSynchronizer.synchronize(any()))
+        Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
                 .thenThrow(new ParallelExecutionException(new IOException()));
 
         assertEquals(2, permitProvider.getNumAvailable());
@@ -534,7 +534,7 @@ class SyncProtocolTests {
                 time);
 
         // mock synchronize to throw a SyncException
-        Mockito.when(shadowGraphSynchronizer.synchronize(any())).thenThrow(new SyncException(""));
+        Mockito.when(shadowGraphSynchronizer.synchronize(any(), any())).thenThrow(new SyncException(""));
 
         assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldAccept();

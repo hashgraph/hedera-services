@@ -41,7 +41,7 @@ import java.util.Map;
  * classes.
  */
 public class RecordFinalizerBase {
-    private static final AccountID ZERO_ACCOUNT_ID =
+    protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -81,7 +81,7 @@ public class RecordFinalizerBase {
      * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
-     * @param tokenStore
+     * @param tokenStore the {@link ReadableTokenStore} to get the token from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
@@ -185,18 +185,24 @@ public class RecordFinalizerBase {
 
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
             // will be explicitly set as 0.0.0
+            AccountID receiverAccountId = null;
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
                 if (modifiedNft.hasOwnerId()) {
-                    builder.receiverAccountID(modifiedNft.ownerId());
+                    receiverAccountId = modifiedNft.ownerId();
                 } else {
-                    builder.receiverAccountID(token.treasuryAccountId());
+                    receiverAccountId = token.treasuryAccountId();
                 }
             } else {
-                builder.receiverAccountID(ZERO_ACCOUNT_ID);
+                receiverAccountId = ZERO_ACCOUNT_ID;
+            }
+            // If both sender and receiver are same it is not a transfer
+            if (receiverAccountId.equals(senderAccountId)) {
+                continue;
             }
             final var nftTransfer = builder.serialNumber(nftId.serialNumber())
                     .senderAccountID(senderAccountId)
+                    .receiverAccountID(receiverAccountId)
                     .build();
 
             if (!nftChanges.containsKey(nftId.tokenId())) {

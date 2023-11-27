@@ -39,10 +39,6 @@ import java.time.Duration;
  * @param signedStateDisk               Keep at least this many of the old complete signed states on disk. This should
  *                                      be at least 2 so that  we don't delete an old state while a new one is in the
  *                                      process of writing to disk. set to 0 to not keep any states to disk.
- * @param dumpStateOnAnyISS             If true, save the state to disk when an ISS is detected. May negatively affect
- *                                      the performance of the node where the ISS occurs. This feature is for debugging
- *                                      purposes and should not be active in production systems.
- * @param dumpStateOnFatal              If true, then save the state to disk when there is a fatal exception.
  * @param haltOnAnyIss                  <p>
  *                                      Halt this node whenever any ISS in the network is detected. A halt causes the
  *                                      node to stop doing work, but does not shut down the JVM.
@@ -55,10 +51,6 @@ import java.time.Duration;
  * @param automatedSelfIssRecovery      If true, then attempt to recover automatically when a self ISS is detected.
  * @param haltOnCatastrophicIss         If true, then halt this node if a catastrophic ISS is detected. A halt causes
  *                                      the node to stop doing work, but does not shut down the JVM.
- * @param secondsBetweenISSDumps        If one ISS is detected, it is likely that others will be detected shortly
- *                                      afterward. Specify the minimum time, in seconds, that must transpire after
- *                                      dumping a state before another state dump is permitted. Ignored if
- *                                      dumpStateOnISS is false.
  * @param secondsBetweenIssLogs         The minimum time that must pass between log messages about ISS events. If ISS
  *                                      events happen with a higher frequency then they are squelched.
  * @param enableHashStreamLogging       When enabled, hashes for the nodes are logged per round.
@@ -103,12 +95,9 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
         @ConfigProperty(defaultValue = "900") int saveStatePeriod,
         @ConfigProperty(defaultValue = "5") int signedStateDisk,
-        @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
-        @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
         @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
         @ConfigProperty(defaultValue = "false") boolean automatedSelfIssRecovery,
         @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
-        @ConfigProperty(defaultValue = "21600") long secondsBetweenISSDumps,
         @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
         @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
