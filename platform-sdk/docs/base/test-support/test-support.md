@@ -62,3 +62,38 @@ executed in isolation (see `org.junit.jupiter.api.parallel.Isolated`).
 
 The `@WithContext`, `@WithGlobalContext`, `@WithThreadLocalContext` annotation are documented in the chapter of 
 the [Context API](./../context/context.md).
+
+### Executor support
+
+The `@WithTestExecutor` annotation is used to inject a `TestExecutor` instance into a test. Each test using 
+`@WithTestExecutor` runs in isolation, ensuring that multiple tests do not share the same underlying thread pool 
+concurrently. This isolation helps prevent side effects between tests due to shared resources.
+
+#### Usage
+
+```java
+@WithTestExecutor
+public class MyConcurrentTest {
+    // Your concurrent test methods here...
+}
+```
+#### Example
+
+```java
+@WithTestExecutor
+public class TestExecutorExample {
+    @Inject
+    TestExecutor testExecutor;
+
+    // more code ...
+    
+    @Test
+    void testWithConfig() {
+        // given
+        final List<Runnable> runnables =
+                IntStream.range(0, 20).mapToObj(this::createRunnable).toList();
+        testExecutor.executeAndWait(runnables);
+    }
+}
+```
+
