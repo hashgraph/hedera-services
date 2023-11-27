@@ -280,7 +280,7 @@ module com.hedera.node.app.service.mono {
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;
     requires org.eclipse.collections.impl;
-    requires org.hyperledger.besu.secp256k1;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
 }

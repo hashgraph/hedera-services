@@ -11,7 +11,7 @@ module com.hedera.node.app.service.evm {
     requires transitive org.apache.commons.lang3;
     requires transitive org.hyperledger.besu.datatypes;
     requires transitive org.hyperledger.besu.evm;
-    requires transitive org.hyperledger.besu.secp256k1;
+    requires transitive org.hyperledger.besu.nativelib.secp256k1;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.google.common;

@@ -54,6 +54,8 @@ javaModuleDependencies {
     )
 
     // Testing only
+    moduleNameToGA.put("com.google.protobuf.util", "com.google.protobuf:protobuf-java-util")
+    moduleNameToGA.put("org.hamcrest", "org.hamcrest:hamcrest")
     moduleNameToGA.put("org.mockito.junit.jupiter", "org.mockito:mockito-junit-jupiter")
     moduleNameToGA.put("org.objenesis", "org.objenesis:objenesis")
 }

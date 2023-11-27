@@ -32,7 +32,7 @@ module com.hedera.node.app.hapi.utils {
     requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires org.hyperledger.besu.secp256k1;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
 }
