@@ -35,7 +35,6 @@ import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
