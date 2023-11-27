@@ -127,7 +127,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // Plus some other fields that we might prefer to make deterministic
             "symbol",
             // Bloom field in ContractCall result
-            "bloom");
+            "bloom",
+            "prng_bytes");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
     private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";

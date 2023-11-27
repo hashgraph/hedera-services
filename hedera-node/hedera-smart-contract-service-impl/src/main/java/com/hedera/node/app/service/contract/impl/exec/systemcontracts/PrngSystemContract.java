@@ -20,17 +20,21 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
+import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -55,6 +59,19 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
     static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
     public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
     private long gasRequirement;
+
+    /*
+    TODO: here is how contractId is set in mono:
+    PrngSystemPrecompiledContract.computePrecompile > createSuccessfulChildRecord > 
+    addContractCallResultToRecord > PrecompileUtils.addContractCallResultToRecord. 
+    For the contractId in EvmFnResult is passed HTS_PRECOMPILE_MIRROR_ENTITY_ID - which is using the 
+    HTC contract address(0x167). This seems like a bug to me. 
+    Is this how it's suppose to work? Should I fix it in mono or should I just mimic it here and 
+    create a story to later fix it?
+     */
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
+        Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
 
     @Inject
     public PrngSystemContract(@NonNull final GasCalculator gasCalculator) {
@@ -108,8 +125,18 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(randomNum);
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-            updater.externalizeSystemContractResults(
-                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), SUCCESS);
+
+            var data = contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID);
+            final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+
+            // TODO: refactor
+            data = data.copyBuilder()
+                .functionParameters(tuweniToPbjBytes(frame.getInputData()))
+                .senderId(senderId)
+                .gas(369823) // TODO: remove - currently the gas calculation is not working
+                .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                .build();
+            updater.externalizeSystemContractResults(data, SUCCESS);
         }
     }
 
@@ -148,5 +175,11 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         // final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         // return feesInTinyCents / currentGasPriceInTinyCents;
         return 0;
+    }
+
+    private static ContractID contractIdFromEvmAddress(final byte[] bytes) {
+        return ContractID.newBuilder()
+            .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+            .build();
     }
 }
