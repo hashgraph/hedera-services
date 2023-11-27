@@ -351,6 +351,18 @@ jobs:
           echo "name=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
           echo "file=${ARTIFACT_FILE}" >>"${GITHUB_OUTPUT}"
 
+      - name: Check If Release Artifact Exist in Bucket
+        run: |
+          ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
+          gsutil -q stat "gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
+          PATH_EXIST=$?
+          if [ ${PATH_EXIST} -eq 0 ]; then
+            echo "Artifact Already Exist"
+            exit 2
+          else
+            echo "Artifact Not Exist"
+          fi
+
       - name: Compute SHA Hash
         working-directory: ${{ steps.artifact-release.outputs.folder }}
         run: |
