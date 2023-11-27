@@ -182,6 +182,8 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.introspector.Property;
@@ -1800,7 +1802,7 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     private static void readConfig() {
-        var yamlIn = new Yaml(new Constructor(ValidationConfig.class));
+        var yamlIn = new Yaml(new Constructor(ValidationConfig.class, new LoaderOptions()));
         try {
             System.out.println("Config loc: " + params.getConfigLoc());
             validationConfig = yamlIn.load(Files.newInputStream(Paths.get(params.getConfigLoc())));
@@ -1923,6 +1925,10 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     private static class SkipNullRepresenter extends Representer {
+
+        public SkipNullRepresenter() {
+            super(new DumperOptions());
+        }
 
         @Override
         protected NodeTuple representJavaBeanProperty(
