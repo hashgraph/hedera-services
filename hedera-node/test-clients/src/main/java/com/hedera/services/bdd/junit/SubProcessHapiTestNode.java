@@ -169,6 +169,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (nodeId == 0 ? "n" : "n")
                                     + ",address=*:" + (5005 + nodeId),
                             "-Dhedera.recordStream.logDir=data/recordStreams",
+                            "-Dhedera.profiles.active=DEV",
                             "-classpath",
                             classPath,
                             "-Dfile.encoding=UTF-8",

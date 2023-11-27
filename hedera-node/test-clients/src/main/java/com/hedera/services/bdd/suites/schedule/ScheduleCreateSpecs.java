@@ -409,7 +409,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .logged());
     }
 
-    // @todo('9869')
+    @HapiTest
     private HapiSpec preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
