@@ -87,6 +87,8 @@ include(":swirlds-sign-tool", "platform-sdk/swirlds-sign-tool")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
 
+include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
+
 include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-config-benchmark", "platform-sdk/swirlds-config-benchmark")
