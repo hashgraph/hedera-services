@@ -101,7 +101,6 @@ import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -250,7 +249,6 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray()));
     }
 
-    // It is not implemented yet in SystemFileUpdateFacility line number 127
     @HapiTest
     private HapiSpec apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
@@ -272,7 +270,7 @@ public class FileUpdateSuite extends HapiSuite {
                                 .hasKnownStatus(UNAUTHORIZED),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .erasingProps(Set.of("tokenCreate")),
+                                .overridingProps(Map.of("tokenCreate", "0-*")),
                         tokenCreate("secondPoc").payingWith(civilian));
     }
 

@@ -95,7 +95,6 @@ public class AuthorizerImpl implements Authorizer {
         final long num = givenPayer.accountNumOrThrow();
         final var permissionConfig = configProvider.getConfiguration().getConfigData(ApiPermissionConfig.class);
         final var permission = permissionConfig.getPermission(function);
-        System.out.println("permission: " + permission);
         return permission != null && permission.contains(num) ? OK : NOT_SUPPORTED;
     }
 }

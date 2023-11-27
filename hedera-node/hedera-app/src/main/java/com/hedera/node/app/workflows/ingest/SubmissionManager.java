@@ -100,7 +100,6 @@ public class SubmissionManager {
         this.submittedTxns = requireNonNull(deduplicationCache);
 
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        System.out.println("profile active " + Profile.valueOf(hederaConfig.activeProfile()));
         this.isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;
 
         final var statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
