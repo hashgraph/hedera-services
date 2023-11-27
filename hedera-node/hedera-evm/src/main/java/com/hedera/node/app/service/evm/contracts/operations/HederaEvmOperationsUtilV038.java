@@ -63,7 +63,8 @@ public interface HederaEvmOperationsUtilV038 {
                 return systemAccountExecutionSupplier.get();
             }
             if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
-                    || !evmProperties.allowCallsToNonContractAccounts()) {
+                    || !evmProperties.allowCallsToNonContractAccounts()
+                    || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
                 if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                     return new Operation.OperationResult(
                             supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);

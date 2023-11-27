@@ -45,6 +45,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_GRANDFATHER_CONTRACTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
@@ -298,6 +299,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
     private Set<Address> permittedDelegateCallers;
+    private Set<Address> grandfatherContracts;
     private EntityScaleFactors entityScaleFactors;
     private long maxNumWithHapiSigsAccess;
     private int maxAutoAssociations;
@@ -457,6 +459,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
+        grandfatherContracts = properties.getEvmAddresses(CONTRACTS_GRANDFATHER_CONTRACTS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
         contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
         maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
@@ -956,6 +959,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> permittedDelegateCallers() {
         return permittedDelegateCallers;
+    }
+
+    public Set<Address> grandfatherContracts() {
+        return grandfatherContracts;
     }
 
     public Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess() {
