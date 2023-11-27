@@ -96,13 +96,13 @@ public class UpdateDecoder {
     }
 
     /**
-     * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V1} into a synthetic {@link TransactionBody}.
      *
      * @param attempt the attempt
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTokenUpdateV1(@NonNull final HtsCallAttempt attempt) {
-        final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.decodeCall(
+        final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.decodeCall(
                 attempt.input().toArrayUnsafe());
         return decodeTokenUpdate(call, attempt.addressIdConverter());
     }

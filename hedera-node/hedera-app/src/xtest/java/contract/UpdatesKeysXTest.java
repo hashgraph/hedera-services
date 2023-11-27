@@ -17,7 +17,11 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -47,12 +51,22 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateKeysTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
-public class UpdateKeysXTest extends AbstractContractXTest {
+/**
+ * Exercises update a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Update {@code ERC20_TOKEN} via {@link UpdateKeysTranslator#TOKEN_UPDATE_KEYS_FUNCTION}. This should fail with code INVALID_TOKEN_ID.</li>
+ * </ol>
+ */
+public class UpdatesKeysXTest extends AbstractContractXTest {
     private final Tuple[] TOKEN_KEY = new Tuple[] {
         Tuple.of(
                 BigInteger.valueOf(1),
@@ -73,6 +87,14 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, TOKEN_KEY)
                         .array()),
                 assertSuccess());
+        // Should throw `INVALID_SIGNATURE` as we are passing an invalid admin key
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, TOKEN_KEY)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output, "Wrong key"));
         // Should throw `INVALID_ADMIN_KEY` as we are passing an invalid key with key type admin key
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -134,6 +156,15 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                         .supplyKey(AN_ED25519_KEY)
                         .adminKey(INVALID_CONTRACT_ID_KEY)
                         .autoRenewAccountId(INVALID_ID)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyKey(Scenarios.ALICE.account().key())
+                        .adminKey(Scenarios.ALICE.account().key())
                         .build());
         return tokens;
     }

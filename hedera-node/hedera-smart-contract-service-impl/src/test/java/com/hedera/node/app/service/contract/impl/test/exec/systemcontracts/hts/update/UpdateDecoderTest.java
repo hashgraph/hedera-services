@@ -71,7 +71,7 @@ class UpdateDecoderTest {
 
     @Test
     void updateV1Works() {
-        final var encoded = Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.encodeCallWithArgs(
+        final var encoded = Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.encodeCallWithArgs(
                 FUNGIBLE_TOKEN_HEADLONG_ADDRESS, hederaToken));
         given(attempt.input()).willReturn(encoded);
 
