@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -37,16 +38,19 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreez
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -63,9 +67,13 @@ import org.apache.logging.log4j.Logger;
 public class MixedOpsRestartTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsRestartTest.class);
 
-    public static final int NUM_SUBMISSIONS = 5;
-    public static final String SUBMIT_KEY = "submitKey";
-    public static final String TOKEN = "token";
+    private static final int NUM_SUBMISSIONS = 5;
+    private static final String SUBMIT_KEY = "submitKey";
+    private static final String TOKEN = "token";
+    private static final String SENDER = "sender";
+    private static final String RECEIVER = "receiver";
+    private static final String TOPIC = "topic";
+    private static final String TREASURY = "treasury";
 
     public static void main(String... args) {
         new AddressAliasIdFuzzing().runSuiteSync();
@@ -83,67 +91,73 @@ public class MixedOpsRestartTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec restartMixedOps() {
-        final String sender = "sender";
-        final String receiver = "receiver";
-        final String topic = "topic";
-
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
+        Random r = new Random(38582L);
 
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
             // Submit some mixed operations
             fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),
             inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                            .payingWith(sender)
+                    .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
+                            .payingWith(SENDER)
                             .logging()
-                            .signedBy(sender))
+                            .signedBy(SENDER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, NUM_SUBMISSIONS)
                     .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
-                            .payingWith(GENESIS)
-                            .signedBy(GENESIS)
-                            .fee(ONE_HUNDRED_HBARS)
-                            .initialSupply(ONE_HUNDRED_HBARS)
-                            .logging()
-                            .treasury("treasury"))
+                            .supplyType(TokenSupplyType.FINITE)
+                            .treasury(TREASURY)
+                            .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                            .maxSupply(1000)
+                            .initialSupply(500)
+                            .decimals(1)
+                            .adminKey("adminKey")
+                            .freezeKey("freezeKey")
+                            .kycKey("kycKey")
+                            .supplyKey(SUPPLY_KEY)
+                            .wipeKey("wipeKey")
+                            .feeScheduleKey("feeScheduleKey")
+                            .pauseKey("pauseKey")
+                            .logging())
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(i -> tokenAssociate(sender, TOKEN + i)
+                    .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
                             .logging()
-                            .payingWith(sender)
-                            .signedBy(sender))
+                            .payingWith(SENDER)
+                            .signedBy(SENDER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
-            submitMessageTo(topic)
+            submitMessageTo(TOPIC)
                     .message(ArrayUtils.addAll(
                             ByteBuffer.allocate(8)
                                     .putLong(Instant.now().toEpochMilli())
                                     .array(),
                             randomUtf8Bytes(1000)))
-                    .payingWith(sender)
-                    .signedBy(sender, SUBMIT_KEY),
+                    .payingWith(SENDER)
+                    .signedBy(SENDER, SUBMIT_KEY),
             sleepFor(10000),
-            //                inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-            //                        .mapToObj(ignore -> scheduleCreate(
-            //                                "schedule" + scheduleId.incrementAndGet(),
-            //                                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-            //                                .signedBy(DEFAULT_PAYER, sender)
-            //                                .adminKey(DEFAULT_PAYER)
-            //                                .logging())
-            //                        .toArray(HapiSpecOperation[]::new)),
+            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                    .mapToObj(ignore -> scheduleCreate(
+                                    "schedule" + scheduleId.incrementAndGet(),
+                                    cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, r.nextInt(1000))))
+                            .payingWith(SENDER)
+                            .signedBy(SENDER)
+                            .adminKey(SENDER)
+                            .logging())
+                    .toArray(HapiSpecOperation[]::new)),
         };
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
-                        cryptoCreate("treasury").key(GENESIS),
-                        cryptoCreate(sender),
-                        cryptoCreate(receiver),
-                        createTopic(topic).submitKeyName(SUBMIT_KEY),
+                        cryptoCreate(TREASURY),
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
                         inParallel(mixedOpsBurst.get()))
                 .when(
                         // freeze nodes
@@ -159,11 +173,11 @@ public class MixedOpsRestartTest extends HapiSuite {
                         // wait for all nodes to be ACTIVE
                         waitForNodesToBecomeActive(60))
                 .then(
-                        // Once nodes come back ACTIVE, submit same operations again
-                        cryptoCreate("treasury").key(GENESIS),
-                        cryptoCreate(sender),
-                        cryptoCreate(receiver),
-                        createTopic(topic).submitKeyName(SUBMIT_KEY),
+                        // Once nodes come back ACTIVE, submit some operations again
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
+                        createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
                         inParallel(mixedOpsBurst.get()));
     }
 }

@@ -69,7 +69,8 @@ public final class BlockRecordService implements Service {
             public void migrate(@NonNull final MigrationContext ctx) {
                 final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
-                final var isGenesis = ctx.previousStates().isEmpty();
+                final var isGenesis =
+                        ctx.previousStates() == null || ctx.previousStates().isEmpty();
                 if (isGenesis) {
                     final var blocks = new BlockInfo(0, null, Bytes.EMPTY, null, false);
                     blocksState.put(blocks);

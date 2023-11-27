@@ -115,7 +115,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(requireNonNull(schema));
-        logger.info(
+        logger.debug(
                 "Registering schema {} for service {} ",
                 () -> HapiUtils.toString(schema.getVersion()),
                 () -> serviceName);
@@ -184,7 +184,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     .sorted(Comparator.comparing(StateDefinition::stateKey))
                     .forEach(def -> {
                         final var stateKey = def.stateKey();
-                        logger.info("Creating state {} for {}", stateKey, serviceName);
+                        logger.debug("Creating state {} for {}", stateKey, serviceName);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
                             hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
@@ -276,7 +276,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // Evaluate each of the schemas (which are in ascending order by version, thanks
         // to the tree-set nature of our set) and select the subset that are newer than
         // the "previousVersion" and no newer than the currentVersion.
-        logger.info("Computing applicable schemas {}", () -> schemas);
         final var applicableSchemas = new ArrayList<Schema>();
         for (Schema schema : schemas) {
             final var ver = schema.getVersion();
