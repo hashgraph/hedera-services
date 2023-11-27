@@ -18,13 +18,13 @@ package com.hedera.node.app.records;
 
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
+import static com.hedera.node.app.spi.Service.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.spi.state.*;
@@ -58,7 +58,7 @@ final class BlockRecordServiceTest {
             Object[] args = invocation.getArguments();
             assertEquals(1, args.length);
             Schema schema = (Schema) args[0];
-            assertEquals(SemanticVersion.DEFAULT, schema.getVersion());
+            assertEquals(CURRENT_VERSION, schema.getVersion());
             Set<StateDefinition> states = schema.statesToCreate();
             assertEquals(2, states.size());
             assertTrue(states.contains(StateDefinition.singleton("RUNNING_HASHES", RunningHashes.PROTOBUF)));
