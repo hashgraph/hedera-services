@@ -353,7 +353,7 @@ jobs:
 
       - name: Check If Release Artifact Exist in Bucket
         run: |
-          set -o pipefail
+          set +e
           ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
           gsutil -q stat gs://${{ secrets.bucket-name }}/"${ARTIFACT_NAME}.zip"
           PATH_EXIST=$?
