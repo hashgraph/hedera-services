@@ -822,8 +822,6 @@ public final class MiscUtils {
             final List<DeterministicThrottle> throttles,
             final DeterministicThrottle.UsageSnapshot[] snapshots,
             final String source) {
-        final var currUsageSnapshots =
-                throttles.stream().map(DeterministicThrottle::usageSnapshot).toList();
         for (int i = 0, n = snapshots.length; i < n; i++) {
             final var savedUsageSnapshot = snapshots[i];
             final var throttle = throttles.get(i);
@@ -837,6 +835,8 @@ public final class MiscUtils {
                         source,
                         (i + 1),
                         e.getMessage());
+                final var currUsageSnapshots  =
+                        throttles.stream().map(DeterministicThrottle::usageSnapshot).toList();
                 resetUnconditionally(throttles, currUsageSnapshots);
                 break;
             }
