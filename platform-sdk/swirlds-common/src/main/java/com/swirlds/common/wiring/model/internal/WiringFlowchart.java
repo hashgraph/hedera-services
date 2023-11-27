@@ -34,9 +34,10 @@ public final class WiringFlowchart {
     private WiringFlowchart() {}
 
     private static final String INDENTATION = "    ";
-    private static final String SCHEDULER_COLOR = "362";
-    private static final String DIRECT_SCHEDULER_COLOR = "666";
-    private static final String GROUP_COLOR = "555";
+    private static final String SCHEDULER_COLOR = "ff9";
+    private static final String DIRECT_SCHEDULER_COLOR = "ccc";
+    private static final String TEXT_COLOR = "000";
+    private static final String GROUP_COLOR = "9cf";
 
     /**
      * Draw an edge.
@@ -99,9 +100,9 @@ public final class WiringFlowchart {
         if (vertex.getType() == TaskSchedulerType.CONCURRENT) {
             sb.append("[[").append(vertex.getName()).append("]]");
         } else if (vertex.getType() == TaskSchedulerType.DIRECT) {
-            sb.append("((").append(vertex.getName()).append("))");
+            sb.append("[/").append(vertex.getName()).append("/]");
         } else if (vertex.getType() == TaskSchedulerType.DIRECT_STATELESS) {
-            sb.append("(((").append(vertex.getName()).append(")))");
+            sb.append("{{").append(vertex.getName()).append("}}");
         }
     }
 
@@ -150,7 +151,9 @@ public final class WiringFlowchart {
                     .append(vertex.getName())
                     .append(" fill:#")
                     .append(getVertexColor(vertex))
-                    .append(",stroke:#000,stroke-width:2px,color:#fff\n");
+                    .append(",stroke:#")
+                    .append(TEXT_COLOR)
+                    .append(",stroke-width:2px\n");
         }
     }
 
@@ -174,7 +177,9 @@ public final class WiringFlowchart {
                 .append(group.name())
                 .append(" fill:#")
                 .append(color)
-                .append(",stroke:#000,stroke-width:2px,color:#fff\n");
+                .append(",stroke:#")
+                .append(TEXT_COLOR)
+                .append(",stroke-width:2px\n");
 
         vertices.stream().sorted().forEachOrdered(vertex -> drawVertex(sb, vertex, collapsedVertexMap, 2));
         sb.append(INDENTATION).append("end\n");

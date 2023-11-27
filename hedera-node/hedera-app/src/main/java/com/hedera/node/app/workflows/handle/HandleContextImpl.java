@@ -570,7 +570,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayerId,
             @NonNull final TransactionCategory childCategory) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addChild(configuration());
+                () -> recordListBuilder.addChild(configuration(), childCategory);
         return doDispatchChildTransaction(
                 syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback, childCategory);
     }
@@ -804,7 +804,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addChild(configuration());
+        final var result = recordListBuilder.addChild(configuration(), CHILD);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
