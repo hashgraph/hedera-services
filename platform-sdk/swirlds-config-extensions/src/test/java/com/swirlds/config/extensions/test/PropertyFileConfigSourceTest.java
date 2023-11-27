@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.extensions.sources;
+package com.swirlds.config.extensions.test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,7 @@ class PropertyFileConfigSourceTest {
         // given
         final int ordinal1 = 100;
         final Path configFile1 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config1.properties")
                 .getFile());
         final PropertyFileConfigSource source1 =
@@ -38,6 +40,7 @@ class PropertyFileConfigSourceTest {
 
         final int ordinal2 = 200;
         final Path configFile2 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config2.properties")
                 .getFile());
         final PropertyFileConfigSource source2 =
@@ -62,6 +65,7 @@ class PropertyFileConfigSourceTest {
         // given
         final int ordinal1 = 200;
         final Path configFile1 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config1.properties")
                 .getFile());
         final PropertyFileConfigSource source1 =
@@ -69,6 +73,7 @@ class PropertyFileConfigSourceTest {
 
         final int ordinal2 = 100;
         final Path configFile2 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config2.properties")
                 .getFile());
         final PropertyFileConfigSource source2 =
@@ -93,18 +98,21 @@ class PropertyFileConfigSourceTest {
         // given
         final int ordinal1 = 199;
         final Path configFile1 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config1.properties")
                 .getFile());
         final PropertyFileConfigSource source1 =
                 assertDoesNotThrow(() -> new PropertyFileConfigSource(configFile1, ordinal1));
 
         final Path configFile2 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config2.properties")
                 .getFile());
         final PropertyFileConfigSource source2 = assertDoesNotThrow(() -> new PropertyFileConfigSource(configFile2));
 
         final int ordinal3 = 201;
         final Path configFile3 = Path.of(PropertyFileConfigSourceTest.class
+                .getClassLoader()
                 .getResource("config3.properties")
                 .getFile());
         final PropertyFileConfigSource source3 =
