@@ -47,6 +47,7 @@ import com.hedera.node.app.fixtures.workflows.handle.record.SingleTransactionRec
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -192,6 +193,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private ParentRecordFinalizer finalizer;
 
+    @Mock
+    private ChildRecordFinalizer childRecordFinalizer;
+
     @Mock(strictness = LENIENT)
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
@@ -278,6 +282,7 @@ class HandleWorkflowTest extends AppTestBase {
                 stakingPeriodTimeHook,
                 feeManager,
                 exchangeRateManager,
+                childRecordFinalizer,
                 finalizer,
                 systemFileUpdateFacility,
                 dualStateUpdateFacility,
@@ -304,6 +309,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -326,6 +332,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -348,6 +355,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -370,6 +378,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -392,6 +401,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -414,6 +424,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -436,6 +447,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -458,6 +470,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -480,6 +493,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -502,6 +516,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -524,6 +539,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -546,6 +562,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -568,6 +585,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         null,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -590,6 +608,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         null,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -612,6 +631,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         null,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -634,6 +654,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         null,
                         dualStateUpdateFacility,
@@ -656,6 +677,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         null,
@@ -678,6 +700,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -700,6 +723,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,
@@ -722,6 +746,7 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        childRecordFinalizer,
                         finalizer,
                         systemFileUpdateFacility,
                         dualStateUpdateFacility,

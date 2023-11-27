@@ -41,7 +41,7 @@ import java.util.Map;
  * classes.
  */
 public class RecordFinalizerBase {
-    private static final AccountID ZERO_ACCOUNT_ID =
+    protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -81,7 +81,7 @@ public class RecordFinalizerBase {
      * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
-     * @param tokenStore
+     * @param tokenStore the {@link ReadableTokenStore} to get the token from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */

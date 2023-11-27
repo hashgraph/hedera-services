@@ -24,6 +24,7 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -41,6 +42,14 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder status(@NonNull ResponseCodeEnum status);
+
+    /**
+     * Returns final status of this contract call's record.
+     *
+     * @return the final status of this contract call
+     */
+    @NonNull
+    ResponseCodeEnum status();
 
     /**
      * Tracks the contract id called.
@@ -68,6 +77,20 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
+
+    /**
+     * Gets the newly minted serial numbers.
+     *
+     * @return the newly minted serial numbers
+     */
+    List<Long> serialNumbers();
+
+    /**
+     * Gets the new total supply of a token, e.g. after minting or burning.
+     *
+     * @return new total supply of a token
+     */
+    long getNewTotalSupply();
 
     @NonNull
     ContractCallRecordBuilder contractActions(
