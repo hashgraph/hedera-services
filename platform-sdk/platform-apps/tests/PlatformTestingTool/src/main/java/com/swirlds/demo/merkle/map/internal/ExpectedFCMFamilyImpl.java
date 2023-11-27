@@ -30,7 +30,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Rebuild;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.test.set.RandomAccessHashSet;
+import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
 import com.swirlds.demo.merkle.map.FCMTransactionUtils;

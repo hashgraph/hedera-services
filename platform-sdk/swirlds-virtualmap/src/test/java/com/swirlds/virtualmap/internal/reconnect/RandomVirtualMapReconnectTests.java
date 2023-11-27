@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
+import com.swirlds.common.test.fixtures.set.RandomAccessSet;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.common.test.set.RandomAccessHashSet;
-import com.swirlds.common.test.set.RandomAccessSet;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;

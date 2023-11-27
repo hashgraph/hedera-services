@@ -18,8 +18,8 @@ package com.swirlds.merkle.map.test.util;
 
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
-import com.swirlds.common.test.dummy.Key;
-import com.swirlds.common.test.dummy.Value;
+import com.swirlds.common.test.fixtures.dummy.Key;
+import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.merkle.map.test.dummy.FCQValue;
 import java.util.Map;
 import java.util.function.Function;

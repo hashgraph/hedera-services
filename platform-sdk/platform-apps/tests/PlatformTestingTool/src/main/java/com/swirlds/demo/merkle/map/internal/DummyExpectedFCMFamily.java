@@ -16,8 +16,8 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
-import com.swirlds.common.test.set.RandomAccessHashSet;
-import com.swirlds.common.test.set.RandomAccessSet;
+import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
+import com.swirlds.common.test.fixtures.set.RandomAccessSet;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;

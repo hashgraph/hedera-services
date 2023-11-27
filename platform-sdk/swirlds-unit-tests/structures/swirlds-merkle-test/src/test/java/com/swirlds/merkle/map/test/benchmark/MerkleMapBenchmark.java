@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.benchmark.Benchmark;
-import com.swirlds.common.test.benchmark.BenchmarkConfiguration;
-import com.swirlds.common.test.benchmark.BenchmarkOperation;
-import com.swirlds.common.test.benchmark.BenchmarkStatistic;
+import com.swirlds.common.test.fixtures.benchmark.Benchmark;
+import com.swirlds.common.test.fixtures.benchmark.BenchmarkConfiguration;
+import com.swirlds.common.test.fixtures.benchmark.BenchmarkOperation;
+import com.swirlds.common.test.fixtures.benchmark.BenchmarkStatistic;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.benchmark.operations.CreateAccountOperation;
 import com.swirlds.merkle.map.test.benchmark.operations.DeleteAccountOperation;
