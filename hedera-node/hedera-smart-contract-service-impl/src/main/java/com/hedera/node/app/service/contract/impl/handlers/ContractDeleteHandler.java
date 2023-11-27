@@ -87,8 +87,9 @@ public class ContractDeleteHandler implements TransactionHandler {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeDeleted = requireNonNull(accountStore.getContractById(op.contractIDOrThrow()));
         final var obtainer = getObtainer(accountStore, op);
-        if (obtainer == null || obtainer.deleted()) {
-            throw new HandleException(OBTAINER_DOES_NOT_EXIST);
+        validateTrue(obtainer != null, OBTAINER_DOES_NOT_EXIST);
+        if (obtainer.deleted()) {
+            throw new HandleException(obtainer.smartContract() ? INVALID_CONTRACT_ID : OBTAINER_DOES_NOT_EXIST);
         }
         final var recordBuilder = context.recordBuilder(ContractDeleteRecordBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
