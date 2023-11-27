@@ -80,7 +80,8 @@ public final class HederaOperationUtilV038 {
             return supplierExecution.get();
         }
         if (!globalDynamicProperties.evmVersion().equals(EVM_VERSION_0_45)
-                || !globalDynamicProperties.allowCallsToNonContractAccounts()) {
+                || !globalDynamicProperties.allowCallsToNonContractAccounts()
+                || globalDynamicProperties.grandfatherContracts().contains(frame.getContractAddress())) {
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return failingOperationResultFrom(
                         supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
