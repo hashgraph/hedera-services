@@ -284,4 +284,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * Revert child records.
      */
     void revertChildRecords();
+
+    /**
+     * Sets the world updater to not check for the existence of the contractId
+     * in the ledger when the getHederaContractId() method is called
+     * This is to improve Ethereum equivalence.
+     */
+    void setContractMustExist();
 }

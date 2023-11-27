@@ -19,7 +19,9 @@ package com.hedera.node.app.service.contract.impl.state;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
@@ -110,6 +112,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     protected boolean reverted = false;
 
+    protected boolean contractMustExist = true;
+
     public ProxyWorldUpdater(
             @NonNull final Enhancement enhancement,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
@@ -163,6 +167,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         }
         final HederaEvmAccount account = (HederaEvmAccount) get(address);
         if (account == null) {
+            // If configured to allow non-existent contracts, return the address as a contract ID if the account is
+            // not found.
+            if (!contractMustExist) {
+                return isLongZero(address) ? asNumberedContractId(address) : asEvmContractId(address);
+            }
             throw new IllegalArgumentException("No contract pending or extant at " + address);
         }
         return account.hederaContractId();
@@ -385,6 +394,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
+    public void setContractMustExist() {
+        contractMustExist = false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @SuppressWarnings("java:S125")
     public void commit() {
         // It might seem like we should have a call to evmFrameState.commit() here; but remember the
@@ -417,6 +434,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (this.pendingCreation != null) {
             child.pendingCreation = this.pendingCreation;
         }
+        child.contractMustExist = this.contractMustExist;
         return child;
     }
 

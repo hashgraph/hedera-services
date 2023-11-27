@@ -218,7 +218,7 @@ public class ActionStack {
                         final var lazyCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
                         try {
                             builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
-                        } catch (final IllegalArgumentException e) {
+                        } catch (final IllegalArgumentException | NullPointerException e) {
                             // handle non-existing to/receiver address
                             builder.recipientAccount((AccountID) null);
                         }

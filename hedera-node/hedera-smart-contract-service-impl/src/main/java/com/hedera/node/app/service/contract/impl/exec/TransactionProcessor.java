@@ -260,6 +260,7 @@ public class TransactionProcessor {
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
         final InvolvedParties parties;
+        updater.setContractMustExist();
         if (maybeLazyCreate(transaction, to, config)) {
             // Only set up the lazy creation if the transaction has a value and a valid alias
             final var alias = transaction.contractIdOrThrow().evmAddress();
