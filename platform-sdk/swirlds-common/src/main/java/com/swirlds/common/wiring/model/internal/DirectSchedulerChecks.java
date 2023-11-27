@@ -19,7 +19,7 @@ package com.swirlds.common.wiring.model.internal;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.Deque;
@@ -45,21 +45,21 @@ public final class DirectSchedulerChecks {
      *
      * <ul>
      * <li>
-     * Calling into a component with type {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT}
-     * from a component with {@link com.swirlds.common.wiring.builders.TaskSchedulerType#CONCURRENT CONCURRENT} is not
+     * Calling into a component with type {@link TaskSchedulerType#DIRECT DIRECT}
+     * from a component with {@link TaskSchedulerType#CONCURRENT CONCURRENT} is not
      * allowed.
      * </li>
      * <li>
-     * Calling into a component with type {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT}
+     * Calling into a component with type {@link TaskSchedulerType#DIRECT DIRECT}
      * from more than one component with type
-     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#SEQUENTIAL SEQUENTIAL} or type
-     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#SEQUENTIAL_THREAD SEQUENTIAL_THREAD} is not allowed.
+     * {@link TaskSchedulerType#SEQUENTIAL SEQUENTIAL} or type
+     * {@link TaskSchedulerType#SEQUENTIAL_THREAD SEQUENTIAL_THREAD} is not allowed.
      * </li>
      * <li>
      * Calling into a component A with type
-     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT} from component B with type
-     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT} or type
-     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT_STATELESS DIRECT_STATELESS} counts as a call
+     * {@link TaskSchedulerType#DIRECT DIRECT} from component B with type
+     * {@link TaskSchedulerType#DIRECT DIRECT} or type
+     * {@link TaskSchedulerType#DIRECT_STATELESS DIRECT_STATELESS} counts as a call
      * into B from all components calling into component A.
      * </li>
      * </ul>

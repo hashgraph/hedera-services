@@ -25,54 +25,50 @@ java {
     withSourcesJar()
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components.getByName("java"))
-            versionMapping {
-                usage("java-api") { fromResolutionResult() }
-                usage("java-runtime") { fromResolutionResult() }
+val maven =
+    publishing.publications.create<MavenPublication>("maven") {
+        from(components.getByName("java"))
+        versionMapping {
+            usage("java-api") { fromResolutionResult() }
+            usage("java-runtime") { fromResolutionResult() }
+        }
+
+        pom {
+            packaging = findProperty("maven.project.packaging")?.toString() ?: "jar"
+            name.set(project.name)
+            url.set("https://www.swirlds.com/")
+            inceptionYear.set("2016")
+
+            description.set(provider(project::getDescription))
+
+            organization {
+                name.set("Hedera Hashgraph, LLC")
+                url.set("https://www.hedera.com")
             }
 
-            pom {
-                packaging = findProperty("maven.project.packaging")?.toString() ?: "jar"
-                name.set(project.name)
-                url.set("https://www.swirlds.com/")
-                inceptionYear.set("2016")
-
-                description.set(provider(project::getDescription))
-
-                organization {
-                    name.set("Hedera Hashgraph, LLC")
-                    url.set("https://www.hedera.com")
-                }
-
-                licenses {
-                    license {
-                        name.set("Apache License, Version 2.0")
-                        url.set(
-                            "https://raw.githubusercontent.com/hashgraph/hedera-services/main/LICENSE"
-                        )
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/hashgraph/hedera-services.git")
-                    developerConnection.set(
-                        "scm:git:ssh://github.com:hashgraph/hedera-services.git"
+            licenses {
+                license {
+                    name.set("Apache License, Version 2.0")
+                    url.set(
+                        "https://raw.githubusercontent.com/hashgraph/hedera-services/main/LICENSE"
                     )
-                    url.set("https://github.com/hashgraph/hedera-services")
                 }
+            }
+
+            scm {
+                connection.set("scm:git:git://github.com/hashgraph/hedera-services.git")
+                developerConnection.set("scm:git:ssh://github.com:hashgraph/hedera-services.git")
+                url.set("https://github.com/hashgraph/hedera-services")
             }
         }
     }
-}
 
-signing {
-    useGpgCmd()
-    sign(publishing.publications.getByName("maven"))
-}
+val publishSigningEnabled =
+    providers.gradleProperty("publishSigningEnabled").getOrElse("false").toBoolean()
 
-tasks.withType<Sign>().configureEach {
-    onlyIf { providers.gradleProperty("publishSigningEnabled").getOrElse("false").toBoolean() }
+if (publishSigningEnabled) {
+    signing {
+        sign(maven)
+        useGpgCmd()
+    }
 }
