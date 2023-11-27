@@ -22,7 +22,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logCompactStats;
-import static com.swirlds.merkledb.files.DataFileMetadata.MAX_COMPACTION_LEVEL;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.units.UnitConstants;
@@ -91,7 +90,7 @@ public class DataFileCompactor {
     @Nullable
     private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
 
-    private final BiConsumer<Integer, Double> reportTotalSpaceMetricFunction;
+    private final BiConsumer<Integer, Double> reportFileSizeByLevelMetricFunction;
 
     /**
      * A function that updates statistics of total usage of disk space and off-heap space
@@ -151,7 +150,7 @@ public class DataFileCompactor {
      * @param index                          index to update during compaction
      * @param reportDurationMetricFunction   function to report how long compaction took, in ms
      * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
-     * @param reportTotalSpaceMetricFunction function to report how much spaсе is used by the store by compaction level, in Mb
+     * @param reportFileSizeByLevelMetricFunction function to report how much spaсе is used by the store by compaction level, in Mb
      * @param updateTotalStatsFunction       A function that updates statistics of total usage of disk space and off-heap space
      */
     public DataFileCompactor(
@@ -160,14 +159,14 @@ public class DataFileCompactor {
             CASableLongIndex index,
             @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
-            @Nullable final BiConsumer<Integer, Double> reportTotalSpaceMetricFunction,
+            @Nullable final BiConsumer<Integer, Double> reportFileSizeByLevelMetricFunction,
             @Nullable Runnable updateTotalStatsFunction) {
         this.storeName = storeName;
         this.dataFileCollection = dataFileCollection;
         this.index = index;
         this.reportDurationMetricFunction = reportDurationMetricFunction;
         this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
-        this.reportTotalSpaceMetricFunction = reportTotalSpaceMetricFunction;
+        this.reportFileSizeByLevelMetricFunction = reportFileSizeByLevelMetricFunction;
         this.updateTotalStatsFunction = updateTotalStatsFunction;
     }
 
@@ -404,9 +403,10 @@ public class DataFileCompactor {
      */
     public boolean compact() throws IOException, InterruptedException {
 
-        final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
+        final List<? extends DataFileReader<?>> completedFiles = dataFileCollection.getAllCompletedFiles();
+        reportFileSizeByLevel(completedFiles);
         final List<? extends DataFileReader<?>> filesToCompact =
-                compactionPlan(allCompactableFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
+                compactionPlan(completedFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
@@ -442,17 +442,7 @@ public class DataFileCompactor {
                     (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
-        if (reportTotalSpaceMetricFunction != null) {
-            Map<Integer, List<DataFileReader<?>>> readersByLevel =
-                    getReadersByLevel(dataFileCollection.getAllCompletedFiles());
-            for (int i = 0; i < MAX_COMPACTION_LEVEL; i++) {
-                List<DataFileReader<?>> readers = readersByLevel.get(i);
-                if (readers != null) {
-                    reportTotalSpaceMetricFunction.accept(
-                            i, getSizeOfFiles(readers) * UnitConstants.BYTES_TO_MEBIBYTES);
-                }
-            }
-        }
+        reportFileSizeByLevel(dataFileCollection.getAllCompletedFiles());
 
         logCompactStats(
                 storeName,
@@ -475,6 +465,19 @@ public class DataFileCompactor {
         }
 
         return true;
+    }
+
+    private void reportFileSizeByLevel(List<? extends DataFileReader<?>> allCompletedFiles) {
+        if (reportFileSizeByLevelMetricFunction != null) {
+            Map<Integer, List<DataFileReader<?>>> readersByLevel = getReadersByLevel(allCompletedFiles);
+            for (int i = 0; i < readersByLevel.size(); i++) {
+                List<DataFileReader<?>> readers = readersByLevel.get(i);
+                if (readers != null) {
+                    reportFileSizeByLevelMetricFunction.accept(
+                            i, getSizeOfFiles(readers) * UnitConstants.BYTES_TO_MEBIBYTES);
+                }
+            }
+        }
     }
 
     /**

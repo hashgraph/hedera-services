@@ -89,13 +89,13 @@ class MerkleDbStatisticsTest {
         assertDoesNotThrow(() -> statistics.setTotalFileSizeMb(314159));
         assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(compactionLevel, 314));
         assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
-        assertDoesNotThrow(() -> statistics.setHashesStoreTotalSpaceMb(compactionLevel, Math.PI));
+        assertDoesNotThrow(() -> statistics.setHashesStoreFileSizeByLevelMb(compactionLevel, Math.PI));
         assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(compactionLevel, 314));
         assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreTotalSpaceMb(compactionLevel, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreFileSizeByLevelMb(compactionLevel, Math.PI));
         assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(compactionLevel, 314));
         assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreTotalSpaceMb(compactionLevel, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreFileSizeByLevelMb(compactionLevel, Math.PI));
         assertDoesNotThrow(() -> statistics.setOffHeapHashesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLeavesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLongKeysIndexMb(42));
@@ -245,11 +245,11 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testSetHashesStoreTotalSpace() {
+    void testSetHashesStoreFileSizeByLevel() {
         // given
-        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_hashesTotalSpaceMb_" + LABEL);
+        final Metric metric = getMetric("files_level_" + compactionLevel, "_hashesFileSizeByLevelMb_" + LABEL);
         // when
-        statistics.setHashesStoreTotalSpaceMb(compactionLevel, Math.PI);
+        statistics.setHashesStoreFileSizeByLevelMb(compactionLevel, Math.PI);
         // then
         assertValueSet(metric);
     }
@@ -285,11 +285,11 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testSetLeafKeysStoreTotalSpace() {
+    void testSetLeafKeysStoreFileSizeByLevel() {
         // given
-        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_leafKeysTotalSpaceMb_" + LABEL);
+        final Metric metric = getMetric("files_level_" + compactionLevel, "_leafKeysFileSizeByLevelMb_" + LABEL);
         // when
-        statistics.setLeafKeysStoreTotalSpaceMb(compactionLevel, Math.PI);
+        statistics.setLeafKeysStoreFileSizeByLevelMb(compactionLevel, Math.PI);
         // then
         assertValueSet(metric);
     }
@@ -315,11 +315,11 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testSetLeavesStoreTotalSpace() {
+    void testSetLeavesStoreFileSizeByLevel() {
         // given
-        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_leavesTotalSpaceMb_" + LABEL);
+        final Metric metric = getMetric("files_level_" + compactionLevel, "_leavesFileSizeByLevelMb_" + LABEL);
         // when
-        statistics.setLeavesStoreTotalSpaceMb(compactionLevel, Math.PI);
+        statistics.setLeavesStoreFileSizeByLevelMb(compactionLevel, Math.PI);
         // then
         assertValueSet(metric);
     }
