@@ -340,6 +340,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenFromContractWithApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
