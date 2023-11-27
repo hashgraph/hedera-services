@@ -27,7 +27,6 @@ on:
 defaults:
   run:
     shell: bash
-
 env:
   TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
