@@ -212,7 +212,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
-        var status = standardized(recordBuilder.status());
+        var status = recordBuilder.status();
         if (status != SUCCESS) {
             status = failureCustomizer.customize(syntheticBody, status, enhancement);
             recordBuilder.status(status);
