@@ -26,12 +26,6 @@ import com.swirlds.base.state.Stoppable;
 public interface PlatformComponent extends Startable, Stoppable {
 
     /**
-     * Invoked when a fatal error has occurred. This method gives the component a chance to take any final actions
-     * before operations are halted, such as cleaning up resources, writing data to disk, etc.
-     */
-    default void onFatalError() {}
-
-    /**
      * {@inheritDoc}
      * <p>
      * Starts the platform component. This method must be called after the component construction. The component may not
