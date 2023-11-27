@@ -180,7 +180,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 // Update BlockInfo state
                 final var states = state.createWritableStates(BlockRecordService.NAME);
                 final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
-                logger.info("Updating block info to {}", lastBlockInfo);
                 blockInfoState.put(lastBlockInfo);
 
                 // log end of block if needed

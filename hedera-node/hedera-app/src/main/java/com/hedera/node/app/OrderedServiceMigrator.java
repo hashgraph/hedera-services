@@ -71,7 +71,6 @@ public class OrderedServiceMigrator {
         requireNonNull(currentVersion);
         requireNonNull(versionedConfiguration);
         requireNonNull(networkInfo);
-        logger.info("State children before migration: {}", state.getNumberOfChildren());
 
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()

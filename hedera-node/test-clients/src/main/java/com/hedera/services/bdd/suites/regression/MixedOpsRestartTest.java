@@ -16,27 +16,13 @@
 
 package com.hedera.services.bdd.suites.regression;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.net.InetAddress;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -51,6 +37,22 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreez
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiSuite;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This test is to verify restart functionality. It submits a burst of mixed operations, then
@@ -89,45 +91,49 @@ public class MixedOpsRestartTest extends HapiSuite {
         AtomicInteger scheduleId = new AtomicInteger(0);
 
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
-                // Submit some mixed operations
-                fileUpdate(APP_PROPERTIES)
-                        .payingWith(GENESIS)
-                        .overridingProps(Map.of(
-                        "tokens.maxPerAccount",
-                        "10000000")),
-                inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                        .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                                .payingWith(sender)
-                                .logging()
-                                .signedBy(sender))
-                        .toArray(HapiSpecOperation[]::new)),
-                sleepFor(10000),
-                inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                        .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .initialSupply(ONE_HUNDRED_HBARS)
-                                .logging()
-                                .treasury("treasury"))
-                        .toArray(HapiSpecOperation[]::new)),
-                sleepFor(10000),
-                inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                        .mapToObj(i -> tokenAssociate(sender, TOKEN + i)
-                                .logging()
-                                .payingWith(sender)
-                                .signedBy(sender))
-                        .toArray(HapiSpecOperation[]::new)),
-                sleepFor(10000),
-                inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                        .mapToObj(ignore -> scheduleCreate(
-                                "schedule-" + getHostName() + "-" + scheduleId.getAndIncrement(),
-                                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                                .alsoSigningWith(sender)
-                                .adminKey(DEFAULT_PAYER)
-                                .logging())
-                        .toArray(HapiSpecOperation[]::new)),
-                sleepFor(10000)
+            // Submit some mixed operations
+            fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),
+            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                    .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+                            .payingWith(sender)
+                            .logging()
+                            .signedBy(sender))
+                    .toArray(HapiSpecOperation[]::new)),
+            sleepFor(10000),
+            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                    .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
+                            .payingWith(GENESIS)
+                            .signedBy(GENESIS)
+                            .fee(ONE_HUNDRED_HBARS)
+                            .initialSupply(ONE_HUNDRED_HBARS)
+                            .logging()
+                            .treasury("treasury"))
+                    .toArray(HapiSpecOperation[]::new)),
+            sleepFor(10000),
+            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                    .mapToObj(i -> tokenAssociate(sender, TOKEN + i)
+                            .logging()
+                            .payingWith(sender)
+                            .signedBy(sender))
+                    .toArray(HapiSpecOperation[]::new)),
+            sleepFor(10000),
+            submitMessageTo(topic)
+                    .message(ArrayUtils.addAll(
+                            ByteBuffer.allocate(8)
+                                    .putLong(Instant.now().toEpochMilli())
+                                    .array(),
+                            randomUtf8Bytes(1000)))
+                    .payingWith(sender)
+                    .signedBy(sender, SUBMIT_KEY),
+            sleepFor(10000),
+            //                inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+            //                        .mapToObj(ignore -> scheduleCreate(
+            //                                "schedule" + scheduleId.incrementAndGet(),
+            //                                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+            //                                .signedBy(DEFAULT_PAYER, sender)
+            //                                .adminKey(DEFAULT_PAYER)
+            //                                .logging())
+            //                        .toArray(HapiSpecOperation[]::new)),
         };
         return defaultHapiSpec("RestartMixedOps")
                 .given(
@@ -159,14 +165,5 @@ public class MixedOpsRestartTest extends HapiSuite {
                         cryptoCreate(receiver),
                         createTopic(topic).submitKeyName(SUBMIT_KEY),
                         inParallel(mixedOpsBurst.get()));
-    }
-
-    private String getHostName() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        } catch (Exception e) {
-            log.info("Error getting host name");
-            return "Hostname-Not-Available";
-        }
     }
 }

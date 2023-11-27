@@ -81,12 +81,7 @@ public final class BlockRecordService implements Service {
 
             @Override
             public void restart(@NonNull final MigrationContext ctx) {
-                logger.info(
-                        "Migrating previous state: {}",
-                        ctx.previousStates().getSingleton(BLOCK_INFO_STATE_KEY).get());
-                logger.info(
-                        "New state: {}",
-                        ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY).get());
+                // TODO : seems there should be something done here to match hash of the state after loading on restart
             }
         });
     }

@@ -162,12 +162,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(handleThrottling);
-        logger.info(
-                "Previous version: {}" + (previousVersion == null ? "null" : previousVersion) + " Current Version "
-                                        + currentVersion
-                                == null
-                        ? "null"
-                        : currentVersion + "for service " + serviceName);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
@@ -243,10 +237,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     handleThrottling,
                     entityIdStore);
             if (updateInsteadOfMigrate) {
-                logger.info(
-                        "Restarting schema {} for service {}",
-                        () -> HapiUtils.toString(schema.getVersion()),
-                        () -> serviceName);
                 schema.restart(migrationContext);
             } else {
                 schema.migrate(migrationContext);
@@ -290,18 +280,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         final var applicableSchemas = new ArrayList<Schema>();
         for (Schema schema : schemas) {
             final var ver = schema.getVersion();
-            logger.info(
-                    " IsSameVersion {} {} ", () -> isSameVersion(ver, currentVersion), () -> HapiUtils.toString(ver));
-            logger.info(
-                    " isBetween {} {} ",
-                    () -> isBetween(previousVersion, ver, currentVersion),
-                    () -> HapiUtils.toString(ver));
             if (isSameVersion(ver, currentVersion) || isBetween(previousVersion, ver, currentVersion)) {
                 applicableSchemas.add(schema);
-                logger.info("Adding schema {} for service {}", () -> HapiUtils.toString(ver), () -> serviceName);
             }
         }
-
         return applicableSchemas;
     }
 
