@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -126,7 +127,17 @@ public class EmergencyReconnectTeacher {
                     writeHasState(connection, false);
                     logger.info(
                             RECONNECT.getMarker(),
-                            "Peer {} requested to perform an emergency reconnect but no compatible state was found.",
+                            "Peer {} requested state ({},{}) to perform an emergency reconnect but no compatible state was found."
+                                    + "The emergency state we have is ({},{})",
+                            round, hash,
+                            Optional.ofNullable(reservedState)
+                                    .map(ReservedSignedState::get)
+                                    .map(SignedState::getRound)
+                                    .orElse(null),
+                            Optional.ofNullable(reservedState)
+                                    .map(ReservedSignedState::get)
+                                    .map(SignedState::getState)
+                                    .orElse(null),
                             connection.getOtherId());
                 }
             }
