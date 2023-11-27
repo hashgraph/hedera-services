@@ -301,9 +301,11 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         return switch (function) {
             case CONTRACT_CREATE -> txn.contractCreateInstance().gas();
             case CONTRACT_CALL -> txn.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
-                            txn.ethereumTransaction().ethereumData().toByteArray())
-                    .gasLimit();
+            case ETHEREUM_TRANSACTION -> {
+                final var txByteArray = txn.ethereumTransaction().ethereumData().toByteArray();
+                if (txByteArray.length == 0) yield 0L;
+                yield EthTxData.populateEthTxData(txByteArray).gasLimit();
+            }
             default -> 0L;
         };
     }

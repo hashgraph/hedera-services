@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -28,11 +29,15 @@ import com.hedera.node.app.service.contract.impl.records.EthereumTransactionReco
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -58,7 +63,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var body = context.body().ethereumTransactionOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
@@ -66,10 +71,10 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var ethTxData = callDataHydration
                 .tryToHydrate(body, fileStore, hederaConfig.firstUserEntity())
                 .ethTxData();
-        if (ethTxData != null) {
-            // Ignore the return value; we just want to cache the signature for use in handle()
-            ethereumSignatures.computeIfAbsent(ethTxData);
-        }
+        validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
+
+        // Ignore the return value; we just want to cache the signature for use in handle()
+        ethereumSignatures.computeIfAbsent(ethTxData);
     }
 
     @Override
