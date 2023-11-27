@@ -16,7 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
@@ -29,16 +37,35 @@ public interface HtsCall {
      * Encapsulates the result of a call to the HTS system contract. There are two elements,
      * <ol>
      *     <li>The "full result" of the call, including both its EVM-standard {@link PrecompileContractResult}
-     *     and gas requirement (which is often difficult to compute without executing the call).</li>
+     *     and gas requirement (which is often difficult to compute without executing the call); as well as
+     *     any {@link com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder} created
+     *     as a side-effect of executing the system contract.</li>
      *     <li>Any additional cost <i>beyond</i> the gas requirement.</li>
      * </ol>
      *
      * @param fullResult the full result of the call
      * @param nonGasCost any additional cost beyond the gas requirement
+     * @param responseCode the response code after the execution
      */
-    record PricedResult(HederaSystemContract.FullResult fullResult, long nonGasCost) {
-        public static PricedResult gasOnly(HederaSystemContract.FullResult result) {
-            return new PricedResult(result, 0L);
+    record PricedResult(FullResult fullResult, long nonGasCost, ResponseCodeEnum responseCode, boolean isViewCall) {
+        public static PricedResult gasOnly(FullResult result, ResponseCodeEnum responseCode, boolean isViewCall) {
+            return new PricedResult(result, 0L, responseCode, isViewCall);
+        }
+
+        public ContractFunctionResult asResultOfCall(
+                @NonNull final AccountID senderId,
+                @NonNull final ContractID contractId,
+                @NonNull final Bytes functionParameters,
+                final long remainingGas) {
+            return ContractFunctionResult.newBuilder()
+                    .contractID(contractId)
+                    .contractCallResult(tuweniToPbjBytes(fullResult.output()))
+                    .errorMessage(responseCode == SUCCESS ? null : responseCode.protoName())
+                    .gasUsed(fullResult().gasRequirement())
+                    .gas(remainingGas)
+                    .functionParameters(functionParameters)
+                    .senderId(senderId)
+                    .build();
         }
     }
 
@@ -49,10 +76,21 @@ public interface HtsCall {
      * @return the result, the gas requirement, and any non-gas cost
      */
     @NonNull
-    PricedResult execute();
+    default PricedResult execute() {
+        throw new UnsupportedOperationException("Prefer an explicit execute(MessageFrame) override");
+    }
 
     @NonNull
     default PricedResult execute(MessageFrame frame) {
         return execute();
+    }
+
+    /**
+     * Returns whether this call allows a static frame. Default is false for safety.
+     *
+     * @return whether this call allows a static frame
+     */
+    default boolean allowsStaticFrame() {
+        return false;
     }
 }

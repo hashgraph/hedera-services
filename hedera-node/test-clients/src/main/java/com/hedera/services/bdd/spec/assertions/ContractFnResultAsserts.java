@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -91,8 +93,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return ignore -> actualObjs -> {
             try {
                 assertEquals(1, actualObjs.length, "Expected a single object");
-                Assertions.assertTrue(
-                        values.contains(actualObjs[0]), "Expected one of " + values + " but was " + actualObjs[0]);
+                assertTrue(values.contains(actualObjs[0]), "Expected one of " + values + " but was " + actualObjs[0]);
             } catch (Exception e) {
                 return Optional.of(e);
             }
@@ -141,7 +142,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     // reject all zero result as not random
                     Assertions.assertFalse(Arrays.equals(new byte[expectedLength], (byte[]) actual));
                 } else if (expected instanceof Integer expectedInt) {
-                    Assertions.assertTrue(((BigInteger) actual).intValue() >= 0
+                    assertTrue(((BigInteger) actual).intValue() >= 0
                             && ((BigInteger) actual).intValue() < expectedInt.intValue());
                 } else {
                     throw new Exception( // NOSONAR
@@ -199,7 +200,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     public ContractFnResultAsserts evmAddress(ByteString expected) {
         registerProvider((spec, o) -> {
             final var result = (ContractFunctionResult) o;
-            Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
+            assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
             final var actual = result.getEvmAddress().getValue();
             assertEquals(expected, actual, "Bad EVM address");
         });
@@ -212,7 +213,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
             final var expectedContractAddress = org.hyperledger.besu.datatypes.Address.contractAddress(
                     org.hyperledger.besu.datatypes.Address.wrap(Bytes.wrap(senderAddress.toByteArray())), nonce);
             final var expectedAddress = ByteString.copyFrom(expectedContractAddress.toArray());
-            Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expectedAddress);
+            assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expectedAddress);
             final var actual = result.getEvmAddress().getValue();
             assertEquals(expectedAddress, actual, "Bad EVM address");
         });
@@ -263,6 +264,22 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     ByteString.copyFrom(contractCallResult.getBytes().toArray()),
                     result.getContractCallResult(),
                     "Wrong contract call result!");
+        });
+        return this;
+    }
+
+    public ContractFnResultAsserts contractCallResultFrom(@NonNull final ContractCallResult... contractCallResults) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            final var actual = result.getContractCallResult();
+            var someMatch = false;
+            for (final var expected : contractCallResults) {
+                if (ByteString.copyFrom(expected.getBytes().toArrayUnsafe()).equals(actual)) {
+                    someMatch = true;
+                    break;
+                }
+            }
+            assertTrue(someMatch, "Contract call result matched none of the expected values");
         });
         return this;
     }

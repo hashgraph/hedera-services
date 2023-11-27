@@ -163,19 +163,15 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      * <p>
-     * If the {@link StateWrittenToDiskAction} received by this method indicates that the freeze state has been written
-     * to disk, then we transition to {@link PlatformStatus#FREEZE_COMPLETE}.
-     * <p>
-     * If the state written to disk isn't the freeze state, then we remain in {@link PlatformStatus#FREEZING}.
+     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#FREEZING} causes a transition to
+     * {@link PlatformStatus#FREEZE_COMPLETE} if it's a freeze state.
      */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
-        if (action.round() == freezeRound) {
-            return new FreezeCompleteStatusLogic();
-        } else {
-            return this;
-        }
+        Objects.requireNonNull(action);
+
+        return action.isFreezeState() ? new FreezeCompleteStatusLogic() : this;
     }
 
     /**

@@ -19,6 +19,14 @@ plugins {
     id("com.hedera.hashgraph.maven-publish")
 }
 
+@Suppress("UnstableApiUsage")
+if (!gradle.startParameter.isConfigurationCacheRequested) {
+    // plugin to support 'artifactregistry' repositories that currently only works without
+    // configuration cache
+    // https://github.com/GoogleCloudPlatform/artifact-registry-maven-tools/issues/85
+    apply(plugin = "com.google.cloud.artifactregistry.gradle-plugin")
+}
+
 publishing {
     publications {
         named<MavenPublication>("maven") {

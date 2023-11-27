@@ -68,7 +68,6 @@ public class HtsCallAttempt {
     private final SystemContractGasCalculator gasCalculator;
     private final List<HtsCallTranslator> callTranslators;
     private final boolean isStaticCall;
-
     // too many parameters
     @SuppressWarnings("java:S107")
     public HtsCallAttempt(

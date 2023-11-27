@@ -22,12 +22,6 @@ plugins {
 }
 
 dependencies.components {
-    // TODO remove, once a new version of 'com.hedera.pbj.runtime' has been
-    //  published with fix from https://github.com/hashgraph/pbj/pull/92
-    withModule("com.hedera.pbj:pbj-runtime") {
-        allVariants { withDependencies { removeAll { it.name != "antlr4-runtime" } } }
-    }
-
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-netty")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf-lite")
@@ -95,7 +89,9 @@ extraJavaModuleInfo {
     }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
-        requireAllDefinedDependencies()
+        // requireAllDefinedDependencies() <- Currently not possible due to a Gradlex plugin
+        // limitation
+        requires("com.google.guava.failureaccess")
         requires("java.logging")
     }
     module("com.google.guava:failureaccess", "com.google.guava.failureaccess") {
@@ -323,6 +319,8 @@ extraJavaModuleInfo {
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
     knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
+    knownModule("com.squareup:javapoet", "com.squareup.javapoet")
+    knownModule("com.google.auto.service:auto-service-annotations", "com.google.auto.service")
 
     // Annotation processing only
     automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")
@@ -337,6 +335,8 @@ extraJavaModuleInfo {
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
     automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
+    automaticModule("com.google.auto.service:auto-service", "com.google.auto.service.processor")
+    automaticModule("com.google.auto:auto-common", "com.google.auto.common")
 
     // Testing only
     automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")
