@@ -16,10 +16,14 @@
 
 name: "Service daily performance test"
 on:
-  schedule:
-    - cron: '0 */12 * * *'
+#  schedule:
+#    - cron: '0 */12 * * *'
   workflow_dispatch:
-
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
 defaults:
   run:
     shell: bash
