@@ -132,7 +132,14 @@ public class TransferLogic {
                     hasSuccessfulAutoCreation |= validity == OK;
                     autoCreationFee += result.getValue();
                     if (validity == OK && (change.isForToken())) {
-                        validity = tokenStore.tryTokenChange(change);
+                        if (change.isForNft()) {
+                            // An NFT transfer needs its allowances validated here
+                            validity =
+                                    accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
+                        }
+                        if (validity == OK) {
+                            validity = tokenStore.tryTokenChange(change);
+                        }
                     }
                 } else {
                     validity = MAX_CHILD_RECORDS_EXCEEDED;

@@ -56,6 +56,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -637,6 +638,11 @@ public class HapiSpecRegistry {
 
     public AccountID getAccountAlias(String name) {
         return get(name, AccountID.class);
+    }
+
+    public AccountID getKeyAlias(@NonNull final String keyName) {
+        final var key = get(keyName, Key.class);
+        return AccountID.newBuilder().setAlias(key.toByteString()).build();
     }
 
     public void forgetTokenId(String name) {
