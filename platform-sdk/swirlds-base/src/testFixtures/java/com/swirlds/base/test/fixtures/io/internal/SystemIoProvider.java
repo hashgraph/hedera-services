@@ -28,11 +28,11 @@ import java.util.stream.Stream;
  */
 public class SystemIoProvider implements SystemOutProvider, SystemErrProvider {
 
-    private final ByteArrayOutputStream outputStream;
-
     private final StringBuilder internalBuilder = new StringBuilder();
 
     private boolean readAll = false;
+
+    private final ByteArrayOutputStream outputStream;
 
     /**
      * Constructs a new instance.
