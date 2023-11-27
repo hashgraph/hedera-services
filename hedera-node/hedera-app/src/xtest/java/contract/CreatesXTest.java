@@ -19,6 +19,8 @@ package contract;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
 import static contract.CreatesXTestConstants.DECIMALS_LONG;
@@ -35,9 +37,11 @@ import static contract.CreatesXTestConstants.NEXT_ENTITY_NUM;
 import static contract.CreatesXTestConstants.ROYALTY_FEE;
 import static contract.CreatesXTestConstants.SECOND;
 import static contract.CreatesXTestConstants.SYMBOL;
-import static contract.CreatesXTestConstants.TOKEN_INVALID_KEY;
-import static contract.CreatesXTestConstants.TOKEN_KEY;
+import static contract.CreatesXTestConstants.TOKEN_ADMIN_KEY;
+import static contract.CreatesXTestConstants.TOKEN_INVALID_ADMIN_KEY;
+import static contract.CreatesXTestConstants.TOKEN_INVALID_SUPPLY_KEY;
 import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
+import static contract.CreatesXTestConstants.TOKEN_SUPPLY_KEY;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -67,6 +71,31 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
+/**
+ * Exercises create a token via the following steps relative to an {@code OWNER} account:
+ * <ol>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}.
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_EXPIRATION_TIME.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2}. This should fail with code INVALID_TOKEN_ID.</li>
+ * </ol>
+ */
 public class CreatesXTest extends AbstractContractXTest {
 
     private static final Tuple DEFAULT_HEDERA_TOKEN = hederaTokenFactory(
@@ -77,7 +106,7 @@ public class CreatesXTest extends AbstractContractXTest {
             true,
             MAX_SUPPLY,
             false,
-            new Tuple[] {TOKEN_KEY, TOKEN_KEY_TWO},
+            new Tuple[] {TOKEN_ADMIN_KEY, TOKEN_KEY_TWO},
             EXPIRY);
 
     private static final Tuple INVALID_ACCOUNT_ID_HEDERA_TOKEN = hederaTokenFactory(
@@ -88,7 +117,7 @@ public class CreatesXTest extends AbstractContractXTest {
             true,
             MAX_SUPPLY,
             false,
-            new Tuple[] {TOKEN_KEY, TOKEN_KEY_TWO},
+            new Tuple[] {TOKEN_ADMIN_KEY, TOKEN_KEY_TWO},
             INVALID_EXPIRY);
 
     @Override
@@ -100,22 +129,6 @@ public class CreatesXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
                 assertSuccess("createFungibleTokenV1"));
-
-        // should successfully create fungible token v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
-                        .array()),
-                assertSuccess("createFungibleTokenV2"));
-
-        // should successfully create fungible token v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
-                        .array()),
-                assertSuccess("createFungibleTokenV3"));
 
         // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
@@ -137,8 +150,6 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess("createFungibleTokenV1 - sans keys"));
 
-        // should revert on missing expiry
-
         // should revert on invalid account address
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
@@ -152,7 +163,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                         true,
                                         MAX_SUPPLY,
                                         false,
-                                        new Tuple[] {TOKEN_INVALID_KEY},
+                                        new Tuple[] {TOKEN_INVALID_ADMIN_KEY},
                                         EXPIRY),
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
@@ -173,13 +184,188 @@ public class CreatesXTest extends AbstractContractXTest {
                                         true,
                                         MAX_SUPPLY,
                                         false,
-                                        new Tuple[] {TOKEN_KEY},
+                                        new Tuple[] {TOKEN_ADMIN_KEY},
                                         Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
                 INVALID_RENEWAL_PERIOD,
                 "createFungibleTokenV1 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createFungibleTokenV1 - invalid treasury account");
+
+        // should successfully create fungible token v2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
+                        .array()),
+                assertSuccess("createFungibleTokenV2"));
+
+        // should successfully create fungible token without TokenKeys (empty array)
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG)
+                        .array()),
+                assertSuccess("createFungibleTokenV2 - sans keys"));
+
+        // should revert on invalid account address
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_ADMIN_KEY},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG)
+                        .array()),
+                INVALID_ADMIN_KEY,
+                "createFungibleTokenV2 - invalid admin key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_ADMIN_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG)
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createFungibleTokenV2 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createFungibleTokenV2 - invalid treasury account");
+
+        // should successfully create fungible token v3
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
+                        .array()),
+                assertSuccess("createFungibleTokenV3"));
+
+        // should successfully create fungible token without TokenKeys (empty array)
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS)
+                        .array()),
+                assertSuccess("createFungibleTokenV3 - sans keys"));
+
+        // should revert on invalid account address
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_ADMIN_KEY},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS)
+                        .array()),
+                INVALID_ADMIN_KEY,
+                "createFungibleTokenV3 - invalid admin key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_ADMIN_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS)
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createFungibleTokenV3 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createFungibleTokenV3 - invalid treasury account");
 
         // should successfully create fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
@@ -196,95 +382,79 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess("createFungibleWithCustomFeesV1"));
 
-        // should successfully create fungible token with custom fees v2
+        // should successfully create fungible token without TokenKeys (empty array)
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .encodeCallWithArgs(
-                                DEFAULT_HEDERA_TOKEN,
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY),
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
-                                DECIMALS_LONG,
+                                DECIMALS_BIG_INT,
                                 // FixedFee
                                 new Tuple[] {FIXED_FEE},
                                 // FractionalFee
                                 new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                assertSuccess("createFungibleWithCustomFeesV2"));
+                assertSuccess("createFungibleWithCustomFeesV1"));
 
-        // should successfully create fungible token with custom fees v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
-                        .encodeCallWithArgs(
-                                DEFAULT_HEDERA_TOKEN,
-                                INITIAL_TOTAL_SUPPLY,
-                                DECIMALS,
-                                // FixedFee
-                                new Tuple[] {FIXED_FEE},
-                                // FractionalFee
-                                new Tuple[] {FRACTIONAL_FEE})
-                        .array()),
-                assertSuccess("createFungibleWithCustomFeesV3"));
-
-        // should successfully create non-fungible token without custom fees v1
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
-                        .array()),
-                assertSuccess("createNonFungibleTokenV1"));
-
-        // should successfully create non-fungible token without custom fees v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
-                        .array()),
-                assertSuccess("createNonFungibleTokenV2"));
-
-        // should successfully create non-fungible token without custom fees v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
-                        .array()),
-                assertSuccess("createNonFungibleTokenV3"));
-
-        // should successfully create non-fungible token with custom fees v1
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
-                        .array()),
-                assertSuccess("createNonFungibleWithCustomFeesV1"));
-
-        // should successfully create non-fungible token with custom fees v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
-                        .array()),
-                assertSuccess("createNonFungibleWithCustomFeesV2"));
-
-        // should successfully create non-fungible token with custom fees v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
-                        .array()),
-                assertSuccess("createNonFungibleWithCustomFeesV3"));
-
-        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
-        // Changed to `INVALID_ACCOUNT_ID` see {@link
-        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        // should revert on invalid account address
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .encodeCallWithArgs(
-                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_ADMIN_KEY},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_BIG_INT,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
                         .array()),
-                INVALID_ACCOUNT_ID,
-                "createFungibleTokenV1 - invalid treasury account");
+                INVALID_ADMIN_KEY,
+                "createFungibleWithCustomFeesV1 - invalid admin key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_ADMIN_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_BIG_INT,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createFungibleWithCustomFeesV1 - invalid renewal period");
 
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         // Changed to `INVALID_ACCOUNT_ID` see {@link
@@ -304,6 +474,282 @@ public class CreatesXTest extends AbstractContractXTest {
                 INVALID_ACCOUNT_ID,
                 "createFungibleWithCustomFeesV1 - invalid treasury account");
 
+        // should successfully create fungible token with custom fees v2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                DEFAULT_HEDERA_TOKEN,
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                assertSuccess("createFungibleWithCustomFeesV2"));
+
+        // should successfully create fungible token without TokenKeys (empty array)
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                assertSuccess("createFungibleWithCustomFeesV2"));
+
+        // should revert on invalid account address
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_ADMIN_KEY},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_ADMIN_KEY,
+                "createFungibleWithCustomFeesV2 - invalid admin key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_ADMIN_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createFungibleWithCustomFeesV2 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN,
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createFungibleWithCustomFeesV2 - invalid treasury account");
+
+        // should successfully create fungible token with custom fees v3
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                DEFAULT_HEDERA_TOKEN,
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                assertSuccess("createFungibleWithCustomFeesV3"));
+
+        // should successfully create fungible token without TokenKeys (empty array)
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                assertSuccess("createFungibleWithCustomFeesV3"));
+
+        // should revert on invalid account address
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_ADMIN_KEY},
+                                        EXPIRY),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_ADMIN_KEY,
+                "createFungibleWithCustomFeesV3 - invalid admin key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_ADMIN_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createFungibleWithCustomFeesV3 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN,
+                                INITIAL_TOTAL_SUPPLY,
+                                DECIMALS,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createFungibleWithCustomFeesV3 - invalid treasury account");
+
+        // should successfully create non-fungible token without custom fees v1
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
+                        .array()),
+                assertSuccess("createNonFungibleTokenV1"));
+
+        // should revert without provided supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {},
+                                EXPIRY))
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY,
+                "createNonFungibleTokenV1 - no supply key");
+
+        // should revert on invalid supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {TOKEN_INVALID_SUPPLY_KEY},
+                                EXPIRY))
+                        .array()),
+                INVALID_SUPPLY_KEY,
+                "createNonFungibleTokenV1 - invalid supply key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {TOKEN_SUPPLY_KEY},
+                                Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)))
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createNonFungibleTokenV1 - invalid renewal period");
+
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         // Changed to `INVALID_ACCOUNT_ID` see {@link
         // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
@@ -315,7 +761,220 @@ public class CreatesXTest extends AbstractContractXTest {
                 INVALID_ACCOUNT_ID,
                 "createNonFungibleTokenV1 - invalid treasury account");
 
+        // should successfully create non-fungible token without custom fees v2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
+                        .array()),
+                assertSuccess("createNonFungibleTokenV2"));
+
+        // should revert without provided supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {},
+                                EXPIRY))
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY,
+                "createNonFungibleTokenV2 - no supply key");
+
+        // should revert on invalid supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {TOKEN_INVALID_SUPPLY_KEY},
+                                EXPIRY))
+                        .array()),
+                INVALID_SUPPLY_KEY,
+                "createNonFungibleTokenV2 - invalid supply key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {TOKEN_SUPPLY_KEY},
+                                Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)))
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createNonFungibleTokenV2 - invalid renewal period");
+
         // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN)
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createNonFungibleTokenV2 - invalid treasury account");
+
+        // should successfully create non-fungible token without custom fees v3
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
+                        .array()),
+                assertSuccess("createNonFungibleTokenV3"));
+
+        // should revert without provided supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {},
+                                EXPIRY))
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY,
+                "createNonFungibleTokenV3 - no supply key");
+
+        // should revert on invalid supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {TOKEN_INVALID_SUPPLY_KEY},
+                                EXPIRY))
+                        .array()),
+                INVALID_SUPPLY_KEY,
+                "createNonFungibleTokenV3 - invalid supply key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(hederaTokenFactory(
+                                NAME,
+                                SYMBOL,
+                                OWNER_HEADLONG_ADDRESS,
+                                MEMO,
+                                true,
+                                MAX_SUPPLY,
+                                false,
+                                new Tuple[] {TOKEN_SUPPLY_KEY},
+                                Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)))
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createNonFungibleTokenV3 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN)
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createNonFungibleTokenV3 - invalid treasury account");
+
+        // should successfully create non-fungible token with custom fees v1
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                assertSuccess("createNonFungibleWithCustomFeesV1"));
+
+        /*// should revert without provided supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY,
+                "createNonFungibleWithCustomFeesV1 - no supply key");
+
+        // should revert on invalid supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_SUPPLY_KEY},
+                                        EXPIRY), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_SUPPLY_KEY,
+                "createNonFungibleWithCustomFeesV1 - invalid supply key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_SUPPLY_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createNonFungibleWithCustomFeesV1 - invalid renewal period");*/
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
@@ -324,6 +983,160 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_ACCOUNT_ID,
                 "createNonFungibleWithCustomFeesV1 - invalid treasury account");
+
+        // should successfully create non-fungible token with custom fees v2
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                assertSuccess("createNonFungibleWithCustomFeesV2"));
+
+        /*// should revert without provided supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY,
+                "createNonFungibleWithCustomFeesV2 - no supply key");
+
+        // should revert on invalid supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_SUPPLY_KEY},
+                                        EXPIRY), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_SUPPLY_KEY,
+                "createNonFungibleWithCustomFeesV2 - invalid supply key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_SUPPLY_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createNonFungibleWithCustomFeesV2 - invalid renewal period");*/
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createNonFungibleWithCustomFeesV2 - invalid treasury account");
+
+        // should successfully create non-fungible token with custom fees v3
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                assertSuccess("createNonFungibleWithCustomFeesV3"));
+
+        /*// should revert without provided supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {},
+                                        EXPIRY), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                TOKEN_HAS_NO_SUPPLY_KEY,
+                "createNonFungibleWithCustomFeesV3 - no supply key");
+
+        // should revert on invalid supply key
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_INVALID_SUPPLY_KEY},
+                                        EXPIRY), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_SUPPLY_KEY,
+                "createNonFungibleWithCustomFeesV3 - invalid supply key");
+
+        // should revert with autoRenewPeriod less than 2592000
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                hederaTokenFactory(
+                                        NAME,
+                                        SYMBOL,
+                                        OWNER_HEADLONG_ADDRESS,
+                                        MEMO,
+                                        true,
+                                        MAX_SUPPLY,
+                                        false,
+                                        new Tuple[] {TOKEN_SUPPLY_KEY},
+                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)), new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_RENEWAL_PERIOD,
+                "createNonFungibleWithCustomFeesV3 - invalid renewal period");
+
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
+        // Changed to `INVALID_ACCOUNT_ID` see {@link
+        // com/hedera/node/app/service/token/impl/handlers/TokenCreateHandler#95 }
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_ACCOUNT_ID,
+                "createNonFungibleWithCustomFeesV3 - invalid treasury account");*/
     }
 
     @Override
