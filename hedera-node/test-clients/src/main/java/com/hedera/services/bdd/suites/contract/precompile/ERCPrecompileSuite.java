@@ -2657,6 +2657,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withIsApprovedForAll(true)))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721SetApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
