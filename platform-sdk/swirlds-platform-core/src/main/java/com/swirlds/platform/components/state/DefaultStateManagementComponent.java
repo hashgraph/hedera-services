@@ -19,7 +19,6 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
@@ -35,8 +34,6 @@ import com.swirlds.platform.components.common.query.PrioritySystemTransactionSub
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.Observer;
-import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.SignatureTransmitter;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -106,8 +103,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SavedStateController savedStateController;
     private final Consumer<StateDumpRequest> stateDumpConsumer;
 
-    private final StateConfig stateConfig;
-
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "roundSup")
             .withDescription("latest round with state signed by a supermajority")
@@ -150,12 +145,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         // Various metrics about signed states
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
-        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
         this.savedStateController = Objects.requireNonNull(savedStateController);
         this.stateDumpConsumer = Objects.requireNonNull(stateDumpConsumer);
 
-        hashLogger = new HashLogger(threadManager, stateConfig);
+        hashLogger =
+                new HashLogger(threadManager, platformContext.getConfiguration().getConfigData(StateConfig.class));
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
@@ -314,65 +309,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void onFatalError() {
-        if (stateConfig.dumpStateOnFatal()) {
-            try (final ReservedSignedState reservedState =
-                    signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
-                if (reservedState.isNotNull()) {
-                    dumpState(reservedState.get(), FATAL_ERROR, true);
-                }
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public ReservedSignedState find(final @NonNull Predicate<SignedState> criteria, @NonNull final String reason) {
         return signedStateManager.find(criteria, reason);
-    }
-
-    /**
-     * This observer is called when a signed state is requested to be dumped to disk.
-     *
-     * @param round    the round that should be dumped if available. If this parameter is null or if the requested round
-     *                 is unavailable then the latest immutable round should be dumped.
-     * @param reason   reason why the state is being dumped
-     * @param blocking if this method should block until the operation has been completed
-     */
-    @Observer(StateDumpRequestedTrigger.class)
-    public void stateDumpRequestedObserver(
-            @Nullable final Long round, @NonNull final StateToDiskReason reason, @NonNull final Boolean blocking) {
-
-        Objects.requireNonNull(reason);
-        Objects.requireNonNull(blocking);
-
-        if (round == null) {
-            // No round is specified, dump the latest immutable state.
-            dumpLatestImmutableState(reason, blocking);
-            return;
-        }
-
-        try (final ReservedSignedState reservedState =
-                signedStateManager.find(state -> state.getRound() == round, "state dump requested for " + reason)) {
-
-            if (reservedState.isNotNull()) {
-                // We were able to find the requested round. Dump it.
-                dumpState(reservedState.get(), reason, blocking);
-                return;
-            }
-        }
-
-        // We weren't able to find the requested round, so the best we can do is the latest round.
-        logger.info(
-                STATE_TO_DISK.getMarker(),
-                "State dump for round {} requested, but round could not be "
-                        + "found in the signed state manager. Dumping latest immutable round instead.",
-                round);
-        dumpLatestImmutableState(reason, blocking);
     }
 
     @Override
