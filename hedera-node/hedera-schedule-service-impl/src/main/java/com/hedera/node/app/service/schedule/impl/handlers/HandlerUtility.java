@@ -40,11 +40,11 @@ import java.util.Set;
 /**
  * A package-private utility class for Schedule Handlers.
  */
-final class HandlerUtility {
+public final class HandlerUtility {
     private HandlerUtility() {}
 
     @NonNull
-    static TransactionBody childAsOrdinary(@NonNull final Schedule scheduleInState) {
+    public static TransactionBody childAsOrdinary(@NonNull final Schedule scheduleInState) {
         final TransactionID scheduledTransactionId = transactionIdForScheduled(scheduleInState);
         final SchedulableTransactionBody scheduledTransaction = scheduleInState.scheduledTransaction();
         final TransactionBody.Builder ordinary = TransactionBody.newBuilder();
