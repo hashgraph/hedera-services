@@ -65,9 +65,9 @@ the [Context API](./../context/context.md).
 
 ### Executor support
 
-The `@WithTestExecutor` annotation is used to inject a `TestExecutor` instance into a test. It can be applied at the
-This utility class is designed to facilitate concurrent testing in multi-threaded environments, making it easier to manage and synchronize tasks in your tests.
-class or method level to enable concurrent testing using a test executor. 
+The `@WithTestExecutor` annotation is used to inject a `TestExecutor` instance into a test. Each test using 
+`@WithTestExecutor` runs in isolation, ensuring that multiple tests do not share the same underlying thread pool 
+concurrently. This isolation helps prevent side effects between tests due to shared resources.
 
 #### Usage
 
