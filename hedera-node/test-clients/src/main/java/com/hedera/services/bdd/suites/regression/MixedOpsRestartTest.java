@@ -63,7 +63,7 @@ import org.apache.logging.log4j.Logger;
  * freezes all nodes, shuts them down, restarts them, and submits the same burst of mixed operations
  * again.
  */
-@HapiTestSuite // This should be disabled to be not run in CI, since it shuts down nodes
+//@HapiTestSuite // This should be disabled to be not run in CI, since it shuts down nodes
 public class MixedOpsRestartTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsRestartTest.class);
 
