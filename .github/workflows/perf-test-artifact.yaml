@@ -352,6 +352,7 @@ jobs:
           echo "file=${ARTIFACT_FILE}" >>"${GITHUB_OUTPUT}"
 
       - name: Check If Release Artifact Exist in Bucket
+        id: check-if-exist
         run: |
           set +e
           ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
@@ -359,12 +360,14 @@ jobs:
           PATH_EXIST=$?
           if [ ${PATH_EXIST} -eq 0 ]; then
             echo "Artifact Already Exist"
-            exit 2
+            echo "exist=true" >>"${GITHUB_OUTPUT}"
           else
             echo "Artifact Not Exist"
+            echo "exist=false" >>"${GITHUB_OUTPUT}"
           fi
 
       - name: Compute SHA Hash
+        if: ${{ steps.check-if-exist.outputs.exist == 'false' }}
         working-directory: ${{ steps.artifact-release.outputs.folder }}
         run: |
           ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
