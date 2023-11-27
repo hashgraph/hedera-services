@@ -243,6 +243,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     handleThrottling,
                     entityIdStore);
             if (updateInsteadOfMigrate) {
+                logger.info(
+                        "Restarting schema {} for service {}",
+                        () -> HapiUtils.toString(schema.getVersion()),
+                        () -> serviceName);
                 schema.restart(migrationContext);
             } else {
                 schema.migrate(migrationContext);

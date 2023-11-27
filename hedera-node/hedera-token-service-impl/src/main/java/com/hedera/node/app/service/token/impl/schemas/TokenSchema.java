@@ -49,6 +49,8 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -117,6 +119,21 @@ public class TokenSchema extends Schema {
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
 
+        final var isGenesis = ctx.previousStates().isEmpty();
+        if (isGenesis) {
+            createGenesisSchema(
+                    ctx, accountsConfig, bootstrapConfig, ledgerConfig, hederaConfig, recordsKeeper, accounts);
+        }
+    }
+
+    private void createGenesisSchema(
+            final MigrationContext ctx,
+            final AccountsConfig accountsConfig,
+            final BootstrapConfig bootstrapConfig,
+            final LedgerConfig ledgerConfig,
+            final HederaConfig hederaConfig,
+            final GenesisRecordsBuilder recordsKeeper,
+            final WritableKVState<AccountID, Account> accounts) {
         // This key is used for all system accounts
         final var superUserKey = superUserKey(bootstrapConfig);
 

@@ -71,8 +71,12 @@ public class EntityIdService implements Service {
             public void migrate(@NonNull MigrationContext ctx) {
                 final var entityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
                 final var config = ctx.configuration().getConfigData(HederaConfig.class);
-                // need -1 because it will be incremented on first use before being read
-                entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
+
+                final var isGenesis = ctx.previousStates().isEmpty();
+                if (isGenesis) {
+                    // Set the initial entity id to the first user entity minus one
+                    entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
+                }
             }
         });
     }

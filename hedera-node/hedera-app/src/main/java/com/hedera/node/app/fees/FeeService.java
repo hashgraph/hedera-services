@@ -50,23 +50,28 @@ public class FeeService implements Service {
 
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
-                final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
-                final var exchangeRateSet = ExchangeRateSet.newBuilder()
-                        .currentRate(ExchangeRate.newBuilder()
-                                .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())
-                                .hbarEquiv(bootstrapConfig.ratesCurrentHbarEquiv())
-                                .expirationTime(
-                                        TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesCurrentExpiry()))
-                                .build())
-                        .nextRate(ExchangeRate.newBuilder()
-                                .centEquiv(bootstrapConfig.ratesNextCentEquiv())
-                                .hbarEquiv(bootstrapConfig.ratesNextHbarEquiv())
-                                .expirationTime(
-                                        TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
-                                .build())
-                        .build();
+                final var isGenesis = ctx.previousStates().isEmpty();
+                final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
+                if (isGenesis) {
+                    // Set the initial exchange rates (from the bootstrap config) as the midnight rates
+                    final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+                    final var exchangeRateSet = ExchangeRateSet.newBuilder()
+                            .currentRate(ExchangeRate.newBuilder()
+                                    .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())
+                                    .hbarEquiv(bootstrapConfig.ratesCurrentHbarEquiv())
+                                    .expirationTime(
+                                            TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesCurrentExpiry()))
+                                    .build())
+                            .nextRate(ExchangeRate.newBuilder()
+                                    .centEquiv(bootstrapConfig.ratesNextCentEquiv())
+                                    .hbarEquiv(bootstrapConfig.ratesNextHbarEquiv())
+                                    .expirationTime(
+                                            TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
+                                    .build())
+                            .build();
 
-                ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY).put(exchangeRateSet);
+                    midnightRatesState.put(exchangeRateSet);
+                }
             }
         });
     }
