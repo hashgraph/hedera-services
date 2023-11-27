@@ -24,6 +24,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -42,7 +43,7 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
     @DisplayName("Emergency State Finder Test")
     @Test
     void testFind() {
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig()).build();
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig()).build();
 
         final int roundAgeToSign = 3;
 

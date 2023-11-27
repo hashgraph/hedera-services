@@ -26,6 +26,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.state.signed.SignedStateNexus;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.List;
@@ -65,7 +66,9 @@ class WinTab2Consensus extends PrePaintableJPanel {
             long r3 = consensus.getMaxRound();
             final StateManagementComponent stateManagementComponent =
                     GuiPlatformAccessor.getInstance().getStateManagementComponent(platform.getSelfId());
-            long r0 = stateManagementComponent.getLastCompleteRound();
+            final SignedStateNexus latestCompleteStateComponent =
+                    GuiPlatformAccessor.getInstance().getLatestCompleteStateComponent(platform.getSelfId());
+            long r0 = latestCompleteStateComponent.getRound();
 
             if (r1 == -1) {
                 s += "\n           = latest deleted round-created";

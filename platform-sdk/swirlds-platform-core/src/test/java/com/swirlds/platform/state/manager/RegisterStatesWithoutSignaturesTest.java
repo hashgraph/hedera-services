@@ -26,6 +26,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -75,7 +76,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     @Test
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

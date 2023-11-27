@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
@@ -45,6 +46,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
@@ -517,6 +519,15 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
         signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
 
+        final SignedStateNexus latestCompleteState = new SignedStateNexus();
+        final RunningAverageMetric.Config avgRoundSupermajorityConfig = new RunningAverageMetric.Config(
+                PLATFORM_CATEGORY, "roundSup")
+                .withDescription("latest round with state signed by a supermajority")
+                .withUnit("round");
+        final RunningAverageMetric avgRoundSupermajority =
+                platformContext.getMetrics().getOrCreate(avgRoundSupermajorityConfig);
+        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(latestCompleteState.getRound()));
+
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
 
@@ -526,7 +537,7 @@ public class SwirldsPlatform implements Platform {
                 dispatchBuilder,
                 new PlatformSigner(keysAndCerts),
                 txn -> this.createSystemTransaction(txn, true),
-                appCommunicationComponent,
+                appCommunicationComponent, //TODO set latest complete state
                 this::handleFatalError,
                 platformStatusManager,
                 savedStateController,
@@ -866,6 +877,7 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+        GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
     }
 
     /**
@@ -1323,17 +1335,6 @@ public class SwirldsPlatform implements Platform {
     @Override
     public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
         final ReservedSignedState wrapper = stateManagementComponent.getLatestImmutableState(reason);
-        return new AutoCloseableWrapper<>(
-                wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason) {
-        final ReservedSignedState wrapper = stateManagementComponent.getLatestSignedState(reason);
         return new AutoCloseableWrapper<>(
                 wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
     }

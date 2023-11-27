@@ -145,27 +145,6 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Get the round number of the last complete round. Will return -1 if there is not any recent round that has
-     * gathered sufficient signatures.
-     *
-     * @return latest round for which we have a majority of signatures
-     */
-    public long getLastCompleteRound() {
-        return completeStates.getLatestRound();
-    }
-
-    /**
-     * Get the last complete signed state
-     *
-     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
-     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return the latest complete signed state, or a null reservation if no recent states that are complete
-     */
-    public @NonNull ReservedSignedState getLatestSignedState(@NonNull final String reason) {
-        return completeStates.getLatestAndReserve(reason);
-    }
-
-    /**
      * Get the latest immutable signed state. May be unhashed, may or may not have all required signatures. State is
      * returned with a reservation.
      *

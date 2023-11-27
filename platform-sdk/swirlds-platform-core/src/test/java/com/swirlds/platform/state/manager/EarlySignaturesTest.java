@@ -29,6 +29,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -79,7 +80,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        final SignedStateManagerTester manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

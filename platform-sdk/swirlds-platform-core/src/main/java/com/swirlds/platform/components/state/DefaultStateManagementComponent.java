@@ -103,11 +103,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SavedStateController savedStateController;
     private final Consumer<StateDumpRequest> stateDumpConsumer;
 
-    private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "roundSup")
-            .withDescription("latest round with state signed by a supermajority")
-            .withUnit("round");
-
     /**
      * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
@@ -162,10 +157,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 newLatestCompleteStateConsumer,
                 this::stateHasEnoughSignatures,
                 this::stateLacksSignatures);
-
-        final RunningAverageMetric avgRoundSupermajority =
-                platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
-        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
     /**
@@ -251,7 +242,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     @NonNull
     public ReservedSignedState getLatestSignedState(@NonNull final String reason) {
-        return signedStateManager.getLatestSignedState(reason);
+        return null;//TODO
     }
 
     /**
@@ -267,7 +258,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     @Override
     public long getLastCompleteRound() {
-        return signedStateManager.getLastCompleteRound();
+        return -1;//TODO
     }
 
     /**
@@ -286,6 +277,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedState.setGarbageCollector(signedStateGarbageCollector);
         newSignedStateBeingTracked(signedState, sourceOfSignedState);
         signedStateManager.addState(signedState);
+        //TODO latest complete
     }
 
     /**
