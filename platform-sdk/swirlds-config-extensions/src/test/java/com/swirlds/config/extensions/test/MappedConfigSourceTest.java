@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.extensions.sources;
+package com.swirlds.config.extensions.test;
 
+import com.swirlds.config.extensions.sources.MappedConfigSource;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.NoSuchElementException;
 import java.util.Set;
