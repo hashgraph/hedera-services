@@ -129,7 +129,8 @@ public class EmergencyReconnectTeacher {
                             RECONNECT.getMarker(),
                             "Peer {} requested state ({},{}) to perform an emergency reconnect but no compatible state was found."
                                     + "The emergency state we have is ({},{})",
-                            round, hash,
+                            round,
+                            hash,
                             Optional.ofNullable(reservedState)
                                     .map(ReservedSignedState::get)
                                     .map(SignedState::getRound)
