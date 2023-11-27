@@ -128,7 +128,7 @@ public class SignedStateMap {
 
         try (final Locked l = lock.lock()) {
             final ReservedSignedState previousState =
-                    map.put(signedState.getRound(), new ReservedSignedState(signedState, reason));
+                    map.put(signedState.getRound(), ReservedSignedState.createAndReserve(signedState, reason));
             if (previousState != null) {
                 previousState.close();
             }

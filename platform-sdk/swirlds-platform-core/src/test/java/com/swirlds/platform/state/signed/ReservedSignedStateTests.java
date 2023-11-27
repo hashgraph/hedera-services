@@ -20,6 +20,8 @@ import static com.swirlds.platform.state.signed.ReservedSignedState.createNullRe
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -63,7 +65,8 @@ class ReservedSignedStateTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         assertEquals(0, signedState.getReservationCount());
 
-        try (final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, "reason")) {
+        try (final ReservedSignedState reservedSignedState =
+                ReservedSignedState.createAndReserve(signedState, "reason")) {
 
             assertSame(signedState, reservedSignedState.get());
             assertSame(signedState, reservedSignedState.getNullable());
@@ -105,7 +108,7 @@ class ReservedSignedStateTests {
     @DisplayName("Non-Null Bad Lifecycle Test")
     void nonNullBadLifecycleTest() {
         final ReservedSignedState reservedSignedState =
-                new ReservedSignedState(new RandomSignedStateGenerator().build(), "reason");
+                ReservedSignedState.createAndReserve(new RandomSignedStateGenerator().build(), "reason");
         reservedSignedState.close();
 
         assertThrows(ReferenceCountException.class, reservedSignedState::get);
@@ -114,5 +117,39 @@ class ReservedSignedStateTests {
         assertThrows(ReferenceCountException.class, reservedSignedState::isNull);
         assertThrows(ReferenceCountException.class, reservedSignedState::isNotNull);
         assertThrows(ReferenceCountException.class, reservedSignedState::close);
+    }
+
+    @Test
+    @DisplayName("Try-reserve Paradigm Test")
+    void tryReserveTest() {
+        final SignedState signedState = new RandomSignedStateGenerator().build();
+        assertEquals(0, signedState.getReservationCount());
+
+        final ReservedSignedState reservedSignedState = ReservedSignedState.createAndReserve(signedState, "reason");
+        try {
+            assertEquals(1, signedState.getReservationCount());
+
+            try (final ReservedSignedState reservedSignedState2 =
+                    reservedSignedState.tryGetAndReserve("successful try")) {
+                assertNotNull(reservedSignedState2);
+                assertNotSame(reservedSignedState, reservedSignedState2);
+                assertSame(signedState, reservedSignedState2.get());
+                assertSame(signedState, reservedSignedState2.getNullable());
+                assertEquals("successful try", reservedSignedState2.getReason());
+                assertFalse(reservedSignedState2.isNull());
+                assertTrue(reservedSignedState2.isNotNull());
+                assertEquals(2, signedState.getReservationCount());
+
+                assertNotEquals(reservedSignedState.getReservationId(), reservedSignedState2.getReservationId());
+            }
+            assertEquals(1, signedState.getReservationCount());
+        } finally {
+            reservedSignedState.close();
+        }
+        assertEquals(-1, signedState.getReservationCount());
+        try (final ReservedSignedState reservedSignedState2 = reservedSignedState.tryGetAndReserve("failed try")) {
+            assertNull(reservedSignedState2);
+        }
+        assertEquals(-1, signedState.getReservationCount());
     }
 }

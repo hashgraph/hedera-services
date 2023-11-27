@@ -76,8 +76,34 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     ReservedSignedState(@NonNull final SignedState signedState, @NonNull final String reason) {
         this.signedState = Objects.requireNonNull(signedState);
         this.reason = Objects.requireNonNull(reason);
+    }
 
-        signedState.incrementReservationCount(reason, reservationId);
+    /**
+     * Create a new reserved signed state and increment the reservation count on the underlying signed state.
+     *
+     * @param signedState the signed state to reserve
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
+     */
+    static @NonNull ReservedSignedState createAndReserve(
+            @NonNull final SignedState signedState, @NonNull final String reason) {
+        final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason);
+        signedState.incrementReservationCount(reason, reservedSignedState.getReservationId());
+        return reservedSignedState;
+    }
+
+    /**
+     * Create a new reserved signed state. This method assumes that the reservation count will be incremented by the
+     * caller.
+     *
+     * @param signedState the signed state to reserve
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
+     */
+    static @NonNull ReservedSignedState create(@NonNull final SignedState signedState, @NonNull final String reason) {
+        return new ReservedSignedState(signedState, reason);
     }
 
     /**
@@ -113,7 +139,25 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         if (signedState == null) {
             return new ReservedSignedState();
         }
-        return new ReservedSignedState(signedState, reason);
+        return createAndReserve(signedState, reason);
+    }
+
+    /**
+     * Try to get another reservation on the signed state. If the signed state is not closed, then a new reservation
+     * will be returned. If the signed state is closed, then null will be returned.
+     *
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return a new wrapper around the state that holds a new reservation, or null if the signed state is closed
+     */
+    public @Nullable ReservedSignedState tryGetAndReserve(@NonNull final String reason) {
+        if (signedState == null) {
+            return new ReservedSignedState();
+        }
+        if (!signedState.tryIncrementReservationCount(reason, reservationId)) {
+            return null;
+        }
+        return create(signedState, reason);
     }
 
     /**
