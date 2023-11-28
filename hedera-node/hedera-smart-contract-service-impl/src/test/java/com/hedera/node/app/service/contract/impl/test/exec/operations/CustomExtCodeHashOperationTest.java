@@ -28,7 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeHashOperation;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -65,7 +65,7 @@ class CustomExtCodeHashOperationTest {
     private FeatureFlags featureFlags;
 
     @Mock
-    private Configuration config;
+    private ProxyWorldUpdater updater;
 
     private CustomExtCodeHashOperation subject;
 
@@ -85,7 +85,8 @@ class CustomExtCodeHashOperationTest {
     void rejectsMissingNonSystemAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -97,8 +98,7 @@ class CustomExtCodeHashOperationTest {
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
             given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
-            given(featureFlags.isAllowCallsToNonContractAccountsEnabled(config)).willReturn(true);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -122,7 +122,8 @@ class CustomExtCodeHashOperationTest {
             given(addressChecks.isPresent(Address.fromHexString("0x123"), frame))
                     .willReturn(true);
             given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }

@@ -28,7 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallCodeOperation;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -69,7 +69,7 @@ class CustomCallCodeOperationTest {
     private FeatureFlags featureFlags;
 
     @Mock
-    private Configuration config;
+    private ProxyWorldUpdater updater;
 
     private CustomCallCodeOperation subject;
 
@@ -90,7 +90,8 @@ class CustomCallCodeOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
             givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -103,7 +104,8 @@ class CustomCallCodeOperationTest {
             given(addressChecks.isSystemAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
             given(frame.stackSize()).willReturn(7);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }

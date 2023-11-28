@@ -112,7 +112,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     protected boolean reverted = false;
 
-    protected boolean contractMustExist = true;
+    protected boolean contractMustBePresent = true;
 
     public ProxyWorldUpdater(
             @NonNull final Enhancement enhancement,
@@ -169,7 +169,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (account == null) {
             // If configured to allow non-existent contracts, return the address as a contract ID if the account is
             // not found.
-            if (!contractMustExist) {
+            if (!contractMustBePresent) {
                 return isLongZero(address) ? asNumberedContractId(address) : asEvmContractId(address);
             }
             throw new IllegalArgumentException("No contract pending or extant at " + address);
@@ -394,8 +394,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void setContractMustExist() {
-        contractMustExist = false;
+    public void setContractNotRequired() {
+        contractMustBePresent = false;
+    }
+
+    public boolean contractMustBePresent() {
+        return contractMustBePresent;
     }
 
     /**
@@ -434,7 +438,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (this.pendingCreation != null) {
             child.pendingCreation = this.pendingCreation;
         }
-        child.contractMustExist = this.contractMustExist;
+        child.contractMustBePresent = this.contractMustBePresent;
         return child;
     }
 

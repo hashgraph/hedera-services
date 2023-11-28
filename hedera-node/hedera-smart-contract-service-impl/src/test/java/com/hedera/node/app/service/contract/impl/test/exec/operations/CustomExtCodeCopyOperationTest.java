@@ -30,7 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeCopyOperation;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -66,7 +66,7 @@ class CustomExtCodeCopyOperationTest {
     private FeatureFlags featureFlags;
 
     @Mock
-    private Configuration config;
+    private ProxyWorldUpdater updater;
 
     private CustomExtCodeCopyOperation subject;
 
@@ -89,7 +89,8 @@ class CustomExtCodeCopyOperationTest {
             given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -103,9 +104,8 @@ class CustomExtCodeCopyOperationTest {
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
             given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
-            given(featureFlags.isAllowCallsToNonContractAccountsEnabled(config)).willReturn(true);
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
@@ -129,7 +129,8 @@ class CustomExtCodeCopyOperationTest {
                     .willReturn(true);
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
             given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }

@@ -31,8 +31,8 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
-import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -72,7 +72,7 @@ class CustomCallOperationTest {
     private EVM evm;
 
     @Mock
-    private Configuration config;
+    private ProxyWorldUpdater updater;
 
     private CustomCallOperation subject;
 
@@ -108,7 +108,8 @@ class CustomCallOperationTest {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
             given(addressChecks.isPresent(EIP_1014_ADDRESS, frame)).willReturn(true);
             given(frame.isStatic()).willReturn(true);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected =
                     new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
@@ -133,7 +134,8 @@ class CustomCallOperationTest {
     void withLongZeroRejectsMissingAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             final var actual = subject.execute(frame, evm);
@@ -146,7 +148,8 @@ class CustomCallOperationTest {
     void withNoValueRejectsMissingAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             final var actual = subject.execute(frame, evm);
@@ -160,8 +163,7 @@ class CustomCallOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             given(frame.getStackItem(1)).willReturn(TestHelpers.EIP_1014_ADDRESS);
             given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2l)));
-            given(featureFlags.isAllowCallsToNonContractAccountsEnabled(config)).willReturn(true);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
             final var actual = subject.execute(frame, evm);
@@ -174,7 +176,8 @@ class CustomCallOperationTest {
     void withoutImplicitCreationEnabledRejectsMissingAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
-            frameUtils.when(() -> FrameUtils.configOf(frame)).thenReturn(config);
+            given(updater.contractMustBePresent()).willReturn(true);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
             final var actual = subject.execute(frame, evm);

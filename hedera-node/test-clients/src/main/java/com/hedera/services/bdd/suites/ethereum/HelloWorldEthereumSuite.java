@@ -496,6 +496,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
+    @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")

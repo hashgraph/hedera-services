@@ -290,5 +290,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * in the ledger when the getHederaContractId() method is called
      * This is to improve Ethereum equivalence.
      */
-    void setContractMustExist();
+    void setContractNotRequired();
+
+    boolean contractMustBePresent();
 }
