@@ -1,21 +1,23 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.stream;
 
+import static com.swirlds.common.stream.HashCalculatorTest.PAY_LOAD_SIZE_4;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
@@ -26,6 +28,8 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getTimeStamp
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readHashesFromStreamFile;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readStartRunningHashFromStreamFile;
+import static com.swirlds.common.stream.StreamTypeTest.EVENT_FILE_NAME;
+import static com.swirlds.common.stream.StreamTypeTest.EVENT_SIG_FILE_NAME;
 import static com.swirlds.common.stream.internal.StreamValidationResult.CALCULATED_END_HASH_NOT_MATCH;
 import static com.swirlds.common.stream.internal.StreamValidationResult.INVALID_ENTIRE_SIGNATURE;
 import static com.swirlds.common.stream.internal.StreamValidationResult.OK;
@@ -35,11 +39,8 @@ import static com.swirlds.common.stream.internal.StreamValidationResult.SIG_HASH
 import static com.swirlds.common.stream.internal.StreamValidationResult.STREAM_FILE_EMPTY;
 import static com.swirlds.common.stream.internal.StreamValidationResult.STREAM_FILE_MISS_OBJECTS;
 import static com.swirlds.common.stream.internal.StreamValidationResult.STREAM_FILE_MISS_START_HASH;
-import static com.swirlds.common.test.stream.HashCalculatorTest.PAY_LOAD_SIZE_4;
-import static com.swirlds.common.test.stream.ObjectForTestStream.getRandomObjectForTestStream;
-import static com.swirlds.common.test.stream.StreamTypeTest.EVENT_FILE_NAME;
-import static com.swirlds.common.test.stream.StreamTypeTest.EVENT_SIG_FILE_NAME;
-import static com.swirlds.common.test.stream.TestStreamType.TEST_STREAM;
+import static com.swirlds.common.test.fixtures.stream.ObjectForTestStream.getRandomObjectForTestStream;
+import static com.swirlds.common.test.fixtures.stream.TestStreamType.TEST_STREAM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,15 +60,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.stream.EventStreamType;
-import com.swirlds.common.stream.LinkedObjectStreamUtilities;
-import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils;
 import com.swirlds.common.stream.internal.SingleStreamIterator;
 import com.swirlds.common.stream.internal.StreamValidationResult;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
+import com.swirlds.common.test.fixtures.stream.StreamObjectWorker;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

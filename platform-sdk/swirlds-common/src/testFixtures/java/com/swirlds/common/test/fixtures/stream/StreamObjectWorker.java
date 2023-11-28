@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.test.fixtures.stream;
 
-import static com.swirlds.common.test.stream.TestStreamType.TEST_STREAM;
+import static com.swirlds.common.test.fixtures.stream.TestStreamType.TEST_STREAM;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.crypto.Cryptography;
@@ -117,7 +118,7 @@ public class StreamObjectWorker {
         addedObjects = new LinkedList<>();
     }
 
-    void work() {
+    public void work() {
         while (remainNum > 0 && iterator.hasNext()) {
             ObjectForTestStream object = iterator.next();
 
@@ -135,7 +136,7 @@ public class StreamObjectWorker {
         }
     }
 
-    Deque<SelfSerializable> getAddedObjects() {
+    public Deque<SelfSerializable> getAddedObjects() {
         return addedObjects;
     }
 }
