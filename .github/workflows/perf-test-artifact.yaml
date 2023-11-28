@@ -273,28 +273,6 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
-      - name: Check If Release Artifact Exist in Bucket
-        id: check-if-exist
-        run: |
-          set +e
-          POLICY="${{ inputs.version-policy }}"
-          if [[ "${POLICY}" == "branch-commit"  ]]; then
-            ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
-          else
-            ARTIFACT_NAME="build-v${{ needs.validate.outputs.version }}"
-          fi
-          ARTIFACT_PATH="gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
-          echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
-          gsutil -q stat "${ARTIFACT_PATH}"
-          PATH_EXIST=$?
-          if [ ${PATH_EXIST} -eq 0 ]; then
-            echo "Artifact Already Exist"
-            echo "exist=true" >>"${GITHUB_OUTPUT}"
-          else
-            echo "Artifact Not Exist"
-            echo "exist=false" >>"${GITHUB_OUTPUT}"
-          fi
-
       - name: Setup Java
         if: ${{ steps.check-if-exist.outputs.exist == 'false' }}
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
@@ -380,7 +358,25 @@ jobs:
           ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
           sha384sum "${ARTIFACT_NAME}.zip" | tee "${ARTIFACT_NAME}.sha384"
 
+      - name: Check If Release Artifact Exist in Bucket
+        id: check-if-exist
+        run: |
+          set +e
+          ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
+          ARTIFACT_PATH="gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
+          echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
+          gsutil -q stat "${ARTIFACT_PATH}"
+          PATH_EXIST=$?
+          if [ ${PATH_EXIST} -eq 0 ]; then
+            echo "Artifact Already Exist"
+            echo "exist=true" >>"${GITHUB_OUTPUT}"
+          else
+            echo "Artifact Not Exist"
+            echo "exist=false" >>"${GITHUB_OUTPUT}"
+          fi
+
       - name: Upload Artifacts (DevOps GCP Bucket)
+        if: ${{ steps.check-if-exist.outputs.exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
