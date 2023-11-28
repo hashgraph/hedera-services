@@ -87,7 +87,7 @@ public class PreconsensusSystemTransactionManager {
             } catch (final RuntimeException e) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Error while handling system transaction preconsensus: handler: {}, id: {}, transaction: {}, error: {}",
+                        "Error while handling system transaction preconsensus: handler: {}, id: {}, transaction: {}",
                         handler,
                         creatorId,
                         transaction,

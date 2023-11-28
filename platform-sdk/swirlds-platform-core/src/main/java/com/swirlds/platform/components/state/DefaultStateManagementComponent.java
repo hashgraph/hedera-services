@@ -258,7 +258,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedState.setGarbageCollector(signedStateGarbageCollector);
         newSignedStateBeingTracked(signedState, sourceOfSignedState);
         signedStateManager.addState(signedState);
-        // TODO latest complete
     }
 
     /**

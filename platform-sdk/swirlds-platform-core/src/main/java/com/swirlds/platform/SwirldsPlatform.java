@@ -534,12 +534,10 @@ public class SwirldsPlatform implements Platform {
         final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
             // the app comm component will reserve the state, this should be done by the wiring in the future
             appCommunicationComponent.newLatestCompleteStateEvent(ss);
-            // since the nexus expects a reserved state, we will reserve it, set it, and then release it
+            // the nexus expects a state to be reserved for it
             // in the future, all of these reservations will be done by the wiring
-            try (final ReservedSignedState reserved = ss.reserve("setting latest complete state")) {
-                // the nexus will make its own reservation of the state
-                latestCompleteState.setState(reserved);
-            }
+            latestCompleteState.setState(ss.reserve("setting latest complete state"));
+
         };
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
