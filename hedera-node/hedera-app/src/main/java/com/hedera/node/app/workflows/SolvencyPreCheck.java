@@ -175,6 +175,10 @@ public class SolvencyPreCheck {
             throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
         }
 
+        if (offeredFee < totalFee + additionalCosts) {
+            throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
+        }
+
         if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);

@@ -1074,6 +1074,7 @@ public class ContractCallSuite extends HapiSuite {
     // For this test we use refusingEthConversion() for the Eth Call isomer,
     // since we should modify the expected balances and change the test itself in order to pass with
     // Eth Calls
+    @HapiTest
     HapiSpec ocToken() {
         final var contract = "OcToken";
 
@@ -1483,6 +1484,7 @@ public class ContractCallSuite extends HapiSuite {
                         .hasKnownStatus(CONTRACT_DELETED));
     }
 
+    @HapiTest
     HapiSpec insufficientGas() {
         return defaultHapiSpec("InsufficientGas")
                 .given(
@@ -1496,6 +1498,7 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPrecheck(INSUFFICIENT_GAS));
     }
 
+    @HapiTest
     HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 

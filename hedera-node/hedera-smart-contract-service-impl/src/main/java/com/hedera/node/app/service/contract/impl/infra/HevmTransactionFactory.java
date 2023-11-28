@@ -54,6 +54,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -78,7 +79,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @TransactionScope
 public class HevmTransactionFactory {
-    private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
 
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
@@ -239,8 +239,8 @@ public class HevmTransactionFactory {
     }
 
     private void assertValidCall(@NonNull final ContractCallTransactionBody body) {
-        final var minGasLimit =
-                Math.max(INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
+        final var minGasLimit = Math.max(
+                ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
         validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
         validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);

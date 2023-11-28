@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -147,6 +151,13 @@ public final class IngestChecker {
         final var txInfo = transactionChecker.check(tx);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
+
+        if (functionality == CONTRACT_CALL) {
+            // Since contract calls are charged exclusively by gas, we cannot
+            // submit transactions that offer no gas; this threshold is chosen
+            // for mono-service compatibility
+            validateTruePreCheck(txBody.contractCallOrThrow().gas() >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
+        }
 
         // 1a. Verify the transaction has been sent to *this* node
         if (!nodeAccount.equals(txBody.nodeAccountID())) {
