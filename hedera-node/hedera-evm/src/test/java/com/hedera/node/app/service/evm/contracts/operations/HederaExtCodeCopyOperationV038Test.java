@@ -42,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeCopyOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private WorldUpdater worldUpdater;
@@ -87,6 +88,7 @@ class HederaExtCodeCopyOperationV038Test {
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         var opResult = subject.execute(mf, evm);
@@ -122,6 +124,7 @@ class HederaExtCodeCopyOperationV038Test {
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         var opResult = subject.execute(mf, evm);

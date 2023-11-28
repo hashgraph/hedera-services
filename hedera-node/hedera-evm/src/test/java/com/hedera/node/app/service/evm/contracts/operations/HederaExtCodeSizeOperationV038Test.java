@@ -43,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeSizeOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
     private final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private final Address ethAddressInstance = Address.fromHexString(ethAddress);
     private final Account account = new SimpleAccount(ethAddressInstance, 0, Wei.ONE);
@@ -79,6 +80,7 @@ class HederaExtCodeSizeOperationV038Test {
     void executeWorldUpdaterResolvesToNull() {
         given(mf.getStackItem(0)).willReturn(ethAddressInstance);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -108,6 +110,7 @@ class HederaExtCodeSizeOperationV038Test {
         given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
         given(mf.getRemainingGas()).willReturn(100L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         var opResult = subject.execute(mf, evm);

@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeHashOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private AbstractLedgerEvmWorldUpdater worldUpdater;
@@ -86,6 +87,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInvalidSolidityAddress() {
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -97,6 +99,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInsufficientGas() {
         givenMessageFrameWithRemainingGas(ACTUAL_COST - 1L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -109,6 +112,7 @@ class HederaExtCodeHashOperationV038Test {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.isEmpty()).willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -132,6 +136,7 @@ class HederaExtCodeHashOperationV038Test {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -144,6 +149,7 @@ class HederaExtCodeHashOperationV038Test {
         given(account.isEmpty()).willReturn(false);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
