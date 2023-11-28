@@ -16,10 +16,17 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
+import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -92,6 +99,7 @@ public final class ScheduleUtils {
 
     private ScheduleUtils() {}
 
+    // public because this is used in HapiScheduleCreate
     public static SchedulableTransactionBody fromOrdinary(TransactionBody txn) {
         Builder scheduleBuilder = SchedulableTransactionBody.newBuilder();
         scheduleBuilder.setTransactionFee(txn.getTransactionFee());
@@ -165,6 +173,18 @@ public final class ScheduleUtils {
             scheduleBuilder.setCryptoApproveAllowance(txn.getCryptoApproveAllowance());
         }
         return scheduleBuilder.build();
+    }
+
+    static byte[] getPoeticUpgradeHash() {
+        final byte[] poeticUpgradeHash;
+        try {
+            final var sha384 = MessageDigest.getInstance("SHA-384");
+            final var poeticUpgrade = Files.readAllBytes(Paths.get(poeticUpgradeLoc));
+            poeticUpgradeHash = sha384.digest(poeticUpgrade);
+        } catch (NoSuchAlgorithmException | IOException e) {
+            throw new IllegalStateException("scheduledFreezeWorksAsExpected environment is unsuitable", e);
+        }
+        return poeticUpgradeHash;
     }
 
     private static String getWhitelistAll() {
