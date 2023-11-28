@@ -129,8 +129,7 @@ class GetAccountDetailsResourceUsageTest {
                 .addAllGrantedTokenAllowances(List.of(tokenAllowances))
                 .build();
         final var query = accountDetailsQuery(a, ANSWER_ONLY);
-        given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo))
-                .willReturn(Optional.of(info));
+        given(view.accountDetails(queryTarget, aliasManager)).willReturn(Optional.of(info));
         given(cryptoOpsUsage.accountDetailsUsage(any(), any())).willReturn(expected);
 
         final var usage = subject.usageGiven(query, view);
@@ -152,8 +151,7 @@ class GetAccountDetailsResourceUsageTest {
     @Test
     void returnsDefaultIfNoSuchAccount() {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
-        given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo))
-                .willReturn(Optional.empty());
+        given(view.accountDetails(queryTarget, aliasManager)).willReturn(Optional.empty());
 
         final var usage = subject.usageGiven(accountDetailsQuery(a, ANSWER_ONLY), view);
 
@@ -169,7 +167,7 @@ class GetAccountDetailsResourceUsageTest {
         assertFalse(subject.applicableTo(nonAccountDetailsQuery));
     }
 
-    private static final Query accountDetailsQuery(final String target, final ResponseType type) {
+    private static Query accountDetailsQuery(final String target, final ResponseType type) {
         final var id = asAccount(target);
         final var op = GetAccountDetailsQuery.newBuilder()
                 .setAccountId(id)

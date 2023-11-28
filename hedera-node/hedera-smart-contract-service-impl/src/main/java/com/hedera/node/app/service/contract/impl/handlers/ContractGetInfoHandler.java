@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.hexedEvmAddressOf;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.summarizeStakingInfo;
-import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -39,8 +38,6 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -55,6 +52,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_GET_INFO}.
+ * The token relationships field is deprecated and is no more returned by this query.
  */
 @Singleton
 public class ContractGetInfoHandler extends PaidQueryHandler {
@@ -97,9 +95,7 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                     config.getConfigData(TokensConfig.class),
                     config.getConfigData(LedgerConfig.class),
                     config.getConfigData(StakingConfig.class),
-                    context.createStore(ReadableTokenStore.class),
                     context.createStore(ReadableStakingInfoStore.class),
-                    context.createStore(ReadableTokenRelationStore.class),
                     context.createStore(ReadableNetworkStakingRewardsStore.class)));
         }
         return Response.newBuilder().contractGetInfo(contractGetInfo).build();
@@ -110,9 +106,7 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
             @NonNull final TokensConfig tokensConfig,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final StakingConfig stakingConfig,
-            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableStakingInfoStore stakingInfoStore,
-            @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableNetworkStakingRewardsStore stakingRewardsStore) {
         final var accountId = contract.accountIdOrThrow();
         final var stakingInfo = summarizeStakingInfo(
@@ -121,7 +115,6 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                 stakingRewardsStore.isStakingRewardsActivated(),
                 contract,
                 stakingInfoStore);
-        final var maxReturnedRels = tokensConfig.maxRelsPerInfoQuery();
         return ContractInfo.newBuilder()
                 .ledgerId(ledgerConfig.id())
                 .accountID(accountId)
@@ -136,7 +129,6 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                 .expirationTime(Timestamp.newBuilder().seconds(contract.expirationSecond()))
                 .maxAutomaticTokenAssociations(contract.maxAutoAssociations())
                 .contractAccountID(hexedEvmAddressOf(contract))
-                .tokenRelationships(tokenRelationshipsOf(contract, tokenStore, tokenRelationStore, maxReturnedRels))
                 .stakingInfo(stakingInfo)
                 .build();
     }

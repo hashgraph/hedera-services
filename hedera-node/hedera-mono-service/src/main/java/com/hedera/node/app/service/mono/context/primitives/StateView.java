@@ -74,7 +74,6 @@ import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RawTokenRelationship;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -107,12 +106,10 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
-import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -392,10 +389,7 @@ public class StateView {
     }
 
     public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
-            final AccountID id,
-            final AliasManager aliasManager,
-            final int maxTokensForAccountInfo,
-            final RewardCalculator rewardCalculator) {
+            final AccountID id, final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
         final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
@@ -420,10 +414,6 @@ public class StateView {
         Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(info::setProxyAccountID);
         if (!isOfEvmAddressSize(account.getAlias())) {
             info.setAlias(account.getAlias());
-        }
-        final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            info.addAllTokenRelationships(tokenRels);
         }
         info.setStakingInfo(stakingInfo(account, rewardCalculator));
 
@@ -499,7 +489,7 @@ public class StateView {
     }
 
     public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
-            final AccountID id, final AliasManager aliasManager, final int maxTokensForAccountInfo) {
+            final AccountID id, final AliasManager aliasManager) {
         final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
@@ -522,10 +512,6 @@ public class StateView {
                 .setOwnedNfts(account.getNftsOwned())
                 .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
         Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(details::setProxyAccountId);
-        final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            details.addAllTokenRelationships(tokenRels);
-        }
         setAllowancesIfAny(details, account);
         return Optional.of(details.build());
     }
@@ -546,10 +532,7 @@ public class StateView {
     }
 
     public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
-            final ContractID id,
-            final AliasManager aliasManager,
-            final int maxTokensForAccountInfo,
-            final RewardCalculator rewardCalculator) {
+            final ContractID id, final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
         final var contractId = EntityIdUtils.unaliased(id, aliasManager);
         final var contract = contracts().get(contractId);
         if (contract == null) {
@@ -578,11 +561,6 @@ public class StateView {
         } else {
             info.setContractAccountID(asHexedEvmAddress(mirrorId));
         }
-        final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            info.addAllTokenRelationships(tokenRels);
-        }
-
         info.setStakingInfo(stakingInfo(contract, rewardCalculator));
 
         try {
@@ -669,34 +647,6 @@ public class StateView {
 
     public static TokenPauseStatus tokenPauseStatusOf(final boolean flag) {
         return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
-    }
-
-    /**
-     * Returns the most recent token relationships formed by the given account in the given view of
-     * the state, up to maximum of {@code maxRels} relationships.
-     *
-     * @param view a view of the world state
-     * @param account the account of interest
-     * @param maxRels the maximum token relationships to return
-     * @return a list of the account's newest token relationships up to the given limit
-     */
-    static List<TokenRelationship> tokenRels(final StateView view, final HederaAccount account, final int maxRels) {
-        final List<TokenRelationship> grpcRels = new ArrayList<>();
-        var firstRel = account.getLatestAssociation();
-        doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
-            final var grpcRel = new RawTokenRelationship(
-                            rel.getBalance(),
-                            STATIC_PROPERTIES.getShard(),
-                            STATIC_PROPERTIES.getRealm(),
-                            rel.getRelatedTokenNum(),
-                            rel.isFrozen(),
-                            rel.isKycGranted(),
-                            rel.isAutomaticAssociation())
-                    .asGrpcFor(token);
-            grpcRels.add(grpcRel);
-        });
-
-        return grpcRels;
     }
 
     /**

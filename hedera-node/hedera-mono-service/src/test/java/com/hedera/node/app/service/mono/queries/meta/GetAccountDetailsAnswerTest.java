@@ -34,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -55,7 +54,6 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
-import com.hedera.node.app.service.mono.state.submerkle.RawTokenRelationship;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -75,7 +73,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.List;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -237,7 +235,7 @@ class GetAccountDetailsAnswerTest {
 
         final StateView view = mock(StateView.class);
 
-        given(view.accountDetails(any(), any(), anyInt())).willReturn(Optional.empty());
+        given(view.accountDetails(any(), any())).willReturn(Optional.empty());
 
         final Response response = subject.responseGiven(query, view, OK, fee);
 
@@ -327,20 +325,8 @@ class GetAccountDetailsAnswerTest {
         assertEquals(
                 EntityNum.fromLong(1000L).toGrpcTokenId(),
                 details.getGrantedNftAllowancesList().get(0).getTokenId());
-
-        assertEquals(
-                List.of(
-                        new RawTokenRelationship(firstBalance, 0, 0, firstToken.getTokenNum(), true, true, true)
-                                .asGrpcFor(token),
-                        new RawTokenRelationship(secondBalance, 0, 0, secondToken.getTokenNum(), false, false, true)
-                                .asGrpcFor(token),
-                        new RawTokenRelationship(thirdBalance, 0, 0, thirdToken.getTokenNum(), true, true, false)
-                                .asGrpcFor(token),
-                        new RawTokenRelationship(fourthBalance, 0, 0, fourthToken.getTokenNum(), false, false, true)
-                                .asGrpcFor(deletedToken),
-                        new RawTokenRelationship(missingBalance, 0, 0, missingToken.getTokenNum(), false, false, false)
-                                .asGrpcFor(REMOVED_TOKEN)),
-                details.getTokenRelationshipsList());
+        // We no more return token association data in account details
+        assertEquals(Collections.emptyList(), details.getTokenRelationshipsList());
     }
 
     @Test

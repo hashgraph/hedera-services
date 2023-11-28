@@ -58,8 +58,7 @@ public final class GetAccountDetailsResourceUsage implements QueryResourceUsageE
         final var op = query.getAccountDetails();
 
         final var account = op.getAccountId();
-        final var accountDetails =
-                view.accountDetails(account, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
+        final var accountDetails = view.accountDetails(account, aliasManager);
         /* Given the test in {@code GetAccountDetailsAnswer.checkValidity}, this can only be empty
          * under the extraordinary circumstance that the desired account expired during the query
          * answer flow (which will now fail downstream with an appropriate status code); so
