@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
@@ -91,6 +92,9 @@ class ProxyWorldUpdaterTest {
 
     @Mock
     private Account anotherImmutableAccount;
+
+    @Mock
+    private AccountID hollowAccountId;
 
     @Mock
     private MutableAccount mutableAccount;
@@ -213,9 +217,10 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesHollowFinalization() {
+        given(evmFrameState.finalizeHollowAccount(EIP_1014_ADDRESS, NONCE)).willReturn(hollowAccountId);
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
-        subject.finalizeHollowAccount(EIP_1014_ADDRESS);
-        verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
+        subject.finalizeHollowAccount(EIP_1014_ADDRESS, NONCE);
+        verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS, NONCE);
     }
 
     @Test
