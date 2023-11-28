@@ -46,7 +46,6 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractDeleteSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
@@ -409,7 +408,6 @@ public class SuiteRunner {
             put("ContractGetInfoSuite", aof(ContractGetInfoSuite::new));
             put("ContractUpdateSuite", aof(ContractUpdateSuite::new));
             put("ContractCallSuite", aof(ContractCallSuite::new));
-            put("BalanceOperationSuite", aof(BalanceOperationSuite::new));
             put("CallCodeOperationSuite", aof(CallCodeOperationSuite::new));
             put("CallOperationSuite", aof(CallOperationSuite::new));
             put("CreateOperationSuite", aof(CreateOperationSuite::new));

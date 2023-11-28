@@ -30,7 +30,6 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
@@ -146,7 +145,6 @@ public class ConcurrentSuites {
             ContractMusicalChairsSuite::new,
             ContractUpdateSuite::new,
             // contract.opcode
-            BalanceOperationSuite::new,
             CallCodeOperationSuite::new,
             CallOperationSuite::new,
             CreateOperationSuite::new,
@@ -247,7 +245,6 @@ public class ConcurrentSuites {
             TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
             // contract opcodes
-            BalanceOperationSuite::new,
             CallCodeOperationSuite::new,
             CallOperationSuite::new,
             CreateOperationSuite::new,

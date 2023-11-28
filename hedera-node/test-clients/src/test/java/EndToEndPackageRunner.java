@@ -38,7 +38,6 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
@@ -324,7 +323,6 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodes() {
         return List.of(
-                extractSpecsFromSuite(BalanceOperationSuite::new),
                 extractSpecsFromSuite(CallCodeOperationSuite::new),
                 extractSpecsFromSuite(CallOperationSuite::new),
                 extractSpecsFromSuite(CreateOperationSuite::new),
@@ -343,7 +341,6 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodesEth() {
         return List.of(new DynamicContainer[] {
-            extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
             extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
             extractSpecsFromSuiteForEth(CallOperationSuite::new),
             extractSpecsFromSuiteForEth(CreateOperationSuite::new),
