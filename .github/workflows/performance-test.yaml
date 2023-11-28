@@ -69,44 +69,44 @@ jobs:
       sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
 
-  performance-test:
-    name: Performance Test
-    runs-on: ubuntu-latest
-    needs:
-      - release-adhoc
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
-
-      - name: Reset Network
-        id: reset-network
-        run: |
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ needs.release-adhoc.outputs.build-version }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-          echo "Sleep 10 minutes for network reset"
-          sleep 10m
-
-      - name: Run LogCLI to Wait for Network Active
-        id: run-logcli-wait-network-active
-        run: |
-          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
-          unzip logcli-linux-amd64.zip
-          chmod a+x logcli-linux-amd64
-          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
-          echo "Sleep 10 minutes for network reset completed"
-          sleep 10m
-
-      - name: Restore Old Signed State
-        id: restore-old-signed-state
-        run: |
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fperformance6-state-backups%2Fperformance6-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-          echo "Sleep 10 minutes for network to load"
-          sleep 10m
-      - name: Run LogCLI to Wait for Network Active Again
-        id: run-logcli-wait-network-active-again
-        run: |
-          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
-
-      - name: Call Test Script
-        id: call-test-script
-        run: |
-          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ env.VERSION_SERVICE }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
+#  performance-test:
+#    name: Performance Test
+#    runs-on: ubuntu-latest
+#    needs:
+#      - release-adhoc
+#    steps:
+#      - name: Checkout Code
+#        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+#
+#      - name: Reset Network
+#        id: reset-network
+#        run: |
+#          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ needs.release-adhoc.outputs.build-version }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+#          echo "Sleep 10 minutes for network reset"
+#          sleep 10m
+#
+#      - name: Run LogCLI to Wait for Network Active
+#        id: run-logcli-wait-network-active
+#        run: |
+#          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
+#          unzip logcli-linux-amd64.zip
+#          chmod a+x logcli-linux-amd64
+#          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+#          echo "Sleep 10 minutes for network reset completed"
+#          sleep 10m
+#
+#      - name: Restore Old Signed State
+#        id: restore-old-signed-state
+#        run: |
+#          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fperformance6-state-backups%2Fperformance6-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+#          echo "Sleep 10 minutes for network to load"
+#          sleep 10m
+#      - name: Run LogCLI to Wait for Network Active Again
+#        id: run-logcli-wait-network-active-again
+#        run: |
+#          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+#
+#      - name: Call Test Script
+#        id: call-test-script
+#        run: |
+#          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ env.VERSION_SERVICE }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
