@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -104,6 +103,7 @@ class GetContractInfoAnswerTest {
 
     @BeforeEach
     void setup() {
+        // we don't return the token relationships data anymore, since the field it is deprecated
         info = ContractGetInfoResponse.ContractInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setContractID(asContract(target))
@@ -127,7 +127,7 @@ class GetContractInfoAnswerTest {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
         final Query query = validQuery(ANSWER_ONLY, fee, target);
 
-        given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo, rewardCalculator))
+        given(view.infoForContract(asContract(target), aliasManager, rewardCalculator))
                 .willReturn(Optional.of(info));
 
         // when:
@@ -169,7 +169,7 @@ class GetContractInfoAnswerTest {
         assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertSame(info, opResponse.getContractInfo());
         // and:
-        verify(view, never()).infoForContract(any(), any(), anyInt(), any());
+        verify(view, never()).infoForContract(any(), any(), any());
     }
 
     @Test
@@ -177,7 +177,7 @@ class GetContractInfoAnswerTest {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-        given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo, rewardCalculator))
+        given(view.infoForContract(asContract(target), aliasManager, rewardCalculator))
                 .willReturn(Optional.empty());
 
         // when:
@@ -201,7 +201,7 @@ class GetContractInfoAnswerTest {
         final ContractGetInfoResponse opResponse = response.getContractGetInfo();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
         assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-        verify(view, never()).infoForContract(any(), any(), anyInt(), any());
+        verify(view, never()).infoForContract(any(), any(), any());
     }
 
     @Test

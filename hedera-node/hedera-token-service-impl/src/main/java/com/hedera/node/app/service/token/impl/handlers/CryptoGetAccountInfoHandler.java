@@ -56,7 +56,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CRYPTO_GET_INFO}.
- * The token balances field is deprecated and is no more returned by this query.
+ * The token relationships field is deprecated and is no more returned by this query.
  */
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {

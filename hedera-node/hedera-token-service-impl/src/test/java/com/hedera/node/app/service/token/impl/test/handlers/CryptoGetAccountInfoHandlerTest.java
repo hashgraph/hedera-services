@@ -271,8 +271,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    @DisplayName("check multiple token relations list")
-    void checkMulitpleTokenRelations() {
+    @DisplayName("returns empty token relations list")
+    void returnsEmptyTokenRelations() {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfos();
 

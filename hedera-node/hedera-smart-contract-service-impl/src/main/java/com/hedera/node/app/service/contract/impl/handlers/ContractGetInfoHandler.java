@@ -44,7 +44,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
-import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -92,7 +91,6 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
             final var config = context.configuration();
             contractGetInfo.contractInfo(infoFor(
                     contract,
-                    config.getConfigData(TokensConfig.class),
                     config.getConfigData(LedgerConfig.class),
                     config.getConfigData(StakingConfig.class),
                     context.createStore(ReadableStakingInfoStore.class),
@@ -103,7 +101,6 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
 
     private ContractInfo infoFor(
             @NonNull final Account contract,
-            @NonNull final TokensConfig tokensConfig,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ReadableStakingInfoStore stakingInfoStore,

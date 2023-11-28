@@ -267,6 +267,7 @@ class GetAccountBalanceAnswerTest {
 
         // expect:
         assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
+        // we don't return token balances data in the query anymore since it is deprecated
         assertEquals(
                 Collections.emptyList(), response.getCryptogetAccountBalance().getTokenBalancesList());
         assertEquals(OK, status);
