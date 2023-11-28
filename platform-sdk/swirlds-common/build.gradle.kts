@@ -21,6 +21,8 @@ plugins {
 }
 
 mainModuleInfo {
+    annotationProcessor("com.swirlds.config.processor")
+
     runtimeOnly("resource.loader")
     runtimeOnly("com.sun.jna")
 }
