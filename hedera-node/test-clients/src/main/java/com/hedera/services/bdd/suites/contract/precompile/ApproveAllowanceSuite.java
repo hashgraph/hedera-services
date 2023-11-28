@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -61,8 +62,10 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -113,10 +116,54 @@ public class ApproveAllowanceSuite extends HapiSuite {
                 htsTokenAllowance(),
                 htsTokenApprove(),
                 htsTokenApproveToInnerContract(),
+                nftAutoCreationIncludeAllowanceCheck(),
                 testIndirectApprovalWithDirectPrecompileCallee(),
                 testIndirectApprovalWithDelegateErc20Callee(),
                 testIndirectApprovalWithDelegatePrecompileCallee(),
                 testIndirectApprovalWithDirectErc20Callee());
+    }
+
+    private HapiSpec nftAutoCreationIncludeAllowanceCheck() {
+        final var ownerAccount = "owningAlias";
+        final var receivingAlias = "receivingAlias";
+        return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ownerAccount),
+                        newKeyNamed(receivingAlias),
+                        // Accounts to be referenced with aliases as well
+                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                        // A non-fungible token with 6 serial nos
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY))
+                .when(
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"),
+                                        ByteString.copyFromUtf8("C"),
+                                        ByteString.copyFromUtf8("D"),
+                                        ByteString.copyFromUtf8("E"),
+                                        ByteString.copyFromUtf8("F"))),
+                        tokenAssociate(ownerAccount, List.of(NON_FUNGIBLE_TOKEN)),
+                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, ownerAccount)))
+                .then(cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(spec.registry().getAccountID(ownerAccount))
+                                        .setReceiverAccountID(spec.registry().getKeyAlias(receivingAlias))
+                                        .setSerialNumber(1L)
+                                        .setIsApproval(true)
+                                        .build())
+                                .build()))
+                        .signedBy(DEFAULT_PAYER)
+                        .fee(10 * ONE_HBAR)
+                        .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
     public static final String DELEGATE_PRECOMPILE_CALLEE = "PretendCallee";
