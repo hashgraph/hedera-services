@@ -41,7 +41,7 @@ public class FeeService implements Service {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new Schema(CURRENT_VERSION) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

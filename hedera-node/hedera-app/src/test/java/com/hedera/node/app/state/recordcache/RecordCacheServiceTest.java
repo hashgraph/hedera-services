@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.spi.Service.CURRENT_VERSION;
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -46,7 +46,7 @@ final class RecordCacheServiceTest {
         svc.registerSchemas(registry);
         verify(registry).register(captor.capture());
         final var schema = captor.getValue();
-        assertThat(schema.getVersion()).isEqualTo(CURRENT_VERSION);
+        assertThat(schema.getVersion()).isEqualTo(RELEASE_045_VERSION);
         assertThat(schema.statesToCreate()).hasSize(1);
     }
 }

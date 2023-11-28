@@ -48,7 +48,7 @@ public class RecordCacheService implements Service {
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.
-        registry.register(new Schema(CURRENT_VERSION) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public SemanticVersion getVersion() {

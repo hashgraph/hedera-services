@@ -54,7 +54,7 @@ public final class BlockRecordService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(CURRENT_VERSION) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /** {@inheritDoc} */
             @NonNull
             @Override
