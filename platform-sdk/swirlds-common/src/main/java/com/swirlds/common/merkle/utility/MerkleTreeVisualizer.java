@@ -181,7 +181,7 @@ public class MerkleTreeVisualizer {
                 .setOrder(MerkleIterationOrder.PRE_ORDERED_DEPTH_FIRST)
                 .setDescendantFilter(filter);
 
-        final TextTable table = new TextTable().setExtraPadding(3).setBordersEnabled(false);
+        final TextTable table = new TextTable().setExtraPadding(3).setBordersEnabled(true);
 
         iterator.forEachRemaining((final MerkleNode node) -> {
             final MerkleRoute route = iterator.getRoute();
