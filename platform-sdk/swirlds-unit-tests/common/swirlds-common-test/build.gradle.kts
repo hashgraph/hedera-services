@@ -25,7 +25,6 @@ testModuleInfo {
     requires("com.swirlds.config.api")
     requires("com.swirlds.metrics.api")
     requires("com.swirlds.test.framework")
-    requires("org.assertj.core")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requiresStatic("com.github.spotbugs.annotations")
