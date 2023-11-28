@@ -16,9 +16,9 @@
 
 package com.swirlds.config.extensions.test;
 
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.extensions.sources.MappedConfigSource;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
-import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
