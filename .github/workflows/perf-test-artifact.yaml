@@ -281,8 +281,10 @@ jobs:
             ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
           else
             ARTIFACT_NAME="build-v${{ needs.validate.outputs.version }}"
-          fi          
-          gsutil -q stat gs://${{ secrets.bucket-name }}/"${ARTIFACT_NAME}.zip"
+          fi
+          ARTIFACT_PATH="gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
+          echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
+          gsutil -q stat "${ARTIFACT_PATH}"
           PATH_EXIST=$?
           if [ ${PATH_EXIST} -eq 0 ]; then
             echo "Artifact Already Exist"
