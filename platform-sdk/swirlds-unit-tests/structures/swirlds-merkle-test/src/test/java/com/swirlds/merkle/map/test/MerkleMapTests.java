@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.map.test;
 
-import static com.swirlds.merkle.map.test.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
+import static com.swirlds.merkle.test.fixtures.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static java.util.Map.Entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,11 +50,11 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.dummy.AccessibleMerkleMap;
-import com.swirlds.merkle.map.test.dummy.FCQValue;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
-import com.swirlds.merkle.map.test.util.KeyValueProvider;
-import com.swirlds.merkle.map.test.util.MerkleMapTestUtil;
+import com.swirlds.merkle.test.fixtures.dummy.AccessibleMerkleMap;
+import com.swirlds.merkle.test.fixtures.dummy.FCQValue;
+import com.swirlds.merkle.test.fixtures.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.util.KeyValueProvider;
+import com.swirlds.merkle.test.fixtures.util.MerkleMapTestUtil;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;

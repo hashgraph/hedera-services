@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.merkle.map.test.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
+import static com.swirlds.merkle.test.fixtures.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,10 +39,10 @@ import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
-import com.swirlds.merkle.map.test.pta.MapKey;
-import com.swirlds.merkle.map.test.pta.MapValue;
-import com.swirlds.merkle.map.test.pta.TransactionRecord;
+import com.swirlds.merkle.test.fixtures.lifecycle.ExpectedValue;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.pta.MapValue;
+import com.swirlds.merkle.test.fixtures.pta.TransactionRecord;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;

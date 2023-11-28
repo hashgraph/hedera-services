@@ -33,7 +33,7 @@ module com.swirlds.demo.platform {
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
-    requires com.swirlds.merkle.test;
+    requires com.swirlds.merkle.test.fixtures;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
@@ -43,5 +43,4 @@ module com.swirlds.demo.platform {
     requires java.management;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-    requires com.swirlds.merkle.test.fixtures;
 }

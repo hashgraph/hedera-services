@@ -1,3 +1,3 @@
-open module com.swirlds.merkle.test {
+open module com.swirlds.merkle.old.test {
 
 }

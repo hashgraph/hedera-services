@@ -25,7 +25,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.merkle.test.fixtures.pta.MapValue;
 import org.junit.jupiter.api.Test;
 
 class MapValueTest {

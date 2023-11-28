@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.nft;
 
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;

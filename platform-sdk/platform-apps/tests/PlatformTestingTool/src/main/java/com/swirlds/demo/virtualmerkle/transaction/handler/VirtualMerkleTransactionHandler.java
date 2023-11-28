@@ -16,13 +16,13 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.handler;
 
-import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.CreateExistingAccount;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.DeleteNotExistentAccount;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.UpdateNotExistentAccount;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionState.HANDLED;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Create;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.CreateExistingAccount;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Delete;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.DeleteNotExistentAccount;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.UpdateNotExistentAccount;
 
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
@@ -41,9 +41,9 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKe
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.TransactionType;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.lifecycle.TransactionType;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import java.time.Instant;

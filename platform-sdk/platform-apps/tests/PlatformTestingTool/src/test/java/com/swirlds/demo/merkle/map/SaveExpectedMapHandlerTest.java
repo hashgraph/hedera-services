@@ -16,19 +16,19 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.deserialize;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
-import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
+import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.deserialize;
+import static com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.merkle.test.fixtures.lifecycle.TransactionType.Update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
-import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
-import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
-import com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler;
-import com.swirlds.merkle.map.test.lifecycle.TransactionState;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.lifecycle.ExpectedValue;
+import com.swirlds.merkle.test.fixtures.lifecycle.LifecycleStatus;
+import com.swirlds.merkle.test.fixtures.lifecycle.SaveExpectedMapHandler;
+import com.swirlds.merkle.test.fixtures.lifecycle.TransactionState;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
 import java.io.File;
 import java.time.Instant;
 import java.util.HashMap;

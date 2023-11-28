@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.map.test.benchmark;
 
-import static com.swirlds.merkle.map.test.benchmark.MerkleMapBenchmarkUtils.generateInitialState;
+import static com.swirlds.merkle.test.fixtures.benchmark.MerkleMapBenchmarkUtils.generateInitialState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -26,10 +26,13 @@ import com.swirlds.common.test.fixtures.benchmark.BenchmarkConfiguration;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkOperation;
 import com.swirlds.common.test.fixtures.benchmark.BenchmarkStatistic;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.benchmark.operations.CreateAccountOperation;
-import com.swirlds.merkle.map.test.benchmark.operations.DeleteAccountOperation;
-import com.swirlds.merkle.map.test.benchmark.operations.ReadBalanceOperation;
-import com.swirlds.merkle.map.test.benchmark.operations.TransferOperation;
+import com.swirlds.merkle.test.fixtures.benchmark.BenchmarkAccount;
+import com.swirlds.merkle.test.fixtures.benchmark.BenchmarkKey;
+import com.swirlds.merkle.test.fixtures.benchmark.MerkleMapBenchmarkMetadata;
+import com.swirlds.merkle.test.fixtures.benchmark.operations.CreateAccountOperation;
+import com.swirlds.merkle.test.fixtures.benchmark.operations.DeleteAccountOperation;
+import com.swirlds.merkle.test.fixtures.benchmark.operations.ReadBalanceOperation;
+import com.swirlds.merkle.test.fixtures.benchmark.operations.TransferOperation;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.time.Duration;

@@ -30,7 +30,7 @@ import com.swirlds.demo.platform.nft.Nft;
 import com.swirlds.demo.platform.nft.NftId;
 import com.swirlds.demo.platform.nft.NftLedger;
 import com.swirlds.demo.platform.nft.ReferenceNftLedger;
-import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.pta.MapKey;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;

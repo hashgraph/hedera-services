@@ -27,7 +27,7 @@ import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.test.util.KeyValueProvider;
+import com.swirlds.merkle.test.fixtures.util.KeyValueProvider;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;

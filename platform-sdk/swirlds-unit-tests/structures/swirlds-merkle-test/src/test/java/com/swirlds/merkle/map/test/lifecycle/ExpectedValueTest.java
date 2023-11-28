@@ -18,6 +18,7 @@ package com.swirlds.merkle.map.test.lifecycle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.merkle.test.fixtures.lifecycle.ExpectedValue;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
