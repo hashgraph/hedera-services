@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
@@ -117,14 +116,15 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
+    public AccountID finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress, final long contractNonce) {
         requireNonNull(evmAddress);
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId, INITIAL_CONTRACT_NONCE);
+        tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId, contractNonce);
         // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
         context.newEntityNum();
+        return hollowAccountId;
     }
 
     /**

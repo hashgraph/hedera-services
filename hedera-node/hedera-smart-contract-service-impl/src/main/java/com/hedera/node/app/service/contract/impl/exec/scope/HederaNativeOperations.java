@@ -181,8 +181,10 @@ public interface HederaNativeOperations {
      * only be externalized if the top-level HAPI transaction succeeds.
      *
      * @param evmAddress the EVM address of the hollow account to finalize as a contract
+     * @param contractNonce the contract nonce value to set it to the resulting account after merging with hollow account
+     * @return hollowAccountId
      */
-    void finalizeHollowAccountAsContract(@NonNull Bytes evmAddress);
+    AccountID finalizeHollowAccountAsContract(@NonNull Bytes evmAddress, long contractNonce);
 
     /**
      * Transfers value from one account or contract to another without creating a record in this {@link HandleHederaOperations},
