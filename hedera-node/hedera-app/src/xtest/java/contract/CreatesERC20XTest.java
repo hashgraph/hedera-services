@@ -69,36 +69,36 @@ import org.apache.tuweni.bytes.Bytes;
 /**
  * Exercises create a token via the following steps relative to an {@code OWNER} account:
  * <ol>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
- *     <li>Update expiry {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
+ *     <li>Create token {@code ERC20_TOKEN} via {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
  * </ol>
  */
 public class CreatesERC20XTest extends AbstractContractXTest {
