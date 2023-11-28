@@ -17,6 +17,7 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
@@ -37,7 +38,6 @@ import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.addErc721Relation;
-import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -51,7 +51,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
@@ -84,7 +83,12 @@ public class MintsXTest extends AbstractContractXTest {
                 Bytes.wrap(MintTranslator.MINT
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), new byte[][] {})
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 1010L, new long[] {})
+                                .array()),
+                        output));
 
         // Mint 10 Tokens via mintV2
         runHtsCallAndExpectOnSuccess(
@@ -92,7 +96,12 @@ public class MintsXTest extends AbstractContractXTest {
                 Bytes.wrap(MintTranslator.MINT_V2
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, MINT_AMOUNT, new byte[][] {})
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT_V2
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 1020L, new long[] {})
+                                .array()),
+                        output));
 
         // Mint NFT via mintV1
         runHtsCallAndExpectOnSuccess(
@@ -100,7 +109,12 @@ public class MintsXTest extends AbstractContractXTest {
                 Bytes.wrap(MintTranslator.MINT
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, BigInteger.ZERO, metadata)
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 1001L, new long[] {1L})
+                                .array()),
+                        output));
 
         // Mint NFT via mintV2
         runHtsCallAndExpectOnSuccess(
@@ -108,7 +122,12 @@ public class MintsXTest extends AbstractContractXTest {
                 Bytes.wrap(MintTranslator.MINT_V2
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, 0L, metadata)
                         .array()),
-                assertSuccess());
+                output -> assertEquals(
+                        Bytes.wrap(MintTranslator.MINT_V2
+                                .getOutputs()
+                                .encodeElements((long) SUCCESS.protoOrdinal(), 1002L, new long[] {2L})
+                                .array()),
+                        output));
 
         // should fail when token has no supplyKey
         runHtsCallAndExpectOnSuccess(
@@ -117,8 +136,10 @@ public class MintsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), new byte[][] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(
-                                ReturnTypes.encodedRc(TOKEN_HAS_NO_SUPPLY_KEY).array()),
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) TOKEN_HAS_NO_SUPPLY_KEY.protoOrdinal(), 0L, new long[] {})
+                                .array()),
                         output));
 
         // should fail when token has invalid address
@@ -128,7 +149,11 @@ public class MintsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), new byte[][] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(MintTranslator.MINT
+                                .getOutputs()
+                                .encodeElements((long) INVALID_TOKEN_ID.protoOrdinal(), 0L, new long[] {})
+                                .array()),
+                        output));
     }
 
     @Override
