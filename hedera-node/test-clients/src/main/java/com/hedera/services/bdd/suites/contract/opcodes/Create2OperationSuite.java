@@ -180,7 +180,6 @@ public class Create2OperationSuite extends HapiSuite {
                 canDeleteViaAlias(),
                 cannotSelfDestructToMirrorAddress(),
                 priorityAddressIsCreate2ForStaticHapiCalls(),
-                canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
                 create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
                 canUseAliasesInPrecompilesAndContractKeys(),
                 inlineCreateCanFailSafely(),

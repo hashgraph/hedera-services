@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -47,7 +48,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -96,6 +100,13 @@ public class Evm38ValidationSuite extends HapiSuite {
     private static final String EVM_VERSION_038 = "v0.38";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
     private static final String BALANCE_OF = "balanceOf";
+    private static final String CREATION = "creation";
+    private static final String CREATE_2_TXN = "create2Txn";
+    private static final String SWISS = "swiss";
+    private static final String RETURNER = "Returner";
+    private static final String CALL_RETURNER = "callReturner";
+    public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
+    public static final String RETURNER_REPORTED_LOG_MESSAGE = "Returner reported {} when called with mirror address";
 
     public static void main(String... args) {
         new Evm38ValidationSuite().runSuiteSync();
@@ -114,7 +125,8 @@ public class Evm38ValidationSuite extends HapiSuite {
                 verifiesExistenceOfAccountsAndContracts(),
                 verifiesExistenceForCallCodeOperation(),
                 verifiesExistenceForCallOperation(),
-                verifiesExistenceForCallOperationInternal());
+                verifiesExistenceForCallOperationInternal(),
+                canInternallyCallAliasedAddressesOnlyViaCreate2Address());
     }
 
     @HapiTest
@@ -313,6 +325,67 @@ public class Evm38ValidationSuite extends HapiSuite {
                                         BigInteger.valueOf(222))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
                 .then(contractCallLocal(contract, "getVar1").logged());
+    }
+
+    @SuppressWarnings("java:S5669")
+    @HapiTest
+    private HapiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
+        final var contract = "AddressValueRet";
+        final var aliasCall = "aliasCall";
+        final var mirrorCall = "mirrorCall";
+
+        final AtomicReference<String> aliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mirrorAddr = new AtomicReference<>();
+        final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
+        final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
+
+        final var salt = unhex(SALT);
+
+        return propertyPreservingHapiSpec("canInternallyCallAliasedAddressesOnlyViaCreate2Address")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        uploadInitCode(contract),
+                        contractCreate(contract).payingWith(GENESIS),
+                        contractCall(contract, "createReturner", salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(CREATE_2_TXN),
+                        captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
+                .when(
+                        sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
+                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
+                                .payingWith(GENESIS)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
+                                    staticCallMirrorAns.set((BigInteger) results[0]);
+                                })),
+                        sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(aliasAddr.get()))
+                                .payingWith(GENESIS)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info("Returner reported {} when" + " called with alias" + " address", results);
+                                    staticCallAliasAns.set((BigInteger) results[0]);
+                                })),
+                        sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(aliasAddr.get()))
+                                .payingWith(GENESIS)
+                                .via(aliasCall)),
+                        sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
+                                .payingWith(GENESIS)
+                                .via(mirrorCall)))
+                .then(withOpContext((spec, opLog) -> {
+                    final var mirrorLookup = getTxnRecord(mirrorCall);
+                    allRunFor(spec, mirrorLookup);
+                    final var mirrorResult = mirrorLookup
+                            .getResponseRecord()
+                            .getContractCallResult()
+                            .getContractCallResult();
+                    assertEquals(
+                            ByteString.EMPTY,
+                            mirrorResult,
+                            "Internal calls with mirror address should not be" + " possible for aliased contracts");
+                }));
     }
 
     @Override
