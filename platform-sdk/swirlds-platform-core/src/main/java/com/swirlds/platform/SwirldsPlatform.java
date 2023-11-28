@@ -699,9 +699,9 @@ public class SwirldsPlatform implements Platform {
         final EventValidator eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
+        platformWiring = new PlatformWiring(platformContext, time);
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
-            platformWiring = null;
         } else {
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
@@ -727,7 +727,6 @@ public class SwirldsPlatform implements Platform {
                     preConsensusEventHandler::preconsensusEvent,
                     intakeEventCounter);
 
-            platformWiring = new PlatformWiring(platformContext, time);
             platformWiring.bind(
                     internalEventValidator,
                     eventDeduplicator,
