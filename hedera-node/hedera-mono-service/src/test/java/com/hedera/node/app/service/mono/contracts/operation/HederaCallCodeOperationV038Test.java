@@ -48,6 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCallCodeOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private GasCalculator calc;
@@ -101,6 +102,7 @@ class HederaCallCodeOperationV038Test {
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -134,6 +136,7 @@ class HederaCallCodeOperationV038Test {
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
@@ -165,6 +168,7 @@ class HederaCallCodeOperationV038Test {
 
         given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, opRes.getHaltReason());

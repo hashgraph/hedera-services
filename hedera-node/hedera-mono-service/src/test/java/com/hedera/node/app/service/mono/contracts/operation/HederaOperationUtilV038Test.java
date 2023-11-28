@@ -58,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaOperationUtilV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
     private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
     private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
 
@@ -104,6 +105,7 @@ class HederaOperationUtilV038Test {
         final var degenerateResult = new Operation.OperationResult(0, null);
         given(executionSupplier.get()).willReturn(degenerateResult);
         given(isChildStatic.getAsBoolean()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
@@ -124,6 +126,7 @@ class HederaOperationUtilV038Test {
     void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
         // given:
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -159,6 +162,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -221,6 +225,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
@@ -261,6 +266,7 @@ class HederaOperationUtilV038Test {
                 .willReturn(true);
         long expectedSuccessfulGas = 100L;
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
