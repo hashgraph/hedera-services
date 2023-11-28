@@ -61,7 +61,7 @@ public class DataFileCollectionBench extends BaseBench {
                         return readDataItem(dataLocation);
                     }
                 };
-        final var compactor = new DataFileCompactor(storeName, store, index, null, null, null);
+        final var compactor = new DataFileCompactor(storeName, store, index, null, null, null, null);
         System.out.println();
 
         // Write files

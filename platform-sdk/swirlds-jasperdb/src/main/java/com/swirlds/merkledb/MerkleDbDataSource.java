@@ -314,6 +314,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     pathToDiskLocationInternalNodes,
                     statisticsUpdater::setHashesStoreCompactionTimeMs,
                     statisticsUpdater::setHashesStoreCompactionSavedSpaceMb,
+                    statisticsUpdater::setHashesStoreFileSizeByLevelMb,
                     updateTotalStatsFunction);
         } else {
             hashStoreDisk = null;
@@ -359,6 +360,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     objectKeyToPath.getBucketIndexToBucketLocation(),
                     statisticsUpdater::setLeafKeysStoreCompactionTimeMs,
                     statisticsUpdater::setLeafKeysStoreCompactionSavedSpaceMb,
+                    statisticsUpdater::setLeafKeysStoreFileSizeByLevelMb,
                     updateTotalStatsFunction);
             objectKeyToPath.printStats();
             // we do not need callback as HalfDiskHashMap loads its own data from disk
@@ -380,6 +382,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 pathToDiskLocationLeafNodes,
                 statisticsUpdater::setLeavesStoreCompactionTimeMs,
                 statisticsUpdater::setLeavesStoreCompactionSavedSpaceMb,
+                statisticsUpdater::setLeavesStoreFileSizeByLevelMb,
                 updateTotalStatsFunction);
 
         // Leaf records cache

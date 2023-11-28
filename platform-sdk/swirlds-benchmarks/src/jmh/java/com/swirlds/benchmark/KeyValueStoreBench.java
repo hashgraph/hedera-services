@@ -53,8 +53,8 @@ public class KeyValueStoreBench extends BaseBench {
                 new BenchmarkRecordSerializer(),
                 (key, dataLocation, dataValue) -> {},
                 keyToDiskLocationIndex);
-        final DataFileCompactor compactor =
-                new DataFileCompactor(storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null);
+        final DataFileCompactor compactor = new DataFileCompactor(
+                storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null, null);
         System.out.println();
 
         // Write files

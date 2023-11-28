@@ -52,7 +52,7 @@ public class HalfDiskMapBench extends BaseBench {
         final var store =
                 new HalfDiskHashMap<>(maxKey, new BenchmarkKeySerializer(), getTestDir(), storeName, null, false);
         final var dataFileCompactor = new DataFileCompactor(
-                storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null);
+                storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null, null);
         System.out.println();
 
         // Write files
