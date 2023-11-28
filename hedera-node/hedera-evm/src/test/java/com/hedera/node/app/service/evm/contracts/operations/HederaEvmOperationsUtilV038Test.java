@@ -41,6 +41,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmOperationsUtilV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
+
     @Mock
     private MessageFrame messageFrame;
 
@@ -115,6 +117,7 @@ class HederaEvmOperationsUtilV038Test {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
@@ -141,6 +144,7 @@ class HederaEvmOperationsUtilV038Test {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
