@@ -16,10 +16,14 @@
 
 package com.hedera.services.bdd.suites.contract.evm;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -28,30 +32,37 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
-// @HapiTestSuite
+@HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class Evm38ValidationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm38ValidationSuite.class);
@@ -82,24 +93,24 @@ public class Evm38ValidationSuite extends HapiSuite {
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_038 = "v0.38";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
+    private static final String BALANCE_OF = "balanceOf";
 
     public static void main(String... args) {
-        new Evm38ValidationSuite().runSuiteAsync();
+        new Evm38ValidationSuite().runSuiteSync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                invalidContractCall(),
-                cannotSendValueToTokenAccount()
-        );
+                invalidContractCall(), cannotSendValueToTokenAccount(), verifiesExistenceOfAccountsAndContracts());
     }
 
+    @HapiTest
     HapiSpec invalidContractCall() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
@@ -113,7 +124,6 @@ public class Evm38ValidationSuite extends HapiSuite {
                 .when()
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
-
 
     @HapiTest
     private HapiSpec cannotSendValueToTokenAccount() {
@@ -143,7 +153,7 @@ public class Evm38ValidationSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract),
                         sourcing(() -> contractCall(
-                                contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
+                                        contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
                                 .sending(ONE_HBAR)
                                 .payingWith(TOKEN_TREASURY)
                                 .via(internalViolation)
@@ -157,6 +167,63 @@ public class Evm38ValidationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
                         getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
+    }
+
+    @HapiTest
+    HapiSpec verifiesExistenceOfAccountsAndContracts() {
+        final var contract = "BalanceChecker";
+        final var BALANCE = 10L;
+        final var ACCOUNT = "test";
+        final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+
+        return propertyPreservingHapiSpec("InvalidContract")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        cryptoCreate("test").balance(BALANCE),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(
+                        contractCall(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        contractCallLocal(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
+                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
+                        withOpContext((spec, opLog) -> {
+                            final var id = spec.registry().getAccountID(ACCOUNT);
+                            final var contractID = spec.registry().getContractId(contract);
+
+                            final var solidityAddress = HapiParserUtil.asHeadlongAddress(asAddress(id));
+                            final var contractAddress = asHeadlongAddress(asHexedSolidityAddress(contractID));
+
+                            final var call = contractCall(contract, BALANCE_OF, solidityAddress)
+                                    .via("callRecord");
+
+                            final var callRecord = getTxnRecord("callRecord")
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .resultThruAbi(
+                                                            getABIFor(FUNCTION, BALANCE_OF, contract),
+                                                            isLiteralResult(
+                                                                    new Object[] {BigInteger.valueOf(BALANCE)}))));
+
+                            final var callLocal = contractCallLocal(contract, BALANCE_OF, solidityAddress)
+                                    .has(ContractFnResultAsserts.resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(FUNCTION, BALANCE_OF, contract),
+                                                    ContractFnResultAsserts.isLiteralResult(
+                                                            new Object[] {BigInteger.valueOf(BALANCE)})));
+
+                            final var contractCallLocal = contractCallLocal(contract, BALANCE_OF, contractAddress)
+                                    .has(ContractFnResultAsserts.resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(FUNCTION, BALANCE_OF, contract),
+                                                    ContractFnResultAsserts.isLiteralResult(
+                                                            new Object[] {BigInteger.valueOf(0)})));
+
+                            allRunFor(spec, call, callLocal, callRecord, contractCallLocal);
+                        }));
     }
 
     @Override
