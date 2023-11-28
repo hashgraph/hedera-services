@@ -808,7 +808,7 @@ public class SwirldsPlatform implements Platform {
                 consensusRef,
                 intakeQueue,
                 swirldStateManager,
-                stateManagementComponent,
+                latestCompleteState,
                 eventValidator,
                 eventObserverDispatcher,
                 syncMetrics,

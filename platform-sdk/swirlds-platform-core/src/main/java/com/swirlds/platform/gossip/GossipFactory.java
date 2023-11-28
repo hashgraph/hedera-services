@@ -45,6 +45,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -80,7 +81,7 @@ public final class GossipFactory {
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
-     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param eventValidator                validates events and passes valid events further along the intake pipeline
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
@@ -107,7 +108,7 @@ public final class GossipFactory {
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateManagementComponent stateManagementComponent,
+            @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final EventValidator eventValidator,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
@@ -131,7 +132,7 @@ public final class GossipFactory {
         Objects.requireNonNull(consensusRef);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(swirldStateManager);
-        Objects.requireNonNull(stateManagementComponent);
+        Objects.requireNonNull(latestCompleteState);
         Objects.requireNonNull(eventValidator);
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(syncMetrics);
@@ -160,7 +161,7 @@ public final class GossipFactory {
                     consensusRef,
                     intakeQueue,
                     swirldStateManager,
-                    stateManagementComponent,
+                    latestCompleteState,
                     eventValidator,
                     eventObserverDispatcher,
                     syncMetrics,
@@ -183,7 +184,7 @@ public final class GossipFactory {
                         shadowGraph,
                         intakeQueue,
                         swirldStateManager,
-                        stateManagementComponent,
+                        latestCompleteState,
                         syncMetrics,
                         platformStatusManager,
                         loadReconnectState,
@@ -205,7 +206,7 @@ public final class GossipFactory {
                         consensusRef,
                         intakeQueue,
                         swirldStateManager,
-                        stateManagementComponent,
+                        latestCompleteState,
                         syncMetrics,
                         eventLinker,
                         platformStatusManager,

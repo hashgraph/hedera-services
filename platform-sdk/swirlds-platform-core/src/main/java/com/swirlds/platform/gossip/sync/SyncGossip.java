@@ -70,6 +70,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateNexus;
 import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -125,7 +126,7 @@ public class SyncGossip extends AbstractGossip {
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
-     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
      * @param platformStatusManager         the platform status manager
@@ -149,7 +150,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateManagementComponent stateManagementComponent,
+            @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
@@ -167,7 +168,7 @@ public class SyncGossip extends AbstractGossip {
                 appVersion,
                 intakeQueue,
                 swirldStateManager,
-                stateManagementComponent,
+                latestCompleteState,
                 syncMetrics,
                 platformStatusManager,
                 loadReconnectState,
@@ -274,7 +275,7 @@ public class SyncGossip extends AbstractGossip {
                                             threadManager,
                                             otherId,
                                             reconnectThrottle,
-                                            () -> stateManagementComponent.getLatestSignedState(
+                                            () -> latestCompleteState.getState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,

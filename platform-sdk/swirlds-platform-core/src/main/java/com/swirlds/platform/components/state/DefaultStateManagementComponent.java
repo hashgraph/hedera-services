@@ -240,25 +240,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    @NonNull
-    public ReservedSignedState getLatestSignedState(@NonNull final String reason) {
-        return null;//TODO
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
         return signedStateManager.getLatestImmutableState(reason);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getLastCompleteRound() {
-        return -1;//TODO
     }
 
     /**
