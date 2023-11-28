@@ -156,7 +156,6 @@ class ThrottleAccumulatorTest {
     }
 
     @Test
-    @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
     void whenThrottlesUsesNoCapacity() throws IOException {
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
         final var defs = getThrottleDefs("bootstrap/throttles.json");
@@ -166,6 +165,21 @@ class ThrottleAccumulatorTest {
         assertTrue(subject.shouldThrottleNOfUnscaled(11, CONTRACT_CALL, CONSENSUS_NOW));
         final var used = subject.activeThrottlesFor(CONTRACT_CALL).get(0).used();
         assertEquals(0, used);
+    }
+
+    @Test
+    void canLeakCapacityForNOfManaged() throws IOException {
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        subject.shouldThrottleNOfUnscaled(1, TOKEN_MINT, CONSENSUS_NOW);
+        final var oneUsed = subject.activeThrottlesFor(TOKEN_MINT).get(0).used();
+        subject.shouldThrottleNOfUnscaled(43, TOKEN_MINT, CONSENSUS_NOW);
+        subject.leakCapacityForNOfUnscaled(2, TOKEN_MINT);
+        final var fortyTwoUsed = subject.activeThrottlesFor(TOKEN_MINT).get(0).used();
+        assertEquals(42 * oneUsed, fortyTwoUsed);
     }
 
     @ParameterizedTest

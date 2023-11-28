@@ -79,6 +79,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -202,6 +203,17 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         }
 
         return false;
+    }
+
+    /*
+     * Undoes the claimed capacity for a number of transactions of the same functionality.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     */
+    public void leakCapacityForNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        final var manager = Objects.requireNonNull(functionReqs.get(function));
+        manager.undoClaimedReqsFor(n);
     }
 
     /*
