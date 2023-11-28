@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -234,7 +233,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                invalidContractCall(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1566,16 +1564,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
-    }
-
-    HapiSpec invalidContractCall() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract")
-                .given(withOpContext(
-                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
-                .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
     }
 
     HapiSpec smartContractFailFirst() {

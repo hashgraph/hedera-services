@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.validation;
+package com.hedera.services.bdd.suites.contract.evm;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -174,6 +174,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                 internalCallWithValueToExistingNonMirrorAddressResultsInSuccess()
 
                 // todo
+                // add grandfathered contract scenario
                 // call to accounts with receiverSigRequired
                 // deleted: call - noop; transfer - whatever HAPI is doing
                 // expired: make check but treat as a normal account for now
