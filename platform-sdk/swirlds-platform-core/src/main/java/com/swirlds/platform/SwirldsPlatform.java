@@ -1043,6 +1043,10 @@ public class SwirldsPlatform implements Platform {
             swirldStateManager.loadFromSignedState(signedState);
 
             latestReconnectRound.set(signedState.getRound());
+
+            // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
+            // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
+            platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensus(signedState);
@@ -1111,7 +1115,6 @@ public class SwirldsPlatform implements Platform {
 
         gossip.resetFallenBehind();
         eventCreator.resumeEventCreation();
-        platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
     /**
