@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -107,7 +108,10 @@ public class Evm38ValidationSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                invalidContractCall(), cannotSendValueToTokenAccount(), verifiesExistenceOfAccountsAndContracts());
+                invalidContractCall(),
+                cannotSendValueToTokenAccount(),
+                verifiesExistenceOfAccountsAndContracts(),
+                verifiesExistence());
     }
 
     @HapiTest
@@ -134,7 +138,7 @@ public class Evm38ValidationSuite extends HapiSuite {
         final var externalViolation = "external";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("InvalidContract")
+        return propertyPreservingHapiSpec("cannotSendValueToTokenAccount")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
@@ -176,7 +180,7 @@ public class Evm38ValidationSuite extends HapiSuite {
         final var ACCOUNT = "test";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
-        return propertyPreservingHapiSpec("InvalidContract")
+        return propertyPreservingHapiSpec("verifiesExistenceOfAccountsAndContracts")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
@@ -223,6 +227,33 @@ public class Evm38ValidationSuite extends HapiSuite {
                                                             new Object[] {BigInteger.valueOf(0)})));
 
                             allRunFor(spec, call, callLocal, callRecord, contractCallLocal);
+                        }));
+    }
+
+    @HapiTest
+    HapiSpec verifiesExistence() {
+        final var contract = "CallOperationsChecker";
+        final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+        return propertyPreservingHapiSpec("verifiesExistence")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(
+                        contractCall(contract, "callCode", asHeadlongAddress(INVALID_ADDRESS))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        withOpContext((spec, opLog) -> {
+                            final var id = spec.registry().getAccountID(DEFAULT_PAYER);
+                            final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
+
+                            final var contractCall = contractCall(
+                                            contract, "callCode", asHeadlongAddress(solidityAddress))
+                                    .hasKnownStatus(SUCCESS);
+
+                            allRunFor(spec, contractCall);
                         }));
     }
 
