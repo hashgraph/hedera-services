@@ -210,7 +210,6 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    @HapiTest
     private Key bumpThirdNestedThresholdSigningReq(Key source) {
         var newKey = source.getThresholdKey().getKeys().getKeys(2).toBuilder();
         newKey.setThresholdKey(newKey.getThresholdKeyBuilder().setThreshold(2));

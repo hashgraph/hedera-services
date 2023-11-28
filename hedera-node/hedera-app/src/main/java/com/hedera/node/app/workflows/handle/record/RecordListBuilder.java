@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -263,18 +264,25 @@ public final class RecordListBuilder {
         }
 
         // Make sure we have not created so many that we have run out of slots.
-        final var childCount = childRecordBuilders.size();
-        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+        final int childCount = childRecordBuilders.size();
+        final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         if (childCount >= consensusConfig.handleMaxFollowingRecords()) {
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
 
-        // The consensus timestamp of the first item in the child list is T+1, where T is the time of the user tx
-        final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
-        final var prevConsensusNow = childRecordBuilders.isEmpty()
-                ? userTxnRecordBuilder.consensusNow()
+        final Instant parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
+        final Instant prevConsensusNow = childRecordBuilders.isEmpty()
+                ? parentConsensusTimestamp
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
-        final var consensusNow = prevConsensusNow.plusNanos(1L);
+        // The consensus timestamp of a SCHEDULED transaction in the child list is T+K (in nanoseconds),
+        // where T is the time of the parent or preceding child tx and K is the maximum number of "preceding" records
+        // defined for the current configuration.  This permits a SCHEDULED child to trigger additional preceding
+        // transactions (e.g. auto create on CryptoTransfer) if necessary without creating records with the same
+        // timestamp nanosecond value.
+        // All other child transactions just offset by +1.
+        final long nextRecordOffset =
+                childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
+        final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
         // Note we do not repeat exchange rates for child transactions
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
         // Only set parent consensus timestamp for child records if one is not provided
