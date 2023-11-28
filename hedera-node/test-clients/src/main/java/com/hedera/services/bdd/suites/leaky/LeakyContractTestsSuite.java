@@ -1716,6 +1716,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec evmLazyCreateViaSolidityCall() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";

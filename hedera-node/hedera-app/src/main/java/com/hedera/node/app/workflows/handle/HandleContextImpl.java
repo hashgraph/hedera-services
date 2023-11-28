@@ -594,6 +594,19 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @NonNull
+    @Override
+    public <T> T dispatchRemovableChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @Nullable final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addRemovableChild(configuration());
+        return doDispatchChildTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback, CHILD);
+    }
+
+    @NonNull
     private <T> T doDispatchChildTransaction(
             @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,

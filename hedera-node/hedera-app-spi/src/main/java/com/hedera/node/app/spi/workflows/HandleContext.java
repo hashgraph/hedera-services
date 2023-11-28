@@ -576,6 +576,13 @@ public interface HandleContext {
             @NonNull AccountID syntheticPayerId,
             @NonNull ExternalizedRecordCustomizer customizer);
 
+    @NonNull
+    <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @Nullable Predicate<Key> callback,
+            @NonNull AccountID syntheticPayerId);
+
     /**
      * Dispatches a removable child transaction that already has a transaction ID.
      *
