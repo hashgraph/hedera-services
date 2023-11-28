@@ -196,6 +196,9 @@ extraJavaModuleInfo {
     module("io.netty:netty-common", "io.netty.common") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("java.logging")
+        requires("jdk.unsupported")
+        ignoreServiceProvider("reactor.blockhound.integration.BlockHoundIntegration")
     }
     module("io.netty:netty-handler", "io.netty.handler") {
         exportAllPackages()
@@ -271,7 +274,7 @@ extraJavaModuleInfo {
     }
     module("net.java.dev.jna:jna", "com.sun.jna") {
         exportAllPackages()
-        // no dependencies
+        requires("java.logging")
     }
     module("org.eclipse.collections:eclipse-collections-api", "org.eclipse.collections.api") {
         exportAllPackages()

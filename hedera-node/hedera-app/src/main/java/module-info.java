@@ -50,9 +50,11 @@ module com.hedera.node.app {
             com.hedera.node.test.clients;
     exports com.hedera.node.app.state to
             com.swirlds.common,
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.workflows to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.state.merkle to
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to
@@ -62,11 +64,13 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;
     exports com.hedera.node.app.authorization to
-            com.swirlds.platform.core;
+            com.swirlds.platform.core,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.state.merkle.adapters to
             com.swirlds.platform.core;
     exports com.hedera.node.app.fees to
-            com.swirlds.platform.core;
+            com.swirlds.platform.core,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.fees.congestion to
             com.swirlds.platform.core;
     exports com.hedera.node.app.throttle to
@@ -75,24 +79,48 @@ module com.hedera.node.app {
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.state.recordcache to
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.services to
-            com.swirlds.platform.core;
+            com.swirlds.platform.core,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.signature to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.info to
             com.hedera.node.app.test.fixtures,
             com.swirlds.common,
             com.swirlds.platform.core;
     exports com.hedera.node.app.workflows.handle to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.workflows.handle.record to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.state.merkle.queue to
             com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.version to
             com.swirlds.common,
             com.swirlds.platform;
-    exports com.hedera.node.app.validation;
+    exports com.hedera.node.app.ids to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.records to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.records.impl to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.records.impl.producers to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.records.impl.producers.formats to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.records.impl.producers.formats.v6 to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.validation to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.workflows.handle.stack to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.workflows.prehandle to
+            com.hedera.node.app.xtest;
+    exports com.hedera.node.app.workflows.query to
+            com.hedera.node.app.xtest;
 }

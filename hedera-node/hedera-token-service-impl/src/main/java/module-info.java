@@ -24,7 +24,8 @@ module com.hedera.node.app.service.token.impl {
 
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.service.token.impl.serdes;
     exports com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.token.impl.api to
@@ -36,7 +37,8 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.token.impl.handlers.staking to
             com.hedera.node.app,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.xtest;
     exports com.hedera.node.app.service.token.impl.handlers.transfer to
             com.hedera.node.app;
 }

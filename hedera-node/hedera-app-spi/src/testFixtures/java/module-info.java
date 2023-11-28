@@ -4,6 +4,8 @@ module com.hedera.node.app.spi.test.fixtures {
     exports com.hedera.node.app.spi.fixtures.workflows;
     exports com.hedera.node.app.spi.fixtures.util;
     exports com.hedera.node.app.spi.fixtures.throttle;
+    exports com.hedera.node.app.spi.fixtures.info;
+    exports com.hedera.node.app.spi.fixtures.numbers;
 
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.spi;
