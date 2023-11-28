@@ -103,18 +103,18 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
 
         final var body = TransactionBody.newBuilder()
-            .utilPrng(UtilPrngTransactionBody.DEFAULT)
-            .build();
+                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                .build();
         final var signedTransaction = SignedTransaction.newBuilder()
-            .bodyBytes(asBytes(TransactionBody.PROTOBUF, body))
-            .build();
+                .bodyBytes(asBytes(TransactionBody.PROTOBUF, body))
+                .build();
         final var transaction = Transaction.DEFAULT
-            .copyBuilder()
-            .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTransaction))
-            .build();
+                .copyBuilder()
+                .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTransaction))
+                .build();
 
         childRecordBuilder
-            .transaction(transaction)
+                .transaction(transaction)
                 .entropyBytes(result.contractCallResult())
                 .status(responseStatus)
                 .contractCallResult(result);

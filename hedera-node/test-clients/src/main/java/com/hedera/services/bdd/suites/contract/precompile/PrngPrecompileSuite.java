@@ -249,11 +249,11 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
-            .given(
-                snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
-                cryptoCreate(BOB),
-                uploadInitCode(prng),
-                contractCreate(prng))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
+                        cryptoCreate(BOB),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(sourcing(() -> contractCall(prng, GET_SEED)
                         .gas(GAS_TO_OFFER)
                         .payingWith(BOB)

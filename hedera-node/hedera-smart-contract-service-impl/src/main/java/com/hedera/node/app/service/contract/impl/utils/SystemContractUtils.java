@@ -18,15 +18,34 @@ package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
+import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Utilities for system contracts.
  */
 public final class SystemContractUtils {
+
+    /*
+    TODO: here is how contractId is set in mono:
+    PrngSystemPrecompiledContract.computePrecompile > createSuccessfulChildRecord >
+    addContractCallResultToRecord > PrecompileUtils.addContractCallResultToRecord.
+    For the contractId in EvmFnResult is passed HTS_PRECOMPILE_MIRROR_ENTITY_ID - which is using the
+    HTC contract address(0x167). This seems like a bug to me.
+    Is this how it's suppose to work? Should I fix it in mono or should I just mimic it here and
+    create a story to later fix it?
+     */
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
+            Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
 
     private SystemContractUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -46,11 +65,18 @@ public final class SystemContractUtils {
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultSuccessFor(
-            final long gasUsed, final Bytes result, final ContractID contractID) {
+            final long gasUsed, final Bytes result, final ContractID contractID, MessageFrame frame) {
+        var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+        final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .contractCallResult(tuweniToPbjBytes(result))
                 .contractID(contractID)
+                .functionParameters(tuweniToPbjBytes(frame.getInputData()))
+                .gas(369823) // TODO: remove - currently the gas calculation is not working
+                .senderId(senderId)
+                .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();
     }
 
@@ -68,6 +94,12 @@ public final class SystemContractUtils {
                 .gasUsed(gasUsed)
                 .errorMessage(errorMsg)
                 .contractID(contractID)
+                .build();
+    }
+
+    private static ContractID contractIdFromEvmAddress(final byte[] bytes) {
+        return ContractID.newBuilder()
+                .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }
 }
