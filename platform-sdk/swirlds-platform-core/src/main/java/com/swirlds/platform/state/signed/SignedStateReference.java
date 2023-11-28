@@ -66,8 +66,9 @@ public class SignedStateReference {
             }
 
             reservedSignedState.close();
-            reservedSignedState =
-                    signedState == null ? createNullReservation() : new ReservedSignedState(signedState, reason);
+            reservedSignedState = signedState == null
+                    ? createNullReservation()
+                    : ReservedSignedState.createAndReserve(signedState, reason);
         }
     }
 
