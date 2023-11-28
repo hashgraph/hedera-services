@@ -151,7 +151,6 @@ public class ContractCallSuite extends HapiSuite {
     public static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     public static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
-    private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String OWNER = "owner";
     private static final String INSERT = "insert";
     private static final String TOKEN_ISSUER = "tokenIssuer";
