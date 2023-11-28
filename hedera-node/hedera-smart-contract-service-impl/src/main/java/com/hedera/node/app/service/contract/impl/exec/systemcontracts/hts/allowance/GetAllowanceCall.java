@@ -83,11 +83,18 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
 
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
             if (isStaticCall) {
-                return gasOnly(FullResult.revertResult(
-                        com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement), INVALID_TOKEN_ID, false);
+                return gasOnly(
+                        FullResult.revertResult(
+                                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement),
+                        INVALID_TOKEN_ID,
+                        false);
             } else {
-                return gasOnly(FullResult.successResult(
-                        ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement), SUCCESS,false);
+                return gasOnly(
+                        FullResult.successResult(
+                                ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS),
+                                gasRequirement),
+                        SUCCESS,
+                        false);
             }
         }
 
