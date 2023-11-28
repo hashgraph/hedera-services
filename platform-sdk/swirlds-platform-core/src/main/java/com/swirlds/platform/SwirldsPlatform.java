@@ -97,6 +97,7 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
@@ -530,14 +531,23 @@ public class SwirldsPlatform implements Platform {
 
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
-
+        final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
+            // the app comm component will reserve the state, this should be done by the wiring in the future
+            appCommunicationComponent.newLatestCompleteStateEvent(ss);
+            // since the nexus expects a reserved state, we will reserve it, set it, and then release it
+            // in the future, all of these reservations will be done by the wiring
+            try (final ReservedSignedState reserved = ss.reserve("setting latest complete state")) {
+                // the nexus will make its own reservation of the state
+                latestCompleteState.setState(reserved);
+            }
+        };
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 threadManager,
                 dispatchBuilder,
                 new PlatformSigner(keysAndCerts),
                 txn -> this.createSystemTransaction(txn, true),
-                appCommunicationComponent, //TODO set latest complete state
+                newLatestCompleteStateConsumer,
                 this::handleFatalError,
                 platformStatusManager,
                 savedStateController,
