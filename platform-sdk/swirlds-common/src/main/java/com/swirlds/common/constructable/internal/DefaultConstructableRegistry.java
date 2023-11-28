@@ -23,7 +23,9 @@ import com.swirlds.common.constructable.ConstructorRegistry;
 import com.swirlds.common.constructable.NoArgsConstructor;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
+import com.swirlds.common.constructable.internal.ConstructableScanner.Depth;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -55,21 +57,67 @@ public class DefaultConstructableRegistry implements ConstructableRegistry {
     @Override
     public void registerConstructables(final String packagePrefix, final URLClassLoaderWithLookup additionalClassloader)
             throws ConstructableRegistryException {
+        System.err.printf(
+                "+++ DefaultConstructableRegistry.registerConstructables(packagePrefix:%s, URLClassLoaderithLookup:%s):%n",
+                packagePrefix, additionalClassloader);
+        new Throwable().printStackTrace();
+
         final Collection<ConstructableClasses<?>> scanResults =
                 ConstructableScanner.getConstructableClasses(packagePrefix, additionalClassloader);
         for (final ConstructableClasses<?> constructableClasses : scanResults) {
             getOrCreate(constructableClasses.getConstructorType())
                     .registerConstructables(constructableClasses, additionalClassloader);
         }
+
+        System.err.printf("   >>> allRegistries (%d entries):%n", allRegistries.size());
+        allRegistries.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getCanonicalName()))
+                .map(e -> "%s -> %s"
+                        .formatted(e.getKey().getCanonicalName(), e.getValue().toString(/*???*/ )))
+                .forEach(s -> System.err.println("   >>> " + s));
+
+        System.err.printf(
+                "+++ --- DefaultConstructableRegistry.registerConstructables(packagePrefix:%s, URLClassLoaderithLookup:%s):%n",
+                packagePrefix, additionalClassloader);
+    }
+
+    @Override
+    public void registerConstructablesNonRecursive(
+            final String packagePrefix, final URLClassLoaderWithLookup additionalClassloader)
+            throws ConstructableRegistryException {
+        System.err.printf(
+                "+++ DefaultConstructableRegistry.registerConstructablesNonRecursive(packagePrefix:%s, URLClassLoaderithLookup:%s):%n",
+                packagePrefix, additionalClassloader);
+        new Throwable().printStackTrace();
+
+        final Collection<ConstructableClasses<?>> scanResults =
+                ConstructableScanner.getConstructableClasses(packagePrefix, additionalClassloader, Depth.NON_RECURSIVE);
+        for (final ConstructableClasses<?> constructableClasses : scanResults) {
+            getOrCreate(constructableClasses.getConstructorType())
+                    .registerConstructables(constructableClasses, additionalClassloader);
+        }
+
+        System.err.printf("   >>> allRegistries (%d entries):%n", allRegistries.size());
+        allRegistries.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getCanonicalName()))
+                .map(e -> "%s -> %s"
+                        .formatted(e.getKey().getCanonicalName(), e.getValue().toString(/*???*/ )))
+                .forEach(s -> System.err.println("   >>> " + s));
+
+        System.err.printf(
+                "+++ --- DefaultConstructableRegistry.registerConstructables(packagePrefix:%s, URLClassLoaderithLookup:%s):%n",
+                packagePrefix, additionalClassloader);
     }
 
     @Override
     public void registerConstructables(final String packagePrefix) throws ConstructableRegistryException {
+        System.err.printf("+++ DefaultConstructableRegistry(packagePrefix:%s)%n:", packagePrefix);
         registerConstructables(packagePrefix, null);
     }
 
     @Override
     public void registerConstructable(final ClassConstructorPair pair) throws ConstructableRegistryException {
+        System.err.printf("+++ DefaultConstructableRegistry(pair:%s)%n", pair.toString());
         getOrCreate(NoArgsConstructor.class)
                 .registerConstructable(pair.getConstructableClass(), pair.getConstructor()::get);
     }

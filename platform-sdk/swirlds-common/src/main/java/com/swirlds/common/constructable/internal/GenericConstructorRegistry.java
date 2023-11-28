@@ -54,6 +54,31 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
     /** A map that holds the constructors of all RuntimeConstructable classes */
     private final Map<Long, GenericClassConstructorPair<T>> constructors = new ConcurrentHashMap<>();
 
+    @NonNull
+    String gccpToString(@NonNull final GenericClassConstructorPair<T> pair) {
+        return "GCCPair<>(%s,%s)".formatted(pair.constructable().getCanonicalName(), "<a lambda constructor>");
+    }
+
+    @NonNull
+    String constructorsToString() {
+        final var sb = new StringBuilder();
+        sb.append("constructors(");
+        for (final var e : constructors.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .toList()) {
+            final var k = e.getKey();
+            sb.append("%d (%s) -> %s;%n".formatted(k, Long.toHexString(k), gccpToString(e.getValue())));
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
+    @Override
+    @NonNull
+    public String toString() {
+        return "GCR[%s:%s]".formatted(constructorType.getCanonicalName(), constructorsToString());
+    }
+
     /**
      * @param constructorType
      * 		the type of constructor for this registry to use
@@ -101,6 +126,14 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
                     "Cannot register the constructor type %s, this registry requires %s",
                     constructableClasses.getConstructorType().getCanonicalName(), constructorType.getCanonicalName()));
         }
+        System.err.printf(
+                "+++ GenericConstructorRegistry.registerConstructables(constructableClasses:%s, classes:%s)%n",
+                constructableClasses.getConstructorType().getCanonicalName(),
+                constructableClasses.getClasses().stream()
+                        .map(Class::getCanonicalName)
+                        .sorted()
+                        .collect(Collectors.joining(",")));
+
         for (final Class<? extends RuntimeConstructable> constructable : constructableClasses.getClasses()) {
             registerConstructable(constructable, createConstructorLambda(constructable, additionalClassloader));
         }
@@ -117,8 +150,21 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
             throws ConstructableRegistryException {
         final GenericClassConstructorPair<T> pair = new GenericClassConstructorPair<>(aClass, constructor);
         final long classId = getClassId(pair);
+
+        System.err.printf(
+                "   +++ GenericConstructorRegistry.registerConstructable(aClass:%s (%d %s), ...)%n",
+                aClass.getCanonicalName(), classId, Long.toHexString(classId));
+
         final GenericClassConstructorPair<T> old = constructors.putIfAbsent(classId, pair);
         if (old != null && !old.classEquals(pair)) {
+
+            System.err.printf(
+                    "   *** GenericConstructorRegistery.registerConstructable - two classes (%s, %s) have the same classId %d (%s) ***%n",
+                    old.constructable().getCanonicalName(),
+                    pair.constructable().getCanonicalName(),
+                    classId,
+                    Long.toHexString(classId));
+
             throw new ConstructableRegistryException(String.format(
                     "Two classes ('%s' and '%s') have the same classId:%d (hex:%s). " + "ClassId must be unique!",
                     old.constructable().getCanonicalName(),
@@ -141,6 +187,11 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
                     // ignore it
                 }
             }
+
+            System.err.printf(
+                    "   +++ GenericConstructorRegistry.getClassId(%s) -> %d (%s) via constructed instance%n",
+                    pair.constructable().getCanonicalName(), classId, Long.toHexString(classId));
+
             return classId;
         } else {
             final ConstructableClass classIdAnnotation = pair.constructable().getAnnotation(ConstructableClass.class);
@@ -149,6 +200,13 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
                         "The class %s must have a @ConstructableClass annotation",
                         pair.constructable().getName()));
             }
+
+            System.err.printf(
+                    "   +++ GenericConstructorRegistry.getClassId(%s) -> %d (%s) via annotation%n",
+                    pair.constructable().getCanonicalName(),
+                    classIdAnnotation.value(),
+                    Long.toHexString(classIdAnnotation.value()));
+
             return classIdAnnotation.value();
         }
     }

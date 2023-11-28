@@ -36,11 +36,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.TreeSet;
 
 /**
  * A SerializableDataInputStream that can also handle merkle tree.
@@ -131,6 +133,10 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
         }
     }
 
+    record AFoundClass(@NonNull Long id, @NonNull String canonicalName) {}
+
+    TreeSet<AFoundClass> foundClasses = new TreeSet<>(Comparator.comparingLong(AFoundClass::id));
+
     /**
      * Read the node from the stream.
      *
@@ -151,9 +157,19 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
 
         final MerkleNode node = ConstructableRegistry.getInstance().createObject(classId);
         if (node == null) {
+            System.err.printf(
+                    "*** MerkleDataInputStream registryConstructor for registry %s classId %d (%s) not found:%n",
+                    ConstructableRegistry.getInstance(), classId, Long.toHexString(classId));
+            new Throwable().printStackTrace();
             throw new ClassNotFoundException(classId);
         }
         recordClass(node);
+
+        if (foundClasses.add(new AFoundClass(classId, node.getClass().getCanonicalName()))) {
+            System.err.printf(
+                    "   >>> found %d (%s) : %s while reading signed state%n",
+                    classId, Long.toHexString(classId), node.getClass().getCanonicalName());
+        }
 
         final int classVersion = readInt();
 
@@ -222,12 +238,25 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
         final Map<Long /* class ID */, Integer /* version */> deserializedVersions = new HashMap<>();
 
         int nodeCount = 0;
-        while (!internalNodes.isEmpty() || root == null) {
-            nodeCount++;
-            if (nodeCount > maxNumberOfNodes) {
-                throw new MerkleSerializationException("Node count exceeds maximum value of " + maxNumberOfNodes + ".");
+        try {
+            while (!internalNodes.isEmpty() || root == null) {
+                nodeCount++;
+                if (nodeCount > maxNumberOfNodes) {
+                    throw new MerkleSerializationException(
+                            "Node count exceeds maximum value of " + maxNumberOfNodes + ".");
+                }
+                try {
+                    readNextNode(directory, deserializedVersions);
+                } catch (final ClassNotFoundException ex) {
+                    System.err.printf("*** ClassNotFoundException at %d nodes read ***%n", nodeCount);
+                    throw ex;
+                }
             }
-            readNextNode(directory, deserializedVersions);
+        } finally {
+            System.err.printf("+++ MerkleDataInputStream.readMerkleTree: %d nodes read%n", nodeCount);
+            System.err.printf("+++ %d classes seen already in signed state:%n", foundClasses.size());
+            foundClasses.forEach(fc -> System.err.printf(
+                    "          %d (%s) : %s%n", fc.id(), Long.toHexString(fc.id()), fc.canonicalName()));
         }
 
         final MerkleNode migratedRoot = initializeAndMigrateTreeAfterDeserialization(root, deserializedVersions);

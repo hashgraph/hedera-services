@@ -88,6 +88,9 @@ public interface ConstructableRegistry {
     void registerConstructables(String packagePrefix, URLClassLoaderWithLookup additionalClassloader)
             throws ConstructableRegistryException;
 
+    void registerConstructablesNonRecursive(String packagePrefix, URLClassLoaderWithLookup additionalClassLoader)
+            throws ConstructableRegistryException;
+
     /**
      * Same as {@link #registerConstructables(String, URLClassLoaderWithLookup)} but with {@code ClassLoader} set to
      * null

@@ -35,6 +35,11 @@ import java.util.Map;
 public final class ConstructableScanner {
     private ConstructableScanner() {}
 
+    public enum Depth {
+        RECURSIVE,
+        NON_RECURSIVE
+    }
+
     /**
      * Searches the classpath for all {@link RuntimeConstructable} classes.
      * <p>
@@ -48,11 +53,22 @@ public final class ConstructableScanner {
      */
     public static Collection<ConstructableClasses<?>> getConstructableClasses(
             final String packagePrefix, final URLClassLoaderWithLookup additionalClassloader) {
+        return getConstructableClasses(packagePrefix, additionalClassloader, Depth.RECURSIVE);
+    }
+
+    public static Collection<ConstructableClasses<?>> getConstructableClasses(
+            final String packagePrefix, final URLClassLoaderWithLookup additionalClassloader, final Depth depth) {
         final Map<Class<?>, ConstructableClasses<?>> map = new HashMap<>();
-        final ClassGraph classGraph = new ClassGraph().enableClassInfo().whitelistPackages(packagePrefix);
+        final ClassGraph classGraph = new ClassGraph().enableClassInfo();
+        if (depth == Depth.RECURSIVE) classGraph.whitelistPackages(packagePrefix);
+        else classGraph.whitelistPackagesNonRecursive(packagePrefix);
         if (additionalClassloader != null) {
             classGraph.addClassLoader(additionalClassloader);
         }
+
+        System.err.printf("+++ ConstructableScanner.getConstructableClasses(packagePrefix:'%s')", packagePrefix);
+        new Throwable().printStackTrace();
+
         try (final ScanResult scanResult = classGraph.scan()) {
             for (final ClassInfo classInfo :
                     scanResult.getClassesImplementing(RuntimeConstructable.class.getCanonicalName())) {
@@ -63,6 +79,9 @@ public final class ConstructableScanner {
 
                 final Class<?> constructorType = getConstructorType(subType);
                 map.computeIfAbsent(constructorType, ConstructableClasses::new).addClass(subType);
+
+                System.err.printf(
+                        "    +++ adding %s as %s%n", subType.getCanonicalName(), constructorType.getCanonicalName());
             }
         }
 

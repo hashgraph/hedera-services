@@ -180,6 +180,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // ConstructableRegistry requires a "working" no-arg constructor
         onPreHandle = null;
         this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
+        this.classId = CLASS_ID;
     }
 
     /**

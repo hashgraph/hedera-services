@@ -113,6 +113,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     @Override
     public SchemaRegistry register(@NonNull Schema schema) {
+        System.err.println("+++ *** MerkleSchemaRegistry.register called for some reason?!?!?! *** +++");
+
         schemas.remove(schema);
         schemas.add(requireNonNull(schema));
         logger.debug(

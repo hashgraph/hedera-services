@@ -26,10 +26,7 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
@@ -40,7 +37,6 @@ import com.hedera.services.cli.signedstate.DumpStateCommand.WithSlots;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithValidation;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.signedstate.SignedStateHolder.Contracts;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
@@ -115,37 +111,28 @@ public class DumpContractStoresSubcommand {
         this.verbosity = verbosity;
     }
 
+    record ContractKeyLocal(long contractId, UInt256 key) {
+        public static ContractKeyLocal from(ContractKey ckey) {
+            return new ContractKeyLocal(ckey.getContractId(), toUint256FromPackedIntArray(ckey.getKey()));
+        }
+    }
+
     @SuppressWarnings(
             "java:S3864") // "Remove Stream.peek - should be used with caution" - conflicts with an IntelliJ inspection
     // that says to put _in_ a `Stream.peek`; anyway, in this case I _want_ it, it makes sense, I
     // _am in fact_ being properly cautious, thank you Sonar
     void doit() {
 
-        record ContractKeyLocal(long contractId, UInt256 key) {
-            public static ContractKeyLocal from(ContractKey ckey) {
-                return new ContractKeyLocal(ckey.getContractId(), toUint256FromPackedIntArray(ckey.getKey()));
-            }
-        }
-
         // First grab all slot pairs from all contracts from the signed state
-        final var contractKeys = new ConcurrentLinkedQueue<ContractKeyLocal>();
         final var contractState = new ConcurrentHashMap<Long, ConcurrentLinkedQueue<Pair<UInt256, UInt256>>>(5000);
-        final var traversalOk = iterateThroughContractStorage((ckey, iter) -> {
-            final var contractId = ckey.getContractId();
-            final var ckeyLocal = ContractKeyLocal.from(ckey);
-
-            contractKeys.add(ckeyLocal);
-
-            contractState.computeIfAbsent(contractId, k -> new ConcurrentLinkedQueue<>());
-            contractState.get(contractId).add(Pair.of(ckeyLocal.key(), iter.asUInt256()));
+        final var traversalOk = iterateThroughContractStorage((ckey, value) -> {
+            contractState.computeIfAbsent(ckey.contractId(), k -> new ConcurrentLinkedQueue<>());
+            contractState.get(ckey.contractId()).add(Pair.of(ckey.key(), value));
         });
 
         if (traversalOk) {
 
-            final var nDistinctContractIds = contractKeys.stream()
-                    .map(ContractKeyLocal::contractId)
-                    .distinct()
-                    .count();
+            final var nDistinctContractIds = contractState.size();
 
             final var nContractStateValues = contractState.values().stream()
                     .mapToInt(ConcurrentLinkedQueue::size)
@@ -154,7 +141,7 @@ public class DumpContractStoresSubcommand {
             // I can't seriously be intending to cons up the _entire_ store of all contracts as a single string, can I?
             // Well, Toto, this isn't the 1990s anymore ...
 
-            long reportSizeEstimate = (nDistinctContractIds * 20)
+            long reportSizeEstimate = (nDistinctContractIds * 20L)
                     + (nContractStateValues * 2 /*K/V*/ * (32 /*bytes*/ * 2 /*hexits/byte*/ + 3 /*whitespace+slop*/));
             final var sb = new StringBuilder((int) reportSizeEstimate);
 
@@ -175,13 +162,8 @@ public class DumpContractStoresSubcommand {
                     .toList();
 
             if (emitSummary == EmitSummary.YES) {
-                sb.append("%s%n%d contractKeys found, %d distinct; %d contract state entries, totalling %d values %n"
-                        .formatted(
-                                "=".repeat(80),
-                                contractKeys.size(),
-                                nDistinctContractIds,
-                                contractState.size(),
-                                nContractStateValues));
+                sb.append("%s%n %d contracts found; %d total slots%n"
+                        .formatted("=".repeat(80), nDistinctContractIds, nContractStateValues));
                 appendContractStoreSummary(sb, contractStates);
             }
 
@@ -201,7 +183,7 @@ public class DumpContractStoresSubcommand {
      * virtual merkle tree and it does the traversal on multiple threads.  (So the visitor needs to be able to handle
      * multiple concurrent calls.)
      */
-    boolean iterateThroughContractStorage(BiConsumer<ContractKey, IterableContractValue> visitor) {
+    boolean iterateThroughContractStorage(BiConsumer<ContractKeyLocal, UInt256> visitor) {
         final int THREAD_COUNT = 8; // size it for a laptop, why not?
         final var contractStorageVMap = state.getRawContractStorage();
 
@@ -210,9 +192,9 @@ public class DumpContractStoresSubcommand {
             contractStorageVMap.extractVirtualMapData(
                     getStaticThreadManager(),
                     entry -> {
-                        final var contractKey = entry.left();
+                        final var contractKey = ContractKeyLocal.from(entry.left());
                         final var iterableContractValue = entry.right();
-                        visitor.accept(contractKey, iterableContractValue);
+                        visitor.accept(contractKey, iterableContractValue.asUInt256());
                     },
                     THREAD_COUNT);
         } catch (final InterruptedException ex) {
@@ -251,7 +233,7 @@ public class DumpContractStoresSubcommand {
         final var validationFailures = new ArrayList<String>();
         final var migrationStatus =
                 ContractStateMigrator.migrateFromContractStoreVirtualMap(fromStore, toStore, validationFailures);
-        assert(migrationStatus == ContractStateMigrator.Status.SUCCESS);
+        assert (migrationStatus == ContractStateMigrator.Status.SUCCESS);
 
         return Pair.of(null, null);
     }

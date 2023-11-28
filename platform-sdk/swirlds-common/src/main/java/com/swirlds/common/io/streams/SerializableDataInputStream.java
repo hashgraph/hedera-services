@@ -450,6 +450,10 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private static <T extends SelfSerializable> T registryConstructor(final long classId) throws IOException {
         final T rc = ConstructableRegistry.getInstance().createObject(classId);
         if (rc == null) {
+            System.err.printf(
+                    "*** SerializableDataInputStream registryConstructor for registry %s classId %d not found:%n",
+                    ConstructableRegistry.getInstance(), classId);
+            new Throwable().printStackTrace();
             throw new ClassNotFoundException(classId);
         }
         return rc;
