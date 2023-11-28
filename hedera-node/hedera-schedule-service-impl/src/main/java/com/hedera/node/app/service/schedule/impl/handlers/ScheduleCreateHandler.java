@@ -192,7 +192,15 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             for (final Schedule candidate : possibleDuplicates) {
                 if (compareForDuplicates(candidate, provisionalSchedule)) {
                     // Do not forget to set the ID of the existing duplicate in the receipt...
-                    context.recordBuilder(ScheduleRecordBuilder.class).scheduleID(candidate.scheduleId());
+                    TransactionID scheduledTransactionID = candidate
+                            .originalCreateTransaction()
+                            .transactionID()
+                            .copyBuilder()
+                            .scheduled(true)
+                            .build();
+                    context.recordBuilder(ScheduleRecordBuilder.class)
+                            .scheduleID(candidate.scheduleId())
+                            .scheduledTransactionID(scheduledTransactionID);
                     return true;
                 }
             }

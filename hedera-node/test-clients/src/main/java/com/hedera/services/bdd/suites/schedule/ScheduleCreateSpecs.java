@@ -337,6 +337,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(FIRST_PAYER));
     }
 
+    @HapiTest
     private HapiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
@@ -556,7 +557,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(GENESIS));
     }
 
-    // Disabled because schedule throttle is not implemented yet
+    @HapiTest
     public HapiSpec functionlessTxnBusyWithNonExemptPayer() {
         return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
                 .given()
