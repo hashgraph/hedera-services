@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,6 +71,9 @@ class HandleSystemContractOperationsTest {
 
     @Mock
     private SignatureVerification failed;
+
+    @Mock
+    private MessageFrame messageFrame;
 
     private HandleSystemContractOperations subject;
 
@@ -111,7 +115,7 @@ class HandleSystemContractOperationsTest {
     @Test
     void externalizeSuccessfulResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT, messageFrame);
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
@@ -133,7 +137,7 @@ class HandleSystemContractOperationsTest {
     @Test
     void externalizeFailedResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
+                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT, messageFrame);
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);

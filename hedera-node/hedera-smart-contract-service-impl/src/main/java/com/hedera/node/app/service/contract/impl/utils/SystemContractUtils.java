@@ -61,6 +61,7 @@ public final class SystemContractUtils {
      * @param gasUsed       Report the gas used.
      * @param result        The result of the contract call.
      * @param contractID    The contract ID.
+     * @param frame         The message frame.
      * @return              The created contract function result for a successful call.
      */
     @NonNull

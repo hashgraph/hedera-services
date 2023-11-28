@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
 class SystemContractUtilsTest {
@@ -32,6 +33,7 @@ class SystemContractUtilsTest {
     private static final ContractID contractID =
             ContractID.newBuilder().contractNum(111).build();
     private static final String errorMessage = ResponseCodeEnum.FAIL_INVALID.name();
+    private static final MessageFrame frame = MessageFrame.builder().build();
 
     @Test
     void validateSuccessfulContractResults() {
@@ -40,7 +42,7 @@ class SystemContractUtilsTest {
                 .contractCallResult(tuweniToPbjBytes(result))
                 .contractID(contractID)
                 .build();
-        final var actual = SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, contractID);
+        final var actual = SystemContractUtils.contractFunctionResultSuccessFor(gasUsed, result, contractID, frame);
         assertThat(actual).isEqualTo(expected);
     }
 
