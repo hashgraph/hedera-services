@@ -85,6 +85,11 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     }
 
     @Override
+    public boolean hasChildRecords() {
+        return !recordListBuilder.childRecordBuilders().isEmpty();
+    }
+
+    @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         requireNonNull(consumer, "consumer must not be null");
         final var childRecordBuilders = recordListBuilder.childRecordBuilders();
@@ -105,7 +110,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
         return castRecordBuilder(result, recordBuilderClass);
     }
 
-    private static <T> T castRecordBuilder(
+    static <T> T castRecordBuilder(
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {

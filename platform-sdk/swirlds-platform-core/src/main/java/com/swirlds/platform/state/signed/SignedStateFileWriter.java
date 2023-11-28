@@ -19,9 +19,9 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
+import static com.swirlds.platform.event.preconsensus.BestEffortPreconsensusEventFileCopy.copyPreconsensusEventStreamFilesRetryOnFailure;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
@@ -36,9 +36,6 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,14 +43,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,14 +55,6 @@ import org.apache.logging.log4j.Logger;
 public final class SignedStateFileWriter {
 
     private static final Logger logger = LogManager.getLogger(SignedStateFileWriter.class);
-
-    /**
-     * The number of times to attempt to copy the last PCES file. Access to this file is not really coordinated between
-     * this logic and the code responsible for managing PCES file lifecycle, and so there is a small chance that the
-     * file moves when we attempt to make a copy. However, this probability is fairly small, and it is very unlikely
-     * that we will be unable to snatch a copy in time with a few retries.
-     */
-    private static final int COPY_PCES_MAX_RETRIES = 10;
 
     private SignedStateFileWriter() {}
 
@@ -179,261 +163,8 @@ public final class SignedStateFileWriter {
                     platformContext,
                     selfId,
                     directory,
-                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
-        }
-    }
-
-    private static void copyPreconsensusEventStreamFilesRetryOnFailure(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final NodeId selfId,
-            @NonNull final Path destinationDirectory,
-            final long minimumGenerationNonAncient)
-            throws IOException {
-
-        int triesRemaining = COPY_PCES_MAX_RETRIES;
-        while (triesRemaining > 0) {
-            triesRemaining--;
-            try {
-                copyPreconsensusEventStreamFiles(
-                        platformContext, selfId, destinationDirectory, minimumGenerationNonAncient);
-                return;
-            } catch (final PreconsensusEventFileRenamed e) {
-                if (triesRemaining == 0) {
-                    logger.error(
-                            EXCEPTION.getMarker(),
-                            "Unable to copy the last PCES file after {} retries. "
-                                    + "PCES files will not be written into the state.",
-                            COPY_PCES_MAX_RETRIES);
-                }
-            }
-        }
-    }
-
-    /**
-     * Copy preconsensus event files into the signed state directory. These files are necessary for the platform to use
-     * the state file as a starting point. Note: starting a node using the PCES files in the state directory does not
-     * guarantee that there is no data loss (i.e. there may be transactions that reach consensus after the state
-     * snapshot), but it does allow a node to start up and participate in gossip.
-     *
-     * <p>
-     * This general strategy is not very elegant is very much a hack. But it will allow us to do migration testing using
-     * real production states and streams, in the short term. In the longer term we should consider alternate and
-     * cleaner strategies.
-     *
-     * @param platformContext             the platform context
-     * @param destinationDirectory        the directory where the state is being written
-     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
-     *                                    state that is being written
-     */
-    private static void copyPreconsensusEventStreamFiles(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final NodeId selfId,
-            @NonNull final Path destinationDirectory,
-            final long minimumGenerationNonAncient)
-            throws IOException {
-
-        final boolean copyPreconsensusStream = platformContext
-                .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
-                .copyRecentStreamToStateSnapshots();
-        if (!copyPreconsensusStream) {
-            // PCES copying is disabled
-            return;
-        }
-
-        // The PCES files will be copied into this directory
-        final Path pcesDestination =
-                destinationDirectory.resolve("preconsensus-events").resolve(Long.toString(selfId.id()));
-        Files.createDirectories(pcesDestination);
-
-        final List<PreconsensusEventFile> allFiles = gatherPreconsensusFilesOnDisk(selfId, platformContext);
-        if (allFiles.isEmpty()) {
-            return;
-        }
-
-        // Sort by sequence number
-        Collections.sort(allFiles);
-
-        // Discard all files that either have an incorrect origin or that do not contain non-ancient events.
-        final List<PreconsensusEventFile> filesToCopy =
-                getRequiredPreconsensusFiles(allFiles, minimumGenerationNonAncient);
-        if (filesToCopy.isEmpty()) {
-            return;
-        }
-
-        copyPreconsensusFileList(filesToCopy, pcesDestination);
-    }
-
-    /**
-     * Get the preconsensus files that we need to copy to a state. We need any file that has a matching origin and that
-     * contains non-ancient events (w.r.t. the state).
-     *
-     * @param allFiles                    all PCES files on disk
-     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
-     *                                    state that is being written
-     * @return the list of files to copy
-     */
-    @NonNull
-    private static List<PreconsensusEventFile> getRequiredPreconsensusFiles(
-            @NonNull final List<PreconsensusEventFile> allFiles, final long minimumGenerationNonAncient) {
-
-        final List<PreconsensusEventFile> filesToCopy = new ArrayList<>();
-        final PreconsensusEventFile lastFile = allFiles.get(allFiles.size() - 1);
-        for (final PreconsensusEventFile file : allFiles) {
-            if (file.getOrigin() == lastFile.getOrigin()
-                    && file.getMaximumGeneration() >= minimumGenerationNonAncient) {
-                filesToCopy.add(file);
-            }
-        }
-
-        if (filesToCopy.isEmpty()) {
-            logger.warn(
-                    STATE_TO_DISK.getMarker(),
-                    "No preconsensus event files meeting specified criteria found to copy. "
-                            + "Minimum generation non-ancient: {}",
-                    minimumGenerationNonAncient);
-        } else if (filesToCopy.size() == 1) {
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    """
-                            Found 1 preconsensus event file meeting specified criteria to copy.
-                                Minimum generation non-ancient: {}
-                                File: {}
-                            """,
-                    minimumGenerationNonAncient,
-                    filesToCopy.get(0).getPath());
-        } else {
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    """
-                            Found {} preconsensus event files meeting specified criteria to copy.
-                                Minimum generation non-ancient: {}
-                                First file to copy: {}
-                                Last file to copy: {}
-                            """,
-                    filesToCopy.size(),
-                    minimumGenerationNonAncient,
-                    filesToCopy.get(0).getPath(),
-                    filesToCopy.get(filesToCopy.size() - 1).getPath());
-        }
-
-        return filesToCopy;
-    }
-
-    /**
-     * Gather all PCES files on disk.
-     *
-     * @param selfId          the id of this node
-     * @param platformContext the platform context
-     * @return a list of all PCES files on disk
-     */
-    @NonNull
-    private static List<PreconsensusEventFile> gatherPreconsensusFilesOnDisk(
-            @NonNull final NodeId selfId, @NonNull final PlatformContext platformContext) throws IOException {
-        final List<PreconsensusEventFile> allFiles = new ArrayList<>();
-        final Path preconsensusEventStreamDirectory =
-                PreconsensusEventFileManager.getDatabaseDirectory(platformContext, selfId);
-        try (final Stream<Path> stream = Files.walk(preconsensusEventStreamDirectory)) {
-            stream.filter(Files::isRegularFile).forEach(path -> {
-                try {
-                    allFiles.add(PreconsensusEventFile.of(path));
-                } catch (final IOException e) {
-                    // Ignore, this will get thrown for each file that is not a PCES file
-                }
-            });
-        }
-
-        if (allFiles.isEmpty()) {
-            logger.warn(STATE_TO_DISK.getMarker(), "No preconsensus event files found to copy");
-        } else if (allFiles.size() == 1) {
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    """
-                            Found 1 preconsensus file on disk.
-                                File: {}""",
-                    allFiles.get(0).getPath());
-        } else {
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    """
-                            Found {} preconsensus files on disk.
-                                First file: {}
-                                Last file: {}""",
-                    allFiles.size(),
-                    allFiles.get(0).getPath(),
-                    allFiles.get(allFiles.size() - 1).getPath());
-        }
-
-        return allFiles;
-    }
-
-    /**
-     * Copy a list of preconsensus event files into a directory.
-     *
-     * @param filesToCopy     the files to copy
-     * @param pcesDestination the directory where the files should be copied
-     */
-    private static void copyPreconsensusFileList(
-            @NonNull final List<PreconsensusEventFile> filesToCopy, @NonNull final Path pcesDestination) {
-        logger.info(
-                STATE_TO_DISK.getMarker(),
-                "Copying {} preconsensus event files to state snapshot directory",
-                filesToCopy.size());
-
-        // The last file might be in the process of being written, so we need to do a deep copy of it.
-        // Unlike the other files we are going to copy which have a long lifespan and are expected to
-        // be stable, the last file is actively in flux. It's possible that the last file will be
-        // renamed by the time we get to it, which may cause this copy operation to fail. Attempt
-        // to copy this file first, so that if we fail we can abort and retry without other side
-        // effects.
-        deepCopyPreconsensusFile(filesToCopy.get(filesToCopy.size() - 1), pcesDestination);
-
-        // Although the last file may be currently in the process of being written, all previous files will
-        // be closed and immutable and so it's safe to hard link them.
-        for (int index = 0; index < filesToCopy.size() - 1; index++) {
-            hardLinkPreconsensusFile(filesToCopy.get(index), pcesDestination);
-        }
-
-        logger.info(
-                STATE_TO_DISK.getMarker(),
-                "Finished copying {} preconsensus event files to state snapshot directory",
-                filesToCopy.size());
-    }
-
-    /**
-     * Hard link a PCES file.
-     *
-     * @param file            the file to link
-     * @param pcesDestination the directory where the file should be linked into
-     */
-    private static void hardLinkPreconsensusFile(
-            @NonNull final PreconsensusEventFile file, @NonNull final Path pcesDestination) {
-        final Path destination = pcesDestination.resolve(file.getFileName());
-        try {
-            Files.createLink(destination, file.getPath());
-        } catch (final IOException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Exception when hard linking preconsensus event file {} to {}",
-                    file.getPath(),
-                    destination,
-                    e);
-        }
-    }
-
-    /**
-     * Attempt to deep copy a PCES file.
-     *
-     * @param file            the file to copy
-     * @param pcesDestination the directory where the file should be copied into
-     */
-    private static void deepCopyPreconsensusFile(
-            @NonNull final PreconsensusEventFile file, @NonNull final Path pcesDestination) {
-        try {
-            Files.copy(file.getPath(), pcesDestination.resolve(file.getFileName()));
-        } catch (final IOException e) {
-            logger.info(STARTUP.getMarker(), "unable to copy last PCES file (file was likely renamed), will retry");
-            throw new PreconsensusEventFileRenamed(e);
+                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient(),
+                    signedState.getRound());
         }
     }
 

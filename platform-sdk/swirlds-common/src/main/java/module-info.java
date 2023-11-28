@@ -73,10 +73,10 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
-    exports com.swirlds.common.wiring;
-    exports com.swirlds.common.wiring.builders;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;
+    exports com.swirlds.common.wiring.schedulers;
+    exports com.swirlds.common.wiring.schedulers.builders;
     exports com.swirlds.common.wiring.transformers;
     exports com.swirlds.common.wiring.wires;
     exports com.swirlds.common.wiring.wires.input;
@@ -180,6 +180,6 @@ module com.swirlds.common {
     requires jdk.management;
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
-    requires org.hyperledger.besu.secp256k1;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
 }

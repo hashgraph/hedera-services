@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import java.util.List;
 
 /**
  * A {@code RecordBuilder} specialization for reading the transfer list from child records.
@@ -29,4 +31,11 @@ public interface ChildRecordBuilder {
      * @return the transfer list
      */
     TransferList transferList();
+
+    /**
+     * Get the token transfer lists, if any, from the child record.
+     *
+     * @return the token transfer lists
+     */
+    List<TokenTransferList> tokenTransferLists();
 }
