@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.merkle.test.fixtures.dummy;
@@ -88,8 +87,8 @@ public class FCQValue<T extends FastCopyable & SerializableHashable> extends Par
     }
 
     public static FCQValue<TransactionRecord> build(final long index, final long balance, final byte[] content) {
-        final TransactionRecord record = new TransactionRecord(index, balance, content,
-                TransactionRecord.DEFAULT_EXPIRATION_TIME);
+        final TransactionRecord record =
+                new TransactionRecord(index, balance, content, TransactionRecord.DEFAULT_EXPIRATION_TIME);
         final FCQueue<TransactionRecord> records = new FCQueue<>();
         records.add(record);
         return new FCQValue<>(new MerkleLong(record.getBalance()), records);
@@ -129,9 +128,8 @@ public class FCQValue<T extends FastCopyable & SerializableHashable> extends Par
     @SuppressWarnings("unchecked")
     public FCQValue<T> transferFrom(final long balance, final byte[] content) {
         final MerkleLong newBalance = new MerkleLong(getBalance().getValue() - balance);
-        final T newFromTransactionRecord =
-                (T) new TransactionRecord(getRecords().size(), balance, content,
-                        TransactionRecord.DEFAULT_EXPIRATION_TIME);
+        final T newFromTransactionRecord = (T)
+                new TransactionRecord(getRecords().size(), balance, content, TransactionRecord.DEFAULT_EXPIRATION_TIME);
         return this.addRecord(newBalance, newFromTransactionRecord);
     }
 
@@ -161,9 +159,8 @@ public class FCQValue<T extends FastCopyable & SerializableHashable> extends Par
     @SuppressWarnings("unchecked")
     public FCQValue<T> transferTo(final long balance, final byte[] content) {
         final MerkleLong newBalance = new MerkleLong(getBalance().getValue() + balance);
-        final T newFromTransactionRecord =
-                (T) new TransactionRecord(getRecords().size(), balance, content,
-                        TransactionRecord.DEFAULT_EXPIRATION_TIME);
+        final T newFromTransactionRecord = (T)
+                new TransactionRecord(getRecords().size(), balance, content, TransactionRecord.DEFAULT_EXPIRATION_TIME);
         return this.addRecord(newBalance, newFromTransactionRecord);
     }
 

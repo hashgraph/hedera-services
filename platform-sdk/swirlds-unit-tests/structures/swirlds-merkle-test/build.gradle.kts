@@ -17,6 +17,10 @@
 plugins { id("com.hedera.hashgraph.sdk.conventions") }
 
 testModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.fchashmap")
     requires("com.swirlds.merkle")
     requires("com.swirlds.merkle.test.fixtures")
     requires("com.swirlds.test.framework")

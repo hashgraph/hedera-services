@@ -39,7 +39,10 @@ javaModuleDependencies {
     moduleNameToGA.put("com.swirlds.platform.core", "com.swirlds:swirlds-platform-core")
     moduleNameToGA.put("com.swirlds.platform.gui", "com.swirlds:swirlds-platform-gui")
     moduleNameToGA.put("com.swirlds.test.framework", "com.swirlds:swirlds-test-framework")
-    moduleNameToGA.put("com.swirlds.merkle.test.fixtures", "com.swirlds:swirlds-merkle|com.swirlds:swirlds-merkle-test-fixtures")
+    moduleNameToGA.put(
+        "com.swirlds.merkle.test.fixtures",
+        "com.swirlds:swirlds-merkle|com.swirlds:swirlds-merkle-test-fixtures"
+    )
 
     // Other Hedera modules
     moduleNameToGA.put("com.hedera.pbj.runtime", "com.hedera.pbj:pbj-runtime")
