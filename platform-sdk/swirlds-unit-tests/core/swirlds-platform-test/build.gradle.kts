@@ -33,7 +33,11 @@ testModuleInfo {
     requires("com.swirlds.common.testing")
     requires("com.swirlds.merkle")
     requires("com.swirlds.sign.tool") // should be removed in future
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.test.framework")
     requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
     requires("org.mockito.junit.jupiter")

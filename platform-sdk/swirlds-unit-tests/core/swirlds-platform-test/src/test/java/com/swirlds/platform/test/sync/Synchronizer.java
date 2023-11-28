@@ -23,6 +23,7 @@ import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.test.fixtures.sync.SyncNode;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 
 /**

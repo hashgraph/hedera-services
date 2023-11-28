@@ -28,7 +28,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.test.event.EventMocks;
+import com.swirlds.platform.test.fixtures.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;
