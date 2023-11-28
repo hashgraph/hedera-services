@@ -17,8 +17,18 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.A_TOKEN_ID;
+import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.B_TOKEN_ID;
+import static contract.AssociationsXTestConstants.C_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.C_TOKEN_ID;
+import static contract.AssociationsXTestConstants.D_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.D_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
@@ -52,6 +62,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe.WipeTranslator;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,6 +75,12 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Wipe {@code ERC721_TOKEN} serial 1234 from Owner's account and verify successful operation</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1 and verify successful operation</li>*
  *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2 and verify successful operation</li>*
+ *     <li>Wipe {@code ERC721_TOKEN} serial 1234 from Owner's account. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
+ *     <li>Wipe {@code ERC721_TOKEN} serial 1234 from Owner's account. This should fail with TOKEN_HAS_NO_WIPE_KEY</li>*
+ *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
+ *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV1. This should fail with TOKEN_HAS_NO_WIPE_KEY</li>*
+ *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2. This should fail with INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE</li>*
+ *     <li>Wipe 10 {@code ERC20_TOKEN} Owner's account via wipeTokenAccountV2. This should fail with TOKEN_HAS_NO_WIPE_KEY</li>*
  *     <li>Via {@code assertExpectedAccounts} verify that owner's nft supply was decreased by 1.</li>*
  *     <li>Via {@code assertExpectedTokenRelations} verify that owner's token balance was decreased by 20.</li>*
  * </ol>
@@ -158,6 +175,77 @@ public class WipeXTest extends AbstractContractXTest {
                         Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()),
                         output,
                         "Expected INVALID_ACCOUNT_ID when trying to execute with invalid account address (V2)"));
+
+        // WIPE NFT from OWNER's account  with invalid key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_NFT
+                        .encodeCallWithArgs(
+                                A_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {SN_1234.serialNumber()})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
+
+        // WIPE NFT from OWNER's account without wipe key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_NFT
+                        .encodeCallWithArgs(
+                                B_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {SN_1234.serialNumber()})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_WIPE_KEY).array()),
+                        output,
+                        "Expected TOKEN_HAS_NO_WIPE_KEY when trying to execute with invalid wipe key"));
+
+        // WIPE 10 Tokens via wipeTokenAccountV1  with invalid key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
+
+        // WIPE 10 Tokens via wipeTokenAccountV1 without wipe key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
+                        .encodeCallWithArgs(D_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_WIPE_KEY).array()),
+                        output,
+                        "Expected TOKEN_HAS_NO_WIPE_KEY when trying to execute with invalid wipe key"));
+
+        // WIPE 10 Tokens via wipeTokenAccountV2 with invalid key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .array()),
+                        output,
+                        "Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE when trying to execute with invalid wipe key"));
+
+        // WIPE 10 Tokens via wipeTokenAccountV2 without wipe key
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
+                        .encodeCallWithArgs(D_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_HAS_NO_WIPE_KEY).array()),
+                        output,
+                        "Expected TOKEN_HAS_NO_WIPE_KEY when trying to execute with invalid wipe key"));
     }
 
     @Override
@@ -187,6 +275,40 @@ public class WipeXTest extends AbstractContractXTest {
                         .totalSupply(1000)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .build());
+        tokens.put(
+                A_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(A_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .totalSupply(1000L)
+                        .wipeKey(Scenarios.ALICE.account().key())
+                        .build());
+        tokens.put(
+                B_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(B_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .totalSupply(1000L)
+                        .build());
+        tokens.put(
+                C_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(C_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .totalSupply(1000L)
+                        .wipeKey(Scenarios.ALICE.account().key())
+                        .build());
+        tokens.put(
+                D_TOKEN_ID,
+                Token.newBuilder()
+                        .tokenId(D_TOKEN_ID)
+                        .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .totalSupply(1000L)
                         .build());
         return tokens;
     }

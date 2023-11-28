@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -91,9 +92,9 @@ public class RecordFinalizerBase {
             @NonNull final ReadableTokenStore tokenStore) {
         final var fungibleChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
-            final var relAcctId = modifiedRel.accountId();
-            final var relTokenId = modifiedRel.tokenId();
-            final var token = tokenStore.get(relTokenId);
+            final var relAcctId = modifiedRel.accountIdOrThrow();
+            final var relTokenId = modifiedRel.tokenIdOrThrow();
+            final var token = requireNonNull(tokenStore.get(relTokenId));
             // Add this to fungible token transfer list only if this token is a fungible token
             if (!token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
                 continue;

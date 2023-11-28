@@ -702,7 +702,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             final var finalizeContext = new ChildFinalizeContextImpl(
-                    readableStoreFactory, new WritableStoreFactory(childStack, TokenService.NAME), childRecordBuilder);
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext);
             childStack.commitFullStack();
         } catch (final HandleException e) {
