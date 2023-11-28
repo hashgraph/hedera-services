@@ -17,9 +17,12 @@
 package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.pbj.runtime.ProtoTestTools.getThreadLocalDataBuffer;
@@ -127,6 +130,43 @@ class ThrottleAccumulatorTest {
 
     @Mock
     private ReadableKVState schedules;
+
+    @Test
+    void alwaysThrottleNOfUnmanaged() throws IOException {
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(2, TOKEN_BURN, CONSENSUS_NOW));
+    }
+
+    @Test
+    void canThrottleNOfManaged() throws IOException {
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertFalse(subject.shouldThrottleNOfUnscaled(1, TOKEN_MINT, CONSENSUS_NOW));
+        final var oneUsed = subject.activeThrottlesFor(TOKEN_MINT).get(0).used();
+        assertFalse(subject.shouldThrottleNOfUnscaled(41, TOKEN_MINT, CONSENSUS_NOW));
+        final var fortyTwoUsed = subject.activeThrottlesFor(TOKEN_MINT).get(0).used();
+        assertEquals(42 * oneUsed, fortyTwoUsed);
+    }
+
+    @Test
+    @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+    void whenThrottlesUsesNoCapacity() throws IOException {
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
+        final var defs = getThrottleDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(11, CONTRACT_CALL, CONSENSUS_NOW));
+        final var used = subject.activeThrottlesFor(CONTRACT_CALL).get(0).used();
+        assertEquals(0, used);
+    }
 
     @ParameterizedTest
     @CsvSource({

@@ -181,6 +181,30 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     /*
+     * Updates the throttle requirements for given number of transactions of same functionality and returns whether they should be throttled.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     * @param consensusTime the consensus time of the transaction
+     * @return whether the transaction should be throttled
+     */
+    public boolean shouldThrottleNOfUnscaled(
+            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
+        resetLastAllowedUse();
+        ThrottleReqsManager manager;
+        if ((manager = functionReqs.get(function)) == null) {
+            return true;
+        }
+
+        if (!manager.allReqsMetAt(consensusTime, n, ONE_TO_ONE)) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+
+        return false;
+    }
+
+    /*
      * Leaks the gas amount previously reserved for the given transaction.
      *
      * @param txnInfo the transaction to leak the gas for
