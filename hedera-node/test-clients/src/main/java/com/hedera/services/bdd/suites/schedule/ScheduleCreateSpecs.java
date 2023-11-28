@@ -337,6 +337,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(FIRST_PAYER));
     }
 
+    @HapiTest
     private HapiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
@@ -409,7 +410,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .logged());
     }
 
-    // @todo('9869')
+    @HapiTest
     private HapiSpec preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
@@ -556,7 +557,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(GENESIS));
     }
 
-    // Disabled because schedule throttle is not implemented yet
+    @HapiTest
     public HapiSpec functionlessTxnBusyWithNonExemptPayer() {
         return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
                 .given()

@@ -182,6 +182,6 @@ module com.swirlds.common {
     requires jdk.management;
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
-    requires org.hyperledger.besu.secp256k1;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
 }

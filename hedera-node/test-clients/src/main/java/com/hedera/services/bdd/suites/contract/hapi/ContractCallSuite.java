@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -69,6 +70,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sidecarIdValidator;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -126,8 +128,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
@@ -1365,7 +1369,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     private HapiSpec multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
-        return defaultHapiSpec("MultipleSelfDestructsAreSafe")
+        return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
                 .when(contractCall(contract, "light").via("lightTxn").scrambleTxnBody(tx -> tx))
                 .then(getTxnRecord("lightTxn").logged());
