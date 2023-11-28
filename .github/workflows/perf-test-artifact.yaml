@@ -277,6 +277,7 @@ jobs:
         id: check-if-exist
         run: |
           set +e
+          POLICY="${{ inputs.version-policy }}"
           if [[ "${POLICY}" == "branch-commit"  ]]; then
             ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
           else
