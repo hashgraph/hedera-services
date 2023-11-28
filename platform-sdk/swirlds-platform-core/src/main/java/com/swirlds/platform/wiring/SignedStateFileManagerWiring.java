@@ -33,14 +33,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * The wiring for the {@link SignedStateFileManager}
  *
- * @param outputWire      the output wire
  * @param saveStateToDisk the input wire for saving the state to disk
  * @param dumpStateToDisk the input wire for dumping the state to disk
+ * @param outputWire      the output wire
  */
 public record SignedStateFileManagerWiring(
-        @NonNull OutputWire<StateSavingResult> outputWire,
         @NonNull InputWire<ReservedSignedState> saveStateToDisk,
-        @NonNull InputWire<StateDumpRequest> dumpStateToDisk) {
+        @NonNull InputWire<StateDumpRequest> dumpStateToDisk,
+        @NonNull OutputWire<StateSavingResult> outputWire) {
     /**
      * Create a new instance of the wiring
      *
@@ -48,9 +48,9 @@ public record SignedStateFileManagerWiring(
      */
     public SignedStateFileManagerWiring(@NonNull final TaskScheduler<StateSavingResult> scheduler) {
         this(
-                scheduler.getOutputWire(),
                 scheduler.buildInputWire("save state to disk"),
-                scheduler.buildInputWire("dump state to disk"));
+                scheduler.buildInputWire("dump state to disk"),
+                scheduler.getOutputWire());
     }
 
     /**
