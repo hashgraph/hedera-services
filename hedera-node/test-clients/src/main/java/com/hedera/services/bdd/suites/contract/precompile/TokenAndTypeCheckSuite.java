@@ -34,13 +34,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
-import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
-import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -126,6 +124,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     }
 
     // Should just return false on isToken() check for missing token type
+    @HapiTest
     private HapiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
@@ -162,15 +161,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                 .logged())))
                 .then(
                         childRecordsCheck(
-                                "FakeAddressTokenCheckTx",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(ParsingConstants.FunctionType.HAPI_IS_TOKEN)
-                                                        .withStatus(SUCCESS)
-                                                        .withIsToken(false)))),
+                                "FakeAddressTokenCheckTx", SUCCESS, recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 "FakeAddressTokenTypeCheckTx",
                                 CONTRACT_REVERT_EXECUTED,
