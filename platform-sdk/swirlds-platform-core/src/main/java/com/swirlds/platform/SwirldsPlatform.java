@@ -522,7 +522,7 @@ public class SwirldsPlatform implements Platform {
 
         final SignedStateNexus latestCompleteState = new SignedStateNexus();
         final RunningAverageMetric.Config avgRoundSupermajorityConfig = new RunningAverageMetric.Config(
-                PLATFORM_CATEGORY, "roundSup")
+                        PLATFORM_CATEGORY, "roundSup")
                 .withDescription("latest round with state signed by a supermajority")
                 .withUnit("round");
         final RunningAverageMetric avgRoundSupermajority =

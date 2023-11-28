@@ -1,18 +1,31 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.state;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 
 public class SignedStateManagerTester extends SignedStateManager {
     private final SignedStateNexus latestSignedState;
@@ -24,7 +37,8 @@ public class SignedStateManagerTester extends SignedStateManager {
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
             @NonNull final SignedStateNexus latestSignedState) {
-        super(stateConfig,
+        super(
+                stateConfig,
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
                 stateHasEnoughSignaturesConsumer,
@@ -39,7 +53,8 @@ public class SignedStateManagerTester extends SignedStateManager {
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
         final SignedStateNexus latestSignedState = new SignedStateNexus();
-        return new SignedStateManagerTester(stateConfig,
+        return new SignedStateManagerTester(
+                stateConfig,
                 signedStateMetrics,
                 s -> {
                     newLatestCompleteStateConsumer.newLatestCompleteStateEvent(s);

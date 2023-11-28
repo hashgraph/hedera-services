@@ -226,5 +226,4 @@ public final class GuiPlatformAccessor {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         return latestCompleteStateComponents.getOrDefault(nodeId, null);
     }
-
 }

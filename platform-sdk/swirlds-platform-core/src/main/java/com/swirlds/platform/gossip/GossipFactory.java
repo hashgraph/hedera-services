@@ -29,7 +29,6 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 
@@ -24,7 +23,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -260,7 +258,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedState.setGarbageCollector(signedStateGarbageCollector);
         newSignedStateBeingTracked(signedState, sourceOfSignedState);
         signedStateManager.addState(signedState);
-        //TODO latest complete
+        // TODO latest complete
     }
 
     /**

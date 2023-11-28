@@ -44,7 +44,7 @@ public interface StateManagementComponent
         extends PlatformComponent,
                 SignedStateFinder,
                 SignedStateToLoadConsumer,
-                NewSignedStateFromTransactionsConsumer{
+                NewSignedStateFromTransactionsConsumer {
 
     /**
      * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required

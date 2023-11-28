@@ -43,7 +43,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
@@ -255,8 +254,7 @@ public class ChatterGossip extends AbstractGossip {
                                             threadManager,
                                             otherId,
                                             reconnectThrottle,
-                                            () -> latestCompleteState.getState(
-                                                    "SwirldsPlatform: ReconnectProtocol"),
+                                            () -> latestCompleteState.getState("SwirldsPlatform: ReconnectProtocol"),
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
