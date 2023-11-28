@@ -20,6 +20,7 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.test.fixtures.sync.SyncNode;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;

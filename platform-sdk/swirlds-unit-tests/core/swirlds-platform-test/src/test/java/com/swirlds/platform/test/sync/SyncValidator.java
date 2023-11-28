@@ -32,6 +32,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.sync.SyncNode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;

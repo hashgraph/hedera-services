@@ -22,6 +22,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.test.fixtures.SignedStateUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -27,6 +27,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.test.fixtures.SignedStateUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
