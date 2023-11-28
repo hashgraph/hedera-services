@@ -2,6 +2,7 @@ package com.hedera.services.bdd.spec.infrastructure.interceptor;
 
 import com.hedera.services.bdd.spec.infrastructure.ChannelStubs;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.*;
 
@@ -41,6 +42,7 @@ public class RetryInterceptor implements ClientInterceptor {
 
             @Override
             public void sendMessage(ReqT message) {
+                System.out.printf("called sendMessage: %s\n", message);
                 requestMessages.put(callId, message); // Store the request message
                 super.sendMessage(message);
             }
@@ -63,6 +65,13 @@ public class RetryInterceptor implements ClientInterceptor {
                         } else {
                             super.onClose(status, trailers);
                         }
+                    }
+
+                    @Override
+                    public void onMessage(RespT message) {
+                        String className = message.getClass().getName();
+                        System.out.printf("newListener.onMessage: Class [%s], Content [%s]\n", className, message.toString());
+                        super.onMessage(message);
                     }
                 };
                 super.start(newListener, headers);

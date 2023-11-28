@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.infrastructure;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.interceptor.RetryCallbacks;
@@ -27,6 +28,7 @@ import com.hederahashgraph.api.proto.java.*;
 import io.grpc.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.Channel;
@@ -35,9 +37,11 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.*;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -180,7 +184,7 @@ public class HapiApiClientsTest {
         // In order to test this properly we need to pass an implementation
         // of the retry. Maybe for an API standpoint, passing in an interceptor
         // would be better.
-        apiClients.setClientInterceptor(interceptor);
+//        apiClients.setClientInterceptor(interceptor);
 
         final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
         final var query = Query.newBuilder().setCryptogetAccountBalance(builder).build();
@@ -195,11 +199,11 @@ public class HapiApiClientsTest {
         final var response = resp;
 
         // We should be getting here because on the second retry it should pass.
-        System.out.printf("ran crypto get balance 2:   %s\n", response.toString());
+//        System.out.printf("ran crypto get balance 2:   %s\n", response.toString());
 
         // Assert that the response passed this time.
         assertNotNull(response, "Could not get response");
-        assertEquals(response.getAccountDetails().getAccountDetails().getBalance(), 1000);
+        assertEquals(response.getCryptogetAccountBalance().getBalance(), 1000);
 
         // We now need to assert that the latch was counted down. We should have had one retry.
         boolean called = latch.await(5, TimeUnit.SECONDS);
@@ -363,6 +367,15 @@ public class HapiApiClientsTest {
 
             Http2FrameStream http2Stream = null;
 
+            if (frame instanceof DefaultHttp2PingFrame) {
+                DefaultHttp2PingFrame pingFrame = (DefaultHttp2PingFrame) frame;
+                if (!pingFrame.ack()) {
+                    System.out.println("sending PING ACK");
+                    // Echo the ping frame with ACK set
+                    ctx.write(new DefaultHttp2PingFrame(pingFrame.content(), true));
+                }
+            }
+
             if (frame instanceof Http2DataFrame) {
                 Http2DataFrame dataFrame = (Http2DataFrame) frame;
                 accumulatedData.writeBytes(dataFrame.content());
@@ -377,31 +390,50 @@ public class HapiApiClientsTest {
             }
         }
 
-        private void processRequestAndSendResponse(ChannelHandlerContext ctx, Http2FrameStream stream) {
-            System.out.println("got end of stream, processing request");
+        /**
+         * This method crafts a test response to the client.
+         *
+         * @see io.grpc.internal.Http2ClientStreamTransportState#transportDataReceived for details on the response protocol.
+         */
+        private void processRequestAndSendResponse(ChannelHandlerContext ctx, Http2FrameStream stream)  {
+            System.out.printf("server got end of stream... processing dataframe request: %s\n", accumulatedData.toString());
             // Assuming accumulatedData contains the serialized request
-            // Deserialize the request (omitted for brevity)
 
             // Create and serialize the response
-            CryptoGetAccountBalanceResponse response = CryptoGetAccountBalanceResponse.newBuilder()
-                    .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
+            CryptoGetAccountBalanceResponse.Builder b = CryptoGetAccountBalanceResponse.newBuilder()
+//                    .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
                     .setAccountID(accountID)
-                    .setBalance(1000L) // Mock balance
-                    .build();
+                    .setBalance(1000L); // Mock balance
+            Response response = Response.newBuilder().setCryptogetAccountBalance(b).build();
 
-            byte[] responseBytes = response.toByteArray();
+            byte[] responseBytes = response.toByteArray(); // new byte[]{};
+
+            System.out.printf("responseBytes: %s\n", Arrays.toString(responseBytes));
+            System.out.printf("responseBytes len: %d\n", responseBytes.length);
+
 
             ByteBuf content = ctx.alloc().buffer();
             content.writeByte(0); // Compression flag
             content.writeInt(responseBytes.length); // Message length
             content.writeBytes(responseBytes);
 
+            System.out.printf("content: %s\n", Arrays.toString(ByteBufUtil.getBytes(content)));
+
             // Send the response
             Http2Headers responseHeaders = new DefaultHttp2Headers();
             responseHeaders.status("200"); // OK Status
             responseHeaders.add("content-type", "application/grpc");
-            ctx.writeAndFlush(new DefaultHttp2HeadersFrame(responseHeaders, false).stream(stream));
-            ctx.writeAndFlush(new DefaultHttp2DataFrame(content, true).stream(stream));
+            ctx.write(new DefaultHttp2HeadersFrame(responseHeaders, false).stream(stream));
+            ctx.writeAndFlush(new DefaultHttp2DataFrame(content, false).stream(stream));
+
+            // Finally, send the trailers (with EOS flag).
+            // According to Http2ClientStreamTransportState.transportDataReceived
+            // you cannot end a stream with a DefaultHttp2DataFrame, so we must do this with a trailer.
+            Http2Headers trailers = new DefaultHttp2Headers();
+            trailers.set("content-length", String.format("%d", responseBytes.length));
+            trailers.add("grpc-status", "0"); // "0" indicates success
+            trailers.add("grpc-message", ""); // Optional message, can be left empty for success
+            ctx.writeAndFlush(new DefaultHttp2HeadersFrame(trailers, true).stream(stream));
         }
 
         @Override
