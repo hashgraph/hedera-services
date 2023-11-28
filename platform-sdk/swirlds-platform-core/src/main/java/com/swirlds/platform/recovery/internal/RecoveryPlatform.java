@@ -163,20 +163,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason) {
-        final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
-        return new AutoCloseableWrapper<>(
-                reservedSignedState.isNull()
-                        ? null
-                        : (T) reservedSignedState.get().getSwirldState(),
-                reservedSignedState::close);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
         // Transaction creation always fails
