@@ -67,33 +67,33 @@ import org.apache.tuweni.bytes.Bytes;
  * Exercises create a token via the following steps relative to an {@code OWNER} account:
  * <ol>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}. This should fail with code TOKEN_HAS_NO_SUPPLY_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_SUPPLY_KEY.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}. This should fail with code TOKEN_HAS_NO_SUPPLY_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_SUPPLY_KEY.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}. This should fail with code TOKEN_HAS_NO_SUPPLY_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_SUPPLY_KEY.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}. This should fail with code TOKEN_HAS_NO_SUPPLY_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_SUPPLY_KEY.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1}. This should fail with code INVALID_ACCOUNT_ID.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}. This should fail with code TOKEN_HAS_NO_SUPPLY_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_SUPPLY_KEY.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2}. This should fail with code INVALID_ACCOUNT_ID.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}.</li>
- *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_ADMIN_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}. This should fail with code TOKEN_HAS_NO_SUPPLY_KEY.</li>
+ *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_SUPPLY_KEY.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_RENEWAL_PERIOD.</li>
  *     <li>Create token {@code ERC721_TOKEN} via {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3}. This should fail with code INVALID_ACCOUNT_ID.</li>
  * </ol>
