@@ -21,6 +21,7 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
+import com.hedera.services.bdd.suites.contract.evm.Evm45ValidationSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -193,6 +194,7 @@ public class ConcurrentSuites {
             HelloWorldEthereumSuite::new,
             // network info
             VersionInfoSpec::new,
+            Evm45ValidationSuite::new
         };
     }
 
@@ -273,6 +275,7 @@ public class ConcurrentSuites {
             //  contract.records
             RecordsSuite::new,
             LogsSuite::new,
+            Evm45ValidationSuite::new
         };
     }
 }
