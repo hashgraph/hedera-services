@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -111,7 +112,9 @@ public class Evm38ValidationSuite extends HapiSuite {
                 invalidContractCall(),
                 cannotSendValueToTokenAccount(),
                 verifiesExistenceOfAccountsAndContracts(),
-                verifiesExistence());
+                verifiesExistenceForCallCodeOperation(),
+                verifiesExistenceForCallOperation(),
+                verifiesExistenceForCallOperationInternal());
     }
 
     @HapiTest
@@ -231,10 +234,10 @@ public class Evm38ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec verifiesExistence() {
+    HapiSpec verifiesExistenceForCallCodeOperation() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-        return propertyPreservingHapiSpec("verifiesExistence")
+        return propertyPreservingHapiSpec("verifiesExistenceForCallCodeOperation")
                 .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
@@ -255,6 +258,61 @@ public class Evm38ValidationSuite extends HapiSuite {
 
                             allRunFor(spec, contractCall);
                         }));
+    }
+
+    @HapiTest
+    HapiSpec verifiesExistenceForCallOperation() {
+        final var contract = "CallOperationsChecker";
+        final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+        final var ACCOUNT = "account";
+        final var EXPECTED_BALANCE = 10;
+
+        return propertyPreservingHapiSpec("verifiesExistenceForCallOperation")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        cryptoCreate(ACCOUNT).balance(0L),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(
+                        contractCall(contract, "call", asHeadlongAddress(INVALID_ADDRESS))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        withOpContext((spec, opLog) -> {
+                            final var id = spec.registry().getAccountID(ACCOUNT);
+
+                            final var contractCall = contractCall(
+                                            contract, "call", HapiParserUtil.asHeadlongAddress(asAddress(id)))
+                                    .sending(EXPECTED_BALANCE);
+
+                            final var balance = getAccountBalance(ACCOUNT).hasTinyBars(EXPECTED_BALANCE);
+
+                            allRunFor(spec, contractCall, balance);
+                        }));
+    }
+
+    @HapiTest
+    HapiSpec verifiesExistenceForCallOperationInternal() {
+        final var contract = "CallingContract";
+        final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+        return propertyPreservingHapiSpec("verifiesExistenceForCallOperationInternal")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(
+                        contractCall(contract, "setVar1", BigInteger.valueOf(35)),
+                        contractCallLocal(contract, "getVar1").logged(),
+                        contractCall(
+                                        contract,
+                                        "callContract",
+                                        asHeadlongAddress(INVALID_ADDRESS),
+                                        BigInteger.valueOf(222))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
+                .then(contractCallLocal(contract, "getVar1").logged());
     }
 
     @Override

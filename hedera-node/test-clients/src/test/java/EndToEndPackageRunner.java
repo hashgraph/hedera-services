@@ -38,7 +38,6 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
@@ -322,7 +321,6 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodes() {
         return List.of(
-                extractSpecsFromSuite(CallOperationSuite::new),
                 extractSpecsFromSuite(CreateOperationSuite::new),
                 extractSpecsFromSuite(DelegateCallOperationSuite::new),
                 extractSpecsFromSuite(ExtCodeCopyOperationSuite::new),
@@ -339,7 +337,6 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodesEth() {
         return List.of(new DynamicContainer[] {
-            extractSpecsFromSuiteForEth(CallOperationSuite::new),
             extractSpecsFromSuiteForEth(CreateOperationSuite::new),
             extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
             extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
