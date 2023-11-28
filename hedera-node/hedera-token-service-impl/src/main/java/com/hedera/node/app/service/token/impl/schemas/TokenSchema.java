@@ -26,7 +26,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
-import static com.hedera.node.app.spi.Service.CURRENT_VERSION;
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
@@ -88,7 +88,7 @@ public class TokenSchema extends Schema {
      * Create a new instance
      */
     public TokenSchema() {
-        super(CURRENT_VERSION);
+        super(RELEASE_045_VERSION);
         blocklistParser = new BlocklistParser();
     }
 

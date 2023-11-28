@@ -39,7 +39,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private Schema consensusSchema() {
-        return new Schema(CURRENT_VERSION) {
+        return new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

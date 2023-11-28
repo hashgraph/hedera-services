@@ -35,7 +35,7 @@ public final class NetworkServiceImpl implements NetworkService {
     }
 
     private Schema networkSchema() {
-        return new Schema(CURRENT_VERSION) {
+        return new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

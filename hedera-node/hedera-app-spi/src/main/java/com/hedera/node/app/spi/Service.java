@@ -29,7 +29,7 @@ import java.util.Set;
  * crypto-service, token-service etc.,
  */
 public interface Service {
-    SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 45, 0, "SNAPSHOT", "");
+    SemanticVersion RELEASE_045_VERSION = new SemanticVersion(0, 45, 0, "SNAPSHOT", "");
     /**
      * Returns the name of the service. This name must be unique for each service deployed on the
      * application.

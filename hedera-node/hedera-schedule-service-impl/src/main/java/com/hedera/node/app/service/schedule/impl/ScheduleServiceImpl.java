@@ -48,7 +48,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     private static final class ScheduleServiceSchema extends Schema {
         public ScheduleServiceSchema() {
-            super(CURRENT_VERSION);
+            super(RELEASE_045_VERSION);
         }
 
         @SuppressWarnings("rawtypes")

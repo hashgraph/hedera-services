@@ -38,7 +38,7 @@ public final class FreezeServiceImpl implements FreezeService {
     }
 
     private Schema networkAdminSchema() {
-        return new Schema(CURRENT_VERSION) {
+        return new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
