@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,11 +137,16 @@ public class FrameUtils {
         if (!isDelegateCall(frame)) {
             return false;
         }
+        final Address recipient = frame.getRecipientAddress();
 
-        final var recipient = frame.getRecipientAddress();
-        // but we accept delegates if the token redirect contract calls us,
-        // so if they are not a token, then we are a delegate and we are done.
-        if (isToken(frame, recipient)) {
+        final var permittedDelegateCallers = contractsConfigOf(frame).permittedDelegateCallers();
+
+        // Evaluate whether the recipient is either a token or on the permitted callers list.
+        // This determines if we should treat this as a delegate call.
+        // We accept delegates if the token redirect contract calls us.
+        if (isToken(frame, recipient)
+                || (ConversionUtils.isLongZero(recipient)
+                        && permittedDelegateCallers.contains(ConversionUtils.numberOfLongZero(recipient)))) {
             // make sure we have a parent calling context
             final var stack = frame.getMessageFrameStack();
             final var frames = stack.iterator();
