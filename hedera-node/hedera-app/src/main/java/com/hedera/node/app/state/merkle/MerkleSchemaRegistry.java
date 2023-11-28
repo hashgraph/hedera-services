@@ -72,7 +72,7 @@ import org.apache.logging.log4j.Logger;
  * a {@link SemanticVersion}.
  *
  * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
- * SemanticVersion, Configuration, NetworkInfo)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * SemanticVersion, Configuration, NetworkInfo, HandleThrottleParser, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -167,7 +167,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
-
         for (final var schema : schemasToApply) {
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -218,11 +217,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
-            final var writeableStates = hederaState.createWritableStates(serviceName);
+            final var writableStates = hederaState.createWritableStates(serviceName);
             final var statesToRemove = schema.statesToRemove();
-            final var remainingStates = new HashSet<>(writeableStates.stateKeys());
+            final var remainingStates = new HashSet<>(writableStates.stateKeys());
             remainingStates.removeAll(statesToRemove);
-            final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
+            final var newStates = new FilteredWritableStates(writableStates, remainingStates);
 
             // For any changes to state that depend on other services outside the current service, we need a reference
             // to the overall state that we can pass into the context. This reference to overall state will be strictly
@@ -243,7 +242,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 schema.migrate(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration
-            if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+            if (writableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }
 
@@ -269,7 +268,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     @NonNull
     private List<Schema> computeApplicableSchemas(
             @Nullable final SemanticVersion previousVersion, @NonNull final SemanticVersion currentVersion) {
-
         // The previous version MUST be strictly less than or equal to the current version
         if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
@@ -285,7 +283,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 applicableSchemas.add(schema);
             }
         }
-
         return applicableSchemas;
     }
 

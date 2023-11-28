@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
@@ -49,7 +48,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     private static final class ScheduleServiceSchema extends Schema {
         public ScheduleServiceSchema() {
-            super(SemanticVersion.DEFAULT);
+            super(RELEASE_045_VERSION);
         }
 
         @SuppressWarnings("rawtypes")

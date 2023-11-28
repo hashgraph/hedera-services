@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.schemas.GenesisSchema;
+import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -29,6 +29,6 @@ public final class FileServiceImpl implements FileService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new GenesisSchema());
+        registry.register(new FileGenesisSchema());
     }
 }

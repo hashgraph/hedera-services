@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.fixtures.info;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -71,13 +73,13 @@ public class FakeNetworkInfo implements NetworkInfo {
             @NonNull
             @Override
             public SemanticVersion hapiVersion() {
-                return SemanticVersion.DEFAULT;
+                return RELEASE_045_VERSION;
             }
 
             @NonNull
             @Override
             public SemanticVersion appVersion() {
-                return SemanticVersion.DEFAULT;
+                return RELEASE_045_VERSION;
             }
 
             @Override

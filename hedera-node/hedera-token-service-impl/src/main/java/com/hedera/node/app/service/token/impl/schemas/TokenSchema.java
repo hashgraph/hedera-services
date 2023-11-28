@@ -26,13 +26,13 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -49,6 +49,8 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -68,9 +70,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Genesis schema for the token service
  */
-public class GenesisSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(GenesisSchema.class);
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
+public class TokenSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(TokenSchema.class);
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
@@ -86,8 +87,8 @@ public class GenesisSchema extends Schema {
     /**
      * Create a new instance
      */
-    public GenesisSchema() {
-        super(GENESIS_VERSION);
+    public TokenSchema() {
+        super(RELEASE_045_VERSION);
         blocklistParser = new BlocklistParser();
     }
 
@@ -118,6 +119,21 @@ public class GenesisSchema extends Schema {
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
 
+        final var isGenesis = ctx.previousStates().isEmpty();
+        if (isGenesis) {
+            createGenesisSchema(
+                    ctx, accountsConfig, bootstrapConfig, ledgerConfig, hederaConfig, recordsKeeper, accounts);
+        }
+    }
+
+    private void createGenesisSchema(
+            final MigrationContext ctx,
+            final AccountsConfig accountsConfig,
+            final BootstrapConfig bootstrapConfig,
+            final LedgerConfig ledgerConfig,
+            final HederaConfig hederaConfig,
+            final GenesisRecordsBuilder recordsKeeper,
+            final WritableKVState<AccountID, Account> accounts) {
         // This key is used for all system accounts
         final var superUserKey = superUserKey(bootstrapConfig);
 

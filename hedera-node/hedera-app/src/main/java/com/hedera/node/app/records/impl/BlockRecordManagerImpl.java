@@ -82,6 +82,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * The consensus time of the first transaction in the current block. "provisional" because the block is not yet
      * complete.
      */
+    // TODO : Verify this is safe during reconnect
     private Instant provisionalCurrentBlockFirstTransactionTime = null;
     /** True when we have completed event recovery. This is not yet implemented properly. */
     private boolean eventRecoveryCompleted = false;

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -30,7 +29,6 @@ import java.util.Set;
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     public static final long RUNNING_HASH_VERSION = 3L;
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
@@ -41,7 +39,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private Schema consensusSchema() {
-        return new Schema(GENESIS_VERSION) {
+        return new Schema(RELEASE_045_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

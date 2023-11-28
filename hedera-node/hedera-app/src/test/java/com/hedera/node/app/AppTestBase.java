@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -236,8 +237,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     }
 
     public static final class TestAppBuilder {
-        private SemanticVersion softwareVersion = SemanticVersion.DEFAULT;
-        private SemanticVersion hapiVersion = SemanticVersion.DEFAULT;
+        private SemanticVersion softwareVersion = RELEASE_045_VERSION;
+        private SemanticVersion hapiVersion = RELEASE_045_VERSION;
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
         private NodeInfo selfNodeInfo = null;

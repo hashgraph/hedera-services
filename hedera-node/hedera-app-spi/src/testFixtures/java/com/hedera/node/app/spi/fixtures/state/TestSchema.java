@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.fixtures.state;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
@@ -98,7 +100,7 @@ public class TestSchema extends Schema {
     }
 
     public static final class Builder {
-        private SemanticVersion version = SemanticVersion.DEFAULT;
+        private SemanticVersion version = RELEASE_045_VERSION;
         private Runnable onMigrate;
         private Runnable onRestart;
         private final Set<StateDefinition> statesToCreate = new HashSet<>();
