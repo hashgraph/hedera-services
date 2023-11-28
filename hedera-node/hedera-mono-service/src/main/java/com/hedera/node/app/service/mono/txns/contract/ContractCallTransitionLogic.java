@@ -304,9 +304,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                         ContractCall);
                 validateTrue(sigReqIsMet, INVALID_SIGNATURE);
                 validateTrue(!isSystemAccount, INVALID_FEE_SUBMITTED);
-                validateTrue(!isTokenAccount, INVALID_FEE_SUBMITTED);
                 validateTrue(
-                        entityAccess.isExtant(unaliasedTargetNum.toEvmAddress()) || !isLongZeroAddress,
+                        entityAccess.isExtant(unaliasedTargetNum.toEvmAddress()) || !isLongZeroAddress || isTokenAccount,
                         INVALID_CONTRACT_ID);
             } else {
                 if (!isUsableContract) {

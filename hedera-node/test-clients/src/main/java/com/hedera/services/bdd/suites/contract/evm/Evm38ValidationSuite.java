@@ -17,19 +17,39 @@
 package com.hedera.services.bdd.suites.contract.evm;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 // @HapiTestSuite
 public class Evm38ValidationSuite extends HapiSuite {
@@ -74,7 +94,10 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(invalidContractCall());
+        return List.of(
+                invalidContractCall(),
+                cannotSendValueToTokenAccount()
+        );
     }
 
     HapiSpec invalidContractCall() {
@@ -89,6 +112,51 @@ public class Evm38ValidationSuite extends HapiSuite {
                                 (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
+    }
+
+
+    @HapiTest
+    private HapiSpec cannotSendValueToTokenAccount() {
+        final var multiKey = "multiKey";
+        final var nonFungibleToken = "NFT";
+        final var contract = "ManyChildren";
+        final var internalViolation = "internal";
+        final var externalViolation = "external";
+        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("InvalidContract")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        newKeyNamed(multiKey),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(nonFungibleToken)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .supplyKey(multiKey)
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))))
+                .when(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        sourcing(() -> contractCall(
+                                contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
+                                .sending(ONE_HBAR)
+                                .payingWith(TOKEN_TREASURY)
+                                .via(internalViolation)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing((() -> contractCall(tokenMirrorAddr.get())
+                                .sending(1L)
+                                .payingWith(TOKEN_TREASURY)
+                                .refusingEthConversion()
+                                .via(externalViolation)
+                                .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION))))
+                .then(
+                        getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
+                        getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
     @Override
