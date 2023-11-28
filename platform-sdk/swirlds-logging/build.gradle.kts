@@ -17,11 +17,16 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
+    id("com.hedera.hashgraph.benchmark-conventions")
+    id("java-test-fixtures")
 }
+
+jmhModuleInfo { requires("com.swirlds.config.api") }
 
 testModuleInfo {
     requires("com.swirlds.test.framework")
     requires("org.apache.logging.log4j.core")
+    requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("com.swirlds.base.test.fixtures")
