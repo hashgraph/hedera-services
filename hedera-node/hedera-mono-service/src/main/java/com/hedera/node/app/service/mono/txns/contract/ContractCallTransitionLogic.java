@@ -19,6 +19,8 @@ package com.hedera.node.app.service.mono.txns.contract;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -306,6 +308,14 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 validateTrue(
                         entityAccess.isExtant(unaliasedTargetNum.toEvmAddress()) || !isLongZeroAddress,
                         INVALID_CONTRACT_ID);
+            } else {
+                if (!isUsableContract) {
+                    // call to non-existing contract flow
+                    validateTrue(!EVM_VERSION_0_30.equals(properties.evmVersion()), INVALID_CONTRACT_ID);
+                    validateTrue(!EVM_VERSION_0_34.equals(properties.evmVersion()), INVALID_CONTRACT_ID);
+                    validateTrue(!EVM_VERSION_0_38.equals(properties.evmVersion()), INVALID_CONTRACT_ID);
+                    validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
+                }
             }
 
             if (isUsableContract) {
@@ -340,6 +350,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
             } else {
                 // call to non-existing contract flow
+                validateTrue(!EVM_VERSION_0_30.equals(properties.evmVersion()), INVALID_CONTRACT_ID);
+                validateTrue(!EVM_VERSION_0_34.equals(properties.evmVersion()), INVALID_CONTRACT_ID);
+                validateTrue(!EVM_VERSION_0_38.equals(properties.evmVersion()), INVALID_CONTRACT_ID);
                 validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
             }
             return new Account(targetEVMAddress);
