@@ -43,4 +43,5 @@ module com.swirlds.demo.platform {
     requires java.management;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.merkle.test.fixtures;
 }

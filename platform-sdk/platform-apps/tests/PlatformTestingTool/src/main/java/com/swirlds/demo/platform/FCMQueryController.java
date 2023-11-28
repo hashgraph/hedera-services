@@ -27,7 +27,7 @@ import com.swirlds.common.utility.throttle.Throttle;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
-import com.swirlds.merkle.map.test.lifecycle.EntityType;
+import com.swirlds.merkle.test.fixtures.lifecycle.EntityType;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
