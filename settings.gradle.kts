@@ -83,6 +83,8 @@ include(":swirlds-logging", "platform-sdk/swirlds-logging")
 
 include(":swirlds-common", "platform-sdk/swirlds-common")
 
+include(":swirlds-sample", "platform-sdk/swirlds-sample")
+
 include(":swirlds-sign-tool", "platform-sdk/swirlds-sign-tool")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")

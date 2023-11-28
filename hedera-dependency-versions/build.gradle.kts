@@ -48,6 +48,7 @@ moduleInfo {
     version("com.fasterxml.jackson.databind", jacksonVersion)
     version("com.github.benmanes.caffeine", "3.1.1")
     version("com.github.docker.java.api", "3.2.13")
+    version("com.github.javafaker", "1.0.2")
     version("com.github.spotbugs.annotations", "4.7.3")
     version("com.google.auto.service", "1.1.1")
     version("com.google.auto.service.processor", "1.1.1")

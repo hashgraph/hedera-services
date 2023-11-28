@@ -293,6 +293,11 @@ extraJavaModuleInfo {
         requires("jdk.httpserver")
     }
 
+    module("com.github.javafaker:javafaker", "com.github.javafaker") {
+        exportAllPackages()
+        // no dependencies
+    }
+
     // Need to use Jar file names here as there is currently no other way to address Jar with
     // classifier directly for patching
     module(
