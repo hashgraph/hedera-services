@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -126,13 +127,7 @@ class CallLocalEvmTxProcessorTest {
                 Map.of(EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1));
 
         callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
-                codeCache,
-                livePricesSource,
-                globalDynamicProperties,
-                gasCalculator,
-                mcps.get(globalDynamicProperties.evmVersion()),
-                ccps.get(globalDynamicProperties.evmVersion()),
-                aliasManager);
+                codeCache, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, aliasManager);
 
         callLocalEvmTxProcessor.setWorldState(worldState);
         callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);
@@ -197,6 +192,50 @@ class CallLocalEvmTxProcessorTest {
         // expect:
         assertEquals(sender.getId().asEvmAddress(), buildMessageFrame.getSenderAddress());
         assertEquals(oneWei, buildMessageFrame.getApparentValue());
+    }
+
+    @Test
+    void throwsInvalidContractIdWhenAllowCallsToNonContractAccountsIsDisabled() {
+        // setup:
+        given(codeCache.getIfPresent(any())).willReturn(null);
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(false);
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder();
+
+        // expect:
+        assertFailsWith(
+                () -> callLocalEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, receiver.getId().asEvmAddress(), Bytes.EMPTY, 0L),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWhenEvmVersionIsV030() {
+        // setup:
+        given(codeCache.getIfPresent(any())).willReturn(null);
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_30);
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder();
+
+        // expect:
+        assertFailsWith(
+                () -> callLocalEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, receiver.getId().asEvmAddress(), Bytes.EMPTY, 0L),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWhenEvmVersionIsV034() {
+        // setup:
+        given(codeCache.getIfPresent(any())).willReturn(null);
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder();
+
+        // expect:
+        assertFailsWith(
+                () -> callLocalEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, receiver.getId().asEvmAddress(), Bytes.EMPTY, 0L),
+                INVALID_CONTRACT_ID);
     }
 
     private void givenValidMock() {

@@ -167,7 +167,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(configuration);
 
-        when(feeManager.createFeeCalculator(eq(FILE_GET_INFO), any())).thenReturn(feeCalculator);
+        when(feeManager.createFeeCalculator(eq(FILE_GET_INFO), any(), any())).thenReturn(feeCalculator);
 
         final var transactionID =
                 TransactionID.newBuilder().accountID(ALICE.accountID()).build();

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -148,7 +147,6 @@ public class ContractCallSuite extends HapiSuite {
     public static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     public static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
-    private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String OWNER = "owner";
     private static final String INSERT = "insert";
     private static final String TOKEN_ISSUER = "tokenIssuer";
@@ -230,8 +228,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                invalidContractCall(),
-                invalidInternalCall(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -1522,26 +1518,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
-    }
-
-    HapiSpec invalidContractCall() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract")
-                .given(withOpContext(
-                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
-                .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
-    }
-
-    HapiSpec invalidInternalCall() {
-        return defaultHapiSpec("InvalidInternalCall")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).hasKnownStatus(SUCCESS))
-                .when()
-                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callContract", randomHeadlongAddress())
-                        .hasKnownStatus(SUCCESS));
     }
 
     HapiSpec smartContractFailFirst() {

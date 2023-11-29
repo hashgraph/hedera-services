@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -44,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeHashOperationV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
 
     @Mock
     private AbstractLedgerEvmWorldUpdater worldUpdater;
@@ -61,6 +64,9 @@ class HederaExtCodeHashOperationV038Test {
     private EVM evm;
 
     @Mock
+    private EvmProperties evmProperties;
+
+    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     private HederaExtCodeHashOperationV038 subject;
@@ -73,7 +79,7 @@ class HederaExtCodeHashOperationV038Test {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> false);
+        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> false, evmProperties);
         given(gasCalculator.extCodeHashOperationGasCost()).willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
     }
@@ -82,6 +88,20 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInvalidSolidityAddress() {
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+
+        var opResult = subject.execute(mf, evm);
+
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
+    }
+
+    @Test
+    void executeResolvesToInvalidSolidityAddressAndAllowCallsToNonContractAccountsDisabled() {
+        given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
@@ -93,6 +113,7 @@ class HederaExtCodeHashOperationV038Test {
     void executeResolvesToInsufficientGas() {
         givenMessageFrameWithRemainingGas(ACTUAL_COST - 1L);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -105,6 +126,7 @@ class HederaExtCodeHashOperationV038Test {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.isEmpty()).willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -114,7 +136,7 @@ class HederaExtCodeHashOperationV038Test {
     @Test
     void executeHappyPathWithPrecompileAccount() {
         // given
-        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         // when
         var opResult = subject.execute(mf, evm);
@@ -128,6 +150,7 @@ class HederaExtCodeHashOperationV038Test {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -140,6 +163,7 @@ class HederaExtCodeHashOperationV038Test {
         given(account.isEmpty()).willReturn(false);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         var opResult = subject.execute(mf, evm);
 
@@ -159,7 +183,7 @@ class HederaExtCodeHashOperationV038Test {
     @Test
     void executeThrowsTooManyStackItems() {
         // given
-        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true);
+        subject = new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, a -> true, evmProperties);
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         doThrow(FixedStack.OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
         // when

@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numOfMirror;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -51,18 +52,21 @@ public class HederaSelfDestructOperationV045 extends SelfDestructOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final EvmSigsVerifier sigsVerifier;
     private final Predicate<Address> systemAccountDetector;
+    private final GlobalDynamicProperties globalDynamicProperties;
 
     public HederaSelfDestructOperationV045(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final EvmSigsVerifier sigsVerifier,
-            final Predicate<Address> systemAccountDetector) {
+            final Predicate<Address> systemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.txnCtx = txnCtx;
         this.addressValidator = addressValidator;
         this.sigsVerifier = sigsVerifier;
         this.systemAccountDetector = systemAccountDetector;
+        this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
@@ -104,7 +108,7 @@ public class HederaSelfDestructOperationV045 extends SelfDestructOperation {
         if (updater.contractOwnsNfts(toBeDeleted)) {
             return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
         }
-        if (!HederaOperationUtilV045.isSigReqMetFor(beneficiaryAddress, frame, sigsVerifier)) {
+        if (!HederaOperationUtilV038.isSigReqMetFor(beneficiaryAddress, frame, sigsVerifier, globalDynamicProperties)) {
             return HederaExceptionalHaltReason.INVALID_SIGNATURE;
         }
         return null;

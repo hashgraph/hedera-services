@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.contracts;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
@@ -30,11 +31,6 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_38;
-import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
-import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperationV038;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV038;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
@@ -44,30 +40,21 @@ import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperatio
 import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperationV038;
 import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperationV038;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.store.contracts.CodeCache;
-import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
-import dagger.multibindings.StringKey;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
-import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
@@ -76,8 +63,6 @@ import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Module
 public interface ContractsV_0_38Module {
@@ -162,9 +147,10 @@ public interface ContractsV_0_38Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_38 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallCodeOperationV038(
-                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector);
+                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -188,8 +174,10 @@ public interface ContractsV_0_38Module {
     static Operation bindDelegateCallOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaDelegateCallOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaDelegateCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -199,8 +187,10 @@ public interface ContractsV_0_38Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_38 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaStaticCallOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaStaticCallOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -210,8 +200,10 @@ public interface ContractsV_0_38Module {
     static Operation bindBalanceOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaBalanceOperationV038(gasCalculator, addressValidator, hederaSystemAccountDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaBalanceOperationV038(
+                gasCalculator, addressValidator, hederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -221,8 +213,10 @@ public interface ContractsV_0_38Module {
     static Operation bindExtCodeCopyOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeCopyOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -232,8 +226,10 @@ public interface ContractsV_0_38Module {
     static Operation bindExtCodeHashOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeHashOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -243,8 +239,10 @@ public interface ContractsV_0_38Module {
     static Operation bindExtCodeSizeOperation(
             GasCalculator gasCalculator,
             @V_0_38 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
-        return new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
+            final EvmProperties evmProperties) {
+        return new HederaExtCodeSizeOperationV038(
+                gasCalculator, addressValidator, strictHederaSystemAccountDetector, evmProperties);
     }
 
     @Provides
@@ -301,81 +299,5 @@ public interface ContractsV_0_38Module {
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
         return precompileContractRegistry;
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
-    static Supplier<CallLocalEvmTxProcessor> provideV_0_38CallLocalEvmTxProcessor(
-            final CodeCache codeCache,
-            final LivePricesSource livePricesSource,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_38 Provider<MessageCallProcessor> mcp,
-            final @V_0_38 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager) {
-        return () -> new CallLocalEvmTxProcessor(
-                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, aliasManager);
-    }
-
-    @Provides
-    @Singleton
-    @V_0_38
-    static ContractCreationProcessor provideV_0_38ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_38 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
-    static Supplier<CallEvmTxProcessor> provideV_0_38CallEvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final CodeCache codeCache,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_38 Provider<MessageCallProcessor> mcp,
-            final @V_0_38 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        return () -> new CallEvmTxProcessor(
-                worldState,
-                livePricesSource,
-                codeCache,
-                dynamicProperties,
-                gasCalculator,
-                mcp,
-                ccp,
-                aliasManager,
-                blockMetaSource);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
-    static Supplier<CreateEvmTxProcessor> provideV_0_38CCreateEvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
-            final CodeCache codeCache,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final @V_0_38 Provider<MessageCallProcessor> mcp,
-            final @V_0_38 Provider<ContractCreationProcessor> ccp,
-            final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        return () -> new CreateEvmTxProcessor(
-                worldState,
-                livePricesSource,
-                codeCache,
-                dynamicProperties,
-                gasCalculator,
-                mcp,
-                ccp,
-                aliasManager,
-                blockMetaSource);
     }
 }

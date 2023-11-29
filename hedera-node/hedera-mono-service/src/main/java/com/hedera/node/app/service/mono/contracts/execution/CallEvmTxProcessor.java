@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -28,7 +29,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Map;
+import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
@@ -38,21 +42,23 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+@Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
+    @Inject
     public CallEvmTxProcessor(
             final HederaMutableWorldState worldState,
             final LivePricesSource livePricesSource,
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Provider<MessageCallProcessor> mcp,
-            final Provider<ContractCreationProcessor> ccp,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcp, ccp, blockMetaSource);
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -123,12 +129,17 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
             code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
         }
-        /* The ContractCallTransitionLogic would have rejected a missing or deleted
-         * contract, so at this point we should have non-null bytecode available.
-         * If there is no bytecode, it means we have a non-token and non-contract account,
-         * hence the code should be null and there must be a value transfer.
-         */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+
+        if (!dynamicProperties.allowCallsToNonContractAccounts()
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)) {
+            /* The ContractCallTransitionLogic would have rejected a missing or deleted
+             * contract, so at this point we should have non-null bytecode available.
+             * If there is no bytecode, it means we have a non-token and non-contract account,
+             * hence the code should be null and there must be a value transfer.
+             */
+            validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+        }
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)

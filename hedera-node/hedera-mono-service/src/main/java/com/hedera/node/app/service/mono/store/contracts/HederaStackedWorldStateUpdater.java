@@ -77,18 +77,6 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     private ContractID lastAllocatedId = null;
     private ContractCustomizer pendingCreationCustomizer = null;
 
-    public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {
-        final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
-        final var sponsorId = accountIdFromEvmAddress(sponsor);
-        if (trackingAccounts() != null) {
-            pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
-            pendingCreationCustomizer.accountCustomizer().isSmartContract(false);
-            if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
-                pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
-            }
-        }
-    }
-
     public HederaStackedWorldStateUpdater(
             final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
             final HederaMutableWorldState worldState,
@@ -216,6 +204,11 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     }
 
     @Override
+    public boolean hasPendingCreationCustomizer() {
+        return pendingCreationCustomizer != null || wrappedWorldView().hasPendingCreationCustomizer();
+    }
+
+    @Override
     public Account get(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
@@ -227,7 +220,6 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     @Override
     public MutableAccount getAccount(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
-
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
             return new UpdateTrackingAccount<>(proxyAccount, new UpdateAccountTrackerImpl(trackingAccounts()));

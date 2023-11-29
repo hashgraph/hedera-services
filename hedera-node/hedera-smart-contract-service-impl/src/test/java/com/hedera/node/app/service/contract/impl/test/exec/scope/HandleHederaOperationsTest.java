@@ -45,6 +45,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -87,6 +88,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private TinybarValues tinybarValues;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private HandleHederaOperations subject;
 
@@ -169,6 +173,8 @@ class HandleHederaOperationsTest {
     @Test
     void gasPriceInTinybarsDelegates() {
         given(tinybarValues.topLevelTinybarGasPrice()).willReturn(1234L);
+        given(context.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(feeCalculator.getCongestionMultiplier()).willReturn(1L);
         assertEquals(1234L, subject.gasPriceInTinybars());
     }
 

@@ -107,4 +107,12 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         final var token = tokenState.get(tokenId);
         return Optional.ofNullable(token);
     }
+
+    /**
+     * Returns the number of tokens in the state.
+     * @return the number of tokens in the state.
+     */
+    public long sizeOfState() {
+        return tokenState.size();
+    }
 }
