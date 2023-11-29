@@ -305,6 +305,32 @@ class CallEvmTxProcessorTest {
     }
 
     @Test
+    void nonCodeAndAllowCallsToNonContractAccountsDisabled() {
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(false);
+        assertFailsWith(
+                () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+                INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
+    void nonCodeAndEvmVersion030() {
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_30);
+        assertFailsWith(
+                () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+                INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
+    void nonCodeAndEvmVersion034() {
+        given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        assertFailsWith(
+                () -> callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+                INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
     void missingCodeBecomesEmptyInInitialFrame() {
         MessageFrame.Builder protoFrame = MessageFrame.builder()
                 .worldUpdater(updater)
