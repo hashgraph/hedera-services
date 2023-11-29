@@ -151,8 +151,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                         }
                         final ScheduleRecordBuilder scheduleRecords =
                                 context.recordBuilder(ScheduleRecordBuilder.class);
-                        // Based on fuzzy-record matching this field is not set in mono-service records
-                        //                        scheduleRecords.scheduleID(idToSign);
+                        // Based on fuzzy-record matching this field may not be set in mono-service records
+                        // scheduleRecords.scheduleID(idToSign);
                     } else {
                         // Note, this will never happen, but Sonar static analysis can't figure that out.
                         throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
