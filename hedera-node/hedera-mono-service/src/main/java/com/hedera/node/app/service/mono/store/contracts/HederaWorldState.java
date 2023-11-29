@@ -275,6 +275,11 @@ public class HederaWorldState implements HederaMutableWorldState {
         }
 
         @Override
+        public boolean hasPendingCreationCustomizer() {
+            return wrappedWorldView().hapiSenderCustomizer() != null;
+        }
+
+        @Override
         public Account getForMutation(final Address address) {
             final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
             return wrapped.get(address);

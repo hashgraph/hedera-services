@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import java.util.HashSet;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -39,11 +42,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmOperationsUtilV038Test {
+    private final String EVM_VERSION_0_38 = "v0.38";
+
     @Mock
     private MessageFrame messageFrame;
 
     @Mock
     private LongSupplier gasSupplier;
+
+    @Mock
+    private EvmProperties evmProperties;
 
     @Mock
     private Supplier<Operation.OperationResult> executionSupplier;
@@ -65,7 +73,8 @@ class HederaEvmOperationsUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 a -> false,
-                () -> mock(Operation.OperationResult.class));
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
 
         // then:
         assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
@@ -84,10 +93,17 @@ class HederaEvmOperationsUtilV038Test {
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
-                messageFrame, () -> Address.ZERO, gasSupplier, executionSupplier, (a, b) -> true, a -> true, () -> {
+                messageFrame,
+                () -> Address.ZERO,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                a -> true,
+                () -> {
                     messageFrame.pushStackItem(Bytes.EMPTY);
                     return mock(Operation.OperationResult.class);
-                });
+                },
+                evmProperties);
         // then:
         assertEquals(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS, result.getHaltReason());
         assertEquals(expectedHaltGas, result.getGasCost());
@@ -102,6 +118,7 @@ class HederaEvmOperationsUtilV038Test {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
@@ -111,7 +128,68 @@ class HederaEvmOperationsUtilV038Test {
                 executionSupplier,
                 (a, b) -> false,
                 a -> false,
-                () -> mock(Operation.OperationResult.class));
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
+
+        // then:
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
+        // and:
+        verify(messageFrame).getStackItem(0);
+        verify(gasSupplier).getAsLong();
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void haltsWithInvalidSolidityAddressWhenAllowCallsToNonContractAccountsIsDisabled() {
+        // given:
+        given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
+        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
+
+        // when:
+        final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
+                messageFrame,
+                () -> messageFrame.getStackItem(0),
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> false,
+                a -> false,
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
+
+        // then:
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
+        // and:
+        verify(messageFrame).getStackItem(0);
+        verify(gasSupplier).getAsLong();
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void haltsWithInvalidSolidityAddressWhenIsGrandfatherContract() {
+        final var grandfatherContracts = new HashSet<Address>();
+        grandfatherContracts.add(Address.ZERO);
+        // given:
+        given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
+        given(messageFrame.getContractAddress()).willReturn(Address.ZERO);
+        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(evmProperties.grandfatherContracts()).willReturn(grandfatherContracts);
+
+        // when:
+        final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
+                messageFrame,
+                () -> messageFrame.getStackItem(0),
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> false,
+                a -> false,
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -127,6 +205,7 @@ class HederaEvmOperationsUtilV038Test {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
 
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
@@ -136,7 +215,8 @@ class HederaEvmOperationsUtilV038Test {
                 executionSupplier,
                 (a, b) -> true,
                 a -> false,
-                () -> mock(Operation.OperationResult.class));
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
 
         // when:
         assertNull(result.getHaltReason());

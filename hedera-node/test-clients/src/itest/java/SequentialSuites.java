@@ -15,6 +15,7 @@
  */
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.evm.Evm38ValidationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -47,6 +48,7 @@ public class SequentialSuites {
             LeakyCryptoTestsSuite::new,
             LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
+            Evm38ValidationSuite::new
         };
     }
 }

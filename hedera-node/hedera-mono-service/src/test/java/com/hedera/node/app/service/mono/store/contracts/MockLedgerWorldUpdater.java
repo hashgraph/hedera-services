@@ -37,6 +37,11 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaWor
     }
 
     @Override
+    public boolean hasPendingCreationCustomizer() {
+        return false;
+    }
+
+    @Override
     public Account getForMutation(Address address) {
         return wrappedWorldView().get(address);
     }

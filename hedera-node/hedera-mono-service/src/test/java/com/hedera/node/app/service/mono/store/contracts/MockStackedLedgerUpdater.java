@@ -38,6 +38,11 @@ public class MockStackedLedgerUpdater extends AbstractStackedLedgerUpdater<Heder
     }
 
     @Override
+    public boolean hasPendingCreationCustomizer() {
+        return false;
+    }
+
+    @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public WorldUpdater updater() {
         return new MockStackedLedgerUpdater(

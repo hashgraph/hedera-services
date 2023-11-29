@@ -204,6 +204,11 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     }
 
     @Override
+    public boolean hasPendingCreationCustomizer() {
+        return pendingCreationCustomizer != null || wrappedWorldView().hasPendingCreationCustomizer();
+    }
+
+    @Override
     public Account get(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {

@@ -95,6 +95,11 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     }
 
     @Override
+    public MutableAccount getOrCreate(final Address address) {
+        return null;
+    }
+
+    @Override
     public void deleteAccount(Address address) {
         // The method is an intentionally-blank. If given implementation need it can be overridden
     }

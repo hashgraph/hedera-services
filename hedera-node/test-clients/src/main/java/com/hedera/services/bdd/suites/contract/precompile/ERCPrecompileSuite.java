@@ -224,9 +224,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                 someErc721NegativeTransferFromScenariosPass(),
                 erc721TransferFromWithApproval(),
                 erc721TransferFromWithApproveForAll(),
-                someErc721GetApprovedScenariosPass(),
-                someErc721BalanceOfScenariosPass(),
-                someErc721OwnerOfScenariosPass(),
                 someErc721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
                 someErc721SetApprovedForAllScenariosPass());

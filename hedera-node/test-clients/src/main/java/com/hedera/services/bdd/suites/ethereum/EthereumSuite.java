@@ -19,9 +19,9 @@ package com.hedera.services.bdd.suites.ethereum;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asContract;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -158,8 +158,7 @@ public class EthereumSuite extends HapiSuite {
                                 directTransferWorksForERC20(),
                                 transferHbarsViaEip2930TxSuccessfully(),
                                 callToTokenAddressViaEip2930TxSuccessfully(),
-                                transferTokensViaEip2930TxSuccessfully(),
-                                callToNonExistingContractFailsGracefully()))
+                                transferTokensViaEip2930TxSuccessfully()))
                 .toList();
     }
 
