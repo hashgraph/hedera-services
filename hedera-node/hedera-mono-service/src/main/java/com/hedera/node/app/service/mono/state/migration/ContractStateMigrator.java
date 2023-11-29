@@ -308,9 +308,10 @@ public class ContractStateMigrator {
     void commitToStateNow() {
         toState = stateFlusher.apply(toState);
     }
+
     /**
      * Iterate over the incoming mono-service state, pushing slots (key + value) into the queue.  This is "sourcing"
-     * the slots.7y
+     * the slots.
      *
      * This iteration operates with multiple threads simultaneously.
      */
