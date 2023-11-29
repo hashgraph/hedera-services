@@ -1,14 +1,18 @@
 # Maintainers Guide
 This document outlines the process and keynotes for the core maintainers of this repository .
 
+## JDK
+Download JDK-17.0.3+ for mac [here](https://adoptium.net/temurin/releases/?os=mac&version=17).
+
 ## IntelliJ set up
 IntelliJ is used for most of the development lifecycle.
 Install IntelliJ using the [Jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), instead of installing directly.
 If you are on an M1/M2 chipset, select **.dmg (macOs Apple Silicon)**. Once you have the jetbrains toolbox installed,
 open it and Install **Intellij IDEA Ultimate**.
 
-## JDK
-Download JDK-17.0.3 for mac [here](https://adoptium.net/temurin/releases/).
+* Import the preferred code style ([`Palantir_Style_SL`](assets.Palantir_Style_SL.xml)) to IntelliJ's editor's code style settings.
+* Import the copyright template ([`Hedera_Apache_2_0.xml`](assets.Hedera_Apache_2_0.xml)) to IntelliJ's editor's copyright settings.
+* (Optionally) Install the SonarLint plugin.
 
 ## Cloning repository
 Clone this repository using:
@@ -29,9 +33,20 @@ Follow [intellij-quickstart](intellij-quickstart.md) guide to run network on you
 Once the repository is opened in IntelliJ, to build the project from Intellij, open the Gradle tool window and
 run `Tasks/build/assemble` to on the root project. If you are using command line use `./gradlew assemble`.
 
-Start using either the Gradle command line
-`(./gradlew spotlessApply)`  or set up the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
-in IntelliJ to format your code to follow Google Code Style.
+
+### Using gradle to ensure code quality
+
+To ensure your code meets project style standards, run the following before committing:
+
+* `./gradlew spotlessApply` - to automatically format code to the required style
+* `./gradlew checkAllModuleInfo` - iff you've changed any `module-info.java`
+
+It's also a good idea to pay attention to warning produced by SonarLint, as well as (many) of IntelliJ's
+own Inspections.
+
+(When it comes time to push code to a PR the CI system will run the checks to make sure that all of the
+above bars are met, so to smooth the way for your PR to pass those checks make sure you've done them
+yourself before pushing to Github.)
 
 ## GPG set up
 Every commit being pushed to the repository should be verified and [signed off](#dco-sign-off). So it is important to set up GPG keys before
@@ -62,17 +77,20 @@ branches and branch related operations; therefore, it is critical that the branc
 tagging strategy.
 
 [GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) is elected pattern for the 
-development life cycle.
+development life cycle.  More or less.  (N.B.: Diagram doesn't match the actual process described below.)
 
 <p>
     <img src="./assets/gitflow-branching-model.png"/>
 </p>
 
-Note especially the roles of the `main` and `develop` branches:
+Note especially the roles of the `develop` and `release/0.nn` branches:
 
 - `develop` is the default branch, the target of active development, and should at all times should be a viable candidate
   for the next release.
-- `main` is a tightly-controlled branch that release engineering uses for final tags deployed to production.
+- For each release a branch named `release/0.nn` is made from the current `develop`.  After the branch is cut commits can be made 
+  to it (then cherry-picked back to `develop`).
+
+  The release branches are tightly-controlled branches that release engineering uses for final tags deployed to production.
 
 ### Creating issues on GitHub
 GitHub's [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking
@@ -102,7 +120,6 @@ projects, with 0.30 milestone on it.
 
 The release engineering team will handle the following:
 - Create a release branch from `develop` branch at the end of first sprint in the release cycle
-- Will merge the release branch for current deploying release into `main` 
 - Will provide automated release processes and coordinate release schedules
 - Will handle production releases
 
@@ -123,12 +140,14 @@ release.
 #### As a developer, I would like to merge my feature branch or bug fix for the upcoming release
 Open a pull request (PR) from the feature branch to `develop` branch and add `hashgraph/hedera-services-team` as reviewers.
 
-Also add the following labels on the PR :
-- `CI:UnitTests` - Initiates PR UnitTests needed for the PR to merge
-- `CI:FullStackTests` - Initiates full stack PR checks needed for PR to merge
-- `CI:FinalChecks` - Initiates final checks required for the PR to merge
+The CI pipeline will run various checks for code style/quality.  These checks are not run _by default_
+by gradle on a developer's machine (via `./gradlew assemble` or `./gradlew build`).  To smooth the way
+for the checks passing, run the gradle tasks [mentioned above](#using-gradle-to-ensure-code-quality) - and
+fix problems noted! - before pushing to your PR.
 
-PR should be merged after an approving review and all the checks are passed.
+The PR title (and ultimately the PR's merge's commit) must use the [_Conventional Commits_](https://www.conventionalcommits.org/en/v1.0.0/) format.
+
+The PR should be merged after an approving review (including all necessary code owners) and all the checks are passed.
 
 NOTE:
 1. Any feature that is not going into the upcoming release should stay in the feature branch and should not be merged
