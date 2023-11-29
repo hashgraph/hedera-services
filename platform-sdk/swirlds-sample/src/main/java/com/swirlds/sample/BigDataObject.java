@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("java-test-fixtures")
-}
+package com.swirlds.sample;
 
-mainModuleInfo { runtimeOnly("foo.bar") }
-
-testModuleInfo {
-    requires("org.junit.jupiter.api")
-    requires("com.swirlds.sample.test.fixtures")
-    requires("com.swirlds.base.test.fixtures")
-}
+public record BigDataObject(String name, int age, byte[] bigData) {}
