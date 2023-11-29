@@ -25,7 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -70,18 +69,12 @@ public class BaseTokenHandler {
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
-            final boolean isMintOnTokenCreation,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelationStore) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
-        // validate token supply key exists for mint or burn.
-        // But this flag is not set when mint is called on token creation with initial supply.
-        // We don't need to check the supply key ONLY in that case
-        if (!isMintOnTokenCreation) {
-            validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
-        }
+
         return changeSupply(
                 token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
     }
