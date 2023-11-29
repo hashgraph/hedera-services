@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.PropertySource.asContract;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -148,7 +147,6 @@ public class ContractCallSuite extends HapiSuite {
     public static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     public static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
-    private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String OWNER = "owner";
     private static final String INSERT = "insert";
     private static final String TOKEN_ISSUER = "tokenIssuer";
@@ -230,8 +228,6 @@ public class ContractCallSuite extends HapiSuite {
                 insufficientGas(),
                 insufficientFee(),
                 nonPayable(),
-                callNonExistantContract(),
-                callNonExistantInternalContract(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
@@ -280,11 +276,11 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
-                                        TEST_CONTRACT,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(2)
-                                                .build()),
-                                        BigInteger.ONE)
+                                TEST_CONTRACT,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(2)
+                                        .build()),
+                                BigInteger.ONE)
                                 .balance(ONE_HBAR),
                         cryptoCreate(somebody),
                         balanceSnapshot("start", account))
@@ -336,133 +332,133 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
-                                        TEST_CONTRACT,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(2)
-                                                .build()),
-                                        BigInteger.ONE)
+                                TEST_CONTRACT,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(2)
+                                        .build()),
+                                BigInteger.ONE)
                                 .balance(ONE_HBAR))
                 .when(
                         // call to 0x0
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(ZERO_ADDRESS)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(ZERO_ADDRESS)
+                                        .build()))
                                 .via(zeroAddressTxn)
                                 .hasKnownStatus(SUCCESS),
                         // call with value to 0x0
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressWithValueFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(ZERO_ADDRESS)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(ZERO_ADDRESS)
+                                        .build()))
                                 .sending(500L)
                                 .via(zeroAddressWithValueTxn)
                                 .hasKnownStatus(SUCCESS),
                         // call to existing account in the 0-750 range, without precompile collision on the same address
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
+                                        .build()))
                                 .via(existingSystemEntityTxn)
                                 .hasKnownStatus(SUCCESS),
                         // call with value to existing account in the 0-750 range, without precompile collision on the
                         // same address
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressWithValueFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
+                                        .build()))
                                 .via(existingSystemEntityWithValueTxn)
                                 .sending(500L)
                                 .hasKnownStatus(SUCCESS),
                         // call to existing account in the 0-750 range, WITH precompile collision
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(ECREC_NUM)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(ECREC_NUM)
+                                        .build()))
                                 .via(existingNumAndPrecompileTxn)
                                 .hasKnownStatus(SUCCESS),
                         // call with value to existing account in the 0-750 range, WITH precompile collision
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressWithValueFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(ECREC_NUM)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(ECREC_NUM)
+                                        .build()))
                                 .via(existingNumAndPrecompileWithValueTxn)
                                 .sending(500L)
                                 .hasKnownStatus(SUCCESS),
                         // call to non-existing account in the 0-750 range
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
+                                        .build()))
                                 .via(nonExistingSystemEntityTxn)
                                 .hasKnownStatus(SUCCESS),
                         // call with value to non-existing account in the 0-750 range
                         contractCall(
-                                        TEST_CONTRACT,
-                                        callSpecificAddressWithValueFunction,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
-                                                .build()))
+                                TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
+                                        .build()))
                                 .via(nonExistingSystemEntityWithValueTxn)
                                 .sending(500L)
                                 .hasKnownStatus(SUCCESS),
                         // delegate call to collision address (0.0.1)
                         contractCall(
-                                        TEST_CONTRACT,
-                                        DELEGATE_CALL_SPECIFIC,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(ECREC_NUM)
-                                                .build()))
+                                TEST_CONTRACT,
+                                DELEGATE_CALL_SPECIFIC,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(ECREC_NUM)
+                                        .build()))
                                 .via(existingNumAndPrecompileDelegateCallTxn)
                                 .hasKnownStatus(SUCCESS),
                         // delegate call existing account in the 0-750, but no corresponding precompile at that address
                         contractCall(
-                                        TEST_CONTRACT,
-                                        DELEGATE_CALL_SPECIFIC,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(98)
-                                                .build()))
+                                TEST_CONTRACT,
+                                DELEGATE_CALL_SPECIFIC,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(98)
+                                        .build()))
                                 .via(delegateCallExistingAccountNonExistingPrecompile)
                                 .hasKnownStatus(SUCCESS),
                         // delegate call non-existing address in the 0-750 range
                         contractCall(
-                                        TEST_CONTRACT,
-                                        DELEGATE_CALL_SPECIFIC,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(125)
-                                                .build()))
+                                TEST_CONTRACT,
+                                DELEGATE_CALL_SPECIFIC,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(125)
+                                        .build()))
                                 .via(delegateCallNonExistingPrecompile)
                                 .hasKnownStatus(SUCCESS),
                         // self destruct with beneficiary in the 0-750 range
                         contractCall(
-                                        TEST_CONTRACT,
-                                        "selfDestructWithBeneficiary",
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(2)
-                                                .build()))
+                                TEST_CONTRACT,
+                                "selfDestructWithBeneficiary",
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(2)
+                                        .build()))
                                 .via(selfDestructToSystemAccountTxn)
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         // balance operation of an address in the 0-750 range
                         contractCall(
-                                        TEST_CONTRACT,
-                                        BALANCE_OF,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(2)
-                                                .build()))
+                                TEST_CONTRACT,
+                                BALANCE_OF,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(2)
+                                        .build()))
                                 .via(balanceOfSystemAccountTxn)
                                 .hasKnownStatus(SUCCESS))
                 .then(
@@ -556,18 +552,18 @@ public class ContractCallSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCreate(
-                                            NESTED_TRANSFERRING_CONTRACT,
-                                            asHeadlongAddress(
-                                                    getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
-                                            asHeadlongAddress(
-                                                    getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
+                                    NESTED_TRANSFERRING_CONTRACT,
+                                    asHeadlongAddress(
+                                            getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
+                                    asHeadlongAddress(
+                                            getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                     .balance(10_000L)
                                     .payingWith(ACCOUNT),
                             contractCall(
-                                            NESTED_TRANSFERRING_CONTRACT,
-                                            "transferFromDifferentAddressesToAddress",
-                                            asHeadlongAddress(receiverAddr),
-                                            BigInteger.valueOf(40_000L))
+                                    NESTED_TRANSFERRING_CONTRACT,
+                                    "transferFromDifferentAddressesToAddress",
+                                    asHeadlongAddress(receiverAddr),
+                                    BigInteger.valueOf(40_000L))
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .payingWith(ACCOUNT)
                                     .logged());
@@ -611,15 +607,15 @@ public class ContractCallSuite extends HapiSuite {
                                 contractCall(WHITELISTER, "addToWhitelist", asHeadlongAddress(childEip1014.get()))
                                         .payingWith(DEFAULT_PAYER),
                                 contractCallWithFunctionAbi(
-                                                asContractString(contractIdFromHexedMirrorAddress(childMirror.get())),
-                                                getABIFor(FUNCTION, "isWhitelisted", WHITELISTER),
-                                                asHeadlongAddress(getNestedContractAddress(WHITELISTER, spec)))
+                                        asContractString(contractIdFromHexedMirrorAddress(childMirror.get())),
+                                        getABIFor(FUNCTION, "isWhitelisted", WHITELISTER),
+                                        asHeadlongAddress(getNestedContractAddress(WHITELISTER, spec)))
                                         .payingWith(DEFAULT_PAYER)
                                         .via(mirrorWhitelistCheckTxn),
                                 contractCall(
-                                                CREATOR,
-                                                "isWhitelisted",
-                                                asHeadlongAddress(getNestedContractAddress(WHITELISTER, spec)))
+                                        CREATOR,
+                                        "isWhitelisted",
+                                        asHeadlongAddress(getNestedContractAddress(WHITELISTER, spec)))
                                         .payingWith(DEFAULT_PAYER)
                                         .via(evmWhitelistCheckTxn))))
                 .then(
@@ -665,10 +661,10 @@ public class ContractCallSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCall(
-                                            ASSOCIATOR,
-                                            "associate",
-                                            asHeadlongAddress(mirrorAddress),
-                                            asHeadlongAddress(asAddress(tokenID.get())))
+                                    ASSOCIATOR,
+                                    "associate",
+                                    asHeadlongAddress(mirrorAddress),
+                                    asHeadlongAddress(asAddress(tokenID.get())))
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .gas(GAS_TO_OFFER)
                                     .via("NOPE"),
@@ -677,10 +673,10 @@ public class ContractCallSuite extends HapiSuite {
                                     CONTRACT_REVERT_EXECUTED,
                                     recordWith().status(INVALID_ACCOUNT_ID)),
                             contractCall(
-                                            ASSOCIATOR,
-                                            "associate",
-                                            asHeadlongAddress(create2address),
-                                            asHeadlongAddress(asAddress(tokenID.get())))
+                                    ASSOCIATOR,
+                                    "associate",
+                                    asHeadlongAddress(create2address),
+                                    asHeadlongAddress(asAddress(tokenID.get())))
                                     .gas(GAS_TO_OFFER));
                 }))
                 .then();
@@ -759,11 +755,11 @@ public class ContractCallSuite extends HapiSuite {
                                                 isLiteralResult(
                                                         new Object[] {asHeadlongAddress(defaultPayerMirror.get())})))),
                         sourcing(() -> contractCall(
-                                        minters,
-                                        "add",
-                                        asHeadlongAddress(historicalAddress),
-                                        "Peter",
-                                        nyJurisCode.get())
+                                minters,
+                                "add",
+                                asHeadlongAddress(historicalAddress),
+                                "Peter",
+                                nyJurisCode.get())
                                 .gas(1_000_000)));
     }
 
@@ -804,8 +800,8 @@ public class ContractCallSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .resultViaFunctionName(
                                                         "approxUsdValue", rateAware, isLiteralResult(new Object[] {
-                                                            BigInteger.valueOf(
-                                                                    minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
+                                                                BigInteger.valueOf(
+                                                                        minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
                                                         }))))
                                 .logged(),
                         sourcing(() -> contractCall(rateAware, "invalidCall")
@@ -842,16 +838,16 @@ public class ContractCallSuite extends HapiSuite {
                         mintToken("nft", List.of(ByteString.copyFrom(CommonUtils.unhex(hexedNonUtf8Meta)))))
                 .when(
                         sourcing(() -> contractCall(
-                                        contractAlternatives,
-                                        "canGetMetadataViaERC",
-                                        nftAddr.get(),
-                                        BigInteger.valueOf(1))
+                                contractAlternatives,
+                                "canGetMetadataViaERC",
+                                nftAddr.get(),
+                                BigInteger.valueOf(1))
                                 .via(viaErc721TokenURI)),
                         sourcing(() -> contractCall(
-                                        contractAlternatives,
-                                        "canGetMetadataViaHTS",
-                                        nftAddr.get(),
-                                        BigInteger.valueOf(1))
+                                contractAlternatives,
+                                "canGetMetadataViaHTS",
+                                nftAddr.get(),
+                                BigInteger.valueOf(1))
                                 .via(viaHtsNftInfo)
                                 .gas(1_000_000)))
                 .then(withOpContext((spec, opLog) -> {
@@ -1013,7 +1009,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
                                 .exposingRawResultsTo(prngOutput::set),
                         sourcing(() -> contractCallLocal(
-                                        contract, "getErc20Balance", erc20Address.get(), ercUserAddress.get())
+                                contract, "getErc20Balance", erc20Address.get(), ercUserAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-20 user balance is {}", results[0]))
                                 .exposingRawResultsTo(erc20BalanceOutput::set)),
                         sourcing(() -> contractCallLocal(contract, "getErc20Supply", erc20Address.get())
@@ -1035,11 +1031,11 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-721 symbol is {}", results[0]))
                                 .exposingRawResultsTo(erc721SymbolOutput::set)),
                         sourcing(() -> contractCallLocal(
-                                        contract, "getErc721TokenUri", erc721Address.get(), BigInteger.TWO)
+                                contract, "getErc721TokenUri", erc721Address.get(), BigInteger.TWO)
                                 .exposingTypedResultsTo(results -> LOG.info("SN#2 token URI is {}", results[0]))
                                 .exposingRawResultsTo(erc721TokenUriOutput::set)),
                         sourcing(() -> contractCallLocal(
-                                        contract, "getErc721Balance", erc721Address.get(), ercUserAddress.get())
+                                contract, "getErc721Balance", erc721Address.get(), ercUserAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-721 user balance is {}", results[0]))
                                 .exposingRawResultsTo(erc721BalanceOutput::set)),
                         sourcing(
@@ -1047,11 +1043,11 @@ public class ContractCallSuite extends HapiSuite {
                                         .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
                                         .exposingRawResultsTo(erc721OwnerOutput::set)),
                         sourcing(() -> contractCallLocal(
-                                        contract,
-                                        "getErc721IsOperator",
-                                        erc721Address.get(),
-                                        ercUserAddress.get(),
-                                        ercOperatorAddress.get())
+                                contract,
+                                "getErc721IsOperator",
+                                erc721Address.get(),
+                                ercUserAddress.get(),
+                                ercOperatorAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("Is operator? {}", results[0]))
                                 .exposingRawResultsTo(erc721IsOperatorOutput::set)))
                 .then(withOpContext((spec, opLog) -> {
@@ -1158,28 +1154,28 @@ public class ContractCallSuite extends HapiSuite {
 
                     //  Do token transfers
                     final var subop6 = contractCall(
-                                    contract,
-                                    TRANSFER,
-                                    asHeadlongAddress(aliceEthAddress),
-                                    BigInteger.valueOf(1000 * tokenMultiplier))
+                            contract,
+                            TRANSFER,
+                            asHeadlongAddress(aliceEthAddress),
+                            BigInteger.valueOf(1000 * tokenMultiplier))
                             .gas(250_000L)
                             .payingWith(TOKEN_ISSUER)
                             .refusingEthConversion();
 
                     final var subop7 = contractCall(
-                                    contract,
-                                    TRANSFER,
-                                    asHeadlongAddress(bobEthAddress),
-                                    BigInteger.valueOf(2000 * tokenMultiplier))
+                            contract,
+                            TRANSFER,
+                            asHeadlongAddress(bobEthAddress),
+                            BigInteger.valueOf(2000 * tokenMultiplier))
                             .gas(250_000L)
                             .payingWith(TOKEN_ISSUER)
                             .refusingEthConversion();
 
                     final var subop8 = contractCall(
-                                    contract,
-                                    TRANSFER,
-                                    asHeadlongAddress(carolEthAddress),
-                                    BigInteger.valueOf(500 * tokenMultiplier))
+                            contract,
+                            TRANSFER,
+                            asHeadlongAddress(carolEthAddress),
+                            BigInteger.valueOf(500 * tokenMultiplier))
                             .gas(250_000L)
                             .payingWith("Bob")
                             .refusingEthConversion();
@@ -1212,20 +1208,20 @@ public class ContractCallSuite extends HapiSuite {
                             1000, aliceBalance / tokenMultiplier, "Alice's token balance should be 1_000");
 
                     final var subop12 = contractCall(
-                                    contract,
-                                    "approve",
-                                    asHeadlongAddress(daveEthAddress),
-                                    BigInteger.valueOf(200 * tokenMultiplier))
+                            contract,
+                            "approve",
+                            asHeadlongAddress(daveEthAddress),
+                            BigInteger.valueOf(200 * tokenMultiplier))
                             .gas(250_000L)
                             .payingWith(ALICE)
                             .refusingEthConversion();
 
                     final var subop13 = contractCall(
-                                    contract,
-                                    "transferFrom",
-                                    asHeadlongAddress(aliceEthAddress),
-                                    asHeadlongAddress(bobEthAddress),
-                                    BigInteger.valueOf(100 * tokenMultiplier))
+                            contract,
+                            "transferFrom",
+                            asHeadlongAddress(aliceEthAddress),
+                            asHeadlongAddress(bobEthAddress),
+                            BigInteger.valueOf(100 * tokenMultiplier))
                             .gas(250_000L)
                             .payingWith("Dave")
                             .refusingEthConversion();
@@ -1317,7 +1313,7 @@ public class ContractCallSuite extends HapiSuite {
                     final var contractAddress = simpleStorageContractInfo.getContractAccountID();
 
                     final var subop3 = contractCallLocal(
-                                    inlineTestContract, GET_CODE_SIZE, asHeadlongAddress(contractAddress))
+                            inlineTestContract, GET_CODE_SIZE, asHeadlongAddress(contractAddress))
                             .saveResultTo("simpleStorageContractCodeSizeBytes")
                             .gas(300_000L);
 
@@ -1346,7 +1342,7 @@ public class ContractCallSuite extends HapiSuite {
                     final var acctAddress = payerAccountInfo.getContractAccountID();
 
                     final var subop4 = contractCallLocal(
-                                    inlineTestContract, GET_CODE_SIZE, asHeadlongAddress(acctAddress))
+                            inlineTestContract, GET_CODE_SIZE, asHeadlongAddress(acctAddress))
                             .saveResultTo("fakeCodeSizeBytes")
                             .gas(300_000L);
 
@@ -1401,7 +1397,7 @@ public class ContractCallSuite extends HapiSuite {
                     for (int i = 0; i < 10; i++) {
                         final var subOp1 = balanceSnapshot("payerBefore", PAY_RECEIVABLE_CONTRACT);
                         final var subOp2 = contractCall(
-                                        PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
+                                PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
                                 .via(PAY_TXN)
                                 .sending(DEPOSIT_AMOUNT);
                         final var subOp3 = getAccountBalance(PAY_RECEIVABLE_CONTRACT)
@@ -1441,7 +1437,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> spenderAddress.set(idAsHeadlongAddress(id))),
                         tokenCreate(token).initialSupply(1000).treasury(spender).exposingAddressTo(tokenAddress::set))
                 .when(uploadInitCode(TEST_APPROVER), sourcing(() -> contractCreate(
-                                TEST_APPROVER, tokenAddress.get(), spenderAddress.get())
+                        TEST_APPROVER, tokenAddress.get(), spenderAddress.get())
                         .gas(5_000_000)
                         .payingWith(spender)
                         .hasKnownStatus(SUCCESS)))
@@ -1475,9 +1471,9 @@ public class ContractCallSuite extends HapiSuite {
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                 .gas(300_000L),
                         sourcing(() -> contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "del",
-                                        asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
+                                SIMPLE_UPDATE_CONTRACT,
+                                "del",
+                                asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
                                 .gas(1_000_000L)))
                 .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
                         .gas(350_000L)
@@ -1522,28 +1518,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
-    }
-
-    @HapiTest
-    HapiSpec callNonExistantContract() {
-        final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
-
-        return defaultHapiSpec("InvalidContract")
-                .given(withOpContext(
-                        (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
-                .when()
-                .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(SUCCESS));
-    }
-
-    @HapiTest
-    HapiSpec callNonExistantInternalContract() {
-        return defaultHapiSpec("InvalidInternalCall")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).hasKnownStatus(SUCCESS))
-                .when()
-                .then(contractCall(INTERNAL_CALLER_CONTRACT, "callNonExisting", randomHeadlongAddress())
-                        .hasKnownStatus(SUCCESS));
     }
 
     HapiSpec smartContractFailFirst() {
@@ -1601,7 +1575,7 @@ public class ContractCallSuite extends HapiSuite {
                         withOpContext((spec, ignore) -> {
                             final var subop1 = balanceSnapshot("balanceBefore3", civilian);
                             final var subop2 = contractCall(
-                                            SIMPLE_STORAGE_CONTRACT, "set", BigInteger.valueOf(999_999L))
+                                    SIMPLE_STORAGE_CONTRACT, "set", BigInteger.valueOf(999_999L))
                                     .payingWith(civilian)
                                     .gas(300_000L)
                                     .hasKnownStatus(SUCCESS)
@@ -1619,7 +1593,7 @@ public class ContractCallSuite extends HapiSuite {
                         withOpContext((spec, ignore) -> {
                             final var subop1 = balanceSnapshot("balanceBefore4", civilian);
                             final var subop2 = contractCall(
-                                            SIMPLE_STORAGE_CONTRACT, "set", BigInteger.valueOf(999_999L))
+                                    SIMPLE_STORAGE_CONTRACT, "set", BigInteger.valueOf(999_999L))
                                     .payingWith(civilian)
                                     .gas(0)
                                     .refusingEthConversion()
@@ -1722,10 +1696,10 @@ public class ContractCallSuite extends HapiSuite {
                             .getAccountInfo(RECEIVABLE_SIG_REQ_ACCOUNT_INFO)
                             .getContractAccountID();
                     final var call = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(accountAddress),
-                                    BigInteger.ONE)
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(accountAddress),
+                            BigInteger.ONE)
                             .gas(300_000)
                             .hasKnownStatus(INVALID_SIGNATURE);
                     allRunFor(spec, call);
@@ -1768,10 +1742,10 @@ public class ContractCallSuite extends HapiSuite {
                     final var receiverAddr =
                             spec.registry().getAccountInfo(RECEIVER_INFO).getContractAccountID();
                     final var transferCall = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(receiverAddr),
-                                    BigInteger.valueOf(10))
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(receiverAddr),
+                            BigInteger.valueOf(10))
                             .payingWith(ACCOUNT)
                             .logged();
                     allRunFor(spec, transferCall);
@@ -1812,10 +1786,10 @@ public class ContractCallSuite extends HapiSuite {
                             final var subLevelSolidityAddr =
                                     spec.registry().getContractInfo(SCINFO).getContractAccountID();
                             final var cc = contractCall(
-                                            subLevelContract,
-                                            "subLevelNonPayableCall",
-                                            asHeadlongAddress(subLevelSolidityAddr),
-                                            BigInteger.valueOf(20L))
+                                    subLevelContract,
+                                    "subLevelNonPayableCall",
+                                    asHeadlongAddress(subLevelSolidityAddr),
+                                    BigInteger.valueOf(20L))
                                     .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED);
                             allRunFor(spec, cc);
                         }),
@@ -1857,10 +1831,10 @@ public class ContractCallSuite extends HapiSuite {
                             .getContractInfo(TRANSFERRING_CONTRACT + to)
                             .getContractAccountID();
                     var transferCall = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(cto),
-                                    BigInteger.valueOf(10))
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(cto),
+                            BigInteger.valueOf(10))
                             .payingWith(ACCOUNT)
                             .logged();
                     allRunFor(spec, transferCall);
@@ -1887,18 +1861,18 @@ public class ContractCallSuite extends HapiSuite {
                 .then(withOpContext((spec, log) -> {
                     final var acc = spec.registry().getAccountInfo(ACC_INFO).getContractAccountID();
                     final var withoutReceiverSignature = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(acc),
-                                    BigInteger.valueOf(ONE_HUNDRED_HBARS / 2))
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(acc),
+                            BigInteger.valueOf(ONE_HUNDRED_HBARS / 2))
                             .hasKnownStatus(INVALID_SIGNATURE);
                     allRunFor(spec, withoutReceiverSignature);
 
                     final var withSignature = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(acc),
-                                    BigInteger.valueOf(ONE_HUNDRED_HBARS / 2))
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(acc),
+                            BigInteger.valueOf(ONE_HUNDRED_HBARS / 2))
                             .payingWith(ACC)
                             .signedBy(RECEIVER_KEY)
                             .hasKnownStatus(SUCCESS);
@@ -1936,10 +1910,10 @@ public class ContractCallSuite extends HapiSuite {
                 .then(withOpContext((spec, log) -> {
                     final var acc = spec.registry().getAccountInfo(ACC_INFO).getContractAccountID();
                     final var assertionWithOnlyOneKey = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(acc),
-                                    BigInteger.valueOf(10L))
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(acc),
+                            BigInteger.valueOf(10L))
                             .payingWith(ACC)
                             .signedBy(PAYER_KEY)
                             .hasPrecheck(INVALID_SIGNATURE)
@@ -1947,10 +1921,10 @@ public class ContractCallSuite extends HapiSuite {
                     allRunFor(spec, assertionWithOnlyOneKey);
 
                     final var assertionWithBothKeys = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(acc),
-                                    BigInteger.valueOf(10L))
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(acc),
+                            BigInteger.valueOf(10L))
                             .payingWith(ACC)
                             .signedBy(PAYER_KEY, OTHER_KEY)
                             .hasKnownStatus(SUCCESS)
@@ -1972,10 +1946,10 @@ public class ContractCallSuite extends HapiSuite {
                     var receiverAddr =
                             spec.registry().getAccountInfo(RECEIVER_INFO).getContractAccountID();
                     var transferCall = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    "transferToAddressMultipleTimes",
-                                    asHeadlongAddress(receiverAddr),
-                                    BigInteger.valueOf(64))
+                            TRANSFERRING_CONTRACT,
+                            "transferToAddressMultipleTimes",
+                            asHeadlongAddress(receiverAddr),
+                            BigInteger.valueOf(64))
                             .payingWith(ACCOUNT)
                             .via("lalala")
                             .logged();
@@ -1983,7 +1957,7 @@ public class ContractCallSuite extends HapiSuite {
                     allRunFor(spec, transferCall, getRec);
                 }))
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L + 127L), sourcing(() -> getContractInfo(
-                                TRANSFERRING_CONTRACT)
+                        TRANSFERRING_CONTRACT)
                         .has(contractWith().balance(10_000L - 127L))));
     }
 
@@ -2009,12 +1983,12 @@ public class ContractCallSuite extends HapiSuite {
                             spec.registry().getAccountInfo(RECEIVER_3_INFO).getContractAccountID();
 
                     var transferCall = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    "transferToDifferentAddresses",
-                                    asHeadlongAddress(receiver1Addr),
-                                    asHeadlongAddress(receiver2Addr),
-                                    asHeadlongAddress(receiver3Addr),
-                                    BigInteger.valueOf(20))
+                            TRANSFERRING_CONTRACT,
+                            "transferToDifferentAddresses",
+                            asHeadlongAddress(receiver1Addr),
+                            asHeadlongAddress(receiver2Addr),
+                            asHeadlongAddress(receiver3Addr),
+                            BigInteger.valueOf(20))
                             .payingWith(ACCOUNT)
                             .logged();
                     allRunFor(spec, transferCall);
@@ -2048,18 +2022,18 @@ public class ContractCallSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCreate(
-                                            NESTED_TRANSFERRING_CONTRACT,
-                                            asHeadlongAddress(
-                                                    getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
-                                            asHeadlongAddress(
-                                                    getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
+                                    NESTED_TRANSFERRING_CONTRACT,
+                                    asHeadlongAddress(
+                                            getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
+                                    asHeadlongAddress(
+                                            getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                     .balance(10_000L)
                                     .payingWith(ACCOUNT),
                             contractCall(
-                                            NESTED_TRANSFERRING_CONTRACT,
-                                            "transferFromDifferentAddressesToAddress",
-                                            asHeadlongAddress(receiverAddr),
-                                            BigInteger.valueOf(40L))
+                                    NESTED_TRANSFERRING_CONTRACT,
+                                    "transferFromDifferentAddressesToAddress",
+                                    asHeadlongAddress(receiverAddr),
+                                    BigInteger.valueOf(40L))
                                     .payingWith(ACCOUNT)
                                     .logged());
                 }))
@@ -2086,17 +2060,17 @@ public class ContractCallSuite extends HapiSuite {
                 .when(withOpContext((spec, log) -> allRunFor(
                         spec,
                         contractCreate(
-                                        NESTED_TRANSFERRING_CONTRACT,
-                                        asHeadlongAddress(
-                                                getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
-                                        asHeadlongAddress(
-                                                getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
+                                NESTED_TRANSFERRING_CONTRACT,
+                                asHeadlongAddress(
+                                        getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
+                                asHeadlongAddress(
+                                        getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                 .balance(10_000L)
                                 .payingWith(ACCOUNT),
                         contractCall(
-                                        NESTED_TRANSFERRING_CONTRACT,
-                                        "transferToContractFromDifferentAddresses",
-                                        BigInteger.valueOf(50L))
+                                NESTED_TRANSFERRING_CONTRACT,
+                                "transferToContractFromDifferentAddresses",
+                                BigInteger.valueOf(50L))
                                 .payingWith(ACCOUNT)
                                 .logged())))
                 .then(
@@ -2126,7 +2100,7 @@ public class ContractCallSuite extends HapiSuite {
                                         spec.registry().getAccountID(sender));
                     }
                     final var transfer1 = cryptoTransfer(
-                                    tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                            tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                             .via("autoAccount");
 
                     final var nestedTransferringUpload =
@@ -2153,17 +2127,17 @@ public class ContractCallSuite extends HapiSuite {
                 .when(withOpContext((spec, log) -> allRunFor(
                         spec,
                         contractCreate(
-                                        NESTED_TRANSFERRING_CONTRACT,
-                                        asHeadlongAddress(
-                                                getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
-                                        asHeadlongAddress(
-                                                getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
+                                NESTED_TRANSFERRING_CONTRACT,
+                                asHeadlongAddress(
+                                        getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
+                                asHeadlongAddress(
+                                        getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                 .balance(10_000L)
                                 .payingWith(GENESIS),
                         contractCall(
-                                        NESTED_TRANSFERRING_CONTRACT,
-                                        "transferToCallerFromDifferentAddresses",
-                                        BigInteger.valueOf(100L))
+                                NESTED_TRANSFERRING_CONTRACT,
+                                "transferToCallerFromDifferentAddresses",
+                                BigInteger.valueOf(100L))
                                 .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                 .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
                                 .via(TRANSFER_TXN)
@@ -2223,20 +2197,20 @@ public class ContractCallSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCreate(
-                                            NESTED_TRANSFERRING_CONTRACT,
-                                            asHeadlongAddress(
-                                                    getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
-                                            asHeadlongAddress(
-                                                    getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
+                                    NESTED_TRANSFERRING_CONTRACT,
+                                    asHeadlongAddress(
+                                            getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "1", spec)),
+                                    asHeadlongAddress(
+                                            getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                     .balance(10_000L)
                                     .payingWith(ACCOUNT),
                             contractCall(
-                                            NESTED_TRANSFERRING_CONTRACT,
-                                            "transferFromAndToDifferentAddresses",
-                                            asHeadlongAddress(receiver1Addr),
-                                            asHeadlongAddress(receiver2Addr),
-                                            asHeadlongAddress(receiver3Addr),
-                                            BigInteger.valueOf(40))
+                                    NESTED_TRANSFERRING_CONTRACT,
+                                    "transferFromAndToDifferentAddresses",
+                                    asHeadlongAddress(receiver1Addr),
+                                    asHeadlongAddress(receiver2Addr),
+                                    asHeadlongAddress(receiver3Addr),
+                                    BigInteger.valueOf(40))
                                     .payingWith(ACCOUNT)
                                     .gas(1_000_000L)
                                     .logged());
@@ -2264,24 +2238,24 @@ public class ContractCallSuite extends HapiSuite {
                     var receiverAddr =
                             spec.registry().getAccountInfo(RECEIVER_INFO).getContractAccountID();
                     var transferCall = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    "transferToAddressNegativeAmount",
-                                    asHeadlongAddress(receiverAddr),
-                                    BigInteger.valueOf(10))
+                            TRANSFERRING_CONTRACT,
+                            "transferToAddressNegativeAmount",
+                            asHeadlongAddress(receiverAddr),
+                            BigInteger.valueOf(10))
                             .payingWith(ACCOUNT)
                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
                     var transferCallZeroHbars = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    "transferToAddressNegativeAmount",
-                                    asHeadlongAddress(receiverAddr),
-                                    BigInteger.ZERO)
+                            TRANSFERRING_CONTRACT,
+                            "transferToAddressNegativeAmount",
+                            asHeadlongAddress(receiverAddr),
+                            BigInteger.ZERO)
                             .payingWith(ACCOUNT)
                             .hasKnownStatus(SUCCESS);
 
                     allRunFor(spec, transferCall, transferCallZeroHbars);
                 }))
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L), sourcing(() -> getContractInfo(
-                                TRANSFERRING_CONTRACT)
+                        TRANSFERRING_CONTRACT)
                         .has(contractWith().balance(10_000L))));
     }
 
@@ -2299,10 +2273,10 @@ public class ContractCallSuite extends HapiSuite {
                             spec.registry().getAccountInfo(RECEIVER_INFO).getContractAccountID();
 
                     var transferCall = contractCall(
-                                    TRANSFERRING_CONTRACT,
-                                    TRANSFER_TO_ADDRESS,
-                                    asHeadlongAddress(receiverAddr),
-                                    BigInteger.ZERO)
+                            TRANSFERRING_CONTRACT,
+                            TRANSFER_TO_ADDRESS,
+                            asHeadlongAddress(receiverAddr),
+                            BigInteger.ZERO)
                             .payingWith(ACCOUNT)
                             .via(TRANSFER_TXN)
                             .logged();
@@ -2330,10 +2304,10 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("ConsTimeManagementWorksWithRevertedInternalCreations")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(contractCall(
-                                contract,
-                                "createChildThenFailToAssociate",
-                                asHeadlongAddress(new byte[20]),
-                                asHeadlongAddress(new byte[20]))
+                        contract,
+                        "createChildThenFailToAssociate",
+                        asHeadlongAddress(new byte[20]),
+                        asHeadlongAddress(new byte[20]))
                         .via(failingCall)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(

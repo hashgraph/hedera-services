@@ -61,7 +61,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
-import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.BoolResult.flag;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -249,10 +248,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        "name",
-                                        asHeadlongAddress(
-                                                asHexedAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                ERC_20_CONTRACT,
+                                "name",
+                                asHeadlongAddress(
+                                        asHexedAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(NAME_TXN)
                                 .gas(4_000_000)
@@ -293,10 +292,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        SYMBOL,
-                                        asHeadlongAddress(
-                                                asHexedAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                ERC_20_CONTRACT,
+                                SYMBOL,
+                                asHeadlongAddress(
+                                        asHexedAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(SYMBOL_TXN)
                                 .hasKnownStatus(SUCCESS)
@@ -341,10 +340,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        DECIMALS,
-                                        asHeadlongAddress(
-                                                asHexedAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                ERC_20_CONTRACT,
+                                DECIMALS,
+                                asHeadlongAddress(
+                                        asHexedAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(decimalsTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -387,10 +386,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TOTAL_SUPPLY,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                ERC_20_CONTRACT,
+                                TOTAL_SUPPLY,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(supplyTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -437,12 +436,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        BALANCE_OF,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))))
+                                ERC_20_CONTRACT,
+                                BALANCE_OF,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))))
                                 .payingWith(ACCOUNT)
                                 .via(zeroBalanceTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -450,12 +449,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        BALANCE_OF,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))))
+                                ERC_20_CONTRACT,
+                                BALANCE_OF,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))))
                                 .payingWith(ACCOUNT)
                                 .via(balanceTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -517,13 +516,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
+                                ERC_20_CONTRACT,
+                                TRANSFER,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.TWO)
                                 .via(TRANSFER_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
@@ -538,8 +537,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     spec.registry().getAccountInfo(RECIPIENT).getAccountID();
                             final var idOfToken = "0.0."
                                     + (spec.registry()
-                                            .getTokenID(FUNGIBLE_TOKEN)
-                                            .getTokenNum());
+                                    .getTokenID(FUNGIBLE_TOKEN)
+                                    .getTokenNum());
                             var txnRecord = getTxnRecord(TRANSFER_TXN)
                                     .hasPriority(recordWith()
                                             .contractCallResult(resultWith()
@@ -566,11 +565,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
                         getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2),
                         sourcing(() -> contractCallLocal(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER,
-                                        asHeadlongAddress(tokenAddr.get()),
-                                        asHeadlongAddress(accountAddr.get()),
-                                        BigInteger.ONE)
+                                ERC_20_CONTRACT,
+                                TRANSFER,
+                                asHeadlongAddress(tokenAddr.get()),
+                                asHeadlongAddress(accountAddr.get()),
+                                BigInteger.ONE)
                                 .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)));
     }
 
@@ -604,13 +603,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
+                                ERC_20_CONTRACT,
+                                TRANSFER,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.TWO)
                                 .via(TRANSFER_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
@@ -646,13 +645,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(nestedContract))),
-                                        BigInteger.TWO)
+                                ERC_20_CONTRACT,
+                                TRANSFER,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getContractId(nestedContract))),
+                                BigInteger.TWO)
                                 .via(TRANSFER_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
@@ -720,30 +719,30 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(nestedContract, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(TokenMovement.moving(20, FUNGIBLE_TOKEN)
-                                        .between(TOKEN_TREASURY, ERC_20_CONTRACT))
+                                .between(TOKEN_TREASURY, ERC_20_CONTRACT))
                                 .payingWith(ACCOUNT),
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(nestedContract))),
-                                        BigInteger.valueOf(5))
+                                ERC_20_CONTRACT,
+                                TRANSFER_FROM,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getContractId(nestedContract))),
+                                BigInteger.valueOf(5))
                                 .via(TRANSFER_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(nestedContract))),
-                                        BigInteger.valueOf(5))
+                                ERC_20_CONTRACT,
+                                TRANSFER_FROM,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getContractId(nestedContract))),
+                                BigInteger.valueOf(5))
                                 .payingWith(GENESIS)
                                 .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -791,14 +790,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        ALLOWANCE,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(SPENDER))))
+                                ERC_20_CONTRACT,
+                                ALLOWANCE,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(SPENDER))))
                                 .payingWith(OWNER)
                                 .via(ALLOWANCE_TXN)
                                 .hasKnownStatus(SUCCESS))))
@@ -840,13 +839,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        APPROVE,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(SPENDER))),
-                                        BigInteger.valueOf(10))
+                                ERC_20_CONTRACT,
+                                APPROVE,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(SPENDER))),
+                                BigInteger.valueOf(10))
                                 .payingWith(OWNER)
                                 .gas(4_000_000L)
                                 .via(approveTxn)
@@ -878,10 +877,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        DECIMALS,
-                                        asHeadlongAddress(
-                                                asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                ERC_20_CONTRACT,
+                                DECIMALS,
+                                asHeadlongAddress(
+                                        asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(invalidDecimalsTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -909,10 +908,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        "name",
-                                        asHeadlongAddress(
-                                                asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                ERC_721_CONTRACT,
+                                "name",
+                                asHeadlongAddress(
+                                        asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(NAME_TXN)
                                 .hasKnownStatus(SUCCESS)
@@ -958,11 +957,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCall(
-                                                ERC_20_CONTRACT,
-                                                "nameNTimes",
-                                                asHeadlongAddress(asHexedAddress(
-                                                        spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                                BigInteger.valueOf(51))
+                                        ERC_20_CONTRACT,
+                                        "nameNTimes",
+                                        asHeadlongAddress(asHexedAddress(
+                                                spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        BigInteger.valueOf(51))
                                         .payingWith(ACCOUNT)
                                         .via(NAME_TXN)
                                         .gas(4_000_000)
@@ -1006,10 +1005,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        SYMBOL,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                ERC_721_CONTRACT,
+                                SYMBOL,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(SYMBOL_TXN)
                                 .hasKnownStatus(SUCCESS)
@@ -1048,21 +1047,21 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        TOKEN_URI,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                TOKEN_URI,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                BigInteger.ONE)
                                 .payingWith(ACCOUNT)
                                 .via(tokenURITxn)
                                 .hasKnownStatus(SUCCESS)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        TOKEN_URI,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        BigInteger.TWO)
+                                ERC_721_CONTRACT,
+                                TOKEN_URI,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                BigInteger.TWO)
                                 .payingWith(ACCOUNT)
                                 .via(nonExistingTokenURITxn)
                                 .hasKnownStatus(SUCCESS)
@@ -1107,10 +1106,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        TOTAL_SUPPLY,
-                                        asHeadlongAddress(
-                                                asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                ERC_721_CONTRACT,
+                                TOTAL_SUPPLY,
+                                asHeadlongAddress(
+                                        asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(TOTAL_SUPPLY_TXN)
                                 .hasKnownStatus(SUCCESS)
@@ -1147,12 +1146,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        BALANCE_OF,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))))
+                                ERC_721_CONTRACT,
+                                BALANCE_OF,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))))
                                 .payingWith(OWNER)
                                 .via(zeroBalanceOfTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -1160,12 +1159,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
                         cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER)),
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        BALANCE_OF,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))))
+                                ERC_721_CONTRACT,
+                                BALANCE_OF,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))))
                                 .payingWith(OWNER)
                                 .via(BALANCE_OF_TXN)
                                 .hasKnownStatus(SUCCESS)
@@ -1219,11 +1218,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        OWNER_OF,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                OWNER_OF,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .via(ownerOfTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -1244,7 +1243,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                     .withOwner(ownerAddr.get())))));
                         }),
                         sourcing(() -> contractCallLocal(
-                                        ERC_721_CONTRACT, OWNER_OF, asHeadlongAddress(tokenAddr.get()), BigInteger.ONE)
+                                ERC_721_CONTRACT, OWNER_OF, asHeadlongAddress(tokenAddr.get()), BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .gas(GAS_TO_OFFER)));
     }
@@ -1269,11 +1268,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        TOKEN_URI,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                TOKEN_URI,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                BigInteger.ONE)
                                 .payingWith(ACCOUNT)
                                 .via(invalidTokenURITxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -1303,11 +1302,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        OWNER_OF,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                OWNER_OF,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .via(invalidOwnerOfTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -1352,51 +1351,51 @@ public class ERCPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    "name",
-                                                    ERC_20_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            "name",
+                                            ERC_20_ABI))
                                     .via(NAME_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    SYMBOL,
-                                                    ERC_20_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            SYMBOL,
+                                            ERC_20_ABI))
                                     .via(SYMBOL_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    DECIMALS,
-                                                    ERC_20_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            DECIMALS,
+                                            ERC_20_ABI))
                                     .via(decimalsTxn),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    TOTAL_SUPPLY,
-                                                    ERC_20_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            TOTAL_SUPPLY,
+                                            ERC_20_ABI))
                                     .via(TOTAL_SUPPLY_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    BALANCE_OF,
-                                                    ERC_20_ABI),
-                                            asHeadlongAddress(asHexedSolidityAddress(
-                                                    spec.registry().getAccountID(ACCOUNT))))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            BALANCE_OF,
+                                            ERC_20_ABI),
+                                    asHeadlongAddress(asHexedSolidityAddress(
+                                            spec.registry().getAccountID(ACCOUNT))))
                                     .via(BALANCE_OF_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    TRANSFER,
-                                                    ERC_20_ABI),
-                                            asHeadlongAddress(asHexedSolidityAddress(
-                                                    spec.registry().getAccountID(RECIPIENT))),
-                                            BigInteger.valueOf(tokenTransferAmount))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            TRANSFER,
+                                            ERC_20_ABI),
+                                    asHeadlongAddress(asHexedSolidityAddress(
+                                            spec.registry().getAccountID(RECIPIENT))),
+                                    BigInteger.valueOf(tokenTransferAmount))
                                     .via(TRANSFER_TXN)
                                     /* Don't run with Ethereum calls, since txn payer
                                      * keys are revoked in Ethereum transactions and sender is the wrapped
@@ -1499,41 +1498,41 @@ public class ERCPrecompileSuite extends HapiSuite {
                         // --- Negative cases for transfer ---
                         // * Can't transfer a non-existent serial number
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        "iMustOwnAfterReceiving",
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_721_SCENARIOS,
+                                "iMustOwnAfterReceiving",
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .payingWith(B_CIVILIAN)
                                 .via("D")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // * Can't transfer with missing "from"
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_721_SCENARIOS,
+                                TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(MISSING_FROM)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_721_SCENARIOS,
+                                TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(MSG_SENDER_IS_THE_SAME_AS_FROM)),
                         cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(B_CIVILIAN, A_CIVILIAN)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_721_SCENARIOS,
+                                TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(MSG_SENDER_IS_NOT_THE_SAME_AS_FROM)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -1543,12 +1542,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, A_CIVILIAN)
                                 .fee(ONE_HBAR),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_721_SCENARIOS,
+                                TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via("SERIAL_NOT_OWNED_BY_FROM")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
@@ -1620,21 +1619,21 @@ public class ERCPrecompileSuite extends HapiSuite {
                         // --- Negative cases for approve ---
                         // * Can't approve a non-existent serial number
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(666))
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(666))
                                 .via("MISSING_SERIAL_NO")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // * Can't approve a non-existent spender
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .via(MISSING_TO)
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -1653,20 +1652,20 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getTokenNftInfo(NF_TOKEN, 1L).hasAccountID(A_CIVILIAN),
                         getTokenNftInfo(NF_TOKEN, 2L).hasAccountID(A_CIVILIAN),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(3))
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(3))
                                 .via("NOT_AN_OPERATOR")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // * Can't revoke if not owner or approvedForAll
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        REVOKE_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_721_SCENARIOS,
+                                REVOKE_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .via("MISSING_REVOKE")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -1677,22 +1676,22 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .fee(ONE_HBAR),
                         // * Still can't approve if msg.sender != owner and not an operator
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(3))
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(3))
                                 .via("E")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // --- Positive cases for approve ---
                         // * owner == msg.sender can approve
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(6))
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(6))
                                 .via("EXTANT_TO")
                                 .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 6L).hasSpenderID(B_CIVILIAN),
@@ -1703,26 +1702,26 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, A_CIVILIAN)
                                 .fee(ONE_HBAR),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        REVOKE_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_721_SCENARIOS,
+                                REVOKE_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .via("B")
                                 .gas(1_000_000)),
                         // These should work because the contract is an operator for aCivilian
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.TWO)
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.TWO)
                                 .via("C")
                                 .gas(1_000_000)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        "iMustOwnAfterReceiving",
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_721_SCENARIOS,
+                                "iMustOwnAfterReceiving",
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .payingWith(B_CIVILIAN)
                                 /* Don't run with Ethereum calls, since txn payer
                                  * keys are revoked in Ethereum transactions and sender is the wrapped
@@ -1739,11 +1738,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(3))
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(3))
                                 .gas(1_000_000)),
                         cryptoTransfer(movingUniqueWithAllowance(NF_TOKEN, 3L).between(B_CIVILIAN, A_CIVILIAN))
                                 .payingWith(A_CIVILIAN)
@@ -1758,10 +1757,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                         // * Because contract is operator for bCivilian, it can revoke aCivilian as
                         // spender for 5L
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        REVOKE_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_721_SCENARIOS,
+                                REVOKE_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
@@ -1798,48 +1797,48 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     asHexedSolidityAddress(spec.registry().getAccountID(SOME_ERC_20_SCENARIOS)));
                         }),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.ZERO)
+                                SOME_ERC_20_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.ZERO)
                                 .via("ACCOUNT_NOT_ASSOCIATED_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         tokenAssociate(SOME_ERC_20_SCENARIOS, TOKEN),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_20_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .via(MISSING_TO)
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_20_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .via("SPENDER_SAME_AS_OWNER_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_20_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .via("SUCCESSFUL_APPROVE_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        GET_ALLOWANCE,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                SOME_ERC_20_SCENARIOS,
+                                GET_ALLOWANCE,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via("ALLOWANCE_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
@@ -1850,29 +1849,29 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 asHeadlongAddress(contractMirrorAddr.get()),
                                 asHeadlongAddress(aCivilianMirrorAddr.get()))),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.ZERO)
+                                SOME_ERC_20_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.ZERO)
                                 .via("SUCCESSFUL_REVOKE_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        GET_ALLOWANCE,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                SOME_ERC_20_SCENARIOS,
+                                GET_ALLOWANCE,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via("ALLOWANCE_AFTER_REVOKE_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        GET_ALLOWANCE,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                SOME_ERC_20_SCENARIOS,
+                                GET_ALLOWANCE,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via("MISSING_OWNER_ID")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
@@ -1949,45 +1948,45 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     asHexedSolidityAddress(spec.registry().getAccountID(SOME_ERC_20_SCENARIOS)));
                         }),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_20_SCENARIOS,
+                                DO_TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via("TOKEN_NOT_ASSOCIATED_TO_ACCOUNT_TXN")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         tokenAssociate(B_CIVILIAN, TOKEN),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_20_SCENARIOS,
+                                DO_TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(MISSING_FROM)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_20_SCENARIOS,
+                                DO_TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(MSG_SENDER_IS_THE_SAME_AS_FROM)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         cryptoTransfer(moving(9L, TOKEN).between(SOME_ERC_20_SCENARIOS, B_CIVILIAN)),
                         tokenAssociate(A_CIVILIAN, TOKEN),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
+                                SOME_ERC_20_SCENARIOS,
+                                DO_TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(MSG_SENDER_IS_NOT_THE_SAME_AS_FROM)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -1997,12 +1996,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_20_SCENARIOS,
+                                DO_TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .payingWith(GENESIS)
                                 .via("TRY_TO_TRANSFER_MORE_THAN_APPROVED_AMOUNT_TXN")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -2012,12 +2011,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        DO_TRANSFER_FROM,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(20))
+                                SOME_ERC_20_SCENARIOS,
+                                DO_TRANSFER_FROM,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(20))
                                 .payingWith(GENESIS)
                                 .via("TRY_TO_TRANSFER_MORE_THAN_OWNERS_BALANCE_TXN")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
@@ -2082,11 +2081,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     asHexedSolidityAddress(spec.registry().getAccountID(SOME_ERC_20_SCENARIOS)));
                         }),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_20_SCENARIOS,
-                                        "approveAndGetAllowanceAmount",
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
+                                SOME_ERC_20_SCENARIOS,
+                                "approveAndGetAllowanceAmount",
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(5))
                                 .via("APPROVE_AND_GET_ALLOWANCE_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)
@@ -2138,50 +2137,50 @@ public class ERCPrecompileSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    "name",
-                                                    ERC_721_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            "name",
+                                            ERC_721_ABI))
                                     .via(NAME_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    SYMBOL,
-                                                    ERC_721_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            SYMBOL,
+                                            ERC_721_ABI))
                                     .via(SYMBOL_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    TOKEN_URI,
-                                                    ERC_721_ABI),
-                                            BigInteger.ONE)
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            TOKEN_URI,
+                                            ERC_721_ABI),
+                                    BigInteger.ONE)
                                     .via(tokenURITxn),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    TOTAL_SUPPLY,
-                                                    ERC_721_ABI))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            TOTAL_SUPPLY,
+                                            ERC_721_ABI))
                                     .via(TOTAL_SUPPLY_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    BALANCE_OF,
-                                                    ERC_721_ABI),
-                                            asHeadlongAddress(asHexedSolidityAddress(
-                                                    spec.registry().getAccountID(ACCOUNT))))
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            BALANCE_OF,
+                                            ERC_721_ABI),
+                                    asHeadlongAddress(asHexedSolidityAddress(
+                                            spec.registry().getAccountID(ACCOUNT))))
                                     .via(BALANCE_OF_TXN),
                             contractCallWithFunctionAbi(
-                                            tokenAddress,
-                                            getABIFor(
-                                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                                    OWNER_OF,
-                                                    ERC_721_ABI),
-                                            BigInteger.ONE)
+                                    tokenAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            OWNER_OF,
+                                            ERC_721_ABI),
+                                    BigInteger.ONE)
                                     .via(ownerOfTxn));
                 }))
                 .then(withOpContext((spec, ignore) -> allRunFor(
@@ -2244,288 +2243,6 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec someErc721GetApprovedScenariosPass() {
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
-
-        return defaultHapiSpec("someErc721GetApprovedScenariosPass")
-                .given(
-                        newKeyNamed(MULTI_KEY_NAME),
-                        cryptoCreate(A_CIVILIAN)
-                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
-                        tokenCreate(NF_TOKEN)
-                                .supplyKey(MULTI_KEY_NAME)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(SOME_ERC_721_SCENARIOS)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
-                        mintToken(
-                                NF_TOKEN,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A"),
-                                        // 2
-                                        ByteString.copyFromUtf8("B"))),
-                        tokenAssociate(A_CIVILIAN, NF_TOKEN))
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                            zTokenMirrorAddr.set(asHexedSolidityAddress(
-                                    TokenID.newBuilder().setTokenNum(666_666L).build()));
-                        }),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(zTokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via(MISSING_TOKEN)
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .gas(1_000_000)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(55))
-                                .via("MISSING_SERIAL")
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        getTokenNftInfo(NF_TOKEN, 1L).logged(),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.TWO)
-                                .via("MISSING_SPENDER")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via(WITH_SPENDER)
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
-                        sourcing(() -> contractCallLocal(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .logged()
-                                .gas(1_000_000)
-                                .has(resultWith().contractCallResult(hexedAddress(aCivilianMirrorAddr.get())))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        childRecordsCheck(
-                                "MISSING_SPENDER",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_GET_APPROVED)
-                                                        .withSpender(new byte[0])))),
-                        childRecordsCheck(
-                                WITH_SPENDER,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_GET_APPROVED)
-                                                        .withSpender(asAddress(
-                                                                spec.registry().getAccountID(A_CIVILIAN)))))))));
-    }
-
-    @HapiTest
-    private HapiSpec someErc721BalanceOfScenariosPass() {
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
-
-        return defaultHapiSpec("someErc721BalanceOfScenariosPass")
-                .given(
-                        newKeyNamed(MULTI_KEY_NAME),
-                        cryptoCreate(A_CIVILIAN)
-                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        cryptoCreate(B_CIVILIAN)
-                                .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
-                        tokenCreate(NF_TOKEN)
-                                .supplyKey(MULTI_KEY_NAME)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(SOME_ERC_721_SCENARIOS)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
-                        mintToken(
-                                NF_TOKEN,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A"),
-                                        // 2
-                                        ByteString.copyFromUtf8("B"))),
-                        tokenAssociate(A_CIVILIAN, NF_TOKEN),
-                        cryptoTransfer(movingUnique(NF_TOKEN, 1L, 2L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)))
-                .when(
-                        withOpContext((spec, opLog) -> zTokenMirrorAddr.set(asHexedSolidityAddress(
-                                TokenID.newBuilder().setTokenNum(666_666L).build()))),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_BALANCE_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
-                                .via("BALANCE_OF")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_BALANCE_OF,
-                                        asHeadlongAddress(zTokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
-                                .via(MISSING_TOKEN)
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_BALANCE_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()))
-                                .via("NOT_ASSOCIATED")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)))
-                .then(
-                        childRecordsCheck(
-                                "BALANCE_OF",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_BALANCE)
-                                                        .withBalance(2)))),
-                        childRecordsCheck(
-                                "NOT_ASSOCIATED",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_BALANCE)
-                                                        .withBalance(0)))));
-    }
-
-    @HapiTest
-    private HapiSpec someErc721OwnerOfScenariosPass() {
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
-
-        return defaultHapiSpec("someErc721OwnerOfScenariosPass")
-                .given(
-                        newKeyNamed(MULTI_KEY_NAME),
-                        cryptoCreate(A_CIVILIAN)
-                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
-                        tokenCreate(NF_TOKEN)
-                                .supplyKey(MULTI_KEY_NAME)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(SOME_ERC_721_SCENARIOS)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
-                        mintToken(
-                                NF_TOKEN,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A"),
-                                        // 2
-                                        ByteString.copyFromUtf8("B"))),
-                        tokenAssociate(A_CIVILIAN, NF_TOKEN))
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                            zTokenMirrorAddr.set(asHexedSolidityAddress(
-                                    TokenID.newBuilder().setTokenNum(666_666L).build()));
-                        }),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(zTokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via(MISSING_TOKEN)
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(55))
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.TWO)
-                                .via("TREASURY_OWNER")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via("CIVILIAN_OWNER")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)))
-                .then(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        childRecordsCheck(
-                                "TREASURY_OWNER",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_OWNER)
-                                                        .withOwner(asAddress(spec.registry()
-                                                                .getAccountID(SOME_ERC_721_SCENARIOS)))))),
-                        childRecordsCheck(
-                                "CIVILIAN_OWNER",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_GET_APPROVED)
-                                                        .withSpender(asAddress(
-                                                                spec.registry().getAccountID(A_CIVILIAN)))))))));
-    }
-
-    @HapiTest
     private HapiSpec someErc721IsApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
@@ -2567,28 +2284,28 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     asHexedSolidityAddress(spec.registry().getAccountID(SOME_ERC_721_SCENARIOS)));
                         }),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()))
                                 .via("OWNER_DOES_NOT_EXISTS")
                                 .gas(1_000_000)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()))
                                 .via(OPERATOR_DOES_NOT_EXISTS)
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()))
                                 .via("OPERATOR_IS_NOT_APPROVED")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
@@ -2605,20 +2322,20 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         .tokenAllowancesCount(0)
                                         .nftApprovedAllowancesContaining(NF_TOKEN, SOME_ERC_721_SCENARIOS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()))
                                 .via("OPERATOR_IS_APPROVED_FOR_ALL")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCallLocal(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()))
                                 .gas(1_000_000)
                                 .has(resultWith().contractCallResult(flag(true)))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
@@ -2692,56 +2409,56 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     asHexedSolidityAddress(spec.registry().getAccountID(SOME_ERC_721_SCENARIOS)));
                         }),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        SET_APPROVAL_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        true)
+                                SOME_ERC_721_SCENARIOS,
+                                SET_APPROVAL_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                true)
                                 .via("OPERATOR_SAME_AS_MSG_SENDER")
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        SET_APPROVAL_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(zCivilianMirrorAddr.get()),
-                                        true)
+                                SOME_ERC_721_SCENARIOS,
+                                SET_APPROVAL_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(zCivilianMirrorAddr.get()),
+                                true)
                                 .via(OPERATOR_DOES_NOT_EXISTS)
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        SET_APPROVAL_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        true)
+                                SOME_ERC_721_SCENARIOS,
+                                SET_APPROVAL_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                true)
                                 .via("OPERATOR_EXISTS")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via("SUCCESSFULLY_APPROVED_CHECK_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        SET_APPROVAL_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        false)
+                                SOME_ERC_721_SCENARIOS,
+                                SET_APPROVAL_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                false)
                                 .via("OPERATOR_EXISTS_REVOKE_APPROVE_FOR_ALL")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)),
                         sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        IS_APPROVED_FOR_ALL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
+                                SOME_ERC_721_SCENARIOS,
+                                IS_APPROVED_FOR_ALL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(contractMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
                                 .via("SUCCESSFULLY_REVOKED_CHECK_TXN")
                                 .gas(1_000_000)
                                 .hasKnownStatus(SUCCESS)))
@@ -2822,27 +2539,27 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        "isApprovedForAll",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))))
+                                ERC_721_CONTRACT,
+                                "isApprovedForAll",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))))
                                 .payingWith(OWNER)
                                 .via(approvedForAllTxn)
                                 .hasKnownStatus(SUCCESS)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        "isApprovedForAll",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))))
+                                ERC_721_CONTRACT,
+                                "isApprovedForAll",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))))
                                 .payingWith(OWNER)
                                 .via(notApprovedTxn)
                                 .hasKnownStatus(SUCCESS)
@@ -2892,13 +2609,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        APPROVE,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                APPROVE,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.ONE)
                                 .payingWith(ACCOUNT)
                                 .via(NAME_TXN)
                                 .hasKnownStatus(SUCCESS)
@@ -2939,11 +2656,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        "getApproved",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                "getApproved",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .via(ALLOWANCE_TXN)
                                 .hasKnownStatus(SUCCESS))))
@@ -3001,42 +2718,42 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .fee(ONE_HBAR),
                         // Check that ERC_20_CONTRACT has allowance of 2
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        ALLOWANCE,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))))
+                                ERC_20_CONTRACT,
+                                ALLOWANCE,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))))
                                 .gas(500_000L)
                                 .via(ALLOWANCE_TXN)
                                 .hasKnownStatus(SUCCESS),
                         // ERC_20_CONTRACT calls the precompile transferFrom
                         // as the spender
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
+                                ERC_20_CONTRACT,
+                                TRANSFER_FROM,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.TWO)
                                 .gas(500_000L)
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                                 .hasKnownStatus(SUCCESS),
                         // ERC_20_CONTRACT should have spent its allowance
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        ALLOWANCE,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))))
+                                ERC_20_CONTRACT,
+                                ALLOWANCE,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))))
                                 .gas(500_000L)
                                 .via(allowanceTxn2)
                                 .hasKnownStatus(SUCCESS))))
@@ -3085,15 +2802,15 @@ public class ERCPrecompileSuite extends HapiSuite {
                         // ERC_20_CONTRACT should be able to transfer its
                         // own tokens
                         contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
+                                ERC_20_CONTRACT,
+                                TRANSFER_FROM,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ERC_20_CONTRACT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.TWO)
                                 .gas(500_000L)
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                                 // No longer works unless you have allowance
@@ -3140,15 +2857,15 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .fee(ONE_HBAR),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(ERC_721_CONTRACT),
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                TRANSFER_FROM,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.ONE)
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                                 .hasKnownStatus(SUCCESS),
                         getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
@@ -3167,8 +2884,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                     spec.registry().getAccountInfo(RECIPIENT).getAccountID();
                             final var idOfToken = "0.0."
                                     + (spec.registry()
-                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                            .getTokenNum());
+                                    .getTokenID(NON_FUNGIBLE_TOKEN)
+                                    .getTokenNum());
                             var txnRecord = getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
                                     .hasPriority(recordWith()
                                             .contractCallResult(resultWith()
@@ -3224,15 +2941,15 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
                         contractCall(
-                                        ERC_721_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(OWNER))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.ONE)
+                                ERC_721_CONTRACT,
+                                TRANSFER_FROM,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                BigInteger.ONE)
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                                 .hasKnownStatus(SUCCESS),
                         getAccountDetails(RECIPIENT).logged(),
