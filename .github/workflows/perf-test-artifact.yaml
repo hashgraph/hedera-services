@@ -110,19 +110,11 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+  build-artifact:
+    name: Build Artifact
+    runs-on: [self-hosted, Linux, large, ephemeral]
     outputs:
-      branch-name: ${{ steps.parameters.outputs.branch-name }}
-      branch-name-lower: ${{ steps.parameters.outputs.branch-name-lower }}
-      branch-name-safe: ${{ steps.parameters.outputs.branch-name-safe }}
-      commit-prefix: ${{ steps.parameters.outputs.commit-prefix }}
-      commit-id: ${{ steps.parameters.outputs.commit-id }}
-      commit-id-short: ${{ steps.parameters.outputs.commit-id-short }}
-      version: ${{ steps.effective-version.outputs.number }}
-      version-prefix: ${{ steps.effective-version.outputs.prefix }}
-      prerelease: ${{ steps.effective-version.outputs.prerelease }}
+      build-version: ${{ steps.artifact-release.outputs.build-version }}
     steps:
       - name: Verify Workflow Parameters
         id: parameters
@@ -134,17 +126,7 @@ jobs:
 
           echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
           echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
-
-  build-artifact:
-    name: Build Artifact
-    runs-on: [self-hosted, Linux, large, ephemeral]
-    needs:
-      - validate
-    outputs:
-      build-version: ${{ steps.artifact-release.outputs.build-version }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+          
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
@@ -160,21 +142,18 @@ jobs:
         id: artifact-release
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
-          ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
+          ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}
           echo "build-version=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
-          gsutil ls -l "gs://${{ secrets.bucket-name }}/*.zip"
-
 
       - name: Check If Release Artifact Exist in Bucket
         id: check-if-exist
         run: |
           set +e
-          ARTIFACT_NAME="build-v${{ needs.validate.outputs.version }}"
+          ARTIFACT_NAME="${{ steps.artifact-release.outputs.build-version }}"
           ARTIFACT_PATH="gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
           gsutil -q stat "${ARTIFACT_PATH}"
           PATH_EXIST=$?
-          while loop check
           if [ ${PATH_EXIST} -eq 0 ]; then
             echo "Artifact Already Exist"
             echo "exist=true" >>"${GITHUB_OUTPUT}"
