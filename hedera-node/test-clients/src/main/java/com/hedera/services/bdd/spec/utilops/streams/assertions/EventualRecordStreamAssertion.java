@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Assertions;
  * </ol>
  */
 public class EventualRecordStreamAssertion extends EventualAssertion {
-    private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
+    private static final String TEST_CONTAINER_NODE0_STREAMS = "build/hapi-test/node0";
     private final Function<HapiSpec, RecordStreamAssertion> assertionFactory;
 
     @Nullable

@@ -464,6 +464,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         someWellKnownAssertions());
     }
 
+    @HapiTest
     private HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
