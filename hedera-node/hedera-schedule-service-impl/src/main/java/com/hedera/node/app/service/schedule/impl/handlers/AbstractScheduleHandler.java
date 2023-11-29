@@ -99,7 +99,6 @@ abstract class AbstractScheduleHandler {
         final Key payerKey = getKeyForAccount(context, payer);
         if (payerKey != null) scheduledRequiredKeys.add(payerKey);
         final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
-        scheduledRequiredKeys.removeAll(currentSignatories);
         final Set<Key> remainingRequiredKeys =
                 filterRemainingRequiredKeys(context, scheduledRequiredKeys, currentSignatories);
         // Mono doesn't store extra signatures, so for now we mustn't either.
