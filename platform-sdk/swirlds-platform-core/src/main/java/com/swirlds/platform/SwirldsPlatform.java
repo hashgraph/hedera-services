@@ -472,8 +472,6 @@ public class SwirldsPlatform implements Platform {
                 roundToIgnore));
 
         components.add(new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
                 stateConfig,
                 selfId,
                 platformStatusManager,
@@ -701,9 +699,9 @@ public class SwirldsPlatform implements Platform {
         final EventValidator eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
+        platformWiring = new PlatformWiring(platformContext, time);
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
-            platformWiring = null;
         } else {
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
@@ -729,7 +727,6 @@ public class SwirldsPlatform implements Platform {
                     preConsensusEventHandler::preconsensusEvent,
                     intakeEventCounter);
 
-            platformWiring = new PlatformWiring(platformContext, time);
             platformWiring.bind(
                     internalEventValidator,
                     eventDeduplicator,
@@ -1046,6 +1043,10 @@ public class SwirldsPlatform implements Platform {
             swirldStateManager.loadFromSignedState(signedState);
 
             latestReconnectRound.set(signedState.getRound());
+
+            // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
+            // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
+            platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensus(signedState);
@@ -1114,7 +1115,6 @@ public class SwirldsPlatform implements Platform {
 
         gossip.resetFallenBehind();
         eventCreator.resumeEventCreation();
-        platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
     /**
@@ -1346,8 +1346,6 @@ public class SwirldsPlatform implements Platform {
                 new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg),
                 StackTrace.getStackTrace().toString(),
                 throwable);
-        // Let the state management component attempt to handle the fatal error
-        stateManagementComponent.onFatalError();
 
         SystemExitUtils.exitSystem(exitCode, msg);
     }
