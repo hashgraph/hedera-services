@@ -160,20 +160,10 @@ jobs:
         id: artifact-release
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
-          POLICY="${{ inputs.version-policy }}"
-          ARTIFACT_BASE_DIR="${HOME}/artifact-release"
-          mkdir -p "${ARTIFACT_BASE_DIR}"
-
           ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
-
-
-          ARTIFACT_FILE="${ARTIFACT_BASE_DIR}/${ARTIFACT_NAME}.zip"
-          deterministic-zip -D -vr "${ARTIFACT_FILE}" *
-
           echo "build-version=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
-          echo "folder=${ARTIFACT_BASE_DIR}" >>"${GITHUB_OUTPUT}"
-          echo "name=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
-          echo "file=${ARTIFACT_FILE}" >>"${GITHUB_OUTPUT}"
+          gsutil ls -l "gs://${{ secrets.bucket-name }}/*.zip"
+
 
       - name: Check If Release Artifact Exist in Bucket
         id: check-if-exist
