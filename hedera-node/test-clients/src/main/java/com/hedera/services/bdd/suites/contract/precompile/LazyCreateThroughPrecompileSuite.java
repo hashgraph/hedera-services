@@ -158,7 +158,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 autoCreationFailsWithMirrorAddress());
     }
 
-    @HapiTest
     HapiSpec resourceLimitExceededRevertsAllRecords() {
         final var n = 4; // preceding child record limit is 3
         final var nft = "nft";

@@ -162,7 +162,6 @@ public class SolvencyPreCheck {
         }
 
         if (availableBalance < totalFee) {
-
             throw new InsufficientServiceFeeException(insufficientFeeResponseCode, totalFee);
         }
 
@@ -175,10 +174,6 @@ public class SolvencyPreCheck {
             throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
         }
 
-        if (offeredFee < totalFee + additionalCosts) {
-            throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
-        }
-
         if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
@@ -188,7 +183,7 @@ public class SolvencyPreCheck {
 
     // FUTURE: This should be provided by the TransactionHandler:
     // https://github.com/hashgraph/hedera-services/issues/8354
-    private long estimateAdditionalCosts(
+    public long estimateAdditionalCosts(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Instant consensusTime) {

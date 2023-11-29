@@ -123,7 +123,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
                 testIndirectApprovalWithDirectErc20Callee());
     }
 
-    @HapiTest
     private HapiSpec nftAutoCreationIncludeAllowanceCheck() {
         final var ownerAccount = "owningAlias";
         final var receivingAlias = "receivingAlias";

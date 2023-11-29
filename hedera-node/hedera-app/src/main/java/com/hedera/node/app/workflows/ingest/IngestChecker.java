@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -152,11 +153,17 @@ public final class IngestChecker {
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
+        // Temporary ingest checks needed for specifically ContractCall as long as it is being
+        // charged exclusively in gas
         if (functionality == CONTRACT_CALL) {
-            // Since contract calls are charged exclusively by gas, we cannot
-            // submit transactions that offer no gas; this threshold is chosen
-            // for mono-service compatibility
+            // First, we cannot submit transactions that offer no gas or the work done gossiping
+            // and reaching consensus on the transaction will be completely uncompensated; the
+            // minimum threshold here is chosen for mono-service compatibility
             validateTruePreCheck(txBody.contractCallOrThrow().gas() >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
+            // Second, if the fee offered does not cover the gas cost of the transaction, then
+            // we would again end up with uncompensated work
+            final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime);
+            validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
         }
 
         // 1a. Verify the transaction has been sent to *this* node
