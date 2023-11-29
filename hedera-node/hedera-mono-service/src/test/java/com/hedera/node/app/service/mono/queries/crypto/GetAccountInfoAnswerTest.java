@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.queries.crypto;
 
-import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -264,35 +263,12 @@ class GetAccountInfoAnswerTest {
     @Test
     @SuppressWarnings("unchecked")
     void getsTheAccountInfo() throws Throwable {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+
         final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
         children.setTokens(MerkleMapLike.from(tokens));
-
-        given(token.hasKycKey()).willReturn(true);
-        given(token.hasFreezeKey()).willReturn(true);
-        given(token.decimals())
-                .willReturn(1)
-                .willReturn(2)
-                .willReturn(3)
-                .willReturn(1)
-                .willReturn(2)
-                .willReturn(3);
-        given(deletedToken.decimals()).willReturn(4);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(firstToken), REMOVED_TOKEN))
-                .willReturn(token);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(secondToken), REMOVED_TOKEN))
-                .willReturn(token);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN))
-                .willReturn(token);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN))
-                .willReturn(deletedToken);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN))
-                .willReturn(REMOVED_TOKEN);
         payerAccount.setKey(EntityNum.fromAccountId(payerId));
         payerAccount.setHeadTokenId(firstToken.getTokenNum());
 
-        given(token.symbol()).willReturn("HEYMA");
-        given(deletedToken.symbol()).willReturn("THEWAY");
         given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         given(rewardCalculator.epochSecondAtStartOfPeriod(12345678L)).willReturn(12345678L);
