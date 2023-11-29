@@ -1466,6 +1466,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
@@ -1770,6 +1771,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec someErc20ApproveAllowanceScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
@@ -2656,6 +2658,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withIsApprovedForAll(true)))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721SetApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
