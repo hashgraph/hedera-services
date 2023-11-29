@@ -108,8 +108,8 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                         tokenAssociate("assoc2", tokenToWipe),
                         cryptoTransfer(moving(500, tokenToWipe).between(TOKEN_TREASURY, "assoc1")),
                         cryptoTransfer(moving(200, tokenToWipe).between(TOKEN_TREASURY, "assoc2")),
-                        getAccountBalance("assoc1").hasNoTokenBalancesReturned(),
-                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountBalance("assoc1").hasTokenBalance(tokenToWipe, 500),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300),
                         getAccountInfo("assoc1").logged(),
                         wipeTokenAccount(tokenToWipe, "assoc1", 200)
                                 .via("wipeTxn1")
@@ -118,12 +118,12 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                                 .via("wipeTxn2")
                                 .logged())
                 .then(
-                        getAccountBalance("assoc2").hasNoTokenBalancesReturned(),
+                        getAccountBalance("assoc2").hasTokenBalance(tokenToWipe, 0),
                         getTokenInfo(tokenToWipe)
                                 .hasTotalSupply(600)
                                 .hasName(tokenToWipe)
                                 .logged(),
-                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned());
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300));
     }
 
     @Override

@@ -424,7 +424,12 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                             .has(ContractInfoAsserts.contractWith()
                                     .balanceGreaterThan(0L)
                                     .balanceLessThan(DEFAULT_AMOUNT_TO_SEND));
-                    final var getAccountTokenBalance = getAccountBalance(ACCOUNT);
+                    final var getAccountTokenBalance = getAccountBalance(ACCOUNT)
+                            .hasTokenBalance(
+                                    asTokenString(TokenID.newBuilder()
+                                            .setTokenNum(createdTokenNum.get())
+                                            .build()),
+                                    0);
                     final var tokenInfo = getTokenInfo(asTokenString(TokenID.newBuilder()
                                     .setTokenNum(createdTokenNum.get())
                                     .build()))
@@ -503,8 +508,18 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS)),
-                        sourcing(() -> getAccountBalance(ACCOUNT)),
-                        sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)),
+                        sourcing(() -> getAccountBalance(ACCOUNT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createdTokenNum.get())
+                                                .build()),
+                                        20)),
+                        sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createdTokenNum.get())
+                                                .build()),
+                                        10)),
                         sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
                                         .setTokenNum(createdTokenNum.get())
                                         .build()))
@@ -568,6 +583,12 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS)),
+                        sourcing(() -> getAccountBalance(TOKEN_CREATE_CONTRACT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createdTokenNum.get())
+                                                .build()),
+                                        0)),
                         sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
                                         .setTokenNum(createdTokenNum.get())
                                         .build()))

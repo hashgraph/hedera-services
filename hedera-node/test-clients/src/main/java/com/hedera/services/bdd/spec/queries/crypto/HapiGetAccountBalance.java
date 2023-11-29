@@ -27,7 +27,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,8 +43,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -129,6 +133,30 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         return this;
     }
 
+    public HapiGetAccountBalance hasTokenBalance(String token, long amount) {
+        if (expectedTokenBalances.isEmpty()) {
+            expectedTokenBalances = new ArrayList<>();
+        }
+        expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-G"));
+        return this;
+    }
+
+    public HapiGetAccountBalance hasTokenBalance(String token, long amount, int decimals) {
+        if (expectedTokenBalances.isEmpty()) {
+            expectedTokenBalances = new ArrayList<>();
+        }
+        expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-" + decimals));
+        return this;
+    }
+
+    public HapiGetAccountBalance savingTokenBalance(String token, LongConsumer obs) {
+        if (tokenBalanceObservers.isEmpty()) {
+            tokenBalanceObservers = Optional.of(new HashMap<>());
+        }
+        tokenBalanceObservers.get().put(token, obs);
+        return this;
+    }
+
     public HapiGetAccountBalance exposingBalanceTo(final LongConsumer obs) {
         balanceObserver = obs;
         return this;
@@ -196,11 +224,19 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             assertEquals(expected.get().longValue(), actual, "Wrong balance!");
         }
 
-        Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
-                response.getCryptogetAccountBalance().getTokenBalancesList().stream()
-                        .collect(Collectors.toMap(
-                                TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
-        if (expectedTokenBalances.size() > 0) {
+        if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
+            final var detailsLookup = QueryVerbs.getAccountDetails(account);
+            CustomSpecAssert.allRunFor(spec, detailsLookup);
+            final var response = detailsLookup.getResponse();
+            Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
+                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList().stream()
+                            .map(tr -> TokenBalance.newBuilder()
+                                    .setTokenId(tr.getTokenId())
+                                    .setBalance(tr.getBalance())
+                                    .setDecimals(tr.getDecimals())
+                                    .build())
+                            .collect(Collectors.toMap(
+                                    TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
             Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
             for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
                 var tokenId = asTokenId(tokenBalance.getKey(), spec);
@@ -218,15 +254,15 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                             String.format("Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
                 }
             }
-        }
-
-        if (tokenBalanceObservers.isPresent()) {
-            var observers = tokenBalanceObservers.get();
-            for (var entry : observers.entrySet()) {
-                var id = TxnUtils.asTokenId(entry.getKey(), spec);
-                var obs = entry.getValue();
-                obs.accept(
-                        actualTokenBalances.getOrDefault(id, Pair.of(-1L, -1)).getLeft());
+            if (tokenBalanceObservers.isPresent()) {
+                var observers = tokenBalanceObservers.get();
+                for (var entry : observers.entrySet()) {
+                    var id = TxnUtils.asTokenId(entry.getKey(), spec);
+                    var obs = entry.getValue();
+                    obs.accept(actualTokenBalances
+                            .getOrDefault(id, Pair.of(-1L, -1))
+                            .getLeft());
+                }
             }
         }
 

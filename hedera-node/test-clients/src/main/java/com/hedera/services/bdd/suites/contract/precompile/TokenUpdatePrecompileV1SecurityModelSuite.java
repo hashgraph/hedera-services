@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -331,6 +332,8 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
                         getTokenNftInfo(VANILLA_TOKEN, 1)
                                 .hasAccountID(newTokenTreasury)
                                 .logged(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 0),
+                        getAccountBalance(newTokenTreasury).hasTokenBalance(VANILLA_TOKEN, 1),
                         getTokenInfo(VANILLA_TOKEN)
                                 .hasTreasury(newTokenTreasury)
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)

@@ -19,7 +19,9 @@ package com.hedera.services.bdd.suites.leaky;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
@@ -161,6 +163,8 @@ public class FeatureFlagSuite extends HapiSuite {
                 cryptoTransfer(
                         moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
                         movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
                 cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
                         .via(fungibleTokenXfer)
                         .payingWith(CIVILIAN)

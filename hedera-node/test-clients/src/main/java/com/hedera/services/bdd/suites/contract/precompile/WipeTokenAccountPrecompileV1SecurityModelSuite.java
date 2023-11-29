@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -216,7 +217,8 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS))
                                                 .gasUsed(14085L))),
-                        getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990));
+                        getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
 
     private HapiSpec wipeNonFungibleTokenScenarios() {
@@ -352,6 +354,7 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS))
                                                 .gasUsed(14085L))),
-                        getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1));
+                        getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }
 }

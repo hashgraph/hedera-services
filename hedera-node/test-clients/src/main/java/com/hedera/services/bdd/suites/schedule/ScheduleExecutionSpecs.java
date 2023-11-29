@@ -900,6 +900,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         cryptoDelete(deadXCivilian),
                         scheduleCreate(
@@ -913,6 +915,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(ACCOUNT_DELETED))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -950,6 +953,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         tokenDelete(xToken),
                         scheduleCreate(
@@ -964,6 +969,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_WAS_DELETED))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -1003,6 +1009,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         tokenFreeze(xToken, xCivilian),
                         scheduleCreate(
@@ -1017,6 +1025,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(ACCOUNT_FROZEN_FOR_TOKEN))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -1055,6 +1064,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         revokeTokenKyc(xToken, xCivilian),
                         scheduleCreate(
@@ -1069,6 +1080,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -1103,6 +1115,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
@@ -1115,6 +1129,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountInfo(nonXCivilian).hasNoTokenRelationship(xToken),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
@@ -1149,6 +1164,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
@@ -1162,6 +1179,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -1200,6 +1219,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
+                        getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
+                        getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
@@ -1213,6 +1236,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_ID_REPEATED_IN_TOKEN_LIST))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
+                        getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
+                        getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -1253,6 +1280,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
+                        getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
+                        getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
                         getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
@@ -1266,6 +1297,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS))
                                 .revealingDebitsTo(failureFeesObs::set),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
+                        getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
+                        getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
+                        getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
                         assertionsHold((spec, opLog) ->
                                 assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
@@ -1877,9 +1912,11 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(failedTxn)
                         .alsoSigningWith(xTreasury, schedulePayer)
                         .designatingPayer(schedulePayer))
-                .then(getTxnRecord(failedTxn)
-                        .scheduled()
-                        .hasPriority(recordWith().status(INSUFFICIENT_TOKEN_BALANCE)));
+                .then(
+                        getTxnRecord(failedTxn)
+                                .scheduled()
+                                .hasPriority(recordWith().status(INSUFFICIENT_TOKEN_BALANCE)),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
     // This should not be run for modular service due to key gathering behavior differences.

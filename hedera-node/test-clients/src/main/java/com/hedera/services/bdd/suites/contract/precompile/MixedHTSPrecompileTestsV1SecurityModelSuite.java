@@ -16,13 +16,16 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -49,6 +52,7 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -130,6 +134,7 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
                                                         .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(theAccount).hasToken(relationshipWith(token)),
                         cryptoTransfer(moving(200, token).between(TOKEN_TREASURY, theAccount))
                                 .hasKnownStatus(SUCCESS));
     }
@@ -204,6 +209,24 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                         getTxnRecord(CREATE_AND_TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .logged(),
+                        getAccountBalance(RECIPIENT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()),
+                                        0L),
+                        getAccountBalance(SECOND_RECIPIENT)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()),
+                                        1L),
+                        getAccountBalance(TREASURY)
+                                .hasTokenBalance(
+                                        asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()),
+                                        199L),
                         getAccountBalance(FEE_COLLECTOR).hasTinyBars(10L))));
     }
 

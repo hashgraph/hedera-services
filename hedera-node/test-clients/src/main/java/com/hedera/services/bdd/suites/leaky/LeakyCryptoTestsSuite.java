@@ -1150,17 +1150,23 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .hasNewTokenAssociation(tokenA, theContract)
                                 .logged(),
                         getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(2)))
+                                .has(ContractInfoAsserts.contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(1)
+                                        .maxAutoAssociations(2)))
                 .when(
                         cryptoTransfer(movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, theContract)),
                         getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(2)))
+                                .has(ContractInfoAsserts.contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(2)
+                                        .maxAutoAssociations(2)))
                 .then(
                         cryptoTransfer(moving(1, tokenB).between(TOKEN_TREASURY, theContract))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
                                 .via("failedTransfer"),
                         getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(2))
+                                .has(ContractInfoAsserts.contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(2)
+                                        .maxAutoAssociations(2))
                                 .logged());
     }
 

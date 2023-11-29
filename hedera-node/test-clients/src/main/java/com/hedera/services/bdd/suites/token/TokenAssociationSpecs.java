@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -49,6 +50,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -176,8 +182,21 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenCreate("c").decimals(3),
                         tokenCreate("tbd").adminKey(SIMPLE).decimals(4),
                         cryptoCreate(account).balance(0L))
-                .when(tokenAssociate(account, "a", "b", "c", "tbd"), tokenDissociate(account, "b"), tokenDelete("tbd"))
-                .then(getAccountInfo(account).logged());
+                .when(
+                        tokenAssociate(account, "a", "b", "c", "tbd"),
+                        getAccountInfo(account)
+                                .hasToken(relationshipWith("a").decimals(1))
+                                .hasToken(relationshipWith("b").decimals(2))
+                                .hasToken(relationshipWith("c").decimals(3))
+                                .hasToken(relationshipWith("tbd").decimals(4)),
+                        tokenDissociate(account, "b"),
+                        tokenDelete("tbd"))
+                .then(getAccountInfo(account)
+                        .hasToken(relationshipWith("a").decimals(1))
+                        .hasNoTokenRelationship("b")
+                        .hasToken(relationshipWith("c").decimals(3))
+                        .hasToken(relationshipWith("tbd").decimals(4))
+                        .logged());
     }
 
     @HapiTest
@@ -208,7 +227,20 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .when(
                         tokenAssociate(contract, expiringToken),
                         cryptoTransfer(moving(xfer, expiringToken).between(treasury, contract)))
-                .then(sleepFor(lifetimeSecs * 1_000L), tokenDelete(expiringToken));
+                .then(
+                        getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
+                        getContractInfo(contract)
+                                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
+                        sleepFor(lifetimeSecs * 1_000L),
+                        getAccountBalance(contract).hasTokenBalance(expiringToken, xfer, 666),
+                        getContractInfo(contract)
+                                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
+                        tokenDelete(expiringToken),
+                        getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
+                        getContractInfo(contract)
+                                .hasToken(relationshipWith(expiringToken)
+                                        .decimals(666)
+                                        .freeze(FreezeNotApplicable)));
     }
 
     // Enable when token expiration is implemented
@@ -245,6 +277,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenUnfreeze(expiringToken, unfrozenAccount),
                         cryptoTransfer(moving(100L, expiringToken).between(treasury, unfrozenAccount)))
                 .then(
+                        getAccountBalance(treasury).hasTokenBalance(expiringToken, 900L),
                         sleepFor(lifetimeSecs * 1_000L),
                         tokenDissociate(treasury, expiringToken).hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenDissociate(unfrozenAccount, expiringToken).via("dissociateTxn"),
@@ -288,6 +321,9 @@ public class TokenAssociationSpecs extends HapiSuite {
                                         };
                                     }
                                 })),
+                        getAccountBalance(treasury).hasTokenBalance(expiringToken, 1000L),
+                        getAccountInfo(frozenAccount)
+                                .hasToken(relationshipWith(expiringToken).freeze(Frozen)),
                         tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
@@ -385,6 +421,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
                         cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
                         tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
                         tokenDelete(TBD_TOKEN),
                         tokenDelete(tbdUniqToken))
                 .then(
@@ -393,6 +430,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenDissociate(nonZeroBalanceFrozen, TBD_TOKEN).via(nonZeroBalanceDissoc),
                         tokenDissociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
                         tokenDissociate(TOKEN_TREASURY, tbdUniqToken).via(uniqDissoc),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
                         getTxnRecord(zeroBalanceDissoc).hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
                         getTxnRecord(nonZeroBalanceDissoc)
                                 .hasPriority(recordWith()
@@ -423,7 +461,10 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
                         cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between("misc", TOKEN_TREASURY)),
                         tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT))
-                .then(getAccountInfo("misc").logged());
+                .then(getAccountInfo("misc")
+                        .hasToken(relationshipWith(KNOWABLE_TOKEN))
+                        .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        .logged());
     }
 
     @HapiTest
@@ -458,7 +499,20 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .given(basicKeysAndTokens())
                 .when()
                 .then(
-                        getAccountInfo(TOKEN_TREASURY).logged(),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Unfrozen))
+                                .hasToken(relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Unfrozen))
+                                .hasToken(relationshipWith(KNOWABLE_TOKEN)
+                                        .kyc(Granted)
+                                        .freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(VANILLA_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable))
+                                .logged(),
                         cryptoCreate("test"),
                         tokenAssociate("test", KNOWABLE_TOKEN),
                         tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),

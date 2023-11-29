@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -253,17 +254,20 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord(failedMintTxn).andAllChildRecords().logged())))
-                .then(childRecordsCheck(
-                        failedMintTxn,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith().status(REVERTED_SUCCESS),
-                        recordWith()
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.HAPI_MINT)
-                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                                .withTotalSupply(0L)
-                                                .withSerialNumbers()))));
+                .then(
+                        getAccountBalance(ACCOUNT).hasTokenBalance(FUNGIBLE_TOKEN, 200),
+                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        childRecordsCheck(
+                                failedMintTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(REVERTED_SUCCESS),
+                                recordWith()
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                                        .withTotalSupply(0L)
+                                                        .withSerialNumbers()))));
     }
 
     @Override

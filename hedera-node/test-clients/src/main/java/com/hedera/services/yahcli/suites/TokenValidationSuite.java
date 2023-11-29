@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.PAYER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOKEN;
@@ -83,7 +84,9 @@ public class TokenValidationSuite extends HapiSuite {
                                 .hasFreezeKey(TOKEN)
                                 .hasAdminKey(TOKEN)
                                 .hasKycKey(TOKEN),
-                        getAccountBalance(TREASURY).payingWith(PAYER),
+                        getAccountBalance(TREASURY)
+                                .payingWith(PAYER)
+                                .savingTokenBalance(TOKEN, initialTreasuryBalance::set),
                         logIt(checkBoxed("Token entities look good")))
                 .when(
                         tokenDissociate(RECEIVER, TOKEN)
@@ -104,8 +107,16 @@ public class TokenValidationSuite extends HapiSuite {
                                 .payingWith(PAYER),
                         logIt(checkBoxed("Token management looks good")))
                 .then(
+                        getAccountBalance(RECEIVER).payingWith(PAYER).hasTokenBalance(TOKEN, 1L),
+                        sourcing(() -> getAccountBalance(TREASURY)
+                                .payingWith(PAYER)
+                                .hasTokenBalance(TOKEN, 1L + initialTreasuryBalance.get())),
                         wipeTokenAccount(TOKEN, RECEIVER, 1).payingWith(PAYER),
                         burnToken(TOKEN, 1L).payingWith(PAYER),
+                        getAccountBalance(RECEIVER).payingWith(PAYER).hasTokenBalance(TOKEN, 0L),
+                        sourcing(() -> getAccountBalance(TREASURY)
+                                .payingWith(PAYER)
+                                .hasTokenBalance(TOKEN, initialTreasuryBalance.get())),
                         logIt(checkBoxed("Token balance changes looks good")));
     }
 

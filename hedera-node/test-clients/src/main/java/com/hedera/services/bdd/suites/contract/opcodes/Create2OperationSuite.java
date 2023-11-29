@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
@@ -610,6 +611,7 @@ public class Create2OperationSuite extends HapiSuite {
                                         .numKvPairs(2)
                                         .hasStandinContractKey()
                                         .maxAutoAssociations(2)
+                                        .hasAlreadyUsedAutomaticAssociations(2)
                                         .memo(LAZY_MEMO)
                                         .balance(ONE_HBAR + tcValue))
                                 .hasToken(relationshipWith(A_TOKEN).balance(500))
@@ -721,6 +723,7 @@ public class Create2OperationSuite extends HapiSuite {
                                         .numKvPairs(4)
                                         .hasStandinContractKey()
                                         .maxAutoAssociations(2)
+                                        .hasAlreadyUsedAutomaticAssociations(2)
                                         .memo(LAZY_MEMO)
                                         .balance(ONE_HBAR + tcValue))
                                 .hasToken(relationshipWith(A_TOKEN).balance(500))
@@ -974,6 +977,7 @@ public class Create2OperationSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(ACCOUNT_STILL_OWNS_NFTS)))),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
                         // https://github.com/hashgraph/hedera-services/issues/2876 (mint via
                         // delegatable_contract_id)
@@ -986,6 +990,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .via(helperMintSuccess)
                                 .gas(4_000_000L)),
                         getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2),
                         cryptoTransfer((spec, b) -> {
                                     final var registry = spec.registry();
                                     final var tt = registry.getAccountID(TOKEN_TREASURY);

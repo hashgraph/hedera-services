@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.chan
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -243,8 +244,12 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(
                         getTxnRecord(transferTxn)
                                 .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
-                        getAccountInfo(beneficiary).has(accountWith().noChangesFromSnapshot(beneficiary)),
-                        getAccountInfo(TOKEN_TREASURY).has(accountWith().noChangesFromSnapshot(TOKEN_TREASURY)),
+                        getAccountInfo(beneficiary)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().noChangesFromSnapshot(beneficiary)),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().noChangesFromSnapshot(TOKEN_TREASURY)),
                         /* The treasury should still have an open auto-association slots */
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
@@ -287,8 +292,12 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(
                         getTxnRecord(transferTxn)
                                 .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
-                        getAccountInfo(beneficiary).has(accountWith().noChangesFromSnapshot(beneficiary)),
-                        getAccountInfo(TOKEN_TREASURY).has(accountWith().noChangesFromSnapshot(TOKEN_TREASURY)),
+                        getAccountInfo(beneficiary)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().noChangesFromSnapshot(beneficiary)),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().noChangesFromSnapshot(TOKEN_TREASURY)),
                         /* The treasury should still have an open auto-association slots */
                         cryptoTransfer(moving(500, otherFungibleToken).between(beneficiary, TOKEN_TREASURY)));
     }
@@ -333,7 +342,9 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(
                         getTxnRecord(transferTxn)
                                 .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
-                        getAccountInfo(beneficiary).has(accountWith().noChangesFromSnapshot(beneficiary)),
+                        getAccountInfo(beneficiary)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().noChangesFromSnapshot(beneficiary)),
                         /* The beneficiary should still have two open auto-association slots */
                         cryptoTransfer(
                                 movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, beneficiary),
@@ -401,6 +412,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                         .autoAssociated(
                                                 accountTokenPairs(List.of(Pair.of(beneficiary, firstFungibleToken))))),
                         getAccountInfo(beneficiary)
+                                .hasAlreadyUsedAutomaticAssociations(2)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(
                                                 beneficiary,
@@ -454,6 +466,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                         .autoAssociated(
                                                 accountTokenPairs(List.of(Pair.of(beneficiary, firstFungibleToken))))),
                         getAccountInfo(beneficiary)
+                                .hasAlreadyUsedAutomaticAssociations(1)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(
                                                 beneficiary,
@@ -496,6 +509,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                                 Pair.of(beneficiary, fungibleToken),
                                                 Pair.of(beneficiary, uniqueToken))))),
                         getAccountInfo(beneficiary)
+                                .hasAlreadyUsedAutomaticAssociations(2)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(
                                                 beneficiary,
@@ -586,7 +600,13 @@ public class TokenTransactSpecs extends HapiSuite {
                         tokenAssociate(theContract, A_TOKEN),
                         tokenAssociate(theAccount, A_TOKEN),
                         mintToken(A_TOKEN, List.of(copyFromUtf8("dark"), copyFromUtf8("matter"))))
-                .when(tokenDissociate(theContract, A_TOKEN), tokenDissociate(theAccount, A_TOKEN))
+                .when(
+                        getContractInfo(theContract).hasToken(relationshipWith(A_TOKEN)),
+                        getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN)),
+                        tokenDissociate(theContract, A_TOKEN),
+                        tokenDissociate(theAccount, A_TOKEN),
+                        getContractInfo(theContract).hasNoTokenRelationship(A_TOKEN),
+                        getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN))
                 .then(
                         cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theContract))
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
@@ -596,8 +616,8 @@ public class TokenTransactSpecs extends HapiSuite {
                         tokenAssociate(theAccount, A_TOKEN),
                         cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theContract)),
                         cryptoTransfer(movingUnique(A_TOKEN, 2).between(TOKEN_TREASURY, theAccount)),
-                        getAccountBalance(theAccount).hasNoTokenBalancesReturned(),
-                        getAccountBalance(theContract).hasNoTokenBalancesReturned());
+                        getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
+                        getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1));
     }
 
     @HapiTest
@@ -615,7 +635,13 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(theContract, A_TOKEN),
                         tokenAssociate(theAccount, A_TOKEN))
-                .when(tokenDissociate(theContract, A_TOKEN), tokenDissociate(theAccount, A_TOKEN))
+                .when(
+                        getContractInfo(theContract).hasToken(relationshipWith(A_TOKEN)),
+                        getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN)),
+                        tokenDissociate(theContract, A_TOKEN),
+                        tokenDissociate(theAccount, A_TOKEN),
+                        getContractInfo(theContract).hasNoTokenRelationship(A_TOKEN),
+                        getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN))
                 .then(
                         cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract))
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
@@ -625,8 +651,8 @@ public class TokenTransactSpecs extends HapiSuite {
                         tokenAssociate(theAccount, A_TOKEN),
                         cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract)),
                         cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)),
-                        getAccountBalance(theAccount).hasNoTokenBalancesReturned(),
-                        getAccountBalance(theContract).hasNoTokenBalancesReturned());
+                        getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1L),
+                        getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L));
     }
 
     @HapiTest
@@ -693,7 +719,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .payingWith(PAYER)
                                 .via("successfulTransfer"))
                 .then(
-                        getAccountBalance(RANDOM_BENEFICIARY).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RANDOM_BENEFICIARY).hasTokenBalance(B_TOKEN, 100),
                         getTxnRecord("successfulTransfer").logged());
     }
 
@@ -766,8 +792,11 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .via("transactTxn"),
                         getAccountBalance(FIRST_TREASURY)
-                                .hasTinyBars(changeFromSnapshot("treasuryBefore", +1 * ONE_HBAR)),
-                        getAccountBalance(BENEFICIARY).hasTinyBars(changeFromSnapshot("beneBefore", -1 * ONE_HBAR)),
+                                .hasTinyBars(changeFromSnapshot("treasuryBefore", +1 * ONE_HBAR))
+                                .hasTokenBalance(A_TOKEN, 23),
+                        getAccountBalance(BENEFICIARY)
+                                .hasTinyBars(changeFromSnapshot("beneBefore", -1 * ONE_HBAR))
+                                .hasTokenBalance(A_TOKEN, 100),
                         getTxnRecord("transactTxn"));
     }
 
@@ -793,8 +822,8 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(ACCOUNT_DELETED))
                 .then(
-                        getAccountBalance(FIRST_TREASURY).logged(),
-                        getAccountBalance(SECOND_TREASURY).logged(),
+                        getAccountBalance(FIRST_TREASURY).logged().hasTokenBalance(A_TOKEN, 123),
+                        getAccountBalance(SECOND_TREASURY).logged().hasTokenBalance(B_TOKEN, 50),
                         getAccountBalance(BENEFICIARY).logged().hasTinyBars(changeFromSnapshot("before", 0L)));
     }
 
@@ -815,8 +844,8 @@ public class TokenTransactSpecs extends HapiSuite {
                                         moving(100, B_TOKEN).between(SECOND_TREASURY, BENEFICIARY))
                                 .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE))
                 .then(
-                        getAccountBalance(FIRST_TREASURY).logged(),
-                        getAccountBalance(SECOND_TREASURY).logged(),
+                        getAccountBalance(FIRST_TREASURY).logged().hasTokenBalance(A_TOKEN, 123),
+                        getAccountBalance(SECOND_TREASURY).logged().hasTokenBalance(B_TOKEN, 50),
                         getAccountBalance(BENEFICIARY).logged());
     }
 
@@ -861,7 +890,14 @@ public class TokenTransactSpecs extends HapiSuite {
                         moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
                         moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
                         moving(100, B_TOKEN).between(TOKEN_TREASURY, SECOND_USER)))
-                .then();
+                .then(
+                        getAccountBalance(TOKEN_TREASURY)
+                                .hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)
+                                .hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100),
+                        getAccountBalance(FIRST_USER).hasTokenBalance(A_TOKEN, 100),
+                        getAccountBalance(SECOND_USER)
+                                .hasTokenBalance(B_TOKEN, 100)
+                                .hasTokenBalance(A_TOKEN, 100));
     }
 
     @HapiTest
@@ -884,6 +920,8 @@ public class TokenTransactSpecs extends HapiSuite {
                         .signedBy(SIGNING_KEY_TREASURY, SIGNING_KEY_FIRST_USER, DEFAULT_PAYER)
                         .via("cryptoTransferTxn"))
                 .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(A_TOKEN, 0),
+                        getAccountBalance(FIRST_USER).hasTokenBalance(A_TOKEN, 1),
                         withTargetLedgerId(ledgerId -> getTokenInfo(A_TOKEN).hasEncodedLedgerId(ledgerId)),
                         getTokenNftInfo(A_TOKEN, 1)
                                 .hasSerialNum(1)
@@ -916,12 +954,16 @@ public class TokenTransactSpecs extends HapiSuite {
                         tokenUpdate(B_TOKEN).treasury(NEW_TREASURY).hasKnownStatus(SUCCESS))
                 .when(cryptoTransfer(movingUnique(A_TOKEN, 1).between(OLD_TREASURY, NEW_TREASURY))
                         .via("cryptoTransferTxn"))
-                .then(withTargetLedgerId(ledgerId -> getTokenNftInfo(A_TOKEN, 1)
-                        .hasEncodedLedgerId(ledgerId)
-                        .hasSerialNum(1)
-                        .hasMetadata(copyFromUtf8("memo"))
-                        .hasTokenID(A_TOKEN)
-                        .hasAccountID(NEW_TREASURY)));
+                .then(
+                        getAccountBalance(OLD_TREASURY).hasTokenBalance(A_TOKEN, 0),
+                        getAccountBalance(NEW_TREASURY).hasTokenBalance(A_TOKEN, 1),
+                        getAccountBalance(NEW_TREASURY).hasTokenBalance(B_TOKEN, 1),
+                        withTargetLedgerId(ledgerId -> getTokenNftInfo(A_TOKEN, 1)
+                                .hasEncodedLedgerId(ledgerId)
+                                .hasSerialNum(1)
+                                .hasMetadata(copyFromUtf8("memo"))
+                                .hasTokenID(A_TOKEN)
+                                .hasAccountID(NEW_TREASURY)));
     }
 
     @HapiTest
@@ -1027,7 +1069,11 @@ public class TokenTransactSpecs extends HapiSuite {
                                 movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, SECOND_USER),
                                 moving(101, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
                         .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE))
-                .then();
+                .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(A_TOKEN, 1),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(B_TOKEN, 100),
+                        getAccountBalance(FIRST_USER).hasTokenBalance(A_TOKEN, 0),
+                        getAccountBalance(SECOND_USER).hasTokenBalance(A_TOKEN, 0));
     }
 
     @HapiTest
@@ -1096,8 +1142,13 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, treasuryForToken, ONE_HBAR)
                                 .hasHbarAmount(treasuryForToken, ONE_HBAR)
                                 .hasHbarAmount(alice, -ONE_HBAR),
-                        getAccountBalance(alice).hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR),
-                        getAccountBalance(treasuryForToken).hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR));
+                        getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 1L),
+                        getAccountBalance(alice)
+                                .hasTokenBalance(tokenWithHbarFee, 0L)
+                                .hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR),
+                        getAccountBalance(treasuryForToken)
+                                .hasTokenBalance(tokenWithHbarFee, 1L)
+                                .hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR));
     }
 
     @HapiTest
@@ -1138,7 +1189,11 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenAmount(tokenWithFractionalFee, bob, -1_000L)
                                 .hasTokenAmount(tokenWithFractionalFee, alice, 995L)
                                 .hasAssessedCustomFee(tokenWithFractionalFee, treasuryForToken, 5L)
-                                .hasTokenAmount(tokenWithFractionalFee, treasuryForToken, 5L));
+                                .hasTokenAmount(tokenWithFractionalFee, treasuryForToken, 5L),
+                        getAccountBalance(alice).hasTokenBalance(tokenWithFractionalFee, 995L),
+                        getAccountBalance(bob).hasTokenBalance(tokenWithFractionalFee, 1_000_000L - 1_000L),
+                        getAccountBalance(treasuryForToken)
+                                .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000_000L + 5L));
     }
 
     @HapiTest
@@ -1179,7 +1234,11 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenAmount(useCaseToken, horace, -1_005L)
                                 .hasTokenAmount(useCaseToken, gerry, 1000L)
                                 .hasAssessedCustomFee(useCaseToken, treasuryForToken, 5L)
-                                .hasTokenAmount(useCaseToken, treasuryForToken, 5L));
+                                .hasTokenAmount(useCaseToken, treasuryForToken, 5L),
+                        getAccountBalance(gerry).hasTokenBalance(useCaseToken, 1000L),
+                        getAccountBalance(horace).hasTokenBalance(useCaseToken, 1_000_000L - 1_005L),
+                        getAccountBalance(treasuryForToken)
+                                .hasTokenBalance(useCaseToken, Long.MAX_VALUE - 1_000_000L + 5L));
     }
 
     @HapiTest
@@ -1228,7 +1287,14 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenAmount(simpleHtsFeeToken, claire, -100L)
                                 .hasAssessedCustomFee(commissionPaymentToken, treasuryForToken, 2L)
                                 .hasTokenAmount(commissionPaymentToken, treasuryForToken, 2L)
-                                .hasTokenAmount(commissionPaymentToken, claire, -2L));
+                                .hasTokenAmount(commissionPaymentToken, claire, -2L),
+                        getAccountBalance(debbie).hasTokenBalance(simpleHtsFeeToken, 100L),
+                        getAccountBalance(claire)
+                                .hasTokenBalance(simpleHtsFeeToken, 1_000L - 100L)
+                                .hasTokenBalance(commissionPaymentToken, 1_000L - 2L),
+                        getAccountBalance(treasuryForToken)
+                                .hasTokenBalance(simpleHtsFeeToken, Long.MAX_VALUE - 1_000L)
+                                .hasTokenBalance(commissionPaymentToken, Long.MAX_VALUE - 1_000L + 2L));
     }
 
     @HapiTest
@@ -1286,8 +1352,17 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, treasuryForNestedCollection, ONE_HBAR)
                                 .hasHbarAmount(treasuryForNestedCollection, ONE_HBAR)
                                 .hasHbarAmount(debbie, -ONE_HBAR),
-                        getAccountBalance(debbie).hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR),
-                        getAccountBalance(treasuryForNestedCollection).hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR));
+                        getAccountBalance(edgar).hasTokenBalance(tokenWithNestedFee, 1L),
+                        getAccountBalance(debbie)
+                                .hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR)
+                                .hasTokenBalance(tokenWithHbarFee, 1_000L - 1L)
+                                .hasTokenBalance(tokenWithNestedFee, 1_000L - 1L),
+                        getAccountBalance(treasuryForTopLevelCollection)
+                                .hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1_000L)
+                                .hasTokenBalance(tokenWithHbarFee, 1L),
+                        getAccountBalance(treasuryForNestedCollection)
+                                .hasTinyBars(ONE_HUNDRED_HBARS + ONE_HBAR)
+                                .hasTokenBalance(tokenWithHbarFee, Long.MAX_VALUE - 1_000L));
     }
 
     @HapiTest
@@ -1345,7 +1420,16 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenAmount(tokenWithFractionalFee, treasuryForTopLevelCollection, 49L)
                                 .hasTokenAmount(tokenWithFractionalFee, edgar, -50L)
                                 .hasAssessedCustomFee(tokenWithFractionalFee, treasuryForNestedCollection, 1L)
-                                .hasTokenAmount(tokenWithFractionalFee, treasuryForNestedCollection, 1L));
+                                .hasTokenAmount(tokenWithFractionalFee, treasuryForNestedCollection, 1L),
+                        getAccountBalance(fern).hasTokenBalance(tokenWithNestedFee, 10L),
+                        getAccountBalance(edgar)
+                                .hasTokenBalance(tokenWithNestedFee, 1_000L - 10L)
+                                .hasTokenBalance(tokenWithFractionalFee, 1_000L - 50L),
+                        getAccountBalance(treasuryForTopLevelCollection)
+                                .hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1_000L)
+                                .hasTokenBalance(tokenWithFractionalFee, 49L),
+                        getAccountBalance(treasuryForNestedCollection)
+                                .hasTokenBalance(tokenWithFractionalFee, Long.MAX_VALUE - 1_000L + 1L));
     }
 
     @HapiTest
@@ -1603,7 +1687,19 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenAmount(tokenWithHtsFee, debbie, -1L)
                                 .hasAssessedCustomFee(feeToken, treasuryForNestedCollection, 1L)
                                 .hasTokenAmount(feeToken, treasuryForNestedCollection, 1L)
-                                .hasTokenAmount(feeToken, debbie, -1L));
+                                .hasTokenAmount(feeToken, debbie, -1L),
+                        getAccountBalance(edgar).hasTokenBalance(tokenWithNestedFee, 1L),
+                        getAccountBalance(debbie)
+                                .hasTokenBalance(feeToken, 1_000L - 1L)
+                                .hasTokenBalance(tokenWithHtsFee, 1_000L - 1L)
+                                .hasTokenBalance(tokenWithNestedFee, 1_000L - 1L),
+                        getAccountBalance(treasuryForTopLevelCollection)
+                                .hasTokenBalance(tokenWithHtsFee, 1L)
+                                .hasTokenBalance(tokenWithNestedFee, Long.MAX_VALUE - 1_000L),
+                        getAccountBalance(treasuryForNestedCollection)
+                                .hasTokenBalance(feeToken, 1L)
+                                .hasTokenBalance(tokenWithHtsFee, Long.MAX_VALUE - 1_000L),
+                        getAccountBalance(DEFAULT_PAYER).hasTokenBalance(feeToken, Long.MAX_VALUE - 1_000L));
     }
 
     @HapiTest
@@ -1746,7 +1842,16 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasTokenAmount(topLevelToken, nonTreasury, 1_000L)
                                 .hasTokenAmount(topLevelToken, treasuryForTopLevel, -1_000L)
                                 .hasAssessedCustomFeesSize(0),
-                        getAccountBalance(collectorForTopLevel).hasTinyBars(0L),
+                        getAccountBalance(collectorForTopLevel)
+                                .hasTinyBars(0L)
+                                .hasTokenBalance(feeToken, 0L)
+                                .hasTokenBalance(topLevelToken, 0L),
+                        getAccountBalance(treasuryForTopLevel)
+                                .hasTokenBalance(topLevelToken, Long.MAX_VALUE - 1_000L)
+                                .hasTokenBalance(feeToken, 1_000L),
+                        getAccountBalance(nonTreasury)
+                                .hasTokenBalance(topLevelToken, 1_000L)
+                                .hasTokenBalance(feeToken, 1_000L),
                         /* Now we perform the same transfer from a non-treasury and see all three fees charged */
                         cryptoTransfer(moving(1_000L, topLevelToken).between(nonTreasury, edgar))
                                 .payingWith(TOKEN_TREASURY)
@@ -1764,7 +1869,14 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasAssessedCustomFee(feeToken, collectorForTopLevel, 50L)
                                 .hasTokenAmount(feeToken, collectorForTopLevel, 50L)
                                 .hasTokenAmount(feeToken, nonTreasury, -50L),
-                        getAccountBalance(collectorForTopLevel).hasTinyBars(ONE_HBAR));
+                        getAccountBalance(collectorForTopLevel)
+                                .hasTinyBars(ONE_HBAR)
+                                .hasTokenBalance(feeToken, 50L)
+                                .hasTokenBalance(topLevelToken, 50L),
+                        getAccountBalance(edgar).hasTokenBalance(topLevelToken, 1_000L - 50L),
+                        getAccountBalance(nonTreasury)
+                                .hasTokenBalance(topLevelToken, 0L)
+                                .hasTokenBalance(feeToken, 1_000L - 50L));
     }
 
     @HapiTest
@@ -1816,7 +1928,11 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, secondCollectorForTopLevel, 2 * ONE_HBAR)
                                 .hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR)
                                 .logged(),
-                        getAccountBalance(secondCollectorForTopLevel).hasTinyBars((10 + 2) * ONE_HBAR));
+                        getAccountBalance(firstCollectorForTopLevel).hasTokenBalance(topLevelToken, 0L),
+                        getAccountBalance(secondCollectorForTopLevel)
+                                .hasTinyBars((10 + 2) * ONE_HBAR)
+                                .hasTokenBalance(topLevelToken, 1_000L + 100L),
+                        getAccountBalance(edgar).hasTokenBalance(topLevelToken, 1_000L - 100L));
     }
 
     // HIP-573 tests below

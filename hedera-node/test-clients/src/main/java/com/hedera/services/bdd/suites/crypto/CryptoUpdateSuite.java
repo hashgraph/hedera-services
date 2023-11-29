@@ -465,7 +465,9 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .then(
                         getContractInfo(CONTRACT)
                                 .payingWith(GENESIS)
-                                .has(contractWith().maxAutoAssociations(originalMax)),
+                                .has(contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(originalMax)
+                                        .maxAutoAssociations(originalMax)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(newBadMax)
                                 .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),

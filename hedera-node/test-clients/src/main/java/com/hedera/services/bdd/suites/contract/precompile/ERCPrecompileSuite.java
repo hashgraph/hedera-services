@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -566,6 +567,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))),
+                        getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
+                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2),
                         sourcing(() -> contractCallLocal(
                                         ERC_20_CONTRACT,
                                         TRANSFER,
@@ -689,7 +692,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
-                                                        .withErcFungibleTransferStatus(true)))));
+                                                        .withErcFungibleTransferStatus(true)))),
+                        getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
+                        getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 2));
     }
 
     private HapiSpec transferErc20TokenFromContractWithNoApproval() {
@@ -3097,10 +3102,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                                 // No longer works unless you have allowance
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(childRecordsCheck(
-                        TRANSFER_FROM_ACCOUNT_TXN,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
+                .then(
+                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        childRecordsCheck(
+                                TRANSFER_FROM_ACCOUNT_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
     @HapiTest

@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -144,14 +145,17 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via("delegateTransferCallWithDelegateContractKeyTxn")
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        "delegateTransferCallWithDelegateContractKeyTxn",
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(
-                                                htsPrecompileResult().withStatus(SUCCESS)))));
+                .then(
+                        childRecordsCheck(
+                                "delegateTransferCallWithDelegateContractKeyTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0),
+                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
     @HapiTest
@@ -188,17 +192,19 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN,
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.HAPI_BURN)
-                                                .withStatus(SUCCESS)
-                                                .withTotalSupply(1)))
-                                .newTotalSupply(1)));
+                .then(
+                        childRecordsCheck(
+                                DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(1)))
+                                        .newTotalSupply(1)),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
     @HapiTest
@@ -232,19 +238,22 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN,
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.HAPI_MINT)
-                                                .withStatus(SUCCESS)
-                                                .withTotalSupply(51)
-                                                .withSerialNumbers()))
-                                .tokenTransfers(changingFungibleBalances().including(VANILLA_TOKEN, TOKEN_TREASURY, 1))
-                                .newTotalSupply(51)));
+                .then(
+                        childRecordsCheck(
+                                DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(51)
+                                                        .withSerialNumbers()))
+                                        .tokenTransfers(
+                                                changingFungibleBalances().including(VANILLA_TOKEN, TOKEN_TREASURY, 1))
+                                        .newTotalSupply(51)),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 51));
     }
 
     @Override

@@ -28,8 +28,10 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -63,6 +65,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -257,7 +261,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                         .withTotalSupply(49)))
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN_USAGE, TOKEN_TREASURY, -1))
-                                        .newTotalSupply(49)))
+                                        .newTotalSupply(49)),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49))
                 .then(
                         newKeyNamed(CONTRACT_KEY).shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
@@ -313,15 +318,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith()
-                                .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.HAPI_BURN)
-                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
+                .then(
+                        childRecordsCheck(
+                                DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 2));
     }
 
     @HapiTest
@@ -356,16 +363,18 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith()
-                                .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .forFunction(FunctionType.HAPI_MINT)
-                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                                .withSerialNumbers()))));
+                .then(
+                        childRecordsCheck(
+                                DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                                        .withSerialNumbers()))),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 50));
     }
 
     @HapiTest
@@ -399,7 +408,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via("staticDissociateCallTxn")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(emptyChildRecordsCheck("staticDissociateCallTxn", CONTRACT_REVERT_EXECUTED));
+                .then(
+                        emptyChildRecordsCheck("staticDissociateCallTxn", CONTRACT_REVERT_EXECUTED),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -741,7 +752,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TYPE_OF_TOKEN, TOKEN_TREASURY, 10))
                                         .newTotalSupply(10)),
-                        getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount));
+                        getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TYPE_OF_TOKEN, amount));
     }
 
     @HapiTest
@@ -794,7 +806,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TYPE_OF_TOKEN, TOKEN_TREASURY, 10))
                                         .newTotalSupply(10)),
-                        getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount));
+                        getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TYPE_OF_TOKEN, amount));
     }
 
     @HapiTest
@@ -841,7 +854,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT, 1),
                         getAccountInfo(ACCOUNT).hasOwnedNfts(0),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
                         childRecordsCheck(
                                 DISTRIBUTE_TX,
                                 SUCCESS,
@@ -898,7 +913,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT, 1),
                         getAccountInfo(ACCOUNT).hasOwnedNfts(0),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
                         childRecordsCheck(
                                 DISTRIBUTE_TX,
                                 SUCCESS,
@@ -940,14 +957,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
-                .then(childRecordsCheck(
-                        VANILLA_TOKEN_ASSOCIATE_TXN,
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(
-                                                htsPrecompileResult().withStatus(SUCCESS)))));
+                .then(
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -979,14 +998,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
-                .then(childRecordsCheck(
-                        VANILLA_TOKEN_ASSOCIATE_TXN,
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(
-                                                htsPrecompileResult().withStatus(SUCCESS)))));
+                .then(
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -1158,7 +1179,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN_USAGE, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)))
-                .then();
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49));
     }
 
     @HapiTest
@@ -1194,14 +1215,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via("delegateAssociateCallWithDelegateContractKeyTxn")
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        "delegateAssociateCallWithDelegateContractKeyTxn",
-                        SUCCESS,
-                        recordWith()
-                                .status(SUCCESS)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(
-                                                htsPrecompileResult().withStatus(SUCCESS)))));
+                .then(
+                        childRecordsCheck(
+                                "delegateAssociateCallWithDelegateContractKeyTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -1325,7 +1348,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))));
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)));
     }
 
     @HapiTest
@@ -1859,7 +1884,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))));
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)));
     }
 
     @HapiTest
@@ -1935,7 +1962,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))));
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -2011,7 +2039,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))));
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)));
     }
 
     @HapiTest
@@ -2089,7 +2119,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))));
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)));
     }
 
     @HapiTest
@@ -2163,7 +2195,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))));
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -2243,14 +2276,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .via("delegateDissociateCallWithContractKeyTxn")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(childRecordsCheck(
-                        "delegateDissociateCallWithContractKeyTxn",
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith()
-                                .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(htsPrecompileResult()
-                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
+                .then(
+                        childRecordsCheck(
+                                "delegateDissociateCallWithContractKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     @HapiTest
@@ -2292,7 +2327,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN_USAGE, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)))
-                .then();
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49));
     }
 
     @Override

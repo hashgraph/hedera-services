@@ -131,7 +131,10 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                 .when(sleepFor(5_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         getAccountInfo(removedAccount).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                        getAccountBalance(civilian).logged());
+                        getAccountBalance(civilian)
+                                .hasTokenBalance(deletedToken, startSupply - displacedSupply)
+                                .hasTokenBalance(liveToken, startSupply)
+                                .hasTokenBalance(anotherLiveToken, startSupply));
     }
 
     private HapiSpec autoRemovalCasesSuiteCleanup() {

@@ -80,6 +80,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
@@ -97,7 +98,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-// @HapiTestSuite
+@HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class CryptoTransferHTSSuite extends HapiSuite {
 
@@ -614,8 +615,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .logged())
                 .then(
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, receiverStartBalance + 2 * toSendEachTuple),
+                        getAccountBalance(SENDER)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - 2 * toSendEachTuple),
                         childRecordsCheck(
                                 repeatedIdsPrecompileXferTxn,
                                 SUCCESS,
@@ -684,9 +687,9 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
-                        getAccountBalance(RECEIVER2).hasNoTokenBalancesReturned(),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 30),
+                        getAccountBalance(RECEIVER2).hasTokenBalance(FUNGIBLE_TOKEN, 20),
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxn,
@@ -756,9 +759,9 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER).hasOwnedNfts(0),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
                                 CRYPTO_TRANSFER_TXN,
@@ -838,13 +841,13 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER).hasOwnedNfts(0),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getAccountInfo(RECEIVER2).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER2).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER2).hasOwnedNfts(0),
-                        getAccountBalance(SENDER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxn,
@@ -942,14 +945,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 155),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER2).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER2).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER2).hasOwnedNfts(0),
-                        getAccountBalance(SENDER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxn,
@@ -1057,20 +1060,20 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
-                        getAccountBalance(RECEIVER2).hasNoTokenBalancesReturned(),
-                        getAccountBalance(SENDER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 155),
+                        getAccountBalance(RECEIVER2).hasTokenBalance(FUNGIBLE_TOKEN, 32),
+                        getAccountBalance(SENDER2).hasTokenBalance(FUNGIBLE_TOKEN, 68),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER).hasOwnedNfts(0),
-                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getAccountInfo(RECEIVER2).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(RECEIVER2).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER2).hasOwnedNfts(0),
-                        getAccountBalance(SENDER2).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxn,

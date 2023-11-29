@@ -517,8 +517,8 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(INSUFFICIENT_TOKEN_BALANCE)))),
-                        getAccountBalance(ACCOUNT).hasNoTokenBalancesReturned(),
-                        getAccountBalance(FEE_COLLECTOR).hasNoTokenBalancesReturned());
+                        getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+                        getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
 
     private HapiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
@@ -670,8 +670,10 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                 recordWith()
                                         .status(INSUFFICIENT_TOKEN_BALANCE)
                                         .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(INSUFFICIENT_TOKEN_BALANCE)))));
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INSUFFICIENT_TOKEN_BALANCE)))),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+                        getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
 
     /* --- HSCS-PREC-009 ---
@@ -815,7 +817,9 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT, 1),
                         getAccountInfo(ACCOUNT).hasOwnedNfts(0),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
                         childRecordsCheck(
                                 "distributeTx",
                                 SUCCESS,
@@ -898,7 +902,9 @@ public class ContractHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(NFT, ACCOUNT, RECEIVER, 2L))),
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(2),
-                        getAccountInfo(ACCOUNT).hasOwnedNfts(0));
+                        getAccountBalance(RECEIVER).hasTokenBalance(NFT, 2),
+                        getAccountInfo(ACCOUNT).hasOwnedNfts(0),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0));
     }
 
     @Override

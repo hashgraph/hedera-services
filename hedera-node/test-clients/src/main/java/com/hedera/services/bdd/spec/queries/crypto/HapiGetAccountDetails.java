@@ -150,6 +150,11 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
         return this;
     }
 
+    public HapiGetAccountDetails hasAlreadyUsedAutomaticAssociations(int count) {
+        this.alreadyUsedAutomaticAssociations = Optional.of(count);
+        return this;
+    }
+
     @Override
     protected HapiGetAccountDetails self() {
         return this;

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -67,8 +68,11 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
@@ -515,21 +519,32 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .wipeKey("newWipeKey")
                                 .pauseKey("newPauseKey")
                                 .payingWith(civilian))
-                .then(getTokenInfo("primary")
-                        .logged()
-                        .hasEntityMemo(updatedMemo)
-                        .hasRegisteredId("primary")
-                        .hasName(newSaltedName)
-                        .hasTreasury("newTokenTreasury")
-                        .hasFreezeKey("primary")
-                        .hasKycKey("primary")
-                        .hasSupplyKey("primary")
-                        .hasWipeKey("primary")
-                        .hasPauseKey("primary")
-                        .hasTotalSupply(500)
-                        .hasAutoRenewAccount("newAutoRenewAccount")
-                        .hasPauseStatus(TokenPauseStatus.Unpaused)
-                        .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1));
+                .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
+                        getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 500),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(ExpectedTokenRel.relationshipWith("primary")
+                                        .balance(0)),
+                        getAccountInfo("newTokenTreasury")
+                                .hasToken(ExpectedTokenRel.relationshipWith("primary")
+                                        .freeze(TokenFreezeStatus.Unfrozen)
+                                        .kyc(TokenKycStatus.Granted)
+                                        .balance(500)),
+                        getTokenInfo("primary")
+                                .logged()
+                                .hasEntityMemo(updatedMemo)
+                                .hasRegisteredId("primary")
+                                .hasName(newSaltedName)
+                                .hasTreasury("newTokenTreasury")
+                                .hasFreezeKey("primary")
+                                .hasKycKey("primary")
+                                .hasSupplyKey("primary")
+                                .hasWipeKey("primary")
+                                .hasPauseKey("primary")
+                                .hasTotalSupply(500)
+                                .hasAutoRenewAccount("newAutoRenewAccount")
+                                .hasPauseStatus(TokenPauseStatus.Unpaused)
+                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1));
     }
 
     @HapiTest
@@ -592,6 +607,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenAssociate("newTokenTreasury", "primary"),
                         tokenUpdate("primary").treasury("newTokenTreasury").via("tokenUpdateTxn"))
                 .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
+                        getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 1),
                         getTokenInfo("primary")
                                 .hasTreasury("newTokenTreasury")
                                 .hasPauseKey("primary")

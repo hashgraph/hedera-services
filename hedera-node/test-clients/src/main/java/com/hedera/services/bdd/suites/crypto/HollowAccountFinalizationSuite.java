@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -168,6 +169,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             .via(FT_XFER);
 
                     final var getHollowAccountInfoAfterCreation = getAliasedAccountInfo(counterAlias.get())
+                            .hasToken(relationshipWith(fungibleToken).balance(500))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()
@@ -209,6 +211,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             .balance(ONE_HBAR);
 
                     final var getCompletedHollowAccountInfo = getAliasedAccountInfo(counterAlias.get())
+                            .hasToken(relationshipWith(fungibleToken).balance(505))
                             .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
 
                     final var hapiGetTxnRecord = getTxnRecord(FT_XFER)
@@ -923,9 +926,9 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
                 }))
                 .then(
-                        getAccountBalance(receiver).hasNoTokenBalancesReturned().logged(),
+                        getAccountBalance(receiver).hasTokenBalance(ft, 0).logged(),
                         getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
-                                .hasNoTokenBalancesReturned()
+                                .hasTokenBalance(ft, 1)
                                 .logged(),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().hasEmptyKey()));

@@ -249,7 +249,8 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         overriding(LEDGER_TOKEN_TRANSFERS_MAX_LEN, defaultMaxTokenTransferLen),
                         getTxnRecord(failedTxn)
                                 .scheduled()
-                                .hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)));
+                                .hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
+                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
     private HapiSpec suiteCleanup() {

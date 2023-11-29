@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip796;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.suites.hip796.Hip796Verbs.fungibleTokenWithFeatures;
@@ -60,7 +61,8 @@ public class TransfersSuite extends HapiSuite {
                         .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION))
                         .withRelation(BOB, r -> r.onlyForPartition(BLUE_PARTITION)))
                 .when(cryptoTransfer(moving(123L, partition(RED_PARTITION)).between(ALICE, BOB)))
-                .then();
+                .then(getAccountBalance(BOB)
+                        .hasTokenBalance(partition(RED_PARTITION), FUNGIBLE_INITIAL_BALANCE + 123L));
     }
 
     /**
@@ -82,7 +84,7 @@ public class TransfersSuite extends HapiSuite {
                         cryptoTransfer(moving(123L, partition(RED_PARTITION))
                                         .betweenWithPartitionChange(ALICE, BOB, partition(BLUE_PARTITION)))
                                 .fee(ONE_HBAR))
-                .then();
+                .then(getAccountBalance(BOB).hasTokenBalance(partition(BLUE_PARTITION), 123L));
     }
 
     /**

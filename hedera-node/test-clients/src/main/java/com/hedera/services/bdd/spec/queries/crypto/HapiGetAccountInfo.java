@@ -29,7 +29,9 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -162,6 +164,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
+    public HapiGetAccountInfo hasToken(ExpectedTokenRel relationship) {
+        relationships.add(relationship);
+        return this;
+    }
+
     public HapiGetAccountInfo hasNoTokenRelationship(String token) {
         absentRelationships.add(token);
         return this;
@@ -182,6 +189,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
+    public HapiGetAccountInfo hasAlreadyUsedAutomaticAssociations(int count) {
+        this.alreadyUsedAutomaticAssociations = Optional.of(count);
+        return this;
+    }
+
     public HapiGetAccountInfo loggingHexedKeys() {
         this.loggingHexedCryptoKeys = true;
         return this;
@@ -199,7 +211,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
-        final var actualInfo = response.getCryptoGetInfo().getAccountInfo();
+        var actualInfo = response.getCryptoGetInfo().getAccountInfo();
         if (assertAliasKeyMatches) {
             Objects.requireNonNull(aliasKeySource);
             final var expected = spec.registry().getKey(aliasKeySource).toByteString();
@@ -214,14 +226,37 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
             assertEquals(expectedID, actualInfo.getAccountID());
         }
+        if (!relationships.isEmpty()
+                || alreadyUsedAutomaticAssociations.isPresent()
+                || !absentRelationships.isEmpty()
+                || expectations.isPresent()
+                || registryEntry.isPresent()) {
+            final var detailsLookup = QueryVerbs.getAccountDetails(account);
+            CustomSpecAssert.allRunFor(spec, detailsLookup);
+            final var response = detailsLookup.getResponse();
+            var actualTokenRels =
+                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList();
+            ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
+            ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
+            alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
+                int actualCount = 0;
+                for (var rel : actualTokenRels) {
+                    if (rel.getAutomaticAssociation()) {
+                        actualCount++;
+                    }
+                }
+                assertEquals(actualCount, usedCount);
+            });
+            actualInfo = actualInfo.toBuilder()
+                    .addAllTokenRelationships(actualTokenRels)
+                    .build();
+        }
+
         if (expectations.isPresent()) {
             ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
             List<Throwable> errors = asserts.errorsIn(actualInfo);
             rethrowSummaryError(log, "Bad account info!", errors);
         }
-        var actualTokenRels = actualInfo.getTokenRelationshipsList();
-        ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
-        ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
 
         var actualOwnedNfts = actualInfo.getOwnedNfts();
         ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
@@ -229,18 +264,15 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
         maxAutomaticAssociations.ifPresent(
                 maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
-        alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
-            int actualCount = 0;
-            for (var rel : actualTokenRels) {
-                if (rel.getAutomaticAssociation()) {
-                    actualCount++;
-                }
-            }
-            assertEquals(actualCount, usedCount);
-        });
-        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
-
-        tokenAssociationsCount.ifPresent(count -> assertEquals(count, actualInfo.getTokenRelationshipsCount()));
+        if (expectedLedgerId.isPresent()) {
+            assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
+        }
+        if (tokenAssociationsCount.isPresent()) {
+            assertEquals(tokenAssociationsCount.get(), actualInfo.getTokenRelationshipsCount());
+        }
+        if (registryEntry.isPresent()) {
+            spec.registry().saveAccountInfo(registryEntry.get(), actualInfo);
+        }
     }
 
     @Override
@@ -285,11 +317,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
         if (customLog.isPresent()) {
             customLog.get().accept(response.getCryptoGetInfo().getAccountInfo(), log);
-        }
-        if (registryEntry.isPresent()) {
-            spec.registry()
-                    .saveAccountInfo(
-                            registryEntry.get(), response.getCryptoGetInfo().getAccountInfo());
         }
     }
 

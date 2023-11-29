@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -198,6 +199,8 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                         getTxnRecord("cryptoTransferZero").andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxn,
@@ -337,6 +340,15 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                     .hasKnownStatus(SUCCESS));
                 }))
                 .then(
+                        getAccountBalance(RECEIVER)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, receiverStartBalance + 2 * toSendEachTuple)
+                                .hasTokenBalance(NFT_TOKEN, 2L),
+                        getAccountBalance(SENDER)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
+                                .hasTokenBalance(NFT_TOKEN, 0L),
+                        getAccountBalance(CONTRACT)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
+                                .hasTokenBalance(NFT_TOKEN, 0L),
                         childRecordsCheck(
                                 revertedFungibleTransferTxn,
                                 CONTRACT_REVERT_EXECUTED,

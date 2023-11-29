@@ -301,7 +301,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias).logged(),
+                            getAliasedAccountBalance(alias)
+                                    .hasTokenBalance(FUNGIBLE_TOKEN, 2)
+                                    .logged(),
                             childRecordsCheck(
                                     TRANSFER_THEN_REVERT_TXN,
                                     CONTRACT_REVERT_EXECUTED,
@@ -398,7 +400,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias).logged(),
+                            getAliasedAccountBalance(alias)
+                                    .hasTokenBalance(FUNGIBLE_TOKEN, 2)
+                                    .logged(),
                             childRecordsCheck(
                                     NOT_ENOUGH_GAS_TXN,
                                     CONTRACT_REVERT_EXECUTED,
@@ -483,7 +487,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias).logged(),
+                            getAliasedAccountBalance(alias)
+                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
+                                    .logged(),
                             childRecordsCheck(
                                     TRANSFER_FROM_ACCOUNT_REVERT_TXN,
                                     CONTRACT_REVERT_EXECUTED,
@@ -563,7 +569,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias).logged());
+                            getAliasedAccountBalance(alias)
+                                    .hasTokenBalance(FUNGIBLE_TOKEN, allowance / 2)
+                                    .logged());
                 }))
                 .then();
     }
@@ -626,7 +634,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias).logged());
+                            getAliasedAccountBalance(alias)
+                                    .hasTokenBalance(NFT_TOKEN, 1)
+                                    .logged());
                 }))
                 .then();
     }

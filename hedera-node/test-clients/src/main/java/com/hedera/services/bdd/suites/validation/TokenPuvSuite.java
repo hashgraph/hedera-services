@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.validation;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -32,6 +34,8 @@ import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.persistence.Token;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -77,7 +81,17 @@ public class TokenPuvSuite extends HapiSuite {
                         grantTokenKyc(Names.TACO_TOKEN, Names.TACO_BENEFICIARY),
                         cryptoTransfer(moving(Amounts.BESTOWED_TACO_TOKENS, Names.TACO_TOKEN)
                                 .between(Names.TREASURY, Names.TACO_BENEFICIARY)))
-                .then();
+                .then(
+                        getAccountInfo(Names.TACO_BENEFICIARY)
+                                .hasToken(relationshipWith(Names.TACO_TOKEN)
+                                        .freeze(TokenFreezeStatus.Unfrozen)
+                                        .kyc(TokenKycStatus.Granted)
+                                        .balance(Amounts.BESTOWED_TACO_TOKENS)),
+                        getAccountInfo(Names.CAT_BENEFICIARY)
+                                .hasToken(relationshipWith(Names.CAT_TOKEN)
+                                        .freeze(TokenFreezeStatus.FreezeNotApplicable)
+                                        .kyc(TokenKycStatus.KycNotApplicable)
+                                        .balance(Amounts.BESTOWED_CAT_TOKENS)));
     }
 
     private HapiSpec initialAssociation() {
@@ -87,7 +101,15 @@ public class TokenPuvSuite extends HapiSuite {
                         tokenAssociate(Names.CAT_BENEFICIARY, Names.CAT_TOKEN),
                         tokenAssociate(Names.TACO_BENEFICIARY, Names.TACO_TOKEN))
                 .when()
-                .then();
+                .then(
+                        getAccountInfo(Names.TACO_BENEFICIARY)
+                                .hasToken(relationshipWith(Names.TACO_TOKEN)
+                                        .freeze(TokenFreezeStatus.Frozen)
+                                        .kyc(TokenKycStatus.Revoked)),
+                        getAccountInfo(Names.CAT_BENEFICIARY)
+                                .hasToken(relationshipWith(Names.CAT_TOKEN)
+                                        .freeze(TokenFreezeStatus.FreezeNotApplicable)
+                                        .kyc(TokenKycStatus.KycNotApplicable)));
     }
 
     private HapiSpec cleanupIfNecessary() {

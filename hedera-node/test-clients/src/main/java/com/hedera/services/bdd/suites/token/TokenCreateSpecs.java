@@ -61,6 +61,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -221,6 +223,8 @@ public class TokenCreateSpecs extends HapiSuite {
                         getAccountInfo(hbarCollector).has(accountWith().noChangesFromSnapshot(hbarCollector)),
                         getAccountInfo(treasury)
                                 .hasMaxAutomaticAssociations(10)
+                                /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
+                                .hasAlreadyUsedAutomaticAssociations(0)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(treasury, List.of(relationshipWith(A_TOKEN)))),
                         getAccountInfo(fractionalCollector)
@@ -328,7 +332,8 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
-                .then();
+                .then(getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
     }
 
     @HapiTest
@@ -507,7 +512,16 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPauseKey(PRIMARY)
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)
                                 .hasTotalSupply(0)
-                                .hasMaxSupply(100));
+                                .hasMaxSupply(100),
+                        getAccountInfo(TOKEN_TREASURY)
+                                .hasToken(relationshipWith(PRIMARY)
+                                        .balance(500)
+                                        .kyc(TokenKycStatus.Granted)
+                                        .freeze(TokenFreezeStatus.Unfrozen))
+                                .hasToken(relationshipWith(NON_FUNGIBLE_UNIQUE_FINITE)
+                                        .balance(0)
+                                        .kyc(TokenKycStatus.KycNotApplicable)
+                                        .freeze(TokenFreezeStatus.FreezeNotApplicable)));
     }
 
     @HapiTest
@@ -822,16 +836,20 @@ public class TokenCreateSpecs extends HapiSuite {
                                         OptionalLong.of(maximumToCollect),
                                         tokenCollector))
                                 .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector))
-                .then(getTokenInfo(token)
-                        .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
-                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-                        .hasCustom(fractionalFeeInSchedule(
-                                numerator,
-                                denominator,
-                                minimumToCollect,
-                                OptionalLong.of(maximumToCollect),
-                                false,
-                                tokenCollector)));
+                .then(
+                        getTokenInfo(token)
+                                .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+                                .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+                                .hasCustom(fractionalFeeInSchedule(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        false,
+                                        tokenCollector)),
+                        getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
+                        getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
+                        getAccountInfo(htsCollector).hasNoTokenRelationship(token));
     }
 
     @HapiTest
@@ -952,7 +970,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .treasury(TOKEN_TREASURY)
                         .decimals(decimals)
                         .initialSupply(initialSupply))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasNoTokenBalancesReturned());
+                .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
 
     @HapiTest

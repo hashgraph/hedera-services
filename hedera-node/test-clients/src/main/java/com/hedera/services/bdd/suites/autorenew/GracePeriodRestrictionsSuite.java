@@ -297,7 +297,8 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         tokenUpdate(aToken).treasury(civilian).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         mintToken(aToken, 1L).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         burnToken(aToken, 1L).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        getTokenInfo(aToken).hasTreasury(detachedAccount));
+                        getTokenInfo(aToken).hasTreasury(detachedAccount),
+                        getAccountBalance(detachedAccount).hasTokenBalance(aToken, expectedSupply));
     }
 
     private HapiSpec tokenMgmtRestrictionsEnforced() {

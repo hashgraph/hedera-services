@@ -57,8 +57,8 @@ public class UpgradeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpgradeSuite.class);
 
     public static final String pragmatism = "Think of the children!";
-    public static final String poeticUpgradeLoc = "hedera-node/test-clients/testfiles/poeticUpgrade.zip";
-    public static final String heavyPoeticUpgradeLoc = "hedera-node/test-clients/testfiles/heavyPoeticUpgrade.zip";
+    public static final String poeticUpgradeLoc = "testfiles/poeticUpgrade.zip";
+    public static final String heavyPoeticUpgradeLoc = "testfiles/heavyPoeticUpgrade.zip";
 
     public static void main(String... args) {
         new UpgradeSuite().runSuiteSync();

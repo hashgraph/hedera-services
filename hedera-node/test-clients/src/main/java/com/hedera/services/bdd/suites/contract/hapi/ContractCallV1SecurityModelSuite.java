@@ -164,19 +164,20 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                     ticketSerialNo.set(((Long) result[0]));
                                 }),
                         getTxnRecord(ticketTaking),
-                        getAccountBalance(OWNER).logged(),
+                        getAccountBalance(OWNER).logged().hasTokenBalance(ticketToken, 1L),
                         /* Our ticket number is 3 (b/c of the two pre-mints), so we must call
                          * work twice before the contract will actually accept our ticket. */
                         sourcing(() -> contractCall(contract, "workTicket", ticketSerialNo.get())
                                 .gas(2_000_000)
                                 .alsoSigningWithFullPrefix(OWNER)
                                 .payingWith(OWNER)),
-                        getAccountBalance(OWNER).logged(),
+                        getAccountBalance(OWNER).logged().hasTokenBalance(ticketToken, 1L),
                         sourcing(() -> contractCall(contract, "workTicket", ticketSerialNo.get())
                                 .gas(2_000_000)
                                 .alsoSigningWithFullPrefix(OWNER)
                                 .payingWith(OWNER)
                                 .via(ticketWorking)),
+                        getAccountBalance(OWNER).hasTokenBalance(ticketToken, 0L),
                         getTokenInfo(ticketToken).hasTotalSupply(1L),
                         /* Review the history */
                         getTxnRecord(ticketTaking).andAllChildRecords().logged(),

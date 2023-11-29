@@ -318,7 +318,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                                                 parsedToByteString(amount), parsedToByteString(0))))))))
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
-                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, amount),
                         childRecordsCheck(
                                 FIRST_MINT_TXN,
                                 SUCCESS,
@@ -374,7 +374,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                                                 parsedToByteString(1))))))))
                 .then(
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(totalSupply),
-                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, totalSupply),
                         childRecordsCheck(
                                 FIRST_MINT_TXN,
                                 SUCCESS,
@@ -435,7 +435,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord(nestedMintTxn).andAllChildRecords().logged())))
                 .then(
-                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
                                 nestedMintTxn,
                                 CONTRACT_REVERT_EXECUTED,
@@ -502,7 +502,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_GAS)),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
-                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, amount),
                         childRecordsCheck(
                                 FIRST_MINT_TXN,
                                 INSUFFICIENT_GAS,
