@@ -112,7 +112,7 @@ class DataFileCollectionCompactionTest {
                 }
             }
         };
-        final var compactor = new DataFileCompactor(storeName, coll, indexUpdater, null, null, null) {
+        final var compactor = new DataFileCompactor(storeName, coll, indexUpdater, null, null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -206,7 +206,7 @@ class DataFileCollectionCompactionTest {
                     };
 
                     final DataFileCompactor compactor =
-                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null) {
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null, null) {
                                 @Override
                                 int getMinNumberOfFilesToCompact() {
                                     return 2;
@@ -261,7 +261,7 @@ class DataFileCollectionCompactionTest {
             };
 
             final DataFileCompactor compactor =
-                    new DataFileCompactor(storeName, store, indexUpdater, null, null, null) {
+                    new DataFileCompactor(storeName, store, indexUpdater, null, null, null, null) {
                         @Override
                         int getMinNumberOfFilesToCompact() {
                             return 2;
@@ -322,7 +322,7 @@ class DataFileCollectionCompactionTest {
 
                 if (filesToMerge.size() > 1) {
                     final DataFileCompactor compactor =
-                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null);
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null, null);
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
@@ -395,7 +395,7 @@ class DataFileCollectionCompactionTest {
 
                 if (filesToMerge.size() > 1) {
                     final DataFileCompactor compactor =
-                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null);
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null, null);
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
@@ -443,7 +443,7 @@ class DataFileCollectionCompactionTest {
         final LongListOffHeap index = new LongListOffHeap();
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null);
+        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null, null);
         // Create a few files initially
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
@@ -560,7 +560,7 @@ class DataFileCollectionCompactionTest {
         final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null);
+        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null, null);
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {

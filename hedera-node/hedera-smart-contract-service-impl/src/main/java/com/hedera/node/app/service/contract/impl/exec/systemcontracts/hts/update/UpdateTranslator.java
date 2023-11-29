@@ -45,7 +45,7 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     private static final String HEDERA_TOKEN_STRUCT_V3 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
-    public static final Function TOKEN_UPDATE_INFO_FUNCTION =
+    public static final Function TOKEN_UPDATE_INFO_FUNCTION_V1 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")", ReturnTypes.INT);
@@ -62,7 +62,7 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION.selector())
+        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())
                 || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())
                 || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
     }
@@ -86,7 +86,7 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION.selector())) {
+        if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())) {
             return decoder.decodeTokenUpdateV1(attempt);
         } else if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())) {
             return decoder.decodeTokenUpdateV2(attempt);
