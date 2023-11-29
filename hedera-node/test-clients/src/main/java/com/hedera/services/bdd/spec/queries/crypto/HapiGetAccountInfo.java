@@ -48,6 +48,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * Get the info of a account.
+ * NOTE: Since we don't return token relationships from getAccountInfo query, we are using getAccountDetails query
+ * if there are any assertions about token relationships for internal testing.
+ */
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
@@ -226,12 +231,15 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
             assertEquals(expectedID, actualInfo.getAccountID());
         }
+        // Since we don't return token relationships from getAccountInfo query, for internal testing
+        // we are using getAccountDetails query to get token relationships.
         if (!relationships.isEmpty()
                 || alreadyUsedAutomaticAssociations.isPresent()
                 || !absentRelationships.isEmpty()
                 || expectations.isPresent()
                 || registryEntry.isPresent()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(account);
+            final var detailsLookup = QueryVerbs.getAccountDetails(
+                    "0.0." + actualInfo.getAccountID().getAccountNum());
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             var actualTokenRels =

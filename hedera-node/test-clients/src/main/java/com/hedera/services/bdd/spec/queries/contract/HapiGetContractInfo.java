@@ -53,6 +53,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * Get the info of a contract.
+ * NOTE: Since we don't return token relationships from getContractInfo query, we are using getAccountDetails query
+ * if there are any assertions about token relationships for internal testing.
+ */
 public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private static final Logger LOG = LogManager.getLogger(HapiGetContractInfo.class);
 
@@ -137,11 +142,14 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
+        // Since we don't return token relationships from getContractInfo query, for internal testing
+        // we are using getAccountDetails query to get token relationships.
         if (!relationships.isEmpty()
                 || !absentRelationships.isEmpty()
                 || expectations.isPresent()
                 || registryEntry.isPresent()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(contract);
+            final var detailsLookup = QueryVerbs.getAccountDetails(
+                    "0.0." + actualInfo.getContractID().getContractNum());
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             var actualTokenRels =

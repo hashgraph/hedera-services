@@ -60,6 +60,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * Get the balance of an account.
+ * NOTE: Since we don't return token balances from getAccountBalance query, we are using getAccountDetails query
+ * if there are any assertions about token balances to get token balances for internal testing.
+ */
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
 
@@ -224,8 +229,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             assertEquals(expected.get().longValue(), actual, "Wrong balance!");
         }
 
+        // Since we don't support token balances from getAccountBalance query, for internal testing
+        // we are using getAccountDetails query to get token balances.
         if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(account);
+            final var detailsLookup = QueryVerbs.getAccountDetails(
+                    "0.0." + balanceResponse.getAccountID().getAccountNum());
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
