@@ -55,8 +55,21 @@ identified by the wiring model, which logs a warning if cyclic backpressure is d
 ### Wiring Model
 
 The wiring model tracks all task schedulers and wires that connect them, and is capable of doing useful analysis of the
-resulting graph. Most notably, it can produce mermaid style diagrams, detect cyclic backpressure that could result in a
-deadlock, and verifies proper wiring of various task schedulers according to their restrictions (for example, a
-concurrent task scheduler is not permitted to send data to a direct scheduler).
+resulting graph. Most notably, it can produce mermaid style diagrams that show the flow of data through wires and
+components, detect cyclic backpressure that could result in a deadlock, and verify proper wiring of various task
+schedulers according to their restrictions (for example, a concurrent task scheduler is not permitted to be wired to a
+direct scheduler).
 
 ## Building a Pipeline
+
+The steps below describe how simple components can be created and wired together. This is one example of the order of
+steps, but some steps can be done in different orders.
+
+### Step 1 - Create the Task Scheduler
+
+Create the `TaskScheduler` parameterized with the type of data the component will produce. The `TaskScheduler` comes
+with an `OutputWire` build in.
+
+```TaskScheduler<String> fooTaskScheduler = WiringModel.schedulerBuilder("Foo");```
+
+### Step 2 - Create the Input Wire
