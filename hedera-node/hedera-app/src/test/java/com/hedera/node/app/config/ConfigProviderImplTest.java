@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.ConfigurationBuilder;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -143,6 +144,19 @@ class ConfigProviderImplTest {
 
         // then
         assertThat(bar).isEqualTo("456");
+    }
+
+    @Test
+    void providerGetsCorrectValueFromExistingConfig() {
+        // given
+        final var subject = new ConfigProviderImpl(
+                ConfigurationBuilder.create().withValue("key", "value").build());
+
+        // when
+        final var result = subject.getConfiguration();
+
+        // then
+        assertThat(result.getValue("key")).isEqualTo("value");
     }
 
     @Test
