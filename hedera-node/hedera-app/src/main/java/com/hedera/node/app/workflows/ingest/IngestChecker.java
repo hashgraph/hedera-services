@@ -162,7 +162,8 @@ public final class IngestChecker {
             validateTruePreCheck(txBody.contractCallOrThrow().gas() >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
             // Second, if the fee offered does not cover the gas cost of the transaction, then
             // we would again end up with uncompensated work
-            final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime);
+            final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime)
+                    - txBody.contractCallOrThrow().amount();
             validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
         }
 

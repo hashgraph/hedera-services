@@ -63,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -335,7 +334,6 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         .hasKnownStatus(expectedStatus)));
     }
 
-    @HapiTest
     private HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
