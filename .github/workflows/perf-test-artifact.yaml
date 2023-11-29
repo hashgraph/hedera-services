@@ -142,7 +142,7 @@ jobs:
         id: artifact-release
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
-          ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}
+          ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
           echo "build-version=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
 
       - name: Check If Release Artifact Exist in Bucket
