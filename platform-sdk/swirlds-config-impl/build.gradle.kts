@@ -20,6 +20,8 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
+mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
+
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

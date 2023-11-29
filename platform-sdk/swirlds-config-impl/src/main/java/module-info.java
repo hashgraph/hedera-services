@@ -10,6 +10,7 @@ module com.swirlds.config.impl {
     requires com.swirlds.common;
     requires com.swirlds.config.extensions;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
 
     provides ConfigurationBuilderFactory with
             ConfigurationBuilderFactoryImpl;
