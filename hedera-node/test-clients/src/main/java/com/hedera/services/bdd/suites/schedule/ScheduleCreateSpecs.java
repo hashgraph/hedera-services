@@ -497,7 +497,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     public HapiSpec doesntTriggerUntilPayerSigns() {
         return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
                 .given(
-                        cryptoCreate(PAYER).balance(ONE_HBAR * 2),
+                        cryptoCreate(PAYER).balance(ONE_HBAR * 5),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(scheduleCreate(
@@ -505,15 +505,23 @@ public class ScheduleCreateSpecs extends HapiSuite {
                                 cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                                         .fee(ONE_HBAR))
                         .designatingPayer(PAYER)
-                        .alsoSigningWith(SENDER, RECEIVER))
+                        .alsoSigningWith(SENDER, RECEIVER)
+                        .via(BASIC_XFER)
+                        .recordingScheduledTxn())
                 .then(
+                        getScheduleInfo(BASIC_XFER).isNotExecuted(),
                         getAccountBalance(SENDER).hasTinyBars(1L),
                         getAccountBalance(RECEIVER).hasTinyBars(0L),
-                        scheduleSign(BASIC_XFER).alsoSigningWith(PAYER),
-                        getAccountBalance(SENDER).hasTinyBars(0L),
-                        getAccountBalance(RECEIVER).hasTinyBars(1L));
+                        scheduleSign(BASIC_XFER).alsoSigningWith(PAYER).hasKnownStatus(SUCCESS),
+                        getTxnRecord(BASIC_XFER).scheduled(),
+                        getScheduleInfo(BASIC_XFER).isExecuted().hasRecordedScheduledTxn(),
+                        // Very strange. HapiTest fails because We have a
+                        // scheduled and executed record, but the balances did not change...
+                        getAccountBalance(RECEIVER).hasTinyBars(1L),
+                        getAccountBalance(SENDER).hasTinyBars(0L));
     }
 
+    @HapiTest
     public HapiSpec triggersImmediatelyWithBothReqSimpleSigs() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
         long transferAmount = 1;
@@ -528,10 +536,10 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .via(BASIC_XFER)
                         .recordingScheduledTxn())
                 .then(
-                        getAccountBalance(SENDER).hasTinyBars(initialBalance - transferAmount),
-                        getAccountBalance(RECEIVER).hasTinyBars(initialBalance + transferAmount),
+                        getTxnRecord(BASIC_XFER).scheduled(),
                         getScheduleInfo(BASIC_XFER).isExecuted().hasRecordedScheduledTxn(),
-                        getTxnRecord(BASIC_XFER).scheduled());
+                        getAccountBalance(SENDER).hasTinyBars(initialBalance - transferAmount),
+                        getAccountBalance(RECEIVER).hasTinyBars(initialBalance + transferAmount));
     }
 
     @HapiTest

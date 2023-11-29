@@ -76,9 +76,9 @@ import org.apache.logging.log4j.Logger;
 
 public class MixedOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
-    private static final int NUM_SUBMISSIONS = 100;
-    private static final String SUBMIT_KEY = "submitKey";
-    private static final String TOKEN = "token";
+    public static final int NUM_SUBMISSIONS = 100;
+    public static final String SUBMIT_KEY = "submitKey";
+    public static final String TOKEN = "token";
     private final ResponseCodeEnum[] permissiblePrechecks =
             new ResponseCodeEnum[] {BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
 
