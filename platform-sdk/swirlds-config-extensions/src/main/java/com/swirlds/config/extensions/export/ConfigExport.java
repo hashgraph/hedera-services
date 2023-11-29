@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.export;
+package com.swirlds.config.extensions.export;
 
-import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;

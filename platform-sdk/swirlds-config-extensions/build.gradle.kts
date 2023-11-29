@@ -18,3 +18,9 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
 }
+
+testModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.test.framework")
+    requires("org.junit.jupiter.api")
+}

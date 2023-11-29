@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.export;
+package com.swirlds.config.extensions.test.export;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -23,6 +23,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

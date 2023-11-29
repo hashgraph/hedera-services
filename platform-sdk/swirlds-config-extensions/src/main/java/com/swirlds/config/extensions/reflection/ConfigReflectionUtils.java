@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.reflection;
+package com.swirlds.config.extensions.reflection;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
@@ -29,6 +28,7 @@ import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -131,8 +131,8 @@ public final class ConfigReflectionUtils {
     public static <A extends Annotation, V>
             List<AnnotatedProperty<A, V>> getAllMatchingPropertiesForConstraintAnnotation(
                     final Class<A> constraintAnnotationType, final Configuration configuration) {
-        CommonUtils.throwArgNull(constraintAnnotationType, "annotationType");
-        CommonUtils.throwArgNull(configuration, "configuration");
+        Objects.requireNonNull(constraintAnnotationType, "annotationType can not be null");
+        Objects.requireNonNull(configuration, "configuration can not be null");
         return configuration.getConfigDataTypes().stream()
                 .flatMap(recordType -> Arrays.stream(recordType.getRecordComponents()))
                 .filter(component -> component.isAnnotationPresent(constraintAnnotationType))

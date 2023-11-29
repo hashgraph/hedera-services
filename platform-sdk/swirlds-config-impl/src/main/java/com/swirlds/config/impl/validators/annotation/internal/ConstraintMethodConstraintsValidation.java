@@ -16,11 +16,11 @@
 
 package com.swirlds.config.impl.validators.annotation.internal;
 
-import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.annotation.ConstraintMethod;
+import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.stream.Stream;

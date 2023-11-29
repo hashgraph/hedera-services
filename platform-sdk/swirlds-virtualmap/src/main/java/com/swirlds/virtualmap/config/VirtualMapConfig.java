@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap.config;
 
-import com.swirlds.common.config.validators.DefaultConfigViolation;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
@@ -24,6 +23,7 @@ import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.annotation.ConstraintMethod;
 import com.swirlds.config.api.validation.annotation.Max;
 import com.swirlds.config.api.validation.annotation.Min;
+import com.swirlds.config.extensions.validators.DefaultConfigViolation;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Duration;
 
