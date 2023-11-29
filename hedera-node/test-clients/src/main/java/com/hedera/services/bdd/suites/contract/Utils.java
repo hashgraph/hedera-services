@@ -91,8 +91,7 @@ public class Utils {
     private static final String JSON_EXTENSION = ".json";
 
     public static void main(String... args) throws IOException {
-        final var contractsLoc =
-                "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/src/main/java/com/hedera/services/bdd/suites/contract";
+        final var contractsLoc = "hedera-node/test-clients/src/main/java/com/hedera/services/bdd/suites/contract";
         final var baseContractFqn = "com.hedera.services.bdd.suites.contract";
         final var disabledCount = new AtomicLong();
         Files.walk(Paths.get(contractsLoc))
