@@ -113,11 +113,11 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTransaction))
                 .build();
 
-        childRecordBuilder
-                .transaction(transaction)
-                .entropyBytes(result.contractCallResult())
-                .status(responseStatus)
-                .contractCallResult(result);
+        if (ResponseCodeEnum.SUCCESS.equals(responseStatus)) {
+            childRecordBuilder.entropyBytes(result.contractCallResult());
+        }
+
+        childRecordBuilder.transaction(transaction).status(responseStatus).contractCallResult(result);
     }
 
     private <R extends Record> Bytes asBytes(@NonNull final Codec<R> codec, @NonNull final R r) {

@@ -16,18 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -85,7 +89,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             return new FullResult(result, gasRequirement, null);
         } catch (InvalidTransactionException e) {
             // This error is caused by the user sending in the wrong selector
-            createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
+            createFailedRecord(frame, e.getResponseCode(), contractID);
             return new FullResult(
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
                     gasRequirement,
@@ -93,7 +97,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         } catch (NullPointerException e) {
             // Log a warning as this error will be caused by insufficient entropy
             log.warn("Internal precompile failure", e);
-            createFailedRecord(frame, FAIL_INVALID.toString(), contractID);
+            createFailedRecord(frame, FAIL_INVALID, contractID);
             return new FullResult(
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
                     gasRequirement,
@@ -114,14 +118,26 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
     }
 
     void createFailedRecord(
-            @NonNull MessageFrame frame, @NonNull final String errorMsg, @NonNull final ContractID contractID) {
+            @NonNull MessageFrame frame,
+            @NonNull final ResponseCodeEnum responseCode,
+            @NonNull final ContractID contractID) {
         if (!frame.isStatic()) {
             requireNonNull(frame);
             requireNonNull(contractID);
-            contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-            updater.externalizeSystemContractResults(
-                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), FAIL_INVALID);
+
+            final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+            var contractResult = contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID);
+            contractResult = contractResult
+                    .copyBuilder()
+                    .gas(369808) // TODO: remove. This is not implemented yet
+                    .functionParameters(tuweniToPbjBytes(frame.getInputData()))
+                    .errorMessage(null)
+                    .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                    .senderId(senderId)
+                    .build();
+
+            updater.externalizeSystemContractResults(contractResult, PbjConverter.toPbj(responseCode));
         }
     }
 
@@ -131,7 +147,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             return random256BitGenerator(frame);
         }
         throw new InvalidTransactionException(
-                "Invalid selector for PRNG precompile", ResponseCodeEnum.INVALID_TRANSACTION);
+                "Invalid selector for PRNG precompile", ResponseCodeEnum.REVERTED_SUCCESS);
     }
 
     Bytes random256BitGenerator(final MessageFrame frame) {

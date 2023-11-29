@@ -76,8 +76,7 @@ public class PrngPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(prngPrecompileHappyPathWorks());
-        // return allOf(positiveSpecs(), negativeSpecs());
+        return allOf(positiveSpecs(), negativeSpecs());
     }
 
     List<HapiSpec> negativeSpecs() {
@@ -99,7 +98,10 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var numCalls = 5;
         final List<String> prngSeeds = new ArrayList<>();
         return defaultHapiSpec("MultipleCallsHaveIndependentResults")
-                .given(uploadInitCode(prng), contractCreate(prng))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(withOpContext((spec, opLog) -> {
                     for (int i = 0; i < numCalls; i++) {
                         final var txn = "call" + i;
@@ -142,7 +144,11 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
-                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        cryptoCreate(BOB),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(sourcing(() -> contractCall(prng, GET_SEED)
                         .withExplicitParams(
                                 () -> CommonUtils.hex(Bytes.fromBase64String("").toArray()))
@@ -170,7 +176,11 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
-                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        cryptoCreate(BOB),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(sourcing(() -> contractCall(prng, GET_SEED)
                         .withExplicitParams(() -> CommonUtils.hex(
                                 Bytes.fromBase64String(EXPLICIT_LARGE_PARAMS).toArray()))
@@ -198,7 +208,11 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails")
-                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        cryptoCreate(BOB),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(sourcing(() -> contractCall(prng, "performNonExistingServiceFunctionCall")
                         .gas(GAS_TO_OFFER)
                         .payingWith(BOB)
@@ -220,7 +234,11 @@ public class PrngPrecompileSuite extends HapiSuite {
     private HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
-                .given(cryptoCreate(BOB), uploadInitCode(THE_PRNG_CONTRACT), contractCreate(THE_PRNG_CONTRACT))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        cryptoCreate(BOB),
+                        uploadInitCode(THE_PRNG_CONTRACT),
+                        contractCreate(THE_PRNG_CONTRACT))
                 .when(
                         sourcing(() -> contractCall(THE_PRNG_CONTRACT, GET_SEED)
                                 .withExplicitParams(
