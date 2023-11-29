@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import java.util.HashSet;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -118,6 +120,66 @@ class HederaEvmOperationsUtilV038Test {
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+
+        // when:
+        final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
+                messageFrame,
+                () -> messageFrame.getStackItem(0),
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> false,
+                a -> false,
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
+
+        // then:
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
+        // and:
+        verify(messageFrame).getStackItem(0);
+        verify(gasSupplier).getAsLong();
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void haltsWithInvalidSolidityAddressWhenAllowCallsToNonContractAccountsIsDisabled() {
+        // given:
+        given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
+        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
+
+        // when:
+        final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
+                messageFrame,
+                () -> messageFrame.getStackItem(0),
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> false,
+                a -> false,
+                () -> mock(Operation.OperationResult.class),
+                evmProperties);
+
+        // then:
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
+        // and:
+        verify(messageFrame).getStackItem(0);
+        verify(gasSupplier).getAsLong();
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void haltsWithInvalidSolidityAddressWhenIsGrandfatherContract() {
+        final var grandfatherContracts = new HashSet<Address>();
+        grandfatherContracts.add(Address.ZERO);
+        // given:
+        given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
+        given(messageFrame.getContractAddress()).willReturn(Address.ZERO);
+        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(true);
+        given(evmProperties.grandfatherContracts()).willReturn(grandfatherContracts);
 
         // when:
         final var result = HederaEvmOperationsUtilV038.addressCheckExecution(
