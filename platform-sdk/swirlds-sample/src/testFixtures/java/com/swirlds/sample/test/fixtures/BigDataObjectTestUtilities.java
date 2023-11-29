@@ -14,23 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.sample.test;
+package com.swirlds.sample.test.fixtures;
 
-import com.swirlds.base.test.fixtures.date.DateUtil;
-import com.swirlds.sample.Foo;
-import java.time.Instant;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.swirlds.sample.BigDataObject;
 
-public class FooTest {
+public class BigDataObjectTestUtilities {
 
-    @Test
-    void testConstructor() {
-        Assertions.assertThrows(NullPointerException.class, () -> new Foo(null));
-    }
-
-    void testThatTimeIsNotYesterday() {
-        final Instant now = Foo.getTime().now();
-        DateUtil.isYesterday(now);
+    public static BigDataObject createDummy() {
+        return new BigDataObject("Alice", 42, new byte[1024 * 1024]);
     }
 }

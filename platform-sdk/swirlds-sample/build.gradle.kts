@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.sdk.conventions") }
+plugins {
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("java-test-fixtures")
+}
 
 mainModuleInfo { runtimeOnly("foo.bar") }
 
-testModuleInfo { requires("org.junit.jupiter.api") }
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("com.swirlds.sample.test.fixtures")
+    requires("com.swirlds.base.test.fixtures")
+}

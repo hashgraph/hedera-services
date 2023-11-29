@@ -16,21 +16,12 @@
 
 package com.swirlds.sample.test;
 
-import com.swirlds.base.test.fixtures.date.DateUtil;
-import com.swirlds.sample.Foo;
-import java.time.Instant;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.swirlds.sample.BigDataObject;
+import com.swirlds.sample.test.fixtures.BigDataObjectTestUtilities;
 
-public class FooTest {
+public class BigDataObjectTest {
 
-    @Test
-    void testConstructor() {
-        Assertions.assertThrows(NullPointerException.class, () -> new Foo(null));
-    }
-
-    void testThatTimeIsNotYesterday() {
-        final Instant now = Foo.getTime().now();
-        DateUtil.isYesterday(now);
+    void testObject() {
+        final BigDataObject dummy = BigDataObjectTestUtilities.createDummy();
     }
 }
