@@ -1586,6 +1586,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     }
 
     // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     private HapiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
@@ -1957,7 +1958,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     private HapiSpec executionWithCustomPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
@@ -2023,7 +2024,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     private HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerAndAdminKeyWorks")
@@ -2091,7 +2092,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    // @todo('9976') Need to work out why this does not produce the expected transfer list
+    @HapiTest
     private HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")

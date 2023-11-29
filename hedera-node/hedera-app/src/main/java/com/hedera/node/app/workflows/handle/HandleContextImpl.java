@@ -79,6 +79,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.record.DispatchValidationResult;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -663,15 +664,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         // Any keys verified for this dispatch (including the payer key if
         // required) should incorporate the provided callback
         final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
-        final Key syntheticPayerKey;
+        final DispatchValidationResult dispatchValidationResult;
         try {
-            syntheticPayerKey = validate(
+            dispatchValidationResult = validate(
                     callback == null ? null : childVerifier,
                     function,
                     txBody,
                     syntheticPayer,
                     networkInfo().selfNodeInfo().nodeId(),
-                    dispatchNeedsHapiPayerChecks(category));
+                    dispatchNeedsHapiPayerChecks(childCategory));
         } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
             return;
@@ -682,7 +683,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 function,
                 0,
                 syntheticPayer,
-                syntheticPayerKey,
+                dispatchValidationResult == null ? null : dispatchValidationResult.key(),
                 networkInfo,
                 childCategory,
                 childRecordBuilder,
@@ -702,6 +703,19 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 solvencyPreCheck,
                 childRecordFinalizer);
 
+        if (dispatchValidationResult != null) {
+            childContext.feeAccumulator.chargeFees(
+                    syntheticPayer,
+                    networkInfo().selfNodeInfo().accountId(),
+                    dispatchValidationResult
+                            .fees()
+                            .copyBuilder()
+                            .networkFee(0)
+                            .nodeFee(0)
+                            .build());
+            System.out.println("dispatchSyntheticTxn: " + dispatchValidationResult.key() + " network fees : "
+                    + dispatchValidationResult.fees().copyBuilder().build());
+        }
         try {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
@@ -717,7 +731,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
     }
 
-    private @Nullable Key validate(
+    private @Nullable DispatchValidationResult validate(
             @Nullable final KeyVerifier keyVerifier,
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody transactionBody,
@@ -731,7 +745,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 readableStoreFactory(), transactionBody, syntheticPayerId, configuration(), dispatcher);
         dispatcher.dispatchPreHandle(preHandleContext);
 
-        Key syntheticPayerKey = null;
+        DispatchValidationResult dispatchValidationResult = null;
         if (enforceHapiPayerChecks) {
             // In the current system only the schedule service needs to specify its
             // child transaction id, and will never use a duplicate, so this check is
@@ -742,21 +756,21 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             }
 
             // Check the status and solvency of the payer
-            final var fee = dispatchComputeFees(body(), syntheticPayerId);
+            final var fee = dispatchComputeFees(transactionBody, syntheticPayerId);
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
-            solvencyPreCheck.checkSolvency(body(), syntheticPayerId, functionality, payerAccount, fee, true);
+            solvencyPreCheck.checkSolvency(transactionBody, syntheticPayerId, functionality, payerAccount, fee, true);
             // FUTURE - charge fees here?
 
             // Note we do NOT want to enforce the "time box" on valid start for
             // transaction ids dispatched by the schedule service, since these ids derive from their
             // ScheduleCreate id, which could have happened long ago
-
-            syntheticPayerKey = payerAccount.keyOrThrow();
+            Key syntheticPayerKey = payerAccount.keyOrThrow();
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
+            dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, fee);
         }
 
         // Given the current HTS system contract interface and ScheduleService
@@ -781,7 +795,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 }
             }
         }
-        return syntheticPayerKey;
+        return dispatchValidationResult;
     }
 
     private void assertPayerIsAuthorized(
