@@ -128,7 +128,7 @@ public class HapiApiClientsTest {
      */
     @Test
     @Disabled
-    public void testConnectionAfterGoAwayTest() {
+    public void testConnectionGoawayWithStub() {
         // Get a stub to simulate GOAWAY
         ManagedChannel channel = getChannelToTerminate(apiClients);
         simulateGoAwaySignal(channel);
@@ -152,24 +152,54 @@ public class HapiApiClientsTest {
      */
     @Test
     @Disabled
-    public void testConnectionNormalBehaviorTest() {
+    public void testConnectionGoawayNoInterceptor() {
         try {
             final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
-            final var query =
-                    Query.newBuilder().setCryptogetAccountBalance(builder).build();
+            final var query = Query.newBuilder().setCryptogetAccountBalance(builder).build();
             final var client = apiClients.getCryptoSvcStub(accountID, false);
-            System.out.println("using client to get the balance");
             final var response = client.cryptoGetBalance(query);
-            System.out.printf(
-                    "ran crypto get balance %s\n",
-                    response.getCryptogetAccountBalance().getBalance());
-            fail("Expected an exception due to GOAWAY signal but none was thrown.");
+            fail(String.format("Expected an exception due to GOAWAY signal but none was thrown: %s", response.toString()));
         } catch (StatusRuntimeException e) {
-            System.out.printf("got an exception: %s\n", e);
-            System.out.flush();
-            // Assert that the correct exception is thrown
+            // Assert that the correct exception is thrown.
             assertEquals(Status.Code.UNAVAILABLE, e.getStatus().getCode());
         }
+    }
+
+    /**
+     * This test actually processes the GOAWAY from the server,
+     * AND ensures that we get an exception when there is a RetryInterceptor set but no are no retries enabled.
+     */
+    @Test
+    public void testConnectionGoawayWithRetryInterceptorAndZeroRetries() throws InterruptedException {
+        // Some retry setup. In practice only the RetryInterceptor and setRetries is needed.
+        // The setRetryCallbacks and CountDownLatch are only so we can verify the retry happened.
+        var retries = 0;
+        var latch = new CountDownLatch(retries);
+        var retryCallbacks = new RetryCallbacksLatch(latch);
+        var interceptor = RetryInterceptor.newBuilder()
+                .setRetries(retries) // Set the number of times this interceptor is allowed to retry.
+                .setRetryCallbacks(retryCallbacks); // On each retry, execute our callback, so we can verify it retried.
+
+        apiClients.setClientInterceptor(interceptor);
+
+        final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
+        final var query = Query.newBuilder().setCryptogetAccountBalance(builder).build();
+        final var client = apiClients.getCryptoSvcStub(accountID, false);
+
+        // Execute the query.
+        var response = client.cryptoGetBalance(query);
+
+        // Assert that the query did not fail.
+        assertNotNull(response, "Could not get response");
+        assertEquals(response.getCryptogetAccountBalance().getBalance(), 1000);
+
+        // We now need to assert that the latch was counted down. We should have had zero retries.
+        // The latch should execute immediately, leaving this here so this test doesn't hang if there
+        // is a problem in the future.
+        boolean called = latch.await(5, TimeUnit.SECONDS);
+
+        // Test should fail if the callback is not called within the timeout
+        assertTrue(called, "RetryCallback was not called within the timeout");
     }
 
     /**
@@ -177,26 +207,28 @@ public class HapiApiClientsTest {
      * AND ensures that we pass when there are retries enabled.
      */
     @Test
-    public void testConnectionRetryBehaviorTest() throws InterruptedException {
-        var latch = new CountDownLatch(0);
+    public void testConnectionGoawayWithRetryInterceptorAndOneRetries() throws InterruptedException {
+        // Some retry setup. In practice only the RetryInterceptor and setRetries is needed.
+        // The setRetryCallbacks and CountDownLatch are only so we can verify the retry happened.
+        var retries = 1;
+        var latch = new CountDownLatch(retries);
         var retryCallbacks = new RetryCallbacksLatch(latch);
-        var interceptor = RetryInterceptor.newBuilder().setRetries(0).setRetryCallbacks(retryCallbacks);
-        // In order to test this properly we need to pass an implementation
-        // of the retry. Maybe for an API standpoint, passing in an interceptor
-        // would be better.
-//        apiClients.setClientInterceptor(interceptor);
+        var interceptor = RetryInterceptor.newBuilder()
+                .setRetries(retries) // Set the number of times this interceptor is allowed to retry.
+                .setRetryCallbacks(retryCallbacks); // On each retry, execute our callback, so we can verify it retried.
+
+        apiClients.setClientInterceptor(interceptor);
 
         final var builder = CryptoGetAccountBalanceQuery.newBuilder().setAccountID(accountID);
         final var query = Query.newBuilder().setCryptogetAccountBalance(builder).build();
         final var client = apiClients.getCryptoSvcStub(accountID, false);
+
         System.out.println("using client to get the balance");
-        var resp = client.cryptoGetBalance(query);
-        //                System.out.printf("ran crypto get balance %s\n", resp.toString());
+        var response = client.cryptoGetBalance(query);
+
         System.out.printf(
                 "in executor - ran crypto get balance %s\n",
-                resp.getCryptogetAccountBalance().getBalance());
-
-        final var response = resp;
+                response.getCryptogetAccountBalance().getBalance());
 
         // We should be getting here because on the second retry it should pass.
 //        System.out.printf("ran crypto get balance 2:   %s\n", response.toString());
@@ -234,7 +266,6 @@ public class HapiApiClientsTest {
 
     private static HapiSpecSetup createTestSetup() {
         // Create and return a HapiSpecSetup instance with the necessary test configuration
-        //        accountID = AccountID.newBuilder().setAccountNum(FIRST_NODE_ACCOUNT_NUM).build();
         return new HapiSpecSetup(HapiSpecSetup.getDefaultPropertySource());
     }
 
