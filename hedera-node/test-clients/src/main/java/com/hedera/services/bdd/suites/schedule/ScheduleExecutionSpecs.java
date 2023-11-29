@@ -175,9 +175,9 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     private static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
     private static final String ACCOUNT = "civilian";
     private static final String TOKENS_NFTS_MAX_BATCH_SIZE_MINT = "tokens.nfts.maxBatchSizeMint";
-    private static final String defaultMaxBatchSizeMint =
+    private static final String DEFAULT_MAX_BATCH_SIZE_MINT =
             HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MAX_BATCH_SIZE_MINT);
-    private static final String defaultWhitelist =
+    private static final String DEFAULT_WHITELIST =
             HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
 
     /**
@@ -268,7 +268,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 .when()
                 .then(fileUpdate(APP_PROPERTIES)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(SCHEDULING_WHITELIST, defaultWhitelist)));
+                        .overridingProps(Map.of(SCHEDULING_WHITELIST, DEFAULT_WHITELIST)));
     }
 
     private HapiSpec suiteSetup() {
@@ -612,7 +612,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .scheduled()
                                 .hasPriority(recordWith().status(BATCH_SIZE_LIMIT_EXCEEDED)),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0),
-                        overriding(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, defaultMaxBatchSizeMint));
+                        overriding(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, DEFAULT_MAX_BATCH_SIZE_MINT));
     }
 
     // This should not be run for modular service due to key gathering behavior differences.
@@ -2214,7 +2214,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS))
                 .then(
                         freezeAbort().payingWith(GENESIS),
-                        overriding(SCHEDULING_WHITELIST, defaultWhitelist),
+                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2257,7 +2257,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                     // there are no throttles for freeze and we deeply check with
                                     // long term enabled
                                     .hasPrecheck(BUSY),
-                            overriding(SCHEDULING_WHITELIST, defaultWhitelist));
+                            overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST));
         }
         return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFails")
                 .given(
@@ -2285,7 +2285,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS))
                 .then(
                         freezeAbort().payingWith(GENESIS),
-                        overriding(SCHEDULING_WHITELIST, defaultWhitelist),
+                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2298,7 +2298,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // @todo('9973') Need to work out why this does not actually execute
+    @HapiTest
     private HapiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
                 .given(
@@ -2317,7 +2317,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, defaultWhitelist),
+                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2351,7 +2351,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, defaultWhitelist),
+                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2364,7 +2364,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // @todo('9973') Work out permissioned file update issues
+    @HapiTest
     private HapiSpec scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpected")
@@ -2383,7 +2383,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, defaultWhitelist),
+                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                         withOpContext((spec, opLog) -> {
@@ -2420,7 +2420,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                     // with
                                     // long term enabled
                                     .hasPrecheck(BUSY),
-                            overriding(SCHEDULING_WHITELIST, defaultWhitelist));
+                            overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST));
         }
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFails")
@@ -2441,7 +2441,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, defaultWhitelist),
+                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         getFileInfo("misc").nodePayment(1_234L),
                         withOpContext((spec, opLog) -> {
@@ -2536,7 +2536,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                         minCongestionPeriod,
                                         HapiSpecSetup.getDefaultNodeProps().get(minCongestionPeriod),
                                         SCHEDULING_WHITELIST,
-                                        defaultWhitelist)),
+                                        DEFAULT_WHITELIST)),
                         cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
                                 .payingWith(GENESIS),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),

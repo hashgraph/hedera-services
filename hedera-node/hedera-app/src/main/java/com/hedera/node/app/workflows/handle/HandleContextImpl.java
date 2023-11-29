@@ -79,7 +79,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.record.DispatchValidationResult;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -713,8 +712,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                             .networkFee(0)
                             .nodeFee(0)
                             .build());
-            System.out.println("dispatchSyntheticTxn: " + dispatchValidationResult.key() + " network fees : "
-                    + dispatchValidationResult.fees().copyBuilder().build());
         }
         try {
             dispatcher.dispatchHandle(childContext);
@@ -871,5 +868,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     private boolean dispatchNeedsHapiPayerChecks(@NonNull final TransactionCategory category) {
         return category == SCHEDULED;
+    }
+
+    private record DispatchValidationResult(@NonNull Key key, @NonNull Fees fees) {
+        public DispatchValidationResult {
+            requireNonNull(key);
+        }
     }
 }
