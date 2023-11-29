@@ -42,41 +42,50 @@ env:
   LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
   LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
 jobs:
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        
+      - name: Verify Workflow Parameters
+        id: parameters
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+          BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
 
-  release-adhoc:
-    name: Release [Adhoc]
-    uses: ./.github/workflows/perf-test-artifact.yaml
-    with:
-      version-policy: branch-commit
-      trigger-env-deploy: none
-      sdk-release-profile: AdhocCommit
-      dry-run-enabled: true
-      java-version: ${{ '17.0.8' }}
-      java-distribution: ${{ 'temurin' }}
-      gradle-version: ${{ 'wrapper' }}
+          echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
+          echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
 
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
 
-#  performance-test:
-#    name: Performance Test
-#    runs-on: ubuntu-latest
-#    needs:
-#      - release-adhoc
-#    steps:
-#      - name: Checkout Code
-#        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+
+      - name: Check If Release Artifact Exist in Bucket
+        id: check-if-exist
+        run: |
+          set +e
+          ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
+          ARTIFACT_PATH="gs://${{ secrets.bucket-name }}/${ARTIFACT_NAME}.zip"
+          echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
+          gsutil -q stat "${ARTIFACT_PATH}"
+          PATH_EXIST=$?
+          if [ ${PATH_EXIST} -eq 0 ]; then
+            echo "Artifact Already Exist"
+            echo "exist=true" >>"${GITHUB_OUTPUT}"
+          else
+            echo "Artifact Not Exist"
+            echo "exist=false" >>"${GITHUB_OUTPUT}"
+          fi
+
 #
 #      - name: Reset Network
 #        id: reset-network
