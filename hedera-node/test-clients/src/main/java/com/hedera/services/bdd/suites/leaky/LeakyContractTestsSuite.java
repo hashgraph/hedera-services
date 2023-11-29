@@ -463,8 +463,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))),
-                        getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+                        getAccountBalance(ERC_20_CONTRACT).hasNoTokenBalancesReturned(),
+                        getAccountBalance(nestedContract).hasNoTokenBalancesReturned());
     }
 
     @HapiTest
@@ -600,11 +600,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
                         // Confirm the balances are correct
                         getAccountInfo(RECEIVER).hasOwnedNfts(0),
-                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0),
+                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
                         getAccountInfo(RECEIVER_2).hasOwnedNfts(0),
-                        getAccountBalance(RECEIVER_2).hasTokenBalance(VANILLA_TOKEN, 0),
+                        getAccountBalance(RECEIVER_2).hasNoTokenBalancesReturned(),
                         getAccountInfo(ACCOUNT).hasOwnedNfts(4),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 500L));
+                        getAccountBalance(ACCOUNT).hasNoTokenBalancesReturned());
     }
 
     private HapiSpec transferWorksWithTopLevelSignatures() {
@@ -762,11 +762,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .including(KNOWABLE_TOKEN, ACCOUNT, RECEIVER_2, 3L))),
                         // Confirm the balances are correct
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 10L),
+                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
                         getAccountInfo(RECEIVER_2).hasOwnedNfts(2),
-                        getAccountBalance(RECEIVER_2).hasTokenBalance(VANILLA_TOKEN, 5L),
+                        getAccountBalance(RECEIVER_2).hasNoTokenBalancesReturned(),
                         getAccountInfo(ACCOUNT).hasOwnedNfts(1),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 485L));
+                        getAccountBalance(ACCOUNT).hasNoTokenBalancesReturned());
     }
 
     private HapiSpec transferFailsWithIncorrectAmounts() {
@@ -1895,8 +1895,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)),
                         // Two successful transfers - one with a top-level signature, one with an
                         // approval
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 2 * amountPerTransfer),
-                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 2 * amountPerTransfer),
+                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
+                        getAccountBalance(SENDER).hasNoTokenBalancesReturned(),
                         childRecordsCheck(
                                 approvedTransfer,
                                 SUCCESS,

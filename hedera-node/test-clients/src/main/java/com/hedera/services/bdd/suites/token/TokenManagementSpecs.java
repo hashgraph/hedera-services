@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -60,8 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
-import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -157,10 +154,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .logged(),
                         cryptoTransfer(movingUnique(nft, 1L).between(TOKEN_TREASURY, civilian))
                                 .logged(),
-                        getAccountInfo(civilian)
-                                .hasToken(relationshipWith(fungible).balance(2))
-                                .hasOwnedNfts(1)
-                                .logged())
+                        getAccountInfo(civilian).hasOwnedNfts(1).logged())
                 .then(
                         cryptoTransfer(moving(0, fungible).between(TOKEN_TREASURY, civilian))
                                 .logged(),
@@ -170,14 +164,8 @@ public class TokenManagementSpecs extends HapiSuite {
                         burnToken(nft, List.of()).hasKnownStatus(INVALID_TOKEN_BURN_METADATA),
                         wipeTokenAccount(fungible, civilian, 0),
                         wipeTokenAccount(nft, civilian, List.of()).hasKnownStatus(INVALID_WIPING_AMOUNT),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(fungible).balance(8))
-                                .hasOwnedNfts(0)
-                                .logged(),
-                        getAccountInfo(civilian)
-                                .hasToken(relationshipWith(fungible).balance(2))
-                                .hasOwnedNfts(1)
-                                .logged());
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0).logged(),
+                        getAccountInfo(civilian).hasOwnedNfts(1).logged());
     }
 
     @HapiTest
@@ -196,9 +184,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         tokenFreeze(SUPPLE, TOKEN_TREASURY),
                         mintToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
                         burnToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        getTokenInfo(SUPPLE).hasTotalSupply(1),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
+                        getTokenInfo(SUPPLE).hasTotalSupply(1));
     }
 
     @HapiTest
@@ -217,9 +203,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         revokeTokenKyc(SUPPLE, TOKEN_TREASURY),
                         mintToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
                         burnToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        getTokenInfo(SUPPLE).hasTotalSupply(1),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(SUPPLE).balance(1).kyc(Revoked)));
+                        getTokenInfo(SUPPLE).hasTotalSupply(1));
     }
 
     @HapiTest
@@ -241,8 +225,8 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .supplyKey("burnKey"),
                         tokenAssociate("misc", BURN_TOKEN),
                         cryptoTransfer(moving(TRANSFER_AMOUNT, BURN_TOKEN).between(TOKEN_TREASURY, "misc")),
-                        getAccountBalance("misc").hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
+                        getAccountBalance("misc").hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getAccountInfo("misc").logged(),
                         burnToken(BURN_TOKEN, BURN_AMOUNT)
                                 .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
@@ -251,7 +235,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         getAccountInfo("misc").logged())
                 .then(
                         getTokenInfo(BURN_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getTxnRecord(WIPE_TXN).logged());
     }
 
@@ -271,18 +255,18 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .wipeKey("wipeKey"),
                         tokenAssociate("misc", wipeableToken),
                         cryptoTransfer(moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
-                        getAccountBalance("misc").hasTokenBalance(wipeableToken, 500),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
+                        getAccountBalance("misc").hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getAccountInfo("misc").logged(),
                         wipeTokenAccount(wipeableToken, "misc", 500).via(WIPE_TXN),
                         getAccountInfo("misc").logged(),
                         wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
                         getAccountInfo("misc").logged())
                 .then(
-                        getAccountBalance("misc").hasTokenBalance(wipeableToken, 0),
+                        getAccountBalance("misc").hasNoTokenBalancesReturned(),
                         cryptoDelete("misc"),
                         getTokenInfo(wipeableToken).hasTotalSupply(500),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getTxnRecord(WIPE_TXN).logged());
     }
 
@@ -465,7 +449,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         .via(SHOULD_NOT_APPEAR))
                 .then(
                         getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         withOpContext((spec, opLog) -> {
                             var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
                             allRunFor(spec, mintNFT);
@@ -487,7 +471,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when(mintToken(FUNGIBLE_TOKEN, Long.MAX_VALUE).via(MINT_TXN))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, Long.MAX_VALUE));
+                .then(getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned());
     }
 
     @HapiTest

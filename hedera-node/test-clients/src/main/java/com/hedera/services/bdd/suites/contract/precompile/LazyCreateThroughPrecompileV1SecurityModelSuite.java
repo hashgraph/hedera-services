@@ -555,10 +555,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(evmAddressBytes)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, amountToBeSent * 2 + 2)
-                                    .hasTokenBalance(NFT_TOKEN, 1)
-                                    .logged());
+                            getAliasedAccountBalance(evmAddressBytes).logged());
                 }))
                 .then();
     }
@@ -730,8 +727,6 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .memo(LAZY_MEMO)),
                             getAliasedAccountBalance(evmAddressBytes)
                                     .hasTinyBars(4 * amountToBeSent)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, amountToBeSent * 2)
-                                    .hasTokenBalance(NFT_TOKEN, 1)
                                     .logged());
                 }))
                 .then();
@@ -787,9 +782,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, 4)
-                                    .logged(),
+                            getAliasedAccountBalance(alias).logged(),
                             childRecordsCheck(
                                     TRANSFER_TOKEN_TXN,
                                     SUCCESS,
@@ -853,9 +846,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, 4)
-                                    .logged(),
+                            getAliasedAccountBalance(alias).logged(),
                             childRecordsCheck(
                                     TRANSFER_TOKENS_TXN,
                                     SUCCESS,
@@ -916,9 +907,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 2)
-                                    .logged(),
+                            getAliasedAccountBalance(alias).logged(),
                             childRecordsCheck(
                                     TRANSFER_NFT_TXN,
                                     SUCCESS,
@@ -981,9 +970,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias)
-                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 2)
-                                    .logged(),
+                            getAliasedAccountBalance(alias).logged(),
                             childRecordsCheck(
                                     TRANSFER_NFTS_TXN,
                                     SUCCESS,
@@ -1061,9 +1048,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)),
-                            getAliasedAccountBalance(alias)
-                                    .hasTokenBalance(FUNGIBLE_TOKEN, allowance / 2)
-                                    .logged());
+                            getAliasedAccountBalance(alias).logged());
                 }))
                 .then();
     }

@@ -41,10 +41,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -126,27 +124,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         return this;
     }
 
-    public HapiGetAccountBalance hasTokenBalance(String token, long amount) {
-        if (expectedTokenBalances.isEmpty()) {
-            expectedTokenBalances = new ArrayList<>();
-        }
-        expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-G"));
-        return this;
-    }
-
-    public HapiGetAccountBalance hasTokenBalance(String token, long amount, int decimals) {
-        if (expectedTokenBalances.isEmpty()) {
-            expectedTokenBalances = new ArrayList<>();
-        }
-        expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-" + decimals));
-        return this;
-    }
-
-    public HapiGetAccountBalance savingTokenBalance(String token, LongConsumer obs) {
-        if (tokenBalanceObservers.isEmpty()) {
-            tokenBalanceObservers = Optional.of(new HashMap<>());
-        }
-        tokenBalanceObservers.get().put(token, obs);
+    public HapiGetAccountBalance hasNoTokenBalancesReturned() {
+        expectedTokenBalances = new ArrayList<>();
         return this;
     }
 

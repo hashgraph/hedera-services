@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -164,7 +163,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT)
                         .via(SHOULD_NOT_WORK))
                 .then(
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getTxnRecord(SHOULD_NOT_WORK).showsNoTransfers(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var mintNFT = getTxnRecord(SHOULD_NOT_WORK);
@@ -191,7 +190,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .via(SHOULD_NOT_WORK))
                 .then(
                         getTxnRecord(SHOULD_NOT_WORK).showsNoTransfers(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 0),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var mintNFT = getTxnRecord(SHOULD_NOT_WORK);
                             allRunFor(spec, mintNFT);
@@ -225,7 +224,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .via(SHOULD_NOT_APPEAR))
                 .then(
                         getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 0),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
                             allRunFor(spec, mintNFT);
@@ -252,7 +251,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         burnToken(FUNGIBLE_TOKEN, List.of(1L, 2L, 3L))
                                 .hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
                                 .via(BURN_FAILURE),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 300),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getTxnRecord(BURN_FAILURE).showsNoTransfers(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var burnTxn = getTxnRecord(BURN_FAILURE);
@@ -280,7 +279,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_TOKEN_BURN_METADATA)
                                 .via(BURN_FAILURE),
                         getTxnRecord(BURN_FAILURE).showsNoTransfers(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 2),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         UtilVerbs.withOpContext((spec, opLog) -> {
                             var burnTxn = getTxnRecord(BURN_FAILURE);
                             allRunFor(spec, burnTxn);
@@ -365,10 +364,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .then(
                         getTokenNftInfo(NFT, 1).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenInfo(NFT).hasTotalSupply(0),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 0),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(NFT))
-                                .hasOwnedNfts(0));
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
     @HapiTest
@@ -394,8 +391,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getTokenNftInfo(NFT, 1).hasSerialNum(1),
                         getTokenNftInfo(NFT, 2).hasSerialNum(2),
                         getTokenInfo(NFT).hasTotalSupply(2),
-                        getAccountBalance(nonTreasury).hasTokenBalance(NFT, 1),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 1),
+                        getAccountBalance(nonTreasury).hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getAccountInfo(nonTreasury).hasOwnedNfts(1),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
@@ -423,7 +420,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getTokenNftInfo(NFT, 4).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenNftInfo(NFT, 5).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenInfo(NFT).hasTotalSupply(2),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 2),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
@@ -545,11 +542,9 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasAccountID(TOKEN_TREASURY)
                                 .hasValidCreationTime(),
                         getTokenNftInfo(NFT, 3).hasCostAnswerPrecheck(INVALID_NFT_ID),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 2),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
                         getTokenInfo(NFT).hasTreasury(TOKEN_TREASURY).hasTotalSupply(2),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(NFT))
-                                .hasOwnedNfts(2));
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
     @HapiTest
@@ -753,7 +748,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getTxnRecord(WIPE_TXN).showsNoTransfers(),
                         // verify balance not decreased
                         getAccountInfo(ACCOUNT).hasOwnedNfts(1),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 1));
+                        getAccountBalance(ACCOUNT).hasNoTokenBalancesReturned());
     }
 
     @HapiTest
@@ -780,7 +775,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .then(
                         getTokenInfo(A_TOKEN).hasTotalSupply(10),
                         getTxnRecord("wipeTx").showsNoTransfers(),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(A_TOKEN, 5));
+                        getAccountBalance(ACCOUNT).hasNoTokenBalancesReturned());
     }
 
     @HapiTest

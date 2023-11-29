@@ -150,7 +150,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .logged()
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
+                .then(getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned());
     }
 
     @HapiTest
@@ -198,7 +198,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .logged()
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
+                .then(getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned());
     }
 
     @NonNull

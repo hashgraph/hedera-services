@@ -1671,10 +1671,10 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
                                         .between(OWNER, OTHER_RECEIVER))
                                 .payingWith(SPENDER),
-                        getAccountBalance(OTHER_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                        getAccountBalance(OTHER_RECEIVER).hasNoTokenBalancesReturned(),
                         cryptoTransfer(movingWithAllowance(50, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
                                 .payingWith(SPENDER),
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
+                        getAccountBalance(RECEIVER).hasNoTokenBalancesReturned(),
                         cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
                                 .payingWith(SPENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR));

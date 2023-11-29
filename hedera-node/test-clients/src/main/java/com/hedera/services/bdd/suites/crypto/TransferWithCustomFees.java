@@ -97,8 +97,8 @@ public class TransferWithCustomFees extends HapiSuite {
                         .payingWith(tokenOwner))
                 .then(
                         getAccountBalance(tokenOwner)
-                                .hasTokenBalance(token, 999)
-                                .hasTokenBalance(feeDenom, 900),
+                                .hasNoTokenBalancesReturned()
+                                .hasNoTokenBalancesReturned(),
                         getAccountBalance(hbarCollector).hasTinyBars(hbarFee));
     }
 
@@ -127,9 +127,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner))
                 .then(
-                        getAccountBalance(tokenOwner)
-                                .hasTokenBalance(token, 997)
-                                .hasTokenBalance(feeDenom, tokenTotal),
+                        getAccountBalance(tokenOwner).hasNoTokenBalancesReturned(),
                         getAccountBalance(hbarCollector).hasTinyBars(hbarFee));
     }
 

@@ -263,8 +263,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         tokenUpdate(aToken).treasury(civilian),
                         mintToken(aToken, 1L),
                         burnToken(aToken, 1L),
-                        getTokenInfo(aToken).hasTreasury(civilian),
-                        getAccountBalance(notDetachedAccount).hasTokenBalance(aToken, 0L));
+                        getTokenInfo(aToken).hasTreasury(civilian));
     }
 
     private HapiSpec tokenMgmtRestrictionsNotEnforced() {

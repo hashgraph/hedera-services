@@ -25,9 +25,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -209,8 +207,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS)))),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
+                                                        htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
@@ -268,8 +265,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS)))),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
+                                                        htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     @HapiTest

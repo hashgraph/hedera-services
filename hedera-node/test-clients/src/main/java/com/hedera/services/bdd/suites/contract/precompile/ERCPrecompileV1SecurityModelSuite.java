@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -165,14 +164,10 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                                         .via(aliasedTransferTxn)
                                         .gas(GAS_TO_OFFER)
                                         .hasKnownStatus(SUCCESS))))
-                .then(
-                        sourcing(() -> getContractInfo(
-                                        asContractString(contractIdFromHexedMirrorAddress(childMirror.get())))
-                                .hasToken(ExpectedTokenRel.relationshipWith(TOKEN_NAME)
-                                        .balance(500))
-                                .logged()),
-                        getAccountBalance(account_B).hasTokenBalance(TOKEN_NAME, 1000),
-                        getAccountBalance(account_A).hasTokenBalance(TOKEN_NAME, 8500));
+                .then(sourcing(() -> getContractInfo(
+                                asContractString(contractIdFromHexedMirrorAddress(childMirror.get())))
+                        .hasToken(ExpectedTokenRel.relationshipWith(TOKEN_NAME).balance(500))
+                        .logged()));
     }
 
     @Override

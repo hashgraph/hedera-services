@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -298,9 +297,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
                                         movingUnique(uniqueToken, 2L).between(TOKEN_TREASURY, firstUser))
                                 .via("rolledBack")
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(otherToken).balance(500)));
+                                .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
     @HapiTest
@@ -378,9 +375,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
                                         moving(20, token).between(TOKEN_TREASURY, firstUser))
                                 .via("rolledBack")
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(otherToken).balance(500)));
+                                .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
     @HapiTest

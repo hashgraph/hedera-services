@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAcco
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
@@ -233,9 +232,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY))
                 .when(
                         tokenAssociate(CIVILIAN, A_TOKEN),
-                        cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(10)))
+                        cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)))
                 .then(
                         cryptoTransfer(
                                         movingHbar(10L).between(CIVILIAN, VALID_ALIAS),
@@ -243,9 +240,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, CIVILIAN)
                                 .via(TRANSFER_TXN),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith().balance(10L))
-                                .hasToken(relationshipWith(A_TOKEN)));
+                        getAliasedAccountInfo(VALID_ALIAS).has(accountWith().balance(10L)));
     }
 
     @HapiTest
@@ -345,14 +340,13 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .when(
                         cryptoTransfer(
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, SPONSOR)),
-                        getAccountInfo(SPONSOR).hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
                         // auto creating an account using a nft with fall back royalty fee fails
                         cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
                                         .between(SPONSOR, VALID_ALIAS))
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, SPONSOR, VALID_ALIAS)
                                 .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
-                        getAccountInfo(SPONSOR).hasOwnedNfts(2).hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
+                        getAccountInfo(SPONSOR).hasOwnedNfts(2),
                         getAccountInfo(TOKEN_TREASURY).logged())
                 .then(
                         // But transferring this NFT to a known alias with hbar in it works
@@ -427,10 +421,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         cryptoTransfer(
                                 movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3L, 4L).between(TOKEN_TREASURY, CIVILIAN),
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(NFT_FINITE_SUPPLY_TOKEN))
-                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
-                                .has(accountWith().balance(civilianBal)),
+                        getAccountInfo(CIVILIAN).has(accountWith().balance(civilianBal)),
                         cryptoTransfer(
                                         movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3, 4)
                                                 .between(CIVILIAN, VALID_ALIAS),
@@ -486,9 +477,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
                         cryptoTransfer(
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L).between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
-                                .has(accountWith().balance(civilianBal)),
+                        getAccountInfo(CIVILIAN).has(accountWith().balance(civilianBal)),
                         cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1)
                                         .between(CIVILIAN, VALID_ALIAS))
                                 .via(nftTransfer)
@@ -537,14 +526,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
                                         moving(100, B_TOKEN).between(TOKEN_TREASURY, CIVILIAN))
                                 .via("transferAToSponsor"),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(B_TOKEN).balance(900)),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(A_TOKEN).balance(900)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(100)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(B_TOKEN).balance(100)),
 
                         /* --- transfer same token type to alias --- */
                         cryptoTransfer(
@@ -572,13 +553,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith().status(SUCCESS).fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
                         getAliasedAccountInfo(VALID_ALIAS)
-                                .hasToken(relationshipWith(A_TOKEN).balance(10))
-                                .hasToken(relationshipWith(B_TOKEN).balance(10))
                                 .has(accountWith().balance(0L).maxAutoAssociations(2)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(90))
-                                .hasToken(relationshipWith(B_TOKEN).balance(90))
-                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)))
+                        getAccountInfo(CIVILIAN).has(accountWith().balanceLessThan(10 * ONE_HBAR)))
                 .then(
                         /* --- transfer token to created alias */
                         cryptoTransfer(moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
@@ -588,10 +564,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getTxnRecord("newXfer")
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(0)
-                                .logged(),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .hasToken(relationshipWith(A_TOKEN).balance(10))
-                                .hasToken(relationshipWith(B_TOKEN).balance(20)));
+                                .logged());
     }
 
     @HapiTest
@@ -674,14 +647,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
                                         moving(100, B_TOKEN).between(TOKEN_TREASURY, CIVILIAN))
                                 .via("transferAToSponsor"),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(B_TOKEN).balance(900)),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(A_TOKEN).balance(900)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(100)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(B_TOKEN).balance(100)),
 
                         /* --- transfer same token type to alias --- */
                         cryptoTransfer(
@@ -699,11 +664,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 sameTokenXfer,
                                 SUCCESS,
                                 recordWith().status(SUCCESS).fee(EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE)),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .hasToken(relationshipWith(A_TOKEN).balance(20)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(90))
-                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)),
+                        getAccountInfo(CIVILIAN).has(accountWith().balanceLessThan(10 * ONE_HBAR)),
                         assertionsHold((spec, opLog) -> {
                             final var lookup = getTxnRecord(sameTokenXfer)
                                     .andAllChildRecords()
@@ -806,9 +767,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .via(TRANSFER_TXN);
 
                     final var getHollowAccountInfoAfterCreation = getAliasedAccountInfo(evmAddress.get())
-                            .hasToken(relationshipWith(A_TOKEN).balance(5))
-                            .hasToken(
-                                    relationshipWith(NFT_INFINITE_SUPPLY_TOKEN).balance(1))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()
@@ -837,9 +795,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .via(TRANSFER_TXN_2);
 
                     final var getHollowAccountInfoAfterTransfers = getAliasedAccountInfo(evmAddress.get())
-                            .hasToken(relationshipWith(A_TOKEN).balance(10))
-                            .hasToken(
-                                    relationshipWith(NFT_INFINITE_SUPPLY_TOKEN).balance(2))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()
@@ -1490,7 +1445,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .via(FT_XFER);
 
                     final var getHollowAccountInfoAfterCreation = getAliasedAccountInfo(counterAlias.get())
-                            .hasToken(relationshipWith(fungibleToken).balance(500))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()
@@ -1527,7 +1481,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .via(TRANSFER_TXN_2);
 
                     final var getHollowAccountInfoAfterTransfers = getAliasedAccountInfo(counterAlias.get())
-                            .hasToken(relationshipWith(fungibleToken).balance(506))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()
@@ -1587,7 +1540,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .via(NFT_XFER);
 
                     final var getHollowAccountInfoAfterCreation = getAliasedAccountInfo(counterAlias.get())
-                            .hasToken(relationshipWith(nonFungibleToken).balance(1))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()
@@ -1626,7 +1578,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             .via(TRANSFER_TXN_2);
 
                     final var getHollowAccountInfoAfterTransfers = getAliasedAccountInfo(counterAlias.get())
-                            .hasToken(relationshipWith(nonFungibleToken).balance(2))
                             .has(accountWith()
                                     .hasEmptyKey()
                                     .noAlias()

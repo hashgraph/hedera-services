@@ -165,11 +165,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 .then(
                         // Now the contract is gone
                         getContractInfo(CONTRACT_TO_RENEW).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
-                        // And the fungible units were returned to the treasury
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
-                                .hasTokenBalance(bFungibleToken, bFungibleAmount)
-                                .hasTokenBalance(nonFungibleToken, 2),
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
@@ -210,10 +205,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(
                                 moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, CONTRACT_TO_RENEW),
                                 movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, CONTRACT_TO_RENEW)),
-                        getAccountBalance(CONTRACT_TO_RENEW)
-                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
-                                .hasTokenBalance(nonFungibleToken, 2),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(aFungibleToken, 0),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0),
                         /* sleep past the expiration:
                          * (minimalLifetimeMillis * 1 second) + 500 ms (500 ms for extra time)
@@ -230,11 +221,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getContractInfo(CONTRACT_TO_RENEW)
                                 .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)
                                 .logged(),
-                        // And the fungible units were returned to the treasury
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
-                                .hasTokenBalance(nonFungibleToken, 2)
-                                .logged(),
+                        getAccountBalance(TOKEN_TREASURY).logged(),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2),
                         getAccountInfo(TOKEN_TREASURY).logged(),
                         // And the NFTs now list the treasury as the owner
@@ -713,12 +700,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         .between(TOKEN_TREASURY, CONTRACT_TO_RENEW),
                                 movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, CONTRACT_TO_RENEW)),
 
-                        // verify that token move was successful
-                        getAccountBalance(CONTRACT_TO_RENEW)
-                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
-                                .hasTokenBalance(bFungibleToken, bFungibleAmount)
-                                .hasTokenBalance(cFungibleTokenWithCustomFees, cFungibleAmount),
-
                         /* sleep past the contract expiration:
                          * (minimalLifetimeMillis * 1 second) + 500 ms (500 ms for extra time)
                          */
@@ -733,12 +714,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 .then(
                         // Now the contract is gone
                         getContractInfo(CONTRACT_TO_RENEW).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
-                        // And the fungible units were returned to the treasury
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
-                                .hasTokenBalance(bFungibleToken, bFungibleAmount)
-                                .hasTokenBalance(cFungibleTokenWithCustomFees, cFungibleAmount)
-                                .hasTokenBalance(nonFungibleToken, 0),
 
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
@@ -792,8 +767,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 .then(
                         // Now the contract is gone
                         getContractInfo(CONTRACT_TO_RENEW).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
-                        // And the fungible units were returned to the treasury
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0),
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY),

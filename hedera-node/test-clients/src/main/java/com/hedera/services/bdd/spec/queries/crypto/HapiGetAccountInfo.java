@@ -162,11 +162,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
-    public HapiGetAccountInfo hasToken(ExpectedTokenRel relationship) {
-        relationships.add(relationship);
-        return this;
-    }
-
     public HapiGetAccountInfo hasNoTokenRelationship(String token) {
         absentRelationships.add(token);
         return this;
@@ -184,11 +179,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo hasMaxAutomaticAssociations(int max) {
         this.maxAutomaticAssociations = Optional.of(max);
-        return this;
-    }
-
-    public HapiGetAccountInfo hasAlreadyUsedAutomaticAssociations(int count) {
-        this.alreadyUsedAutomaticAssociations = Optional.of(count);
         return this;
     }
 

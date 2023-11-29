@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.hip796;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -168,9 +167,7 @@ public class PartitionsSuite extends HapiSuite {
                         cryptoTransfer(moving(FUNGIBLE_INITIAL_BALANCE, partition(RED_PARTITION))
                                         .betweenWithPartitionChange(ALICE, ALICE, partition(BLUE_PARTITION)))
                                 .signedBy(DEFAULT_PAYER, partitionMoveKeyOf(TOKEN_UNDER_TEST)))
-                .then(getAccountBalance(ALICE)
-                        .hasTokenBalance(partition(RED_PARTITION), 0)
-                        .hasTokenBalance(partition(BLUE_PARTITION), FUNGIBLE_INITIAL_BALANCE));
+                .then();
     }
 
     /**
@@ -192,9 +189,6 @@ public class PartitionsSuite extends HapiSuite {
                                         .betweenWithPartitionChange(ALICE, ALICE, partition(BLUE_PARTITION)))
                                 .signedBy(DEFAULT_PAYER, partitionMoveKeyOf(TOKEN_UNDER_TEST)))
                 .then(
-                        getAccountBalance(ALICE)
-                                .hasTokenBalance(partition(RED_PARTITION), 0)
-                                .hasTokenBalance(partition(BLUE_PARTITION), FUNGIBLE_INITIAL_BALANCE),
                         // The total supplies of the token types reflect the serial number re-assignments
                         getTokenInfo(TOKEN_UNDER_TEST).hasTotalSupply(NON_FUNGIBLE_INITIAL_SUPPLY - 1),
                         getTokenInfo(partition(RED_PARTITION)).hasTotalSupply(0),

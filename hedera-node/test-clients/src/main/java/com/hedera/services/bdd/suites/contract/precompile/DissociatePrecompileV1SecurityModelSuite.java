@@ -20,10 +20,8 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLong
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -175,7 +173,6 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
                         cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
                         cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
                         tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
                         tokenDelete(TBD_TOKEN),
                         tokenDelete(tbdUniqToken),
                         contractCall(
@@ -266,11 +263,7 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
                         getAccountInfo(zeroBalanceUnfrozen).hasNoTokenRelationship(TBD_TOKEN),
                         getAccountInfo(nonZeroBalanceFrozen).hasNoTokenRelationship(TBD_TOKEN),
                         getAccountInfo(nonZeroBalanceUnfrozen).hasNoTokenRelationship(TBD_TOKEN),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(TBD_TOKEN))
-                                .hasNoTokenRelationship(tbdUniqToken)
-                                .hasOwnedNfts(0),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer));
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
@@ -305,21 +298,19 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .gas(3_000_000L)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged())))
-                .then(
-                        childRecordsCheck(
-                                "nestedDissociateTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS))),
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS)))),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
+                .then(childRecordsCheck(
+                        "nestedDissociateTxn",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(SUCCESS))),
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     /* -- HSCS-PREC-007 from HTS Precompile Test Plan -- */
@@ -350,8 +341,6 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(KNOWABLE_TOKEN)),
                         contractCall(
                                         CONTRACT,
                                         "tokensDissociate",

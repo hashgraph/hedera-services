@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -165,17 +164,14 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                                 .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("delegateTransferCallWithDelegateContractKeyTxn")
                                 .gas(GAS_TO_OFFER))))
-                .then(
-                        childRecordsCheck(
-                                "delegateTransferCallWithDelegateContractKeyTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS)))),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0),
-                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
+                .then(childRecordsCheck(
+                        "delegateTransferCallWithDelegateContractKeyTxn",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     private HapiSpec delegateCallForTransferWithContractKey() {
@@ -227,17 +223,14 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                                 .via("delegateTransferCallWithContractKeyTxn")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(
-                        childRecordsCheck(
-                                "delegateTransferCallWithContractKeyTxn",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1),
-                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0));
+                .then(childRecordsCheck(
+                        "delegateTransferCallWithContractKeyTxn",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
     private HapiSpec burnTokenWithFullPrefixAndPartialPrefixKeys() {
@@ -312,8 +305,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                                                         .withStatus(SUCCESS)
                                                         .withTotalSupply(99)))
                                         .newTotalSupply(99)),
-                        getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TYPE_OF_TOKEN, amount));
+                        getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount));
     }
 
     @Override

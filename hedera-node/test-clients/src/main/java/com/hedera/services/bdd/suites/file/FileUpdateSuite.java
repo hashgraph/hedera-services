@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -80,11 +79,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
-import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
-import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -207,20 +201,7 @@ public class FileUpdateSuite extends HapiSuite {
                         TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
                         tokenAssociate(
                                 "misc", TokenAssociationSpecs.KNOWABLE_TOKEN, TokenAssociationSpecs.VANILLA_TOKEN))
-                .then(getAccountInfo("misc")
-                        .hasToken(relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                .kyc(KycNotApplicable)
-                                .freeze(Frozen))
-                        .hasToken(relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-                                .kyc(KycNotApplicable)
-                                .freeze(Unfrozen))
-                        .hasToken(relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-                                .kyc(Revoked)
-                                .freeze(FreezeNotApplicable))
-                        .hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-                                .kyc(KycNotApplicable)
-                                .freeze(FreezeNotApplicable))
-                        .logged());
+                .then(getAccountInfo("misc").logged());
     }
 
     @HapiTest

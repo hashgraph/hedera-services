@@ -354,8 +354,6 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                 failedCallTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        // And no tokens were deducted from the receiver
-                        getAccountBalance(receiver).hasTokenBalance(fungible, 10),
                         // But now sign with receiver as well
                         sourcing(() -> contractCall(
                                         WELL_KNOWN_TREASURY_CONTRACT,
@@ -364,9 +362,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                         senderAddr.get(),
                                         receiverAddr.get())
                                 .gas(2_000_000)
-                                .alsoSigningWithFullPrefix(sender, receiver)),
-                        // Receiver token balance of custom fee denomination should debit by 1
-                        getAccountBalance(receiver).hasTokenBalance(fungible, 9));
+                                .alsoSigningWithFullPrefix(sender, receiver)));
     }
 
     private HapiSpec contractCanStillTransferItsOwnAssets() {
@@ -557,12 +553,6 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
 
     private HapiSpecOperation someWellKnownAssertions() {
         return blockingOrder(
-                getAccountBalance(A_WELL_KNOWN_RECEIVER)
-                        .hasTokenBalance(WELL_KNOWN_FUNGIBLE_TOKEN, 2L)
-                        .hasTokenBalance(WELL_KNOWN_NON_FUNGIBLE_TOKEN, 2L),
-                getAccountBalance(B_WELL_KNOWN_RECEIVER)
-                        .hasTokenBalance(WELL_KNOWN_FUNGIBLE_TOKEN, 1L)
-                        .hasTokenBalance(WELL_KNOWN_NON_FUNGIBLE_TOKEN, 1L),
                 getTokenNftInfo(WELL_KNOWN_NON_FUNGIBLE_TOKEN, 1L).hasAccountID(A_WELL_KNOWN_RECEIVER),
                 getTokenNftInfo(WELL_KNOWN_NON_FUNGIBLE_TOKEN, 2L).hasAccountID(A_WELL_KNOWN_RECEIVER),
                 getTokenNftInfo(WELL_KNOWN_NON_FUNGIBLE_TOKEN, 3L).hasAccountID(B_WELL_KNOWN_RECEIVER));
@@ -745,9 +735,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                         receiverAddr.get())
                                 .gas(2_000_000)
                                 .via("txn")))
-                .then(
-                        // Validate the receiver really did get a unit
-                        getAccountBalance(receiver).logged().hasTokenBalance(fungibleToken, 1));
+                .then();
     }
 
     private HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {

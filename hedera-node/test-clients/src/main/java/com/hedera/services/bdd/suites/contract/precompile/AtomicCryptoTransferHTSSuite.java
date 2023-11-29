@@ -377,8 +377,6 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 .logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
-                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxnForFungible,
@@ -448,9 +446,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER).hasOwnedNfts(0),
-                        getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
                                 cryptoTransferTxnForNft,
@@ -562,14 +558,10 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 .logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
-                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 155),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER2).hasOwnedNfts(1),
-                        getAccountBalance(RECEIVER2).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER2).hasOwnedNfts(0),
-                        getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         getAccountBalance(SENDER).hasTinyBars(950 * ONE_HBAR),
                         getAccountBalance(RECEIVER).hasTinyBars(250 * ONE_HBAR),

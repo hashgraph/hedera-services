@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -41,18 +40,12 @@ import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModel
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
-import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
-import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -160,27 +153,14 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
                                 .via("MultipleTokensAssociationsTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
-                .then(
-                        childRecordsCheck(
-                                "MultipleTokensAssociationsTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(SUCCESS)))),
-                        getAccountInfo(ACCOUNT)
-                                .hasToken(relationshipWith(FROZEN_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(Frozen))
-                                .hasToken(relationshipWith(UNFROZEN_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(Unfrozen))
-                                .hasToken(
-                                        relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
-                                .hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(FreezeNotApplicable)));
+                .then(childRecordsCheck(
+                        "MultipleTokensAssociationsTxn",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */

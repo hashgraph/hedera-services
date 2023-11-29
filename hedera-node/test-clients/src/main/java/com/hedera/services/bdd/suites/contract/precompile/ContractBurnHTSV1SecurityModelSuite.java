@@ -197,9 +197,9 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                                         .withStatus(
                                                                 INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))))
                 .then(
-                        getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenWithHbarFee, 1),
-                        getAccountBalance(ALICE).hasTokenBalance(tokenWithHbarFee, 1));
+                        getAccountBalance(bob).hasNoTokenBalancesReturned(),
+                        getAccountBalance(TOKEN_TREASURY).hasNoTokenBalancesReturned(),
+                        getAccountBalance(ALICE).hasNoTokenBalancesReturned());
     }
 
     private HapiSpec hscsPrec004TokenBurnOfFungibleTokenUnits() {
@@ -238,7 +238,6 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .via("burnZero"),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
                         contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -250,7 +249,6 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                                 .logs(inOrder(logWith()
                                                         .noData()
                                                         .withTopicsInOrder(List.of(parsedToByteString(49))))))),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
                         childRecordsCheck(
                                 "burn",
                                 SUCCESS,
@@ -284,7 +282,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                         .newTotalSupply(48)
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48));
+                .then();
     }
 
     private HapiSpec hscsPrec005TokenBurnOfNft() {
@@ -341,7 +339,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                                         .withTotalSupply(1))
                                                 .gasUsed(gasUsed))
                                         .newTotalSupply(1)))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
+                .then();
     }
 
     private HapiSpec hscsPrec011BurnAfterNestedMint() {
@@ -416,7 +414,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
+                .then();
     }
 
     @NonNull

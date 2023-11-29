@@ -285,7 +285,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(
                         wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc, List.of(1L, 1L, 2L, 3L, 4L, 5L, 6L)),
                         wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc, List.of(7L)),
-                        getAccountBalance(ownerWith4AutoAssoc).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
+                        getAccountBalance(ownerWith4AutoAssoc).hasNoTokenBalancesReturned());
     }
 
     @HapiTest
@@ -317,7 +317,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(
                         burnToken(NON_FUNGIBLE_TOKEN, List.of(1L, 1L, 2L, 3L, 4L, 5L, 6L)),
                         burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
-                        getAccountBalance(TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
+                        getAccountBalance(TREASURY).hasNoTokenBalancesReturned());
     }
 
     @HapiTest // fees differ expected 46889349 actual 46887567
@@ -822,13 +822,8 @@ public class CryptoTransferSuite extends HapiSuite {
                                         .cryptoAllowancesContaining(SPENDER, 4 * ONE_HBAR)
                                         .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 85)
                                         .nftApprovedAllowancesContaining(NON_FUNGIBLE_TOKEN, SPENDER)),
-                        getAccountInfo(RECEIVER)
-                                .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(105))
-                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN).balance(4))
-                                .has(accountWith().balance(5 * ONE_HBAR)),
-                        getAccountInfo(ANOTHER_RECEIVER)
-                                .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(50))
-                                .has(accountWith().balance(ONE_HBAR)));
+                        getAccountInfo(RECEIVER).has(accountWith().balance(5 * ONE_HBAR)),
+                        getAccountInfo(ANOTHER_RECEIVER).has(accountWith().balance(ONE_HBAR)));
     }
 
     @HapiTest
@@ -1027,8 +1022,6 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .payingWith(SPENDER)
                                 .signedBy(SPENDER)
                                 .hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE),
-                        getAccountInfo(OWNER)
-                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN).balance(2)),
                         cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
                                 .payingWith(SPENDER)
                                 .signedBy(SPENDER),
@@ -1108,10 +1101,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         sleepFor(5_000),
                         getReceipt(VALID_TXN).hasPriorityStatus(SUCCESS),
                         getTxnRecord(VALID_TXN).logged(),
-                        getAccountInfo(OWNING_PARTY)
-                                .hasAlreadyUsedAutomaticAssociations(1)
-                                .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(120))
-                                .logged());
+                        getAccountInfo(OWNING_PARTY).logged());
     }
 
     @HapiTest
@@ -1499,17 +1489,12 @@ public class CryptoTransferSuite extends HapiSuite {
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
                                 .via("failedTransfer"),
-                        getAccountInfo(firstUser)
-                                .hasAlreadyUsedAutomaticAssociations(1)
-                                .hasMaxAutomaticAssociations(1)
-                                .logged(),
+                        getAccountInfo(firstUser).hasMaxAutomaticAssociations(1).logged(),
                         getAccountInfo(secondUser)
-                                .hasAlreadyUsedAutomaticAssociations(1)
                                 .hasMaxAutomaticAssociations(2)
                                 .logged(),
                         cryptoTransfer(moving(1, tokenA).between(TREASURY, secondUser)),
                         getAccountInfo(secondUser)
-                                .hasAlreadyUsedAutomaticAssociations(2)
                                 .hasMaxAutomaticAssociations(2)
                                 .logged(),
                         cryptoTransfer(moving(1, tokenA).between(firstUser, TREASURY)),
