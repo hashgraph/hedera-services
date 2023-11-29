@@ -132,6 +132,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +152,7 @@ class StateViewTest {
     private final Instant resolutionTime = Instant.ofEpochSecond(123L);
     private final RichInstant now =
             RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
+    private final int maxTokensFprAccountInfo = 10;
     private final long expiry = 2_000_000L;
     private final byte[] data = "SOMETHING".getBytes();
     private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
@@ -836,6 +838,9 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
         mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         final var expectedResponse = GetAccountDetailsResponse.AccountDetails.newBuilder()
                 .setLedgerId(ledgerId)
@@ -856,7 +861,7 @@ class StateViewTest {
                 .addAllGrantedNftAllowances(getNftGrantedAllowancesList(tokenAccount))
                 .build();
 
-        final var actualResponse = subject.accountDetails(tokenAccountId, aliasManager);
+        final var actualResponse = subject.accountDetails(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
         mockedStatic.close();
 
         assertEquals(expectedResponse, actualResponse.get());

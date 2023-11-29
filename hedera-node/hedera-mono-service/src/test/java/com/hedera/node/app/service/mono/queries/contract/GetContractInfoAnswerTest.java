@@ -38,7 +38,6 @@ import static org.mockito.Mockito.never;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -92,9 +91,6 @@ class GetContractInfoAnswerTest {
     private MerkleMap<EntityNum, MerkleAccount> contracts;
 
     @Mock
-    private GlobalDynamicProperties dynamicProperties;
-
-    @Mock
     private RewardCalculator rewardCalculator;
 
     ContractGetInfoResponse.ContractInfo info;
@@ -119,12 +115,11 @@ class GetContractInfoAnswerTest {
                         .build())
                 .build();
 
-        subject = new GetContractInfoAnswer(aliasManager, optionValidator, dynamicProperties, rewardCalculator);
+        subject = new GetContractInfoAnswer(aliasManager, optionValidator, rewardCalculator);
     }
 
     @Test
     void getsTheInfo() throws Throwable {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
         final Query query = validQuery(ANSWER_ONLY, fee, target);
 
         given(view.infoForContract(asContract(target), aliasManager, rewardCalculator))
@@ -174,7 +169,6 @@ class GetContractInfoAnswerTest {
 
     @Test
     void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
         given(view.infoForContract(asContract(target), aliasManager, rewardCalculator))

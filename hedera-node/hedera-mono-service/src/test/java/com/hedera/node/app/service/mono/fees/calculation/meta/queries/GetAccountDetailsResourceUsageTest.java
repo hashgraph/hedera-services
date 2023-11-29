@@ -130,7 +130,8 @@ class GetAccountDetailsResourceUsageTest {
                 .addAllGrantedNftAllowances(List.of(nftAllowances))
                 .build();
         final var query = accountDetailsQuery(a, ANSWER_ONLY);
-        given(view.accountDetails(queryTarget, aliasManager)).willReturn(Optional.of(details));
+        given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo))
+                .willReturn(Optional.of(details));
         given(cryptoOpsUsage.accountDetailsUsage(any(), any())).willReturn(expected);
 
         final var usage = subject.usageGiven(query, view);
@@ -152,7 +153,8 @@ class GetAccountDetailsResourceUsageTest {
     @Test
     void returnsDefaultIfNoSuchAccount() {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
-        given(view.accountDetails(queryTarget, aliasManager)).willReturn(Optional.empty());
+        given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo))
+                .willReturn(Optional.empty());
 
         final var usage = subject.usageGiven(accountDetailsQuery(a, ANSWER_ONLY), view);
 

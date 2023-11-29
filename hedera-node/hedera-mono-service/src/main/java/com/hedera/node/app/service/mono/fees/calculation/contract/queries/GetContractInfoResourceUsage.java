@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.node.app.hapi.fees.usage.contract.ContractGetInfoUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
@@ -37,11 +38,16 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
     private static final Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
 
     private final AliasManager aliasManager;
+    private final GlobalDynamicProperties dynamicProperties;
     private final RewardCalculator rewardCalculator;
 
     @Inject
-    public GetContractInfoResourceUsage(final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
+    public GetContractInfoResourceUsage(
+            final AliasManager aliasManager,
+            final GlobalDynamicProperties dynamicProperties,
+            final RewardCalculator rewardCalculator) {
         this.aliasManager = aliasManager;
+        this.dynamicProperties = dynamicProperties;
         this.rewardCalculator = rewardCalculator;
     }
 
@@ -57,8 +63,10 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
         if (tentativeInfo.isPresent()) {
             final var info = tentativeInfo.get();
             putIfNotNull(queryCtx, CONTRACT_INFO_CTX_KEY, info);
-            final var estimate =
-                    factory.apply(query).givenCurrentKey(info.getAdminKey()).givenCurrentMemo(info.getMemo());
+            final var estimate = factory.apply(query)
+                    .givenCurrentKey(info.getAdminKey())
+                    .givenCurrentMemo(info.getMemo())
+                    .givenCurrentTokenAssocs(info.getTokenRelationshipsCount());
             return estimate.get();
         } else {
             return FeeData.getDefaultInstance();

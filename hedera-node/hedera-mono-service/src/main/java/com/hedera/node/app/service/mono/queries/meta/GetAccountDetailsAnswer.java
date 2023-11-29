@@ -79,7 +79,8 @@ public class GetAccountDetailsAnswer implements AnswerService {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
                 final AccountID id = op.getAccountId();
-                final var optionalDetails = Objects.requireNonNull(view).accountDetails(id, aliasManager);
+                final var optionalDetails = Objects.requireNonNull(view)
+                        .accountDetails(id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
                 if (optionalDetails.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setAccountDetails(optionalDetails.get());

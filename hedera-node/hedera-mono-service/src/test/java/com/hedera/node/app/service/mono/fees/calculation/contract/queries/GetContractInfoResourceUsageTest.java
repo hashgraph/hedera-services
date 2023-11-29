@@ -103,7 +103,7 @@ class GetContractInfoResourceUsageTest {
         given(estimator.givenCurrentTokenAssocs(3)).willReturn(estimator);
         given(estimator.get()).willReturn(expected);
 
-        subject = new GetContractInfoResourceUsage(aliasManager, rewardCalculator);
+        subject = new GetContractInfoResourceUsage(aliasManager, dynamicProperties, rewardCalculator);
     }
 
     @AfterEach

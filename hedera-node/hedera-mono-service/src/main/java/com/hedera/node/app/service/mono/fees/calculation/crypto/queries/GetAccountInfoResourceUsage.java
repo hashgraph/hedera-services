@@ -72,6 +72,7 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
                 .setCurrentMemo(details.getMemo())
                 .setCurrentExpiry(details.getExpirationTime().getSeconds())
                 .setCurrentlyHasProxy(details.hasProxyAccountID())
+                .setCurrentNumTokenRels(details.getTokenRelationshipsCount())
                 .setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
                 .setCurrentCryptoAllowances(Collections.emptyMap())
                 .setCurrentTokenAllowances(Collections.emptyMap())
