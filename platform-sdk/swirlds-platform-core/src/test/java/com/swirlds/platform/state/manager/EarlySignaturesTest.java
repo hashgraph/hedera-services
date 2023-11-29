@@ -70,7 +70,10 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
+        return ss -> {
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
+            stateHasEnoughSignaturesCount.getAndIncrement();
+        };
     }
 
     @Test
@@ -173,10 +176,10 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
                 lastExpectedCompletedRound = Math.max(lastExpectedCompletedRound, roundToSign);
             }
 
-            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test get lastState")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test get lastCompletedState")) {
                 assertSame(
                         signedStates.get(lastExpectedCompletedRound),
                         lastCompletedState.get(),

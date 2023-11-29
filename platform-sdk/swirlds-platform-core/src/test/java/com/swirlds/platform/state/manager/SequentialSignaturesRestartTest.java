@@ -74,6 +74,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
         return ss -> {
             assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
             stateHasEnoughSignaturesCount.getAndIncrement();
         };
     }

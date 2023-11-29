@@ -28,6 +28,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.SignedStateManagerTester;
@@ -60,6 +61,15 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
     }
 
     /**
+     * Called on each state as it gathers enough signatures to be complete.
+     * <p>
+     * This consumer is provided by the wiring layer, so it should release the resource when finished.
+     */
+    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
+        return ss -> highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
+    }
+
+    /**
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
     @Test
@@ -68,6 +78,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
 
         final SignedStateManagerTester manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
+                .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
 
         final Hash stateHash = randomHash(random);

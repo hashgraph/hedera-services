@@ -154,10 +154,11 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         if (signedState == null) {
             return new ReservedSignedState();
         }
-        if (!signedState.tryIncrementReservationCount(reason, reservationId)) {
+        final ReservedSignedState newReservation = create(signedState, reason);
+        if (!signedState.tryIncrementReservationCount(reason, newReservation.getReservationId())) {
             return null;
         }
-        return create(signedState, reason);
+        return newReservation;
     }
 
     /**

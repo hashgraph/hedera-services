@@ -61,7 +61,10 @@ class PostconsensusSignaturesTest extends AbstractSignedStateManagerTest {
      * Called on each state as it gathers enough signatures to be complete.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
+        return ss -> {
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
+            stateHasEnoughSignaturesCount.getAndIncrement();
+        };
     }
 
     @Test
