@@ -51,4 +51,10 @@ public interface ReadableNftStore {
      */
     @Nullable
     Nft get(@NonNull NftID id);
+
+    /**
+     * Returns the number of nfts in the state.
+     * @return the number of nfts in the state.
+     */
+    long sizeOfState();
 }

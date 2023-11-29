@@ -16,10 +16,10 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Constructor;
