@@ -133,11 +133,11 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             var contractResult = contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID);
             contractResult = contractResult
                     .copyBuilder()
-                    .gas(369808) // TODO: remove. This is not implemented yet
                     .functionParameters(tuweniToPbjBytes(frame.getInputData()))
                     .errorMessage(null)
                     .contractID(HTS_PRECOMPILE_MIRROR_ID)
                     .senderId(senderId)
+                    .gas(frame.getRemainingGas())
                     .build();
 
             updater.externalizeSystemContractResults(contractResult, PbjConverter.toPbj(responseCode));

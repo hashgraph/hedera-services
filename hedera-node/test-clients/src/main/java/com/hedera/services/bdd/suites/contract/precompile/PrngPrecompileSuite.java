@@ -298,18 +298,17 @@ public class PrngPrecompileSuite extends HapiSuite {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileInsufficientGas")
-            .given(
-                // TODO: enable fuzzy matching when gas calculation is implemented
-                // snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
-                cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
-            .when(sourcing(() -> contractCall(prng, GET_SEED)
-                .gas(1L)
-                .payingWith(BOB)
-                .via(randomBits)
-                .hasPrecheckFrom(OK, INSUFFICIENT_GAS)
-                .hasKnownStatus(INSUFFICIENT_GAS)
-                .logged()))
-            .then();
+                .given(
+                        // snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
+                .when(sourcing(() -> contractCall(prng, GET_SEED)
+                        .gas(1L)
+                        .payingWith(BOB)
+                        .via(randomBits)
+                        .hasPrecheckFrom(OK, INSUFFICIENT_GAS)
+                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .logged()))
+                .then();
     }
 
     @Override

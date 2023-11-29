@@ -72,10 +72,10 @@ public final class SystemContractUtils {
 
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
+                .gas(frame.getRemainingGas())
                 .contractCallResult(tuweniToPbjBytes(result))
                 .contractID(contractID)
                 .functionParameters(tuweniToPbjBytes(frame.getInputData()))
-                .gas(369823) // TODO: remove - currently the gas calculation is not working
                 .senderId(senderId)
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();
