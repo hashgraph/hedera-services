@@ -34,6 +34,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -289,6 +291,25 @@ public class PrngPrecompileSuite extends HapiSuite {
                                         .resultViaFunctionName(
                                                 GET_SEED, prng, isRandomResult(new Object[] {new byte[32]}))))
                         .logged());
+    }
+
+    @HapiTest
+    private HapiSpec prngPrecompileInsufficientGas() {
+        final var prng = THE_PRNG_CONTRACT;
+        final var randomBits = "randomBits";
+        return defaultHapiSpec("prngPrecompileInsufficientGas")
+            .given(
+                // TODO: enable fuzzy matching when gas calculation is implemented
+                // snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
+            .when(sourcing(() -> contractCall(prng, GET_SEED)
+                .gas(1L)
+                .payingWith(BOB)
+                .via(randomBits)
+                .hasPrecheckFrom(OK, INSUFFICIENT_GAS)
+                .hasKnownStatus(INSUFFICIENT_GAS)
+                .logged()))
+            .then();
     }
 
     @Override
