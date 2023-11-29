@@ -66,13 +66,21 @@ public class CustomCallOperation extends CallOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var toAddress = to(frame);
-            final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            return isMissing
+            final var addressIsInvalid =
+                    addressIsInvalid(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
+            return addressIsInvalid
                     ? new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS)
                     : super.execute(frame, evm);
         } catch (final FixedStack.UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
+    }
+
+    private boolean addressIsInvalid(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
+        final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
+        // passing value to long zero addresses is not allowed
+        final var valueToLongZero = isLongZero(toAddress) && value(frame).greaterThan(Wei.ZERO);
+        return isMissing || valueToLongZero;
     }
 
     private boolean mustBePresent(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
