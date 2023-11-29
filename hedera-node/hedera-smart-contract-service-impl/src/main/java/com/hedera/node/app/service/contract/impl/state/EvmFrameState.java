@@ -102,6 +102,7 @@ public interface EvmFrameState {
      *
      * @param address the address of the hollow account to finalize
      * @param contractNonce the contract nonce value to set it to the resulting account after merging with hollow account
+     * @return id of the hollow account
      */
     AccountID finalizeHollowAccount(@NonNull Address address, long contractNonce);
 

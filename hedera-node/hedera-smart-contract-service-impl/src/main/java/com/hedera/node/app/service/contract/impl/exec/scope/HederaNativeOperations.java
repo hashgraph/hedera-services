@@ -182,7 +182,7 @@ public interface HederaNativeOperations {
      *
      * @param evmAddress the EVM address of the hollow account to finalize as a contract
      * @param contractNonce the contract nonce value to set it to the resulting account after merging with hollow account
-     * @return hollowAccountId
+     * @return id of the hollow account
      */
     AccountID finalizeHollowAccountAsContract(@NonNull Bytes evmAddress, long contractNonce);
 
