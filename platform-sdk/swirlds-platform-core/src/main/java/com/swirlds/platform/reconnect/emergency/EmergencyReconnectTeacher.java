@@ -129,6 +129,7 @@ public class EmergencyReconnectTeacher {
                             RECONNECT.getMarker(),
                             "Peer {} requested state ({},{}) to perform an emergency reconnect but no compatible state was found."
                                     + "The emergency state we have is ({},{})",
+                            connection.getOtherId(),
                             round,
                             hash,
                             Optional.ofNullable(reservedState)
@@ -138,8 +139,7 @@ public class EmergencyReconnectTeacher {
                             Optional.ofNullable(reservedState)
                                     .map(ReservedSignedState::get)
                                     .map(SignedState::getState)
-                                    .orElse(null),
-                            connection.getOtherId());
+                                    .orElse(null));
                 }
             }
         } catch (final IOException e) {
