@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,34 +56,45 @@ import org.apache.logging.log4j.Logger;
 public class ContractStateMigrator {
     private static final Logger log = LogManager.getLogger(ContractStateMigrator.class);
 
+    /** Given a `WritableKVState` for the contract store, makes a copy of it - thus flushing it to disk! - and then
+     * returns the copy for further writing.
+     */
+    public interface StateFlusher extends UnaryOperator<WritableKVState<SlotKey, SlotValue>> {}
+
     public static Status migrateFromContractStoreVirtualMap(
             @NonNull final VirtualMapLike<ContractKey, IterableContractValue> fromState,
-            @NonNull final WritableKVState<SlotKey, SlotValue> toState) {
-        return migrateFromContractStoreVirtualMap(fromState, toState, new ArrayList<>(), false, DEFAULT_THREAD_COUNT);
+            @NonNull final WritableKVState<SlotKey, SlotValue> initialToState,
+            @NonNull final StateFlusher stateFlusher) {
+        return migrateFromContractStoreVirtualMap(
+                fromState, initialToState, stateFlusher, new ArrayList<>(), false, DEFAULT_THREAD_COUNT);
     }
 
     @NonNull
     public static Status migrateFromContractStoreVirtualMap(
             @NonNull final VirtualMapLike<ContractKey, IterableContractValue> fromState,
-            @NonNull final WritableKVState<SlotKey, SlotValue> toState,
+            @NonNull final WritableKVState<SlotKey, SlotValue> initialToState,
+            @NonNull final StateFlusher stateFlusher,
             @NonNull final List<String> validationFailures) {
-        return migrateFromContractStoreVirtualMap(fromState, toState, validationFailures, true, DEFAULT_THREAD_COUNT);
+        return migrateFromContractStoreVirtualMap(
+                fromState, initialToState, stateFlusher, validationFailures, true, DEFAULT_THREAD_COUNT);
     }
 
     @NonNull
     public static Status migrateFromContractStoreVirtualMap(
             @NonNull final VirtualMapLike<ContractKey, IterableContractValue> fromState,
-            @NonNull final WritableKVState<SlotKey, SlotValue> toState,
+            @NonNull final WritableKVState<SlotKey, SlotValue> initialToState,
+            @NonNull final StateFlusher stateFlusher,
             @NonNull final List<String> validationFailures,
             final boolean doFullValidation,
             final int threadCount) {
         requireNonNull(fromState);
-        requireNonNull(toState);
+        requireNonNull(initialToState);
+        requireNonNull(stateFlusher);
         requireNonNull(validationFailures);
 
         validationFailures.clear();
 
-        final var migrator = new ContractStateMigrator(fromState, toState)
+        final var migrator = new ContractStateMigrator(fromState, initialToState, stateFlusher)
                 .withValidation(doFullValidation)
                 .withThreadCount(threadCount);
 
@@ -109,24 +121,29 @@ public class ContractStateMigrator {
     static final int EVM_WORD_WIDTH_IN_INTS = 8;
     static final String LOG_CAPTION = "contract-store mono-to-modular migration";
 
+    private static final int COMMIT_STATE_EVERY_N_INSERTS =
+            10_000; // VirtualMapConfig.preferredFlushQueueSize() but no access here
+
     final VirtualMapLike<ContractKey, IterableContractValue> fromState;
-    final WritableKVState<SlotKey, SlotValue> toState;
+    WritableKVState<SlotKey, SlotValue> toState;
+    final StateFlusher stateFlusher;
 
     boolean doFullValidation;
     int threadCount;
     final ContractMigrationValidationCounters counters;
-
-    void foo() {
-        System.out.println(Runtime.getRuntime().availableProcessors());
-    }
+    int nInsertionsDone = 0;
 
     ContractStateMigrator(
             @NonNull final VirtualMapLike<ContractKey, IterableContractValue> fromState,
-            @NonNull final WritableKVState<SlotKey, SlotValue> toState) {
+            @NonNull final WritableKVState<SlotKey, SlotValue> initialToState,
+            @NonNull final StateFlusher stateFlusher) {
         requireNonNull(fromState);
-        requireNonNull(toState);
+        requireNonNull(initialToState);
+        requireNonNull(stateFlusher);
+
         this.fromState = fromState;
-        this.toState = toState;
+        this.toState = initialToState;
+        this.stateFlusher = stateFlusher;
         this.threadCount = DEFAULT_THREAD_COUNT;
         this.doFullValidation = true;
         this.counters = ContractMigrationValidationCounters.create();
@@ -266,6 +283,8 @@ public class ContractStateMigrator {
                     .build();
             toState.put(key, value);
 
+            commitToStateIfNeeded();
+
             // Some counts to provide some validation
             if (doFullValidation) {
                 counters.sinkOne();
@@ -276,8 +295,19 @@ public class ContractStateMigrator {
                 else counters.xorAnotherLink(value.nextKey().toByteArray());
             }
         }
+
+        commitToStateNow();
     }
 
+    // State needs to be committed every so many inserts so that it can get flushed to disk. We can't do it on a
+    // `WritableKVState` so we defer to the caller.
+    void commitToStateIfNeeded() {
+        if (++nInsertionsDone % COMMIT_STATE_EVERY_N_INSERTS == 0) commitToStateNow();
+    }
+
+    void commitToStateNow() {
+        toState = stateFlusher.apply(toState);
+    }
     /**
      * Iterate over the incoming mono-service state, pushing slots (key + value) into the queue.  This is "sourcing"
      * the slots.7y

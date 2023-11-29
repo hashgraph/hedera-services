@@ -26,8 +26,10 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
@@ -51,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -59,8 +62,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractStoresSubcommand {
-
-    static final int ESTIMATED_NUMBER_OF_CONTRACT_SLOTS = 5_000_000;
 
     static void doit(
             @NonNull final SignedStateHolder state,
@@ -262,7 +263,10 @@ public class DumpContractStoresSubcommand {
     @Nullable
     WritableKVState<SlotKey, SlotValue> getMigratedContractStore() {
 
-        // Start the migration with a clean writable KV store.  Use a nice, simple, in memory implementation
+        final var fromStore = state.getRawContractStorage();
+        final var expectedNumberOfSlots = Math.toIntExact(fromStore.size());
+
+        // Start the migration with a clean, writable KV store.  Using the in-memory store here.
 
         final var contractSchema = new ContractSchema();
         final var contractSchemas = contractSchema.statesToCreate();
@@ -272,16 +276,31 @@ public class DumpContractStoresSubcommand {
                 .orElseThrow();
         final var contractStoreSchemaMetadata =
                 new StateMetadata<>(ContractService.NAME, contractSchema, contractStoreStateDefinition);
-        final var contractMerkleMap = new MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>(
-                ESTIMATED_NUMBER_OF_CONTRACT_SLOTS);
-        final var toStore = new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap);
+        final var contractMerkleMap =
+                new NonAtomicReference<MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>>(
+                        new MerkleMap<>(expectedNumberOfSlots));
+        final var toStore = new NonAtomicReference<WritableKVState<SlotKey, SlotValue>>(
+                new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
 
-        // And now we can grab the fromStore and do the migration
-        final var fromStore = state.getRawContractStorage();
+        final var flushCounter = new AtomicInteger();
+
+        final ContractStateMigrator.StateFlusher stateFlusher = ignored -> {
+            // Commit all the new leafs to the underlying map
+            ((WritableKVStateBase<SlotKey, SlotValue>) (toStore.get())).commit();
+            // Copy the underlying map, which does the flush
+            contractMerkleMap.set(contractMerkleMap.get().copy());
+            // Create a new store to go on with
+            toStore.set(new InMemoryWritableKVState<>(contractStoreSchemaMetadata, contractMerkleMap.get()));
+
+            flushCounter.incrementAndGet();
+
+            return toStore.get();
+        };
+
         final var validationFailures = new ArrayList<String>();
         try {
-            final var migrationStatus =
-                    ContractStateMigrator.migrateFromContractStoreVirtualMap(fromStore, toStore, validationFailures);
+            final var migrationStatus = ContractStateMigrator.migrateFromContractStoreVirtualMap(
+                    fromStore, toStore.get(), stateFlusher, validationFailures);
             assert (migrationStatus == ContractStateMigrator.Status.SUCCESS);
         } catch (final RuntimeException ex) {
             System.err.printf("*** Error(s) transforming mono-state to modular state: %n%s", ex);
@@ -291,7 +310,9 @@ public class DumpContractStoresSubcommand {
             return null;
         }
 
-        return toStore;
+        System.err.printf("--- %d state flushes during migration%n", flushCounter.get());
+
+        return toStore.get();
     }
 
     // Produce a report, one line per contract, summarizing the #slot pairs and the min/max slot#
