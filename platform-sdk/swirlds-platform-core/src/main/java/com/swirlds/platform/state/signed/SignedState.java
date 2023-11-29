@@ -296,7 +296,7 @@ public class SignedState implements SignedStateInfo {
      * @return a wrapper that holds the state and the reservation
      */
     public @NonNull ReservedSignedState reserve(@NonNull final String reason) {
-        return new ReservedSignedState(this, reason);
+        return ReservedSignedState.createAndReserve(this, reason);
     }
 
     /**
@@ -307,6 +307,19 @@ public class SignedState implements SignedStateInfo {
             history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
         }
         reservations.reserve();
+    }
+
+    /**
+     * Try to increment the reservation count.
+     */
+    boolean tryIncrementReservationCount(@NonNull final String reason, final long reservationId) {
+        if (!reservations.tryReserve()) {
+            return false;
+        }
+        if (history != null) {
+            history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        }
+        return true;
     }
 
     /**
