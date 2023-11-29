@@ -10,7 +10,7 @@ If you have a question on how to use the product, please see our [Support](/SUPP
 
 ## Issues
 
-GitHub [issues](https://docs.github.com/en/issues) are used as the primary method for tracking project changes. Issues
+GitHub [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking project changes. Issues
 should track actionable items that will result in changes to the codebase. As a result, support inquiries should be
 directed to one of the aforementioned [support channels](#support-channels).
 
@@ -76,33 +76,21 @@ Check out our [template](https://github.com/hashgraph/.github/blob/main/PULL_REQ
 $ git clone https://github.com/${owner}/hedera-services.git
 ```
 
-3. Add an `upstream` remote to keep your fork in sync with the develop repo.
-
-```sh
-$ git remote add upstream https://github.com/hashgraph/hedera-services.git
-```
-
-4. Sync your local `develop` branch.
-
-```sh
-$ git pull upstream develop
-```
-
-5. Create a branch to add a new feature or fix issues.
+3. Create a branch to add a new feature or fix issues.
 
 ```sh
 $ git checkout -b new-feature
 ```
 
-6. Make any change on the branch `new-feature` then build and test your code locally.
+4. Make any change on the branch `new-feature` then build and test your code locally.
 
-7. Add files that you want to be committed.
+5. Add files that you want to be committed.
 
 ```sh
 $ git add <file>
 ```
 
-8. Enable [GPG signing](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification/signing-commits) of your commits within the repo.
+6. Enable [GPG signing](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification/signing-commits) of your commits within the repo.
    Signing all your commits with your public key allows the comunity to verify it's really you. If you forgot to sign some
    commits that are part of the contribution, you can
    ask [git to rewrite your commit history](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History).
@@ -111,7 +99,7 @@ $ git add <file>
 $ git config commit.gpgsign true
 ```
 
-9. Use [sign-off](#sign-off) when making each of your commits. Additionally,
+7. Use [sign-off](#sign-off) when making each of your commits. Additionally,
    please [GPG sign](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification/signing-commits)
    all your commits with your public key so we can verify it's really you. If you forgot to sign-off some
    commits that are part of the contribution, you can
@@ -121,7 +109,7 @@ $ git config commit.gpgsign true
 $ git commit --signoff -S -m "Your commit message"
 ```
 
-10. [Submit](#pr-lifecycle) a pull request.
+8. [Submit](#pr-lifecycle) a pull request.
 
 ### Sign Off
 
