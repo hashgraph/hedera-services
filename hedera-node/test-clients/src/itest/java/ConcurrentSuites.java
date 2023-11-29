@@ -31,14 +31,9 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
@@ -144,13 +139,8 @@ public class ConcurrentSuites {
             ContractUpdateSuite::new,
             // contract.opcode
             CreateOperationSuite::new,
-            DelegateCallOperationSuite::new,
-            ExtCodeCopyOperationSuite::new,
-            ExtCodeHashOperationSuite::new,
-            ExtCodeSizeOperationSuite::new,
             GlobalPropertiesSuite::new,
             SStoreSuite::new,
-            StaticCallOperationSuite::new,
             // contract.openzeppelin
             ERC20ContractInteractions::new,
             ERC721ContractInteractions::new,
@@ -242,14 +232,9 @@ public class ConcurrentSuites {
             WipeTokenAccountPrecompileSuite::new,
             // contract opcodes
             CreateOperationSuite::new,
-            DelegateCallOperationSuite::new,
-            ExtCodeCopyOperationSuite::new,
-            ExtCodeHashOperationSuite::new,
-            ExtCodeSizeOperationSuite::new,
             GlobalPropertiesSuite::new,
             SelfDestructSuite::new,
             SStoreSuite::new,
-            StaticCallOperationSuite::new,
             // contract.hapi
             ContractCallLocalSuite::new,
             ContractCallSuite::new,

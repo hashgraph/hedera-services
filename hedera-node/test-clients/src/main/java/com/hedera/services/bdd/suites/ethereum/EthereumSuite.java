@@ -159,7 +159,7 @@ public class EthereumSuite extends HapiSuite {
                                 transferHbarsViaEip2930TxSuccessfully(),
                                 callToTokenAddressViaEip2930TxSuccessfully(),
                                 transferTokensViaEip2930TxSuccessfully(),
-                                callToNonExistingContractFailsGracefully()))
+                                callToNonExistingContractExecutesNoop()))
                 .toList();
     }
 
@@ -906,9 +906,9 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
-    HapiSpec callToNonExistingContractFailsGracefully() {
+    HapiSpec callToNonExistingContractExecutesNoop() {
 
-        return defaultHapiSpec("callToNonExistingContractFailsGracefully")
+        return defaultHapiSpec("callToNonExistingContractExecutesNoop")
                 .given(
                         withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
