@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -24,20 +23,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
-@Tag(SMART_CONTRACT)
 public class ContractGetInfoSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractGetInfoSuite.class);
@@ -83,7 +80,8 @@ public class ContractGetInfoSuite extends HapiSuite {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
-                .then(getContractInfo(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
+                .then(getContractInfo(NON_EXISTING_CONTRACT)
+                        .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
     @HapiTest
@@ -93,7 +91,7 @@ public class ContractGetInfoSuite extends HapiSuite {
                 .when()
                 .then(getContractInfo(NON_EXISTING_CONTRACT)
                         .nodePayment(27_159_182L)
-                        .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
+                        .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
     @Override
