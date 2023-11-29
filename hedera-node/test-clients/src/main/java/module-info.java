@@ -20,6 +20,7 @@ module com.hedera.node.test.clients {
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.config;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
@@ -28,6 +29,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.config.api;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
+    requires com.swirlds.test.framework;
     requires grpc.netty;
     requires io.netty.handler;
     requires java.net.http;
