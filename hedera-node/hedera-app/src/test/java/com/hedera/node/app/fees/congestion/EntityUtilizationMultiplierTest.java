@@ -60,6 +60,7 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.AccountsConfig;
@@ -161,7 +162,8 @@ class EntityUtilizationMultiplierTest {
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -188,7 +190,8 @@ class EntityUtilizationMultiplierTest {
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -213,7 +216,8 @@ class EntityUtilizationMultiplierTest {
                                         FileID.newBuilder().fileNum(1L), File.DEFAULT,
                                         FileID.newBuilder().fileNum(2L), File.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -252,7 +256,8 @@ class EntityUtilizationMultiplierTest {
                                                                 .tokenNum(2L)),
                                                 Nft.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(nftMintTxnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(nftMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -274,7 +279,8 @@ class EntityUtilizationMultiplierTest {
                 TOKEN_MINT);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(tokenMintTxnInfo, state);
+        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(tokenMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
     }
@@ -299,7 +305,8 @@ class EntityUtilizationMultiplierTest {
                                         TokenID.newBuilder().tokenNum(1L), Token.DEFAULT,
                                         TokenID.newBuilder().tokenNum(2L), Token.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -330,7 +337,8 @@ class EntityUtilizationMultiplierTest {
                                                                 .tokenNum(2L)),
                                                 TokenRelation.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -355,7 +363,8 @@ class EntityUtilizationMultiplierTest {
                                         TopicID.newBuilder().topicNum(1L), Topic.DEFAULT,
                                         TopicID.newBuilder().topicNum(2L), Topic.DEFAULT)));
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
     }
@@ -367,7 +376,8 @@ class EntityUtilizationMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CRYPTO_TRANSFER);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, state);
+        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        long multiplier = entityUtilizationMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
     }

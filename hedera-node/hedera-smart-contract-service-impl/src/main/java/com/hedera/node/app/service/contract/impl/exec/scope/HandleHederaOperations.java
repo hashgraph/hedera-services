@@ -160,7 +160,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        return tinybarValues.topLevelTinybarGasPrice();
+        var multiplier = context.feeCalculator(SubType.DEFAULT).getCongestionMultiplier();
+        return tinybarValues.topLevelTinybarGasPrice() * multiplier;
     }
 
     /**

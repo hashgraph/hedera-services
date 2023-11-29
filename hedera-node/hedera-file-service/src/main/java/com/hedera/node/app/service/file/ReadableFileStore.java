@@ -47,4 +47,11 @@ public interface ReadableFileStore {
      */
     @Nullable
     File getFileLeaf(@NonNull FileID id);
+
+    /**
+     * Returns the number of files in the state.
+     *
+     * @return the number of files in the state.
+     */
+    long sizeOfState();
 }

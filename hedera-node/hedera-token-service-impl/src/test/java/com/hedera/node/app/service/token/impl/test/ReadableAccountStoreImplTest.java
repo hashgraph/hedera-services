@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.test;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -227,5 +228,11 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(accountId).isEqualTo(id);
         final var accountId2 = subject.getAccountIDByAlias(Bytes.wrap("test"));
         assertThat(accountId2).isNull();
+    }
+
+    @Test
+    void getSizeOfState() {
+        final var store = new ReadableAccountStoreImpl(readableStates);
+        assertEquals(readableStates.get(ACCOUNTS).size(), store.sizeOfAccountState());
     }
 }

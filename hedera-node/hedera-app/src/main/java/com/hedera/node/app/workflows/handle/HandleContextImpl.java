@@ -222,7 +222,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     signatureMapSize,
                     userTransactionConsensusTime,
                     subType,
-                    false);
+                    false,
+                    readableStoreFactory());
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
@@ -464,6 +465,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
             bodyToDispatch = txBody.copyBuilder()
                     .transactionID(TransactionID.newBuilder()
+                            .accountID(syntheticPayerId)
                             .transactionValidStart(Timestamp.newBuilder()
                                     .seconds(consensusNow().getEpochSecond())
                                     .nanos(consensusNow().getNano())))

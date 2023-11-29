@@ -90,4 +90,6 @@ public interface ReadableAccountStore {
         final var account = getAccountById(builder.build());
         return account == null || !account.smartContract() ? null : account;
     }
+
+    long sizeOfAccountState();
 }

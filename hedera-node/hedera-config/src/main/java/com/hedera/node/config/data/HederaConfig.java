@@ -18,6 +18,7 @@ package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
+import com.hedera.node.config.types.Profile;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -51,8 +52,7 @@ public record HederaConfig(
         @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") @NodeProperty int prefetchThreadPoolSize,
         @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") @NodeProperty
                 int prefetchCodeCacheTtlSecs,
-        // @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
-        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") @NodeProperty String activeProfile,
+        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") @NodeProperty Profile activeProfile,
         @ConfigProperty(value = "workflow.verificationTimeoutMS", defaultValue = "20000") @NetworkProperty
                 long workflowVerificationTimeoutMS,
         // FUTURE: Set<HederaFunctionality>.

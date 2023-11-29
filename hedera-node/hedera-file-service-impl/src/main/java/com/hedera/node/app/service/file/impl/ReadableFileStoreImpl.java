@@ -62,4 +62,13 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
     public @Nullable File getFileLeaf(@NonNull FileID id) {
         return fileState.get(id);
     }
+
+    /**
+     * Returns the number of files in the state.
+     *
+     * @return the number of files in the state.
+     */
+    public long sizeOfState() {
+        return fileState.size();
+    }
 }

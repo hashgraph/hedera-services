@@ -108,7 +108,8 @@ public class FeeContextImpl implements FeeContext {
                 signatureMapSize,
                 consensusTime,
                 subType,
-                false);
+                false,
+                storeFactory);
     }
 
     @NonNull

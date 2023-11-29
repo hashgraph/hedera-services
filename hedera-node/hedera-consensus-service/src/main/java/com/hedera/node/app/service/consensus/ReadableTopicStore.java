@@ -42,4 +42,10 @@ public interface ReadableTopicStore {
 
     @NonNull
     Optional<Topic> getTopicLeaf(@NonNull TopicID id);
+
+    /**
+     * Returns the number of topics in the state.
+     * @return the number of topics in the state.
+     */
+    public long sizeOfState();
 }

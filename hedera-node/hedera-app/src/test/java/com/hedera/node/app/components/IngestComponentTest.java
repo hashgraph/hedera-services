@@ -111,7 +111,7 @@ class IngestComponentTest {
         final var congestionMultipliers = new CongestionMultipliers(genericFeeMultiplier, gasFeeMultiplier);
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
-        final var feeManager = new FeeManager(exchangeRateManager);
+        final var feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
         final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()

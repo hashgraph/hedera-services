@@ -192,6 +192,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 .build();
     }
 
+    private static TransactionBody transactionBodyWithoutId() {
+        return TransactionBody.newBuilder()
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
+    }
+
     private HandleContextImpl createContext(final TransactionBody txBody) {
         final HederaFunctionality function;
         try {
@@ -642,6 +648,20 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
             final var result = context.dispatchComputeFees(defaultTransactionBody(), account1002);
+            verify(dispatcher).dispatchComputeFees(captor.capture());
+            final var feeContext = captor.getValue();
+            assertInstanceOf(ChildFeeContextImpl.class, feeContext);
+            assertSame(fees, result);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void invokesComputeFeesDispatchWithNoTransactionId() {
+            given(recordBuilder.consensusNow()).willReturn(DEFAULT_CONSENSUS_NOW);
+            final var fees = new Fees(1L, 2L, 3L);
+            given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
+            final var captor = ArgumentCaptor.forClass(FeeContext.class);
+            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);

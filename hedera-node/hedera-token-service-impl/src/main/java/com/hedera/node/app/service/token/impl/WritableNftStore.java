@@ -84,14 +84,6 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     }
 
     /**
-     * Returns the number of nfts in the state.
-     * @return the number of nfts in the state.
-     */
-    public long sizeOfState() {
-        return nftState.size();
-    }
-
-    /**
      * Returns the set of nfts modified in existing state.
      * @return the set of nfts modified in existing state
      */

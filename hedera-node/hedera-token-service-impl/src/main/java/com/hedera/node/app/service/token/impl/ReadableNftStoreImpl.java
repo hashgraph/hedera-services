@@ -50,4 +50,12 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
         requireNonNull(nftId);
         return nftState.get(nftId);
     }
+
+    /**
+     * Returns the number of nfts in the state.
+     * @return the number of nfts in the state.
+     */
+    public long sizeOfState() {
+        return nftState.size();
+    }
 }
