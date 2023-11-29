@@ -283,7 +283,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias, long contractNonce) {
+    public void finalizeHollowAccount(@NonNull final Address alias, final long contractNonce) {
         AccountID hollowAccountId = evmFrameState.finalizeHollowAccount(alias, contractNonce);
         // add child record on merge
         var contractId = ConversionUtils.asNumericContractId(hollowAccountId);
