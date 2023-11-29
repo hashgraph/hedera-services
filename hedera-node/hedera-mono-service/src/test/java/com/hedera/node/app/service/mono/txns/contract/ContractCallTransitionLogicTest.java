@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -425,6 +426,86 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
         // when:
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForEvm030() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
+
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForEvm034() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
+
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForEvm038() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_38);
+
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void throwsInvalidContractIdWithNonExistingFlowForAllowCallsToNonContractAccountsDisabled() {
+        var op = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(gas)
+                        .setAmount(0)
+                        .setContractID(ContractID.newBuilder()
+                                .setContractNum(999_999_999L)
+                                .build()));
+        contractCallTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(properties.allowCallsToNonContractAccounts()).willReturn(false);
+
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(
                         accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),

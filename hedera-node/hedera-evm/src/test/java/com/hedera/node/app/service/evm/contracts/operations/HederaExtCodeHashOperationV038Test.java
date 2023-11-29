@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,6 +90,19 @@ class HederaExtCodeHashOperationV038Test {
         given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
         given(addressValidator.test(any(), any())).willReturn(false);
         given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_38);
+
+        var opResult = subject.execute(mf, evm);
+
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
+    }
+
+    @Test
+    void executeResolvesToInvalidSolidityAddressAndAllowCallsToNonContractAccountsDisabled() {
+        given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        given(addressValidator.test(any(), any())).willReturn(false);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
 
         var opResult = subject.execute(mf, evm);
 
