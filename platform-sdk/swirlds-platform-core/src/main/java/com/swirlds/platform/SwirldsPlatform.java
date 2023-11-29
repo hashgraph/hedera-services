@@ -168,13 +168,13 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.SignedStateNexus;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateSavingResult;
@@ -394,13 +394,13 @@ public class SwirldsPlatform implements Platform {
         this.selfId = id;
         this.currentAddressBook = initialState.getAddressBook();
 
-        final SignedStateNexus emergencyState = new SignedStateNexus();
+        final EmergencyStateNexus emergencyState = new EmergencyStateNexus();
         if (emergencyRecoveryManager.isEmergencyState(initialState)) {
             emergencyState.setState(initialState.reserve("emergency state nexus"));
         }
         final Consumer<PlatformStatus> statusChangeConsumer = s -> {
             notificationEngine.dispatch(PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(s));
-            emergencyState.clear();
+            emergencyState.platformStatusChanged(s);
         };
         platformStatusManager =
                 components.add(new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
