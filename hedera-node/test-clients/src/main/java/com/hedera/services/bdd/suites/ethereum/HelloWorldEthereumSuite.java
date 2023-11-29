@@ -166,10 +166,10 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> exploitTokenEvmAddress.set(
                                         asHexedSolidityAddress(0, 0, asToken(id).getTokenNum())))))
                 .when(sourcing(() -> ethereumCall(
-                        exploitContract,
-                        "stealFrom",
-                        asHeadlongAddress(relayerEvmAddress.get()),
-                        asHeadlongAddress(exploitTokenEvmAddress.get()))
+                                exploitContract,
+                                "stealFrom",
+                                asHeadlongAddress(relayerEvmAddress.get()),
+                                asHeadlongAddress(exploitTokenEvmAddress.get()))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(maliciousEOA)
                         .payingWith(RELAYER)

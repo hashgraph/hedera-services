@@ -190,9 +190,9 @@ public class EthereumSuite extends HapiSuite {
                                 .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
                 .then(withOpContext((spec, opLog) -> {
                     var call = ethereumCall(
-                            TOKEN_CREATE_CONTRACT,
-                            "createNonFungibleTokenPublic",
-                            tokenCreateContractAddress.get())
+                                    TOKEN_CREATE_CONTRACT,
+                                    "createNonFungibleTokenPublic",
+                                    tokenCreateContractAddress.get())
                             .type(EthTxData.EthTransactionType.EIP1559)
                             .signingWith(SECP_256K1_SOURCE_KEY)
                             .payingWith(RELAYER)
@@ -296,10 +296,10 @@ public class EthereumSuite extends HapiSuite {
     HapiSpec matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
         return defaultHapiSpec("feePaymentMatrix "
-                + (success ? "Success/" : "Failure/")
-                + senderGasPrice
-                + "/"
-                + relayerOffered)
+                        + (success ? "Success/" : "Failure/")
+                        + senderGasPrice
+                        + "/"
+                        + relayerOffered)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -316,7 +316,7 @@ public class EthereumSuite extends HapiSuite {
                             .accountIsAlias();
                     final var subop2 = balanceSnapshot(payerBalance, RELAYER);
                     final var subop3 = ethereumCall(
-                            PAY_RECEIVABLE_CONTRACT, "deposit", BigInteger.valueOf(DEPOSIT_AMOUNT))
+                                    PAY_RECEIVABLE_CONTRACT, "deposit", BigInteger.valueOf(DEPOSIT_AMOUNT))
                             .type(EthTxData.EthTransactionType.EIP1559)
                             .signingWith(SECP_256K1_SOURCE_KEY)
                             .payingWith(RELAYER)
@@ -410,7 +410,7 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS))
                 .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged(), sourcing(() -> getContractInfo(
-                        contractID.get())
+                                contractID.get())
                         .logged()
                         .has(contractWith()
                                 .defaultAdminKey()
@@ -532,9 +532,9 @@ public class EthereumSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
-                                true,
-                                FUNGIBLE_TOKEN,
-                                getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -727,17 +727,17 @@ public class EthereumSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(tokenTransferAmount, FUNGIBLE_TOKEN)
-                                .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                        .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
                                 .via(AUTO_ACCOUNT_TRANSACTION_NAME))
                 .when(withOpContext((spec, ignore) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
-                                true,
-                                FUNGIBLE_TOKEN,
-                                getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
-                                asHeadlongAddress(asHexedSolidityAddress(
-                                        spec.registry().getAccountID(ACCOUNT))),
-                                BigInteger.valueOf(tokenTransferAmount))
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
+                                        asHeadlongAddress(asHexedSolidityAddress(
+                                                spec.registry().getAccountID(ACCOUNT))),
+                                        BigInteger.valueOf(tokenTransferAmount))
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .nonce(0)
                                 .gasPrice(50L)
@@ -830,9 +830,9 @@ public class EthereumSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
-                                true,
-                                FUNGIBLE_TOKEN,
-                                getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -873,17 +873,17 @@ public class EthereumSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(tokenTransferAmount, FUNGIBLE_TOKEN)
-                                .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                        .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
                                 .via(AUTO_ACCOUNT_TRANSACTION_NAME))
                 .when(withOpContext((spec, ignore) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
-                                true,
-                                FUNGIBLE_TOKEN,
-                                getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
-                                asHeadlongAddress(asHexedSolidityAddress(
-                                        spec.registry().getAccountID(ACCOUNT))),
-                                BigInteger.valueOf(tokenTransferAmount))
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
+                                        asHeadlongAddress(asHexedSolidityAddress(
+                                                spec.registry().getAccountID(ACCOUNT))),
+                                        BigInteger.valueOf(tokenTransferAmount))
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .nonce(0)
                                 .gasPrice(0L)
