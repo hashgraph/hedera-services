@@ -16,7 +16,6 @@
 
 package com.swirlds.sample.test;
 
-import com.swirlds.base.test.fixtures.date.DateUtil;
 import com.swirlds.sample.Foo;
 import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
@@ -31,6 +30,5 @@ public class FooTest {
 
     void testThatTimeIsNotYesterday() {
         final Instant now = Foo.getTime().now();
-        DateUtil.isYesterday(now);
     }
 }
