@@ -144,7 +144,7 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
         builder.payerAccountID(scheduleFound.payerAccountId());
         builder.ledgerId(config.id());
         if (scheduleFound.executed()) {
-            builder.expirationTime(scheduleFound.resolutionTime());
+            builder.executionTime(scheduleFound.resolutionTime());
         }
         if (scheduleFound.deleted()) {
             builder.deletionTime(scheduleFound.resolutionTime());
