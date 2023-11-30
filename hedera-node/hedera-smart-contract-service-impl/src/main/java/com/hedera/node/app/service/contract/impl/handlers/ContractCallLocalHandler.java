@@ -85,24 +85,20 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         validateTruePreCheck(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
-        final var isAllowCallsToNonContractAccountsEnabled =
-                context.configuration().getConfigData(ContractsConfig.class).evmAllowCallsToNonContractAccounts();
-        if (!isAllowCallsToNonContractAccountsEnabled) {
-            // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have
-            // nothing
-            // to call)
-            final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
-            if (contract != null) {
-                if (contract.deleted()) {
-                    throw new PreCheckException(CONTRACT_DELETED);
-                }
-            } else {
-                final var tokenID =
-                        TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
-                final var tokenContract =
-                        context.createStore(ReadableTokenStore.class).get(tokenID);
-                mustExist(tokenContract, INVALID_CONTRACT_ID);
+        // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have
+        // nothing
+        // to call)
+        final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
+        if (contract != null) {
+            if (contract.deleted()) {
+                throw new PreCheckException(CONTRACT_DELETED);
             }
+        } else {
+            final var tokenID =
+                    TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
+            final var tokenContract =
+                    context.createStore(ReadableTokenStore.class).get(tokenID);
+            mustExist(tokenContract, INVALID_CONTRACT_ID);
         }
     }
 
