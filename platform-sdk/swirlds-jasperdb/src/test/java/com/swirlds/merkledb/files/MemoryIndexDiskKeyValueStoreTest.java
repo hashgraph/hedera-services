@@ -190,6 +190,7 @@ class MemoryIndexDiskKeyValueStoreTest {
                         index,
                         (type, time) -> timeSpent.set(time),
                         (type, space) -> savedSpace.set(space),
+                        null,
                         null) {
                     @Override
                     int getMinNumberOfFilesToCompact() {

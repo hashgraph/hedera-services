@@ -16,11 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
@@ -42,6 +49,7 @@ import javax.inject.Singleton;
 @Singleton
 public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
 
+    private static final String HTS_PRECOMPILE_ADDRESS = "0x167";
     private final Address owner;
     private final Address spender;
     private final AddressIdConverter addressIdConverter;
@@ -66,6 +74,47 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         this.isStaticCall = isStaticCall;
     }
 
+    @Override
+    public @NonNull PricedResult execute() {
+        var gasRequirement = gasCalculator.viewGasRequirement();
+        if (token == null) {
+            return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasRequirement);
+        }
+
+        if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
+            if (isStaticCall) {
+                return gasOnly(
+                        FullResult.revertResult(
+                                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement),
+                        INVALID_TOKEN_ID,
+                        false);
+            } else {
+                return gasOnly(
+                        FullResult.successResult(
+                                ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS),
+                                gasRequirement),
+                        SUCCESS,
+                        false);
+            }
+        }
+
+        ContractID contractID =
+                asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        final var ownerID = addressIdConverter.convert(owner);
+        final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
+        if (isStaticCall && ownerAccount == null) {
+            var responseCode = INVALID_ALLOWANCE_OWNER_ID;
+            enhancement
+                    .systemOperations()
+                    .externalizeResult(
+                            contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID),
+                            responseCode);
+            return gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
+        } else {
+            return externalizeSuccessfulResult();
+        }
+    }
+
     @NonNull
     @Override
     protected FullResult resultOfViewingToken(@NonNull final Token token) {
@@ -73,21 +122,8 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         requireNonNull(owner);
         requireNonNull(spender);
         final var gasRequirement = gasCalculator.viewGasRequirement();
-        if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            if (isStaticCall) {
-                return FullResult.revertResult(
-                        com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement);
-            } else {
-                return FullResult.successResult(
-                        ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement);
-            }
-        }
         final var ownerID = addressIdConverter.convert(owner);
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
-        if (isStaticCall && ownerAccount == null) {
-            return FullResult.revertResult(
-                    com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID, gasRequirement);
-        }
         final var spenderID = addressIdConverter.convert(spender);
         if (!spenderID.hasAccountNum() && !isStaticCall) {
             return FullResult.successResult(

@@ -78,7 +78,7 @@ class DataFileCollectionCompactionHammerTest {
                     storeName,
                     serializer,
                     (dataLocation, dataValue) -> {});
-            final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null);
+            final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
 
             final Random rand = new Random(777);
             for (int i = 0; i < numFiles; i++) {
@@ -139,7 +139,7 @@ class DataFileCollectionCompactionHammerTest {
                 storeName,
                 serializer,
                 (dataLocation, dataValue) -> {});
-        final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null);
+        final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);

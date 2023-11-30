@@ -20,19 +20,27 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
@@ -44,8 +52,11 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.throttle.HandleThrottleParser;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -54,6 +65,7 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
+import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -117,7 +129,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final HederaState state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
-        if (shouldThrottleTxn(txnInfo, consensusTime, state)) {
+        if (shouldThrottleTxn(false, txnInfo, consensusTime, state)) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -145,7 +157,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return false;
         }
 
-        final var shouldThrottleByGas =
+        final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
         resetLastAllowedUse();
@@ -230,8 +242,22 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         return GAS_THROTTLED_FUNCTIONS.contains(function);
     }
 
+    /*
+     * Resets the usage for all underlying throttles.
+     */
+    public void resetUsage() {
+        lastTxnWasGasThrottled = false;
+        activeThrottles.forEach(DeterministicThrottle::resetUsage);
+        if (gasThrottle != null) {
+            gasThrottle.resetUsage();
+        }
+    }
+
     private boolean shouldThrottleTxn(
-            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final HederaState state) {
+            final boolean isScheduled,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final Instant now,
+            @NonNull final HederaState state) {
         final var function = txnInfo.functionality();
         final var configuration = configProvider.getConfiguration();
 
@@ -242,12 +268,12 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         // exemption
         // but this is only possible for the case of triggered transactions which is not yet implemented (see
         // MonoMultiplierSources.java)
-        final var isPayerThrottleExempt = throttleExempt(txnInfo.payerID(), configuration);
+        final boolean isPayerThrottleExempt = throttleExempt(txnInfo.payerID(), configuration);
         if (isPayerThrottleExempt) {
             return false;
         }
 
-        final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
+        final long txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
         if (isGasExhausted(function, now, txGasLimit, configuration)) {
             lastTxnWasGasThrottled = true;
             return true;
@@ -259,6 +285,20 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         }
 
         return switch (function) {
+            case SCHEDULE_CREATE -> {
+                if (isScheduled) {
+                    throw new IllegalStateException("ScheduleCreate cannot be a child!");
+                }
+
+                yield shouldThrottleScheduleCreate(manager, txnInfo, now, state);
+            }
+            case SCHEDULE_SIGN -> {
+                if (isScheduled) {
+                    throw new IllegalStateException("ScheduleSign cannot be a child!");
+                }
+
+                yield shouldThrottleScheduleSign(manager, txnInfo, now, state);
+            }
             case TOKEN_MINT -> shouldThrottleMint(manager, txnInfo.txBody().tokenMint(), now, configuration);
             case CRYPTO_TRANSFER -> {
                 final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
@@ -274,11 +314,149 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         };
     }
 
+    private boolean shouldThrottleScheduleCreate(
+            final ThrottleReqsManager manager,
+            final TransactionInfo txnInfo,
+            final Instant now,
+            final HederaState state) {
+        final var txnBody = txnInfo.txBody();
+        final var scheduleCreate = txnBody.scheduleCreate();
+        final var scheduled = scheduleCreate.scheduledTransactionBody();
+        final var schedule = Schedule.newBuilder()
+                .originalCreateTransaction(txnBody)
+                .payerAccountId(txnInfo.payerID())
+                .scheduledTransaction(scheduled)
+                .build();
+
+        TransactionBody innerTxn;
+        HederaFunctionality scheduledFunction;
+        try {
+            innerTxn = childAsOrdinary(schedule);
+            scheduledFunction = functionOf(innerTxn);
+        } catch (HandleException | UnknownHederaFunctionality ex) {
+            log.debug("ScheduleCreate was associated with an invalid txn.", ex);
+            return true;
+        }
+
+        // maintain legacy behaviour
+        final var configuration = configProvider.getConfiguration();
+        final boolean areLongTermSchedulesEnabled =
+                configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
+        if (!areLongTermSchedulesEnabled) {
+            final boolean isAutoCreationEnabled =
+                    configuration.getConfigData(AutoCreationConfig.class).enabled();
+            final boolean isLazyCreationEnabled =
+                    configuration.getConfigData(LazyCreationConfig.class).enabled();
+
+            // we check for CryptoTransfer because implicit creations (i.e. auto- or lazy-creation) may happen in it,
+            // and we need to throttle those separately
+            if ((isAutoCreationEnabled || isLazyCreationEnabled) && scheduledFunction == CRYPTO_TRANSFER) {
+                final var transfer = scheduled.cryptoTransfer();
+                if (usesAliases(transfer)) {
+                    final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
+                    final var transferTxnBody = TransactionBody.newBuilder()
+                            .cryptoTransfer(transfer)
+                            .build();
+                    final int implicitCreationsCount = getImplicitCreationsCount(transferTxnBody, accountStore);
+                    if (implicitCreationsCount > 0) {
+                        return shouldThrottleImplicitCreations(implicitCreationsCount, now);
+                    }
+                }
+            }
+            return !manager.allReqsMetAt(now);
+        } else {
+            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
+            if (!manager.allReqsMetAt(now)) {
+                return true;
+            }
+
+            // only check deeply if the schedule could immediately execute
+            if ((!scheduleCreate.waitForExpiry()) && (throttleType == FRONTEND_THROTTLE)) {
+                var effectivePayer = scheduleCreate.hasPayerAccountID()
+                        ? scheduleCreate.payerAccountID()
+                        : txnBody.transactionID().accountID();
+
+                final var innerTxnInfo = new TransactionInfo(
+                        Transaction.DEFAULT,
+                        innerTxn,
+                        TransactionID.DEFAULT,
+                        effectivePayer,
+                        SignatureMap.DEFAULT,
+                        Bytes.EMPTY,
+                        scheduledFunction);
+
+                return shouldThrottleTxn(true, innerTxnInfo, now, state);
+            }
+
+            return false;
+        }
+    }
+
+    private boolean shouldThrottleScheduleSign(
+            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, HederaState state) {
+        final var txnBody = txnInfo.txBody();
+        if (!manager.allReqsMetAt(now)) {
+            return true;
+        }
+
+        // maintain legacy behaviour
+        final var configuration = configProvider.getConfiguration();
+        final boolean areLongTermSchedulesEnabled =
+                configuration.getConfigData(SchedulingConfig.class).longTermEnabled();
+        if (!areLongTermSchedulesEnabled) {
+            return false;
+        } else {
+            log.warn("Long term scheduling is enabled, but throttling of long term schedules is not yet implemented.");
+            // deeply check throttle only in the frontend throttle
+            if (throttleType != FRONTEND_THROTTLE) {
+                return false;
+            }
+
+            final var scheduledId = txnBody.scheduleSign().scheduleID();
+            final var scheduleStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
+            final var schedule = scheduleStore.get(scheduledId);
+            if (schedule == null) {
+                log.error(
+                        "Tried to throttle in the frontend throttle a ScheduleSign that does not exist! We should not get here.");
+                return true;
+            }
+
+            // only check deeply if the schedule could immediately execute
+            if (schedule.waitForExpiry()) {
+                return false;
+            }
+
+            TransactionBody innerTxn;
+            HederaFunctionality scheduledFunction;
+            try {
+                innerTxn = childAsOrdinary(schedule);
+                scheduledFunction = functionOf(innerTxn);
+            } catch (HandleException | UnknownHederaFunctionality ex) {
+                log.error("ScheduleSign was associated with an invalid txn.", ex);
+                return true;
+            }
+
+            final var effectivePayer =
+                    schedule.hasPayerAccountId() ? schedule.payerAccountId() : schedule.schedulerAccountId();
+
+            final var innerTxnInfo = new TransactionInfo(
+                    Transaction.DEFAULT,
+                    innerTxn,
+                    TransactionID.DEFAULT,
+                    effectivePayer,
+                    SignatureMap.DEFAULT,
+                    Bytes.EMPTY,
+                    scheduledFunction);
+
+            return shouldThrottleTxn(true, innerTxnInfo, now, state);
+        }
+    }
+
     public static boolean throttleExempt(
             @NonNull final AccountID accountID, @NonNull final Configuration configuration) {
-        final var maxThrottleExemptNum =
+        final long maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
-        final var accountNum = accountID.accountNum();
+        final long accountNum = accountID.accountNum().longValue();
         return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
     }
 
@@ -313,7 +491,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final Instant now,
             final long txGasLimit,
             @NonNull final Configuration configuration) {
-        final var shouldThrottleByGas =
+        final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
         return shouldThrottleByGas
                 && isGasThrottled(function)
@@ -325,7 +503,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final TokenMintTransactionBody op,
             @NonNull final Instant now,
             @NonNull final Configuration configuration) {
-        final var numNfts = op.metadata().size();
+        final int numNfts = op.metadata().size();
         if (numNfts == 0) {
             return !manager.allReqsMetAt(now);
         } else {
@@ -340,9 +518,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final Instant now,
             @NonNull final Configuration configuration,
             final int implicitCreationsCount) {
-        final var isAutoCreationEnabled =
+        final boolean isAutoCreationEnabled =
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
-        final var isLazyCreationEnabled =
+        final boolean isLazyCreationEnabled =
                 configuration.getConfigData(LazyCreationConfig.class).enabled();
         if (isAutoCreationEnabled || isLazyCreationEnabled) {
             return shouldThrottleBasedOnImplicitCreations(manager, implicitCreationsCount, now);
@@ -356,9 +534,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @NonNull final Instant now,
             @NonNull final Configuration configuration,
             final int implicitCreationsCount) {
-        final var isAutoCreationEnabled =
+        final boolean isAutoCreationEnabled =
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
-        final var isLazyCreationEnabled =
+        final boolean isLazyCreationEnabled =
                 configuration.getConfigData(LazyCreationConfig.class).enabled();
         if (isAutoCreationEnabled && isLazyCreationEnabled) {
             return shouldThrottleBasedOnImplicitCreations(manager, implicitCreationsCount, now);
@@ -369,7 +547,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
     private int getImplicitCreationsCount(
             @NonNull final TransactionBody txnBody, @NonNull final ReadableAccountStore accountStore) {
-        var implicitCreationsCount = 0;
+        int implicitCreationsCount = 0;
         if (txnBody.hasEthereumTransaction()) {
             final var ethTxData = populateEthTxData(
                     txnBody.ethereumTransaction().ethereumData().toByteArray());
@@ -377,7 +555,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                 return UNKNOWN_NUM_IMPLICIT_CREATIONS;
             }
 
-            final var doesNotExist = accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
+            final boolean doesNotExist = accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
             if (doesNotExist && ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
                 implicitCreationsCount++;
             }
@@ -402,7 +580,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return 0;
         }
 
-        var implicitCreationsCount = 0;
+        int implicitCreationsCount = 0;
         for (var adjust : cryptoTransferBody.transfers().accountAmounts()) {
             if (!isKnownAlias(adjust.accountID(), accountStore) && containsImplicitCreations(adjust)) {
                 implicitCreationsCount++;
@@ -419,7 +597,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return 0;
         }
 
-        var implicitCreationsCount = 0;
+        int implicitCreationsCount = 0;
         for (var tokenAdjust : cryptoTransferBody.tokenTransfers()) {
             for (final var adjust : tokenAdjust.transfers()) {
                 if (!isKnownAlias(adjust.accountID(), accountStore) && containsImplicitCreations(adjust)) {
@@ -435,6 +613,29 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         }
 
         return implicitCreationsCount;
+    }
+
+    private boolean usesAliases(final CryptoTransferTransactionBody transferBody) {
+        for (var adjust : transferBody.transfers().accountAmounts()) {
+            if (isAlias(adjust.accountID())) {
+                return true;
+            }
+        }
+
+        for (var tokenAdjusts : transferBody.tokenTransfers()) {
+            for (var ownershipChange : tokenAdjusts.nftTransfers()) {
+                if (isAlias(ownershipChange.senderAccountID()) || isAlias(ownershipChange.receiverAccountID())) {
+                    return true;
+                }
+            }
+            for (var tokenAdjust : tokenAdjusts.transfers()) {
+                if (isAlias(tokenAdjust.accountID())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private boolean isKnownAlias(@NonNull final AccountID idOrAlias, @NonNull final ReadableAccountStore accountStore) {

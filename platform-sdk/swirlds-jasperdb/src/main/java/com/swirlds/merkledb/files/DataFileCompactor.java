@@ -92,6 +92,8 @@ public class DataFileCompactor<D> {
     @Nullable
     private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
 
+    private final BiConsumer<Integer, Double> reportFileSizeByLevelMetricFunction;
+
     /**
      * A function that updates statistics of total usage of disk space and off-heap space
      */
@@ -149,14 +151,13 @@ public class DataFileCompactor<D> {
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
     /**
-     *
-     * @param storeName name of the store to compact
-     * @param dataFileCollection data file collection to compact
-     * @param index index to update during compaction
+     * @param storeName                      name of the store to compact
+     * @param dataFileCollection             data file collection to compact
+     * @param index                          index to update during compaction
      * @param reportDurationMetricFunction   function to report how long compaction took, in ms
      * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
-     * @param updateTotalStatsFunction A function that updates statistics of total usage of disk space and off-heap space
-     *
+     * @param reportFileSizeByLevelMetricFunction function to report how much spaсе is used by the store by compaction level, in Mb
+     * @param updateTotalStatsFunction       A function that updates statistics of total usage of disk space and off-heap space
      */
     public DataFileCompactor(
             String storeName,
@@ -164,12 +165,14 @@ public class DataFileCompactor<D> {
             CASableLongIndex index,
             @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
+            @Nullable final BiConsumer<Integer, Double> reportFileSizeByLevelMetricFunction,
             @Nullable Runnable updateTotalStatsFunction) {
         this.storeName = storeName;
         this.dataFileCollection = dataFileCollection;
         this.index = index;
         this.reportDurationMetricFunction = reportDurationMetricFunction;
         this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
+        this.reportFileSizeByLevelMetricFunction = reportFileSizeByLevelMetricFunction;
         this.updateTotalStatsFunction = updateTotalStatsFunction;
     }
 
@@ -427,10 +430,10 @@ public class DataFileCompactor<D> {
      * @return true if compaction was performed, false otherwise
      */
     public boolean compact() throws IOException, InterruptedException {
-
-        final List<? extends DataFileReader<D>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
-        final List<? extends DataFileReader<D>> filesToCompact =
-                compactionPlan(allCompactableFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
+        final List<DataFileReader<D>> completedFiles = dataFileCollection.getAllCompletedFiles();
+        reportFileSizeByLevel(completedFiles);
+        final List<DataFileReader<D>> filesToCompact =
+                compactionPlan(completedFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
@@ -466,6 +469,8 @@ public class DataFileCompactor<D> {
                     (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
+        reportFileSizeByLevel(dataFileCollection.getAllCompletedFiles());
+
         logCompactStats(
                 storeName,
                 tookMillis,
@@ -489,6 +494,19 @@ public class DataFileCompactor<D> {
         return true;
     }
 
+    private void reportFileSizeByLevel(List<DataFileReader<D>> allCompletedFiles) {
+        if (reportFileSizeByLevelMetricFunction != null) {
+            final Map<Integer, List<DataFileReader<D>>> readersByLevel = getReadersByLevel(allCompletedFiles);
+            for (int i = 0; i < readersByLevel.size(); i++) {
+                final List<DataFileReader<D>> readers = readersByLevel.get(i);
+                if (readers != null) {
+                    reportFileSizeByLevelMetricFunction.accept(
+                            i, getSizeOfFiles(readers) * UnitConstants.BYTES_TO_MEBIBYTES);
+                }
+            }
+        }
+    }
+
     /**
      * The target compaction level should not exceed the maxCompactionLevel configuration parameter.
      * We need a limit on compaction levels for two reasons:
@@ -509,16 +527,15 @@ public class DataFileCompactor<D> {
      * then this level and the levels above it are not included in the plan.
      * @return filter creating a compaction plan
      */
-    static <D> List<? extends DataFileReader<D>> compactionPlan(
-            List<? extends DataFileReader<D>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
+    static <D> List<DataFileReader<D>> compactionPlan(
+            List<DataFileReader<D>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
         if (dataFileReaders.isEmpty()) {
             return dataFileReaders;
         }
 
-        Map<Integer, List<DataFileReader<D>>> readersByLevel = dataFileReaders.stream()
-                .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
+        final Map<Integer, List<DataFileReader<D>>> readersByLevel = getReadersByLevel(dataFileReaders);
 
-        List<DataFileReader<D>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
+        final List<DataFileReader<D>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
         if (nonCompactedReaders == null || nonCompactedReaders.size() < minNumberOfFilesToCompact) {
             return Collections.emptyList();
         }
@@ -536,5 +553,11 @@ public class DataFileCompactor<D> {
             readersToCompact.addAll(readers);
         }
         return readersToCompact;
+    }
+
+    private static <D> Map<Integer, List<DataFileReader<D>>> getReadersByLevel(
+            final List<DataFileReader<D>> dataFileReaders) {
+        return dataFileReaders.stream()
+                .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
     }
 }

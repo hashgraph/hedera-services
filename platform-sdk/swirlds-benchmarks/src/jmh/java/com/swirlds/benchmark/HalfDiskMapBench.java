@@ -59,7 +59,7 @@ public class HalfDiskMapBench extends BaseBench {
                 null,
                 false);
         final var dataFileCompactor = new DataFileCompactor(
-                storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null);
+                storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null, null);
         System.out.println();
 
         // Write files

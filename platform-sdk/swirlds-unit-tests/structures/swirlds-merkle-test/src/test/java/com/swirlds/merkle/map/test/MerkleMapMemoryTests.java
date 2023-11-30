@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.dummy.Key;
-import com.swirlds.common.test.dummy.Value;
+import com.swirlds.common.test.fixtures.dummy.Key;
+import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;

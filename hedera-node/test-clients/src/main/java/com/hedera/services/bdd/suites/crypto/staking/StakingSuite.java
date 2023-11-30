@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto.staking;
 
+import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -62,8 +64,10 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TIME_CONSUMING)
 public class StakingSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(StakingSuite.class);
@@ -123,6 +127,7 @@ public class StakingSuite extends HapiSuite {
      * periods, a series of credits and debits are made to them, and they are confirmed to have
      * received the expected rewards (all zero).
      */
+    @HapiTest
     private HapiSpec zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
         final var zeroStakeAccount = "zeroStakeAccount";
         final var numZeroStakeAccounts = 10;
@@ -174,6 +179,7 @@ public class StakingSuite extends HapiSuite {
      * Tests a scenario in which Alice repeatedly transfers her balance to Baldwin right before the
      * end of a staking period, only to receive it back shortly after that period starts.
      */
+    @HapiTest
     private HapiSpec stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
         final var alice = "alice";
         final var baldwin = "baldwin";
@@ -255,6 +261,7 @@ public class StakingSuite extends HapiSuite {
      *
      * @return the spec described above
      */
+    @HapiTest
     private HapiSpec autoRenewalsCanTriggerStakingRewards() {
         final var initBalance = ONE_HBAR * 1000;
         final var minimalLifetime = 3;
@@ -284,6 +291,7 @@ public class StakingSuite extends HapiSuite {
                 .then(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
     }
 
+    @HapiTest
     private HapiSpec canBeRewardedWithoutMinStakeIfSoConfigured() {
         final var patientlyWaiting = "patientlyWaiting";
 
@@ -694,6 +702,7 @@ public class StakingSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec rewardsOfDeletedAreRedirectedToBeneficiary() {
         final var bob = "bob";
         final var deletion = "deletion";

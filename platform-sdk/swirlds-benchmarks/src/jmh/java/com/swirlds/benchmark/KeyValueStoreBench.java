@@ -55,9 +55,8 @@ public class KeyValueStoreBench extends BaseBench {
                 new BenchmarkRecordSerializer(),
                 (dataLocation, dataValue) -> {},
                 keyToDiskLocationIndex);
-        final DataFileCompactor<BenchmarkRecord> compactor =
-                new DataFileCompactor<>(storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null);
-        System.out.println();
+        final DataFileCompactor<BenchmarkRecord> compactor = new DataFileCompactor<>(
+                storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null, null);
 
         // Write files
         long start = System.currentTimeMillis();

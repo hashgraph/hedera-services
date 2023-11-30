@@ -110,6 +110,8 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
@@ -259,6 +261,14 @@ public class UtilVerbs {
 
     public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
         return new WaitForFreezeOp(byName(name), waitSeconds);
+    }
+
+    public static StartNodesOp startAllNodes(int waitSeconds) {
+        return new StartNodesOp(allNodes(), waitSeconds);
+    }
+
+    public static ShutDownNodesOp shutDownAllNodes(int waitSeconds) {
+        return new ShutDownNodesOp(allNodes(), waitSeconds);
     }
 
     public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
@@ -575,7 +585,8 @@ public class UtilVerbs {
     public static HapiSpecOperation overridingAllOf(@NonNull final Map<String, String> explicit) {
         return withOpContext((spec, opLog) -> {
             final var updated121 = getUpdated121(spec, explicit);
-            final var multiStepUpdate = updateLargeFile(GENESIS, APP_PROPERTIES, ByteString.copyFrom(updated121));
+            final var multiStepUpdate = updateLargeFile(
+                    GENESIS, APP_PROPERTIES, ByteString.copyFrom(updated121), true, OptionalLong.of(0L));
             allRunFor(spec, multiStepUpdate);
         });
     }
