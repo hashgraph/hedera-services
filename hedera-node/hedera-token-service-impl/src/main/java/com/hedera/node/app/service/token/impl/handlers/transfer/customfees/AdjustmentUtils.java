@@ -162,8 +162,7 @@ public class AdjustmentUtils {
      * @param sender The sender of the nft
      * @return The list of credits
      */
-    public static List<ExchangedValue> getFungibleCredits(
-            final AssessmentResult result, final AccountID sender) {
+    public static List<ExchangedValue> getFungibleCredits(final AssessmentResult result, final AccountID sender) {
         final var tokenChanges = result.getImmutableInputTokenAdjustments();
         // get all the fungible changes that are credited to the sender of nft in the same transaction.
         // this includes hbar and fungible token balances
