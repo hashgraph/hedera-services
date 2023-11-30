@@ -369,12 +369,7 @@ public final class Hedera implements SwirldMain {
         // file in state, created by the file service migration, will match what we have here, so we don't have to worry
         // about re-loading config after migration.
         logger.info("Initializing configuration with trigger {}", trigger);
-        switch (trigger) {
-            case EVENT_STREAM_RECOVERY -> configProvider =
-                    new ConfigProviderImpl(platform.getContext().getConfiguration());
-            case GENESIS -> configProvider = new ConfigProviderImpl(true);
-            case RESTART, RECONNECT -> configProvider = new ConfigProviderImpl(false);
-        }
+        configProvider = new ConfigProviderImpl(trigger == GENESIS);
         logConfiguration();
 
         // Determine if we need to create synthetic records for system entities

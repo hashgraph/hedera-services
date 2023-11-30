@@ -65,16 +65,11 @@ import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -111,31 +106,6 @@ public class ConfigProviderImpl extends ConfigProviderBase {
     public ConfigProviderImpl(final boolean useGenesisSource) {
         final var builder = createConfigurationBuilder();
         addFileSources(builder, useGenesisSource);
-        final Configuration config = builder.build();
-        configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
-    }
-
-    /**
-     * Creates a new config provider based on an existing configuration. Note that this constructor assumes
-     * this is NOT a genesis case.
-     * @param existing the existing configuration to embed in the provider
-     */
-    public ConfigProviderImpl(@NonNull final Configuration existing) {
-        final var builder = createConfigurationBuilder();
-        addFileSources(builder, false);
-        builder.withSources(new ConfigSource() {
-            @NonNull
-            @Override
-            public Set<String> getPropertyNames() {
-                return existing.getPropertyNames().collect(Collectors.toSet());
-            }
-
-            @Nullable
-            @Override
-            public String getValue(@NonNull String propertyName) throws NoSuchElementException {
-                return existing.getValue(propertyName);
-            }
-        });
         final Configuration config = builder.build();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
     }
