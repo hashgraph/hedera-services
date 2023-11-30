@@ -22,25 +22,7 @@ import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.converter.AccountIDConverter;
-import com.hedera.node.config.converter.BytesConverter;
-import com.hedera.node.config.converter.CongestionMultipliersConverter;
-import com.hedera.node.config.converter.ContractIDConverter;
-import com.hedera.node.config.converter.EntityScaleFactorsConverter;
-import com.hedera.node.config.converter.EntityTypeConverter;
-import com.hedera.node.config.converter.FileIDConverter;
-import com.hedera.node.config.converter.FunctionalitySetConverter;
-import com.hedera.node.config.converter.HederaFunctionalityConverter;
-import com.hedera.node.config.converter.KeyValuePairConverter;
-import com.hedera.node.config.converter.KnownBlockValuesConverter;
-import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
-import com.hedera.node.config.converter.LongPairConverter;
-import com.hedera.node.config.converter.MapAccessTypeConverter;
-import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.RecomputeTypeConverter;
-import com.hedera.node.config.converter.ScaleFactorConverter;
-import com.hedera.node.config.converter.SemanticVersionConverter;
-import com.hedera.node.config.converter.SidecarTypeConverter;
+import com.hedera.node.config.converter.*;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -79,12 +61,12 @@ import com.hedera.node.config.sources.PropertyConfigSource;
 import com.hedera.node.config.sources.SettingsConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
-import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -135,16 +117,19 @@ public class ConfigProviderImpl extends ConfigProviderBase {
     }
 
     /**
-     * This method must be called if a property has changed. It will update the configuration and increase the version.
+     * This method must be called when the network properties or permissions are overridden.
+     * It will update the configuration and increase the version.
      *
-     * @param propertyFileContent the new property file content
+     * @param networkProperties the network properties file content
+     * @param permissions the permissions file content
      */
-    public void update(@NonNull final Bytes propertyFileContent) {
-        logger.info("Updating configuration based on new property file content.");
+    public void update(@NonNull final Bytes networkProperties, @NonNull final Bytes permissions) {
+        logger.info("Updating configuration caused by properties or permissions override.");
         try (final var ignoredLock = updateLock.lock()) {
             final var builder = createConfigurationBuilder();
             addFileSources(builder, false);
-            addByteSource(builder, propertyFileContent);
+            addByteSource(builder, networkProperties);
+            addByteSource(builder, permissions);
             final Configuration config = builder.build();
             configuration.set(
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1));
@@ -209,6 +194,7 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                 .withConverter(new KeyValuePairConverter())
                 .withConverter(new FunctionalitySetConverter())
                 .withConverter(new BytesConverter())
+                .withConverter(new ProfileConverter())
                 .withValidator(new EmulatesMapValidator());
     }
 

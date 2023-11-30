@@ -33,6 +33,7 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -125,8 +126,8 @@ class EventDeduplicatorTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final EventDeduplicator deduplicator =
-                new EventDeduplicator(TestPlatformContextBuilder.create().build(), intakeEventCounter);
+        final EventDeduplicator deduplicator = new EventDeduplicator(
+                TestPlatformContextBuilder.create().build(), intakeEventCounter, mock(EventIntakeMetrics.class));
 
         int duplicateEventCount = 0;
         int ancientEventCount = 0;

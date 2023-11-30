@@ -123,7 +123,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var rewards = subject.applyStakingRewards(context);
 
         // earned zero rewards due to zero stake
-        assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
+        assertThat(rewards).hasSize(0);
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         // stakedToMe will not change as this is not staked by another account
@@ -538,7 +538,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
         // No rewards rewarded
-        assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
+        assertThat(rewards).hasSize(0);
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
@@ -582,7 +582,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
         // Since it has not declined rewards and has zero stake, no rewards rewarded
-        assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
+        assertThat(rewards).hasSize(0);
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
@@ -591,8 +591,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
         assertThat(modifiedAccount.stakePeriodStart()).isEqualTo(stakePeriodStart);
-        assertThat(modifiedAccount.stakeAtStartOfLastRewardedPeriod())
-                .isEqualTo(roundedToHbar(totalStake(payerAccountBefore)));
+        assertThat(modifiedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(-1);
     }
 
     @Test

@@ -16,7 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -25,6 +24,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.HashMap;

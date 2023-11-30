@@ -64,6 +64,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
   UnevenStake:
     name: UnevenStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -78,6 +80,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - SimilarStake
     if: ${{ !cancelled() && always() }}
@@ -95,6 +99,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - UnevenStake
     if: ${{ !cancelled() && always() }}
@@ -112,6 +118,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - MinStake
     if: ${{ !cancelled() && always() }}
@@ -130,6 +138,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
   NewNodesUnevenStake:
     name: NewNodesUnevenStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -144,6 +154,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - NewNodesSimilarStake
     if: ${{ !cancelled() && always() }}
@@ -162,6 +174,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - NewNodesUnevenStake
     if: ${{ !cancelled() && always() }}
@@ -180,6 +194,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - NewNodesMinStake
     if: ${{ !cancelled() && always() }}

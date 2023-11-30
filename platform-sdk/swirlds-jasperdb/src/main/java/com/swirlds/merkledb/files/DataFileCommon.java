@@ -258,12 +258,12 @@ public final class DataFileCommon {
     /**
      * Get total size fo a collection of files.
      *
-     * @param filePaths collection of paths to files
-     * @return total number of bytes take for all the files in filePaths
+     * @param fileReaders collection of paths to files
+     * @return total number of bytes take for all the files in fileReaders
      */
-    public static long getSizeOfFiles(final Iterable<? extends DataFileReader<?>> filePaths) {
+    public static long getSizeOfFiles(final Iterable<? extends DataFileReader<?>> fileReaders) {
         long totalSize = 0;
-        for (final DataFileReader<?> dataFileReader : filePaths) {
+        for (final DataFileReader<?> dataFileReader : fileReaders) {
             totalSize += dataFileReader.getSize();
         }
         return totalSize;

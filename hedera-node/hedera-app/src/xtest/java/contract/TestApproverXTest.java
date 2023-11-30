@@ -18,10 +18,10 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.AssortedOpsXTestConstants.COINBASE_ID;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
@@ -92,6 +92,7 @@ public class TestApproverXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(SENDER_ID)
                         .expirationSecond(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .key(AN_ED25519_KEY)
                         .alias(SENDER_ADDRESS)
                         .tinybarBalance(123 * 100 * ONE_HBAR)
                         .build());

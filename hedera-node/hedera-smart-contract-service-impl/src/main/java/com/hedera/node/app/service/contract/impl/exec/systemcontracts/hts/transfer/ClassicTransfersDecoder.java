@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
@@ -30,7 +33,15 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -217,9 +228,78 @@ public class ClassicTransfersDecoder {
         return allImpliedTransfers;
     }
 
-    private CryptoTransferTransactionBody.Builder tokenTransfers(
-            @NonNull final TokenTransferList... tokenTransferList) {
-        return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferList);
+    private CryptoTransferTransactionBody.Builder tokenTransfers(@NonNull TokenTransferList... tokenTransferLists) {
+        if (repeatsTokenId(tokenTransferLists)) {
+            final Map<TokenID, TokenTransferList> consolidatedTokenTransfers = new LinkedHashMap<>();
+            for (final var tokenTransferList : tokenTransferLists) {
+                consolidatedTokenTransfers.merge(
+                        tokenTransferList.tokenOrThrow(), tokenTransferList, this::mergeTokenTransferLists);
+            }
+            tokenTransferLists = consolidatedTokenTransfers.values().toArray(TokenTransferList[]::new);
+        }
+        return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferLists);
+    }
+
+    private TokenTransferList mergeTokenTransferLists(
+            @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
+        return from.copyBuilder()
+                .transfers(mergeTransfers(from.transfersOrElse(emptyList()), to.transfersOrElse(emptyList())))
+                .nftTransfers(
+                        mergeNftTransfers(from.nftTransfersOrElse(emptyList()), to.nftTransfersOrElse(emptyList())))
+                .build();
+    }
+
+    private List<AccountAmount> mergeTransfers(
+            @NonNull final List<AccountAmount> from, @NonNull final List<AccountAmount> to) {
+        requireNonNull(from);
+        requireNonNull(to);
+        final Map<AccountID, AccountAmount> consolidated = new LinkedHashMap<>();
+        consolidateInto(consolidated, from);
+        consolidateInto(consolidated, to);
+        return consolidated.values().stream().toList();
+    }
+
+    private void consolidateInto(
+            @NonNull final Map<AccountID, AccountAmount> consolidated, @NonNull final List<AccountAmount> transfers) {
+        for (final var transfer : transfers) {
+            consolidated.merge(transfer.accountID(), transfer, this::mergeAdjusts);
+        }
+    }
+
+    private AccountAmount mergeAdjusts(@NonNull final AccountAmount from, @NonNull final AccountAmount to) {
+        return from.copyBuilder()
+                .amount(from.amount() + to.amount())
+                .isApproval(from.isApproval() || to.isApproval())
+                .build();
+    }
+
+    private List<NftTransfer> mergeNftTransfers(
+            @NonNull final List<NftTransfer> from, @NonNull final List<NftTransfer> to) {
+        final Set<NftTransfer> present = new HashSet<>();
+        final List<NftTransfer> consolidated = new ArrayList<>();
+        consolidateInto(present, consolidated, from);
+        consolidateInto(present, consolidated, to);
+        return consolidated;
+    }
+
+    private void consolidateInto(
+            @NonNull final Set<NftTransfer> present,
+            @NonNull final List<NftTransfer> consolidated,
+            @NonNull final List<NftTransfer> transfers) {
+        for (final var transfer : transfers) {
+            if (present.add(transfer)) {
+                consolidated.add(transfer);
+            }
+        }
+    }
+
+    private boolean repeatsTokenId(@NonNull final TokenTransferList[] tokenTransferList) {
+        return tokenTransferList.length > 1
+                && Arrays.stream(tokenTransferList)
+                                .map(TokenTransferList::token)
+                                .collect(Collectors.toSet())
+                                .size()
+                        < tokenTransferList.length;
     }
 
     private TokenTransferList adjustingUnits(

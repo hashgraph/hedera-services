@@ -829,7 +829,7 @@ public final class MiscUtils {
             final var throttle = throttles.get(i);
             try {
                 throttle.resetUsageTo(savedUsageSnapshot);
-                log.info("Reset {} with saved usage snapshot", throttle);
+                log.debug("Reset {} with saved usage snapshot", throttle);
             } catch (final Exception e) {
                 log.warn(
                         "Saved {} usage snapshot #{} was not compatible with the corresponding"

@@ -17,17 +17,12 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
-import com.swirlds.platform.gossip.sync.SyncInputStream;
-import com.swirlds.platform.gossip.sync.SyncOutputStream;
-import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
@@ -38,72 +33,28 @@ import org.apache.logging.log4j.Logger;
  */
 public final class ReconnectUtils {
     private static final Logger logger = LogManager.getLogger(ReconnectUtils.class);
+    /**
+     * A value to send to signify the end of a reconnect. A random long value is chosen to minimize the possibility that
+     * the stream is misaligned
+     */
+    private static final long END_RECONNECT_MSG = 0x7747b5bd49693b61L;
 
     private ReconnectUtils() {}
 
     /**
-     * Validate that the other node is willing to reconnect with us.
+     * Send and receive the end reconnect message
      *
-     * @param connection
-     * 		the connection to use
-     * @return true if the other node is willing to assist with reconnect
-     * @throws IOException
-     * 		thrown when any I/O related errors occur
-     * @throws ReconnectException
-     * 		thrown when the other node is unwilling to reconnect right now
+     * @param connection the connection to send/receive on
+     * @throws IOException if the connection breaks, times out, or the wrong message is received
      */
-    public static boolean isNodeReadyForReconnect(final Connection connection) throws IOException, ReconnectException {
-        final NodeId otherId = connection.getOtherId();
-        final SyncInputStream dis = connection.getDis();
-        final SyncOutputStream dos = connection.getDos();
-
-        // send the request
-        dos.write(ByteConstants.COMM_STATE_REQUEST);
-        dos.flush();
-        logger.info(RECONNECT.getMarker(), "Requesting to reconnect with node {}.", otherId);
-
-        // read the response
-        final byte stateResponse = dis.readByte();
-        if (stateResponse == ByteConstants.COMM_STATE_ACK) {
-            logger.info(RECONNECT.getMarker(), "Node {} is willing to help this node to reconnect.", otherId);
-            return true;
-        } else if (stateResponse == ByteConstants.COMM_STATE_NACK) {
-            logger.info(
-                    RECONNECT.getMarker(),
-                    new ReconnectFailurePayload(
-                            "Node " + otherId + " is unwilling to help this node to reconnect.",
-                            ReconnectFailurePayload.CauseOfFailure.REJECTION));
-            return false;
-        } else {
-            throw new BadIOException("COMM_STATE_REQUEST was sent but reply was " + stateResponse
-                    + " instead of COMM_STATE_ACK or COMM_STATE_NACK");
+    static void endReconnectHandshake(@NonNull final Connection connection) throws IOException {
+        connection.getDos().writeLong(END_RECONNECT_MSG);
+        connection.getDos().flush();
+        final long endReconnectMsg = connection.getDis().readLong();
+        if (endReconnectMsg != END_RECONNECT_MSG) {
+            throw new IOException("Did not receive expected end reconnect message. Expecting %x, Received %x"
+                    .formatted(END_RECONNECT_MSG, endReconnectMsg));
         }
-    }
-
-    /**
-     * Write a flag to the stream. Informs the receiver that reconnect will proceed.
-     *
-     * @param connection
-     * 		the connection to use
-     * @throws IOException
-     * 		thrown when any I/O related errors occur
-     */
-    static void confirmReconnect(final Connection connection) throws IOException {
-        connection.getDos().write(ByteConstants.COMM_STATE_ACK);
-        connection.getDos().flush();
-    }
-
-    /**
-     * Write a flag to the stream. Informs the receiver that reconnect will not proceed.
-     *
-     * @param connection
-     * 		the connection to use
-     * @throws IOException
-     * 		thrown when any I/O related errors occur
-     */
-    static void denyReconnect(final Connection connection) throws IOException {
-        connection.getDos().write(ByteConstants.COMM_STATE_NACK);
-        connection.getDos().flush();
     }
 
     /**

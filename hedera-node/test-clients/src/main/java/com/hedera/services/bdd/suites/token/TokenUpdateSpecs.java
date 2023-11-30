@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -78,8 +79,10 @@ import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenUpdateSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -177,6 +180,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
+    @HapiTest
     private HapiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
@@ -460,6 +464,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("tbu").treasury(INVALID_TREASURY).hasKnownStatus(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     public HapiSpec updateHappyPath() {
         String originalMemo = "First things first";
         String updatedMemo = "Nothing left to do";
@@ -660,6 +665,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec customFeesOnlyUpdatableWithKey() {
         final var origHbarFee = 1_234L;
         final var newHbarFee = 4_321L;

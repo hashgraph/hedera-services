@@ -106,7 +106,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void assertValidStakingElection(
+    public void assertValidStakingElectionForCreation(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
@@ -115,6 +115,25 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
         stakingValidator.validateStakedIdForCreation(
+                isStakingEnabled,
+                hasDeclineRewardChange,
+                stakedIdKind,
+                stakedAccountIdInOp,
+                stakedNodeIdInOp,
+                accountStore,
+                networkInfo);
+    }
+
+    @Override
+    public void assertValidStakingElectionForUpdate(
+            final boolean isStakingEnabled,
+            final boolean hasDeclineRewardChange,
+            @NonNull final String stakedIdKind,
+            @Nullable final AccountID stakedAccountIdInOp,
+            @Nullable final Long stakedNodeIdInOp,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkInfo networkInfo) {
+        stakingValidator.validateStakedIdForUpdate(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
@@ -296,15 +315,18 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void chargeNetworkFee(@NonNull AccountID payerId, long amount, @NonNull FeeRecordBuilder rb) {
+    public boolean chargeNetworkFee(
+            @NonNull final AccountID payerId, final long amount, @NonNull final FeeRecordBuilder rb) {
         requireNonNull(rb);
         requireNonNull(payerId);
 
         final var payerAccount = lookupAccount("Payer", payerId);
         final var amountToCharge = Math.min(amount, payerAccount.tinybarBalance());
         chargePayer(payerAccount, amountToCharge);
-        rb.transactionFee(amountToCharge);
+        // We may be charging for preceding child record fees, which are additive to the base fee
+        rb.transactionFee(rb.transactionFee() + amountToCharge);
         distributeToNetworkFundingAccounts(amountToCharge, rb);
+        return amountToCharge == amount;
     }
 
     @Override

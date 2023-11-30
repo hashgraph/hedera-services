@@ -22,6 +22,7 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
@@ -32,7 +33,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -40,6 +40,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -254,6 +255,14 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var nftTypes = servicesState.uniqueTokens();
         assertSignedStateComponentExists(nftTypes, "(non-fungible) unique tokens");
         return nftTypes;
+    }
+
+    /** Get all token associations (tokenrels) */
+    @NonNull
+    public TokenRelStorageAdapter getTokenAssociations() {
+        final var tokenRels = servicesState.tokenAssociations();
+        assertSignedStateComponentExists(tokenRels, "token associations (tokenrels)");
+        return tokenRels;
     }
 
     /**

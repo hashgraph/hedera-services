@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -74,8 +75,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ContractDeleteSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
@@ -108,6 +111,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 cannotUseMoreThanChildContractLimit());
     }
 
+    @HapiTest
     private HapiSpec cannotUseMoreThanChildContractLimit() {
         final var illegalNumChildren =
                 HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
@@ -156,6 +160,7 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .hasChildRecords());
     }
 
+    @HapiTest
     private HapiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";

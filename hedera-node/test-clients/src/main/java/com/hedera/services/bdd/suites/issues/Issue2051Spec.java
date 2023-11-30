@@ -73,6 +73,7 @@ public class Issue2051Spec extends HapiSuite {
                         getTxnRecord("selfFinanced").logged());
     }
 
+    @HapiTest
     private HapiSpec transferAccountCannotBeDeleted() {
         return defaultHapiSpec("TransferAccountCannotBeDeleted")
                 .given(cryptoCreate(PAYER), cryptoCreate(TRANSFER), cryptoCreate("tbd"))
@@ -88,6 +89,7 @@ public class Issue2051Spec extends HapiSuite {
                         getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9384399, 1000)));
     }
 
+    @HapiTest
     private HapiSpec transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
                 .given(

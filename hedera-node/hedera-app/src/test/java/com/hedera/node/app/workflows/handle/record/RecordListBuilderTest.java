@@ -19,19 +19,24 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,9 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecordListBuilderTest extends AppTestBase {
-
-    private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
-
     private static final long MAX_PRECEDING = 3;
     private static final long MAX_CHILDREN = 10;
 
@@ -49,6 +51,9 @@ class RecordListBuilderTest extends AppTestBase {
             .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
             .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
             .getOrCreateConfig();
+    private static final int EXPECTED_CHILD_NANO_INCREMENT = 0;
+    private static final int EXPECTED_CHILD_NANO_INCREMENT_SCHEDULED =
+            Math.toIntExact(CONFIGURATION.getConfigData(ConsensusConfig.class).handleMaxPrecedingRecords());
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -323,7 +328,7 @@ class RecordListBuilderTest extends AppTestBase {
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         addUserTransaction(recordListBuilder);
         recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
-        final var child = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var child = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
 
         // when
         recordListBuilder.revertChildrenOf(child);
@@ -401,7 +406,7 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -423,8 +428,8 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -455,32 +460,32 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addChild(config);
-        recordListBuilder.addChild(config);
+        recordListBuilder.addChild(config, CHILD);
+        recordListBuilder.addChild(config, CHILD);
 
         // then
-        assertThatThrownBy(() -> recordListBuilder.addChild(config))
+        assertThatThrownBy(() -> recordListBuilder.addChild(config, CHILD))
                 .isInstanceOf(HandleException.class)
                 .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
     }
 
     @Test
-    void testAddPrecedingAndChildRecords() {
+    void testAddPrecedingAndChildRecords() throws IOException {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
-        addUserTransaction(recordListBuilder);
-
+        final var builder = addUserTransaction(recordListBuilder);
+        final var txnId = builder.transactionID();
         // when
-        final var first = simpleCryptoTransfer();
-        final var second = simpleCryptoTransfer();
-        final var fourth = simpleCryptoTransfer();
-        final var fifth = simpleCryptoTransfer();
+        final var first = simpleCryptoTransferWithNonce(txnId, 2);
+        final var second = simpleCryptoTransferWithNonce(txnId, 1);
+        final var fourth = simpleCryptoTransferWithNonce(txnId, 3);
+        final var fifth = simpleCryptoTransferWithNonce(txnId, 4);
         // mixing up preceding vs. following, but within which, in order
-        recordListBuilder.addChild(CONFIGURATION).transaction(fourth);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(fourth);
         recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(first);
         recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(second);
-        recordListBuilder.addChild(CONFIGURATION).transaction(fifth);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(fifth);
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -516,11 +521,11 @@ class RecordListBuilderTest extends AppTestBase {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var base = addUserTransaction(recordListBuilder);
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
 
         // when
         recordListBuilder.revertChildrenOf(base);
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -559,14 +564,14 @@ class RecordListBuilderTest extends AppTestBase {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         addUserTransaction(recordListBuilder);
-        final var child1 = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
-        final var child3 = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var child1 = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        final var child3 = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         child3.status(ACCOUNT_ID_DOES_NOT_EXIST);
 
         // when
         recordListBuilder.revertChildrenOf(child1);
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -646,6 +651,32 @@ class RecordListBuilderTest extends AppTestBase {
     }
 
     @Test
+    void testAddRemovableChildWithSuppressedRecord() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        // when
+        recordListBuilder
+                .addRemovableChildWithExternalizationCustomizer(
+                        CONFIGURATION, SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER)
+                .transaction(simpleCryptoTransfer());
+        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // then
+        assertThat(records).hasSize(2);
+        assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasParent(result.userTransactionRecord());
+    }
+
+    @Test
     void testAddTooManyRemovableChildrenFails() {
         // given
         final var maxChildren = 2L;
@@ -673,12 +704,13 @@ class RecordListBuilderTest extends AppTestBase {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var base = addUserTransaction(recordListBuilder);
-        final var revertedTx = simpleCryptoTransfer();
+        final var baseTxnId = base.transactionID();
+        final var revertedTx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(revertedTx);
 
         // when
         recordListBuilder.revertChildrenOf(base);
-        final var remainingTx = simpleCryptoTransfer();
+        final var remainingTx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(remainingTx);
         final var result = recordListBuilder.build();
         final var records = result.records();
@@ -703,10 +735,13 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
-        addUserTransaction(recordListBuilder);
-        final var child1Tx = simpleCryptoTransfer();
+        final var base = addUserTransaction(recordListBuilder);
+        final var baseTxnId = base.transactionID();
+        final var child1Tx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         final var child1 = recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child1Tx);
-        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
+        recordListBuilder
+                .addRemovableChild(CONFIGURATION)
+                .transaction(simpleCryptoTransferWithNonce(baseTxnId, 1)); // will be removed
         recordListBuilder
                 .addRemovableChild(CONFIGURATION)
                 .transaction(simpleCryptoTransfer()) // will be removed
@@ -714,7 +749,7 @@ class RecordListBuilderTest extends AppTestBase {
 
         // when
         recordListBuilder.revertChildrenOf(child1);
-        final var remainingTx = simpleCryptoTransfer();
+        final var remainingTx = simpleCryptoTransferWithNonce(baseTxnId, 2);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(remainingTx);
         final var result = recordListBuilder.build();
         final var records = result.records();
@@ -745,27 +780,28 @@ class RecordListBuilderTest extends AppTestBase {
         // given
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
-        addUserTransaction(recordListBuilder);
+        final var base = addUserTransaction(recordListBuilder);
+        final var baseTxnId = base.transactionID();
 
-        final var child1Tx = simpleCryptoTransfer();
+        final var child1Tx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child1Tx);
-        final var child2Tx = simpleCryptoTransfer();
-        recordListBuilder.addChild(CONFIGURATION).transaction(child2Tx);
-        final var child3Tx = simpleCryptoTransfer();
-        final var child3 = recordListBuilder.addChild(CONFIGURATION).transaction(child3Tx);
+        final var child2Tx = simpleCryptoTransferWithNonce(baseTxnId, 2);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child2Tx);
+        final var child3Tx = simpleCryptoTransferWithNonce(baseTxnId, 3);
+        final var child3 = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child3Tx);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
-        final var child5Tx = simpleCryptoTransfer();
-        recordListBuilder.addChild(CONFIGURATION).transaction(child5Tx); // will revert
-        final var child6Tx = simpleCryptoTransfer();
-        recordListBuilder.addChild(CONFIGURATION).transaction(child6Tx); // will revert
+        final var child5Tx = simpleCryptoTransferWithNonce(baseTxnId, 4);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child5Tx); // will revert
+        final var child6Tx = simpleCryptoTransferWithNonce(baseTxnId, 5);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child6Tx); // will revert
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
 
         // when
         recordListBuilder.revertChildrenOf(child3);
-        final var child8Tx = simpleCryptoTransfer();
+        final var child8Tx = simpleCryptoTransferWithNonce(baseTxnId, 6);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child8Tx);
-        final var child9Tx = simpleCryptoTransfer();
-        recordListBuilder.addChild(CONFIGURATION).transaction(child9Tx);
+        final var child9Tx = simpleCryptoTransferWithNonce(baseTxnId, 7);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child9Tx);
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -824,12 +860,13 @@ class RecordListBuilderTest extends AppTestBase {
 
     private SingleTransactionRecordBuilderImpl addUserTransaction(RecordListBuilder builder) {
         final var start = Instant.now().minusSeconds(60);
+        final var txnId = TransactionID.newBuilder()
+                .accountID(ALICE.accountID())
+                .transactionValidStart(asTimestamp(start))
+                .build();
         return builder.userTransactionRecordBuilder()
                 .transaction(simpleCryptoTransfer())
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(ALICE.accountID())
-                        .transactionValidStart(asTimestamp(start))
-                        .build());
+                .transactionID(txnId);
     }
 
     private TransactionRecordAssertions assertCreatedRecord(SingleTransactionRecord record) {
@@ -854,10 +891,11 @@ class RecordListBuilderTest extends AppTestBase {
         }
 
         TransactionRecordAssertions nanosAfter(final int nanos, @NonNull final SingleTransactionRecord otherRecord) {
-            final var otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
-            final var expectedTimestamp = otherTimestamp
+            final Timestamp otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
+            final int actualOffset = EXPECTED_CHILD_NANO_INCREMENT + nanos;
+            final Timestamp expectedTimestamp = otherTimestamp
                     .copyBuilder()
-                    .nanos(otherTimestamp.nanos() + nanos)
+                    .nanos(otherTimestamp.nanos() + actualOffset)
                     .build();
             assertThat(record.transactionRecord().consensusTimestampOrThrow()).isEqualTo(expectedTimestamp);
             return this;

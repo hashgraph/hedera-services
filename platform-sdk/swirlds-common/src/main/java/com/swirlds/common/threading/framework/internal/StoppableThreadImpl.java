@@ -575,11 +575,11 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
      */
     private void interruptClose() throws InterruptedException {
         join(joinWaitMs);
-
         if (isAlive()) {
             interrupt();
             joinInternal();
         }
+        doFinalCycleWork();
     }
 
     /**
