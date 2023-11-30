@@ -527,10 +527,15 @@ public final class Hedera implements SwirldMain {
                         startGrpcServer();
                     }
 
-                    case FREEZE_COMPLETE, REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE -> logger.info(
-                            "Hederanode#{} is {}", nodeId, platformStatus.name());
+                    case REPLAYING_EVENTS,
+                            STARTING_UP,
+                            OBSERVING,
+                            RECONNECT_COMPLETE,
+                            CHECKING,
+                            FREEZING,
+                            BEHIND -> logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
 
-                    case CATASTROPHIC_FAILURE, CHECKING, FREEZING, BEHIND -> {
+                    case CATASTROPHIC_FAILURE, FREEZE_COMPLETE -> {
                         logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
                         if (wasActive) shutdownGrpcServer();
                     }
