@@ -71,7 +71,7 @@ class CustomExtCodeHashOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomExtCodeHashOperation(gasCalculator, addressChecks, featureFlags);
+        subject = new CustomExtCodeHashOperation(gasCalculator, addressChecks);
     }
 
     @Test

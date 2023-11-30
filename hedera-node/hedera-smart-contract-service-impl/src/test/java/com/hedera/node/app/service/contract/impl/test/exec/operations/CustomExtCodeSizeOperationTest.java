@@ -70,7 +70,7 @@ class CustomExtCodeSizeOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomExtCodeSizeOperation(gasCalculator, addressChecks, featureFlags);
+        subject = new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
     }
 
     @Test

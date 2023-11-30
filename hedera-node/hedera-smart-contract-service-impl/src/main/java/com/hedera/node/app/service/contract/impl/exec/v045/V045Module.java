@@ -154,40 +154,32 @@ public interface V045Module {
     @IntoSet
     @ServicesV045
     static Operation provideBalanceOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomBalanceOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomBalanceOperation(gasCalculator, addressChecks);
     }
 
     @Provides
     @IntoSet
     @ServicesV045
     static Operation provideDelegateCallOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomDelegateCallOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomDelegateCallOperation(gasCalculator, addressChecks);
     }
 
     @Provides
     @IntoSet
     @ServicesV045
     static Operation provideCallCodeOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomCallCodeOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomCallCodeOperation(gasCalculator, addressChecks);
     }
 
     @Provides
     @IntoSet
     @ServicesV045
     static Operation provideStaticCallOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomStaticCallOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomStaticCallOperation(gasCalculator, addressChecks);
     }
 
     @Provides
@@ -267,10 +259,8 @@ public interface V045Module {
     @IntoSet
     @ServicesV045
     static Operation provideExtCodeHashOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomExtCodeHashOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomExtCodeHashOperation(gasCalculator, addressChecks);
     }
 
     @Provides
@@ -278,10 +268,8 @@ public interface V045Module {
     @IntoSet
     @ServicesV045
     static Operation provideExtCodeSizeOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
     }
 
     @Provides
@@ -289,10 +277,8 @@ public interface V045Module {
     @IntoSet
     @ServicesV045
     static Operation provideExtCodeCopyOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @ServicesV045 @NonNull final AddressChecks addressChecks,
-            @ServicesV045 @NonNull final FeatureFlags featureFlags) {
-        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks, featureFlags);
+            @NonNull final GasCalculator gasCalculator, @ServicesV045 @NonNull final AddressChecks addressChecks) {
+        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
     }
 
     @Provides

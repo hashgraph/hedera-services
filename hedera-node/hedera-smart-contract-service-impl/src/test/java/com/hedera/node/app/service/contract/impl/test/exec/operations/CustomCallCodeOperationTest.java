@@ -75,7 +75,7 @@ class CustomCallCodeOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomCallCodeOperation(gasCalculator, addressChecks, featureFlags);
+        subject = new CustomCallCodeOperation(gasCalculator, addressChecks);
     }
 
     @Test

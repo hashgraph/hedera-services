@@ -67,7 +67,7 @@ class CustomBalanceOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomBalanceOperation(gasCalculator, addressChecks, featureFlags);
+        subject = new CustomBalanceOperation(gasCalculator, addressChecks);
     }
 
     @Test

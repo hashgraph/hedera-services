@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -78,14 +77,11 @@ public interface BasicCustomCallOperation {
      *
      * @param frame the frame in which the call is being made
      * @param evm the EVM in which the call is being made
-     * @param featureFlag the active set if feature flags
      * @return the result of the call
      */
-    default Operation.OperationResult executeChecked(
-            @NonNull final MessageFrame frame, @NonNull final EVM evm, @NonNull final FeatureFlags featureFlag) {
+    default Operation.OperationResult executeChecked(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         requireNonNull(evm);
         requireNonNull(frame);
-        requireNonNull(featureFlag);
         try {
             final var address = to(frame);
             if (proxyUpdaterFor(frame).contractMustBePresent()

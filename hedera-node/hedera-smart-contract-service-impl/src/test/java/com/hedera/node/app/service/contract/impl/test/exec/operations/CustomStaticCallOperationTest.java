@@ -75,7 +75,7 @@ class CustomStaticCallOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new CustomStaticCallOperation(gasCalculator, addressChecks, featureFlags);
+        subject = new CustomStaticCallOperation(gasCalculator, addressChecks);
     }
 
     @Test

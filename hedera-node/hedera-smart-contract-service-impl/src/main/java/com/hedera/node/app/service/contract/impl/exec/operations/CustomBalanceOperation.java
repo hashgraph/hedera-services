@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
@@ -33,15 +32,11 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
 
 public class CustomBalanceOperation extends BalanceOperation {
     private final AddressChecks addressChecks;
-    private final FeatureFlags featureFlags;
 
     public CustomBalanceOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @NonNull final AddressChecks addressChecks,
-            @NonNull final FeatureFlags featureFlags) {
+            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
         super(gasCalculator);
         this.addressChecks = addressChecks;
-        this.featureFlags = featureFlags;
     }
 
     @Override

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -34,15 +33,11 @@ import org.hyperledger.besu.evm.operation.CallCodeOperation;
  */
 public class CustomCallCodeOperation extends CallCodeOperation implements BasicCustomCallOperation {
     private final AddressChecks addressChecks;
-    private final FeatureFlags featureFlags;
 
     public CustomCallCodeOperation(
-            @NonNull final GasCalculator gasCalculator,
-            @NonNull final AddressChecks addressChecks,
-            @NonNull final FeatureFlags featureFlags) {
+            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
         super(Objects.requireNonNull(gasCalculator));
         this.addressChecks = Objects.requireNonNull(addressChecks);
-        this.featureFlags = Objects.requireNonNull(featureFlags);
     }
 
     @Override
@@ -62,6 +57,6 @@ public class CustomCallCodeOperation extends CallCodeOperation implements BasicC
 
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
-        return BasicCustomCallOperation.super.executeChecked(frame, evm, featureFlags);
+        return BasicCustomCallOperation.super.executeChecked(frame, evm);
     }
 }
