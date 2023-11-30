@@ -24,7 +24,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.status.PlatformStatusManager;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -44,7 +43,6 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -194,7 +192,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the input method for the internal event validator.
+     * Get the input wire for the internal event validator.
      * <p>
      * Future work: this is a temporary hook to allow events from gossip to use the new intake pipeline. This method
      * will be removed once gossip is moved to the new framework
@@ -202,20 +200,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @return the input method for the internal event validator, which is the first step in the intake pipeline
      */
     @NonNull
-    public InterruptableConsumer<GossipEvent> getEventInput() {
-        return internalEventValidatorWiring.eventInput()::put;
+    public InputWire<GossipEvent> getEventInput() {
+        return internalEventValidatorWiring.eventInput();
     }
 
     /**
-     * Get the input method for the address book update.
+     * Get the input wire for the address book update.
      * <p>
      * Future work: this is a temporary hook to update the address book in the new intake pipeline.
      *
      * @return the input method for the address book update
      */
     @NonNull
-    public Consumer<AddressBookUpdate> getAddressBookUpdateInput() {
-        return eventSignatureValidatorWiring.addressBookUpdateInput()::inject;
+    public InputWire<AddressBookUpdate> getAddressBookUpdateInput() {
+        return eventSignatureValidatorWiring.addressBookUpdateInput();
     }
 
     /**

@@ -725,7 +725,7 @@ public class SwirldsPlatform implements Platform {
                     inOrderLinker,
                     linkedEventIntake);
 
-            intakeHandler = platformWiring.getEventInput();
+            intakeHandler = platformWiring.getEventInput()::put;
         }
 
         intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
@@ -1066,7 +1066,7 @@ public class SwirldsPlatform implements Platform {
                 } else {
                     platformWiring
                             .getAddressBookUpdateInput()
-                            .accept(new AddressBookUpdate(
+                            .inject(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
                     platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());
