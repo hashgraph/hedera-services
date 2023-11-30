@@ -221,6 +221,5 @@ class ContractCallLocalHandlerTest {
     private void givenAllowCallsToNonContractAccountOffConfig() {
         given(context.configuration()).willReturn(configuration);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
-        given(contractsConfig.evmAllowCallsToNonContractAccounts()).willReturn(false);
     }
 }

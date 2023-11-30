@@ -122,7 +122,6 @@ class CustomCallOperationTest {
     @Test
     void withSystemAccountContinuesAsExpected() {
         given(frame.getStackItem(1)).willReturn(SYSTEM_ADDRESS);
-        given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(0L)));
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
 
         final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
