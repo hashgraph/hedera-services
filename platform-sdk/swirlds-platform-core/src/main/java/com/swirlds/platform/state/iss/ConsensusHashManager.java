@@ -260,7 +260,7 @@ public class ConsensusHashManager {
             return;
         }
 
-        if (!Objects.equals(currentSoftwareVersion, eventVersion)) {
+        if (currentSoftwareVersion.compareTo(eventVersion) != 0) {
             // this is a signature from a different software version, ignore it
             return;
         }
