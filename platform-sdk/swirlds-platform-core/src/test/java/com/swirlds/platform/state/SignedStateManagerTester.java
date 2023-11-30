@@ -20,7 +20,9 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateNexus;
@@ -28,7 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class SignedStateManagerTester extends SignedStateManager {
-    private final SignedStateNexus latestSignedState;
+    private final LatestCompleteStateNexus latestSignedState;
 
     private SignedStateManagerTester(
             @NonNull final StateConfig stateConfig,
@@ -36,7 +38,7 @@ public class SignedStateManagerTester extends SignedStateManager {
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
-            @NonNull final SignedStateNexus latestSignedState) {
+            @NonNull final LatestCompleteStateNexus latestSignedState) {
         super(
                 stateConfig,
                 signedStateMetrics,
@@ -52,17 +54,23 @@ public class SignedStateManagerTester extends SignedStateManager {
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        final SignedStateNexus latestSignedState = new SignedStateNexus();
+        final LatestCompleteStateNexus latestSignedState = new LatestCompleteStateNexus(stateConfig);
         return new SignedStateManagerTester(
                 stateConfig,
                 signedStateMetrics,
                 s -> {
                     newLatestCompleteStateConsumer.newLatestCompleteStateEvent(s);
-                    latestSignedState.setState(s.reserve("for nexus"));
+                    latestSignedState.setState(s.reserve("LatestCompleteStateNexus.setState"));
                 },
                 stateHasEnoughSignaturesConsumer,
                 stateLacksSignaturesConsumer,
                 latestSignedState);
+    }
+
+    @Override
+    public synchronized void addState(@NonNull final SignedState signedState) {
+        super.addState(signedState);
+        latestSignedState.newIncompleteState(signedState.reserve("LatestCompleteStateNexus.newIncompleteState"));
     }
 
     /**
