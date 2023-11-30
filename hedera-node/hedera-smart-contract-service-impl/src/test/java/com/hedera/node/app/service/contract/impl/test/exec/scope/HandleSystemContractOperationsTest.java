@@ -27,9 +27,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -115,21 +114,23 @@ class HandleSystemContractOperationsTest {
     @Test
     void externalizeSuccessfulResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT, messageFrame);
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
+        given(recordBuilder.transaction(any())).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
-        given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.entropyBytes(Bytes.EMPTY)).willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
 
         // then
-        verify(recordBuilder).contractID(ContractID.DEFAULT);
-        verify(recordBuilder).transaction(Transaction.DEFAULT);
+        verify(recordBuilder).transaction(any());
         verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }
@@ -137,21 +138,22 @@ class HandleSystemContractOperationsTest {
     @Test
     void externalizeFailedResultTest() {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
-                0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT, messageFrame);
+                0,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                100L,
+                org.apache.tuweni.bytes.Bytes.EMPTY,
+                AccountID.newBuilder().build());
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
+        given(recordBuilder.transaction(any())).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
-        given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
-        given(recordBuilder.entropyBytes(Bytes.EMPTY)).willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);
 
         // then
-        verify(recordBuilder).contractID(ContractID.DEFAULT);
-        verify(recordBuilder).transaction(Transaction.DEFAULT);
+        verify(recordBuilder).transaction(any());
         verify(recordBuilder).status(ResponseCodeEnum.FAIL_INVALID);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }

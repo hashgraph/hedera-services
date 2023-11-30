@@ -23,12 +23,18 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PRECOMP
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -56,6 +62,9 @@ class PrngSystemContractTest {
 
     @Mock
     ContractCallRecordBuilder contractCallRecordBuilder;
+
+    @Mock
+    private ProxyEvmAccount mutableAccount;
 
     private PrngSystemContract subject;
 
@@ -98,6 +107,7 @@ class PrngSystemContractTest {
     void computePrecompileMutableSuccessTest() {
         // given:
         givenCommon();
+        messageFrameMock();
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
@@ -114,6 +124,7 @@ class PrngSystemContractTest {
     void computePrecompileFailedTest() {
         // given:
         givenCommon();
+        messageFrameMock();
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
@@ -129,6 +140,7 @@ class PrngSystemContractTest {
     @Test
     void wrongFunctionSelectorFailedTest() {
         // given:
+        messageFrameMock();
         givenCommon();
 
         // when:
@@ -152,5 +164,17 @@ class PrngSystemContractTest {
         assertEquals(expected.getState(), actual.getState());
         assertEquals(expected.getOutput(), actual.getOutput());
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
+    }
+
+    private void messageFrameMock() {
+        final var address = Address.fromHexString("0x100");
+        final var remainingGas = 10000L;
+        when(messageFrame.getSenderAddress()).thenReturn(address);
+        when(messageFrame.getRemainingGas()).thenReturn(remainingGas);
+        when(messageFrame.getInputData()).thenReturn(org.apache.tuweni.bytes.Bytes.EMPTY);
+
+        final var accountID = mock(AccountID.class);
+        when(proxyWorldUpdater.getAccount(any())).thenReturn(mutableAccount);
+        when(mutableAccount.hederaId()).thenReturn(accountID);
     }
 }
