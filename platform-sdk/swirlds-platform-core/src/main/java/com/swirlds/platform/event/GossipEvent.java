@@ -44,12 +44,12 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         /**
          * Event serialization changes
          *
-         * @since 0.45.0
+         * @since 0.46.0
          */
-        public static final int ROSTER_ROUND = 3;
+        public static final int ROUND_BIRTH = 3;
     }
 
-    private int serializedVersion = ClassVersion.ROSTER_ROUND;
+    private int serializedVersion = ClassVersion.ROUND_BIRTH;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
     private EventDescriptor descriptor;
@@ -73,7 +73,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
-        // remove update of other parent event descriptor after 0.45.0 hits mainnet.
+        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
         unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
@@ -84,7 +84,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.ROSTER_ROUND) {
+        if (serializedVersion < ClassVersion.ROUND_BIRTH) {
             out.writeSerializable(hashedData, false);
             out.writeSerializable(unhashedData, false);
         } else {
@@ -99,7 +99,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
-        if (version < ClassVersion.ROSTER_ROUND) {
+        if (version < ClassVersion.ROUND_BIRTH) {
             hashedData = in.readSerializable(false, BaseEventHashedData::new);
             unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
         } else {
@@ -107,7 +107,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
             final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
             unhashedData = new BaseEventUnhashedData(null, signature);
         }
-        // remove update of other parent event descriptor after 0.45.0 hits mainnet.
+        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
         unhashedData.updateOtherParentEventDescriptor(hashedData);
         timeReceived = Instant.now();
     }

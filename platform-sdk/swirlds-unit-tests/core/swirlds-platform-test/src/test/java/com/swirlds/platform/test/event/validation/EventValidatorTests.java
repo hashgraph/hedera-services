@@ -81,7 +81,7 @@ class EventValidatorTests {
                         selfId,
                         selfParent,
                         otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                        EventConstants.ROSTER_ROUND_UNDEFINED,
+                        EventConstants.ROUND_BIRTH_UNDEFINED,
                         timeCreated,
                         transactions));
         return event;

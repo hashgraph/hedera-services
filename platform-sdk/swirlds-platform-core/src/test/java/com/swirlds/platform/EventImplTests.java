@@ -251,7 +251,7 @@ public class EventImplTests {
                         new NodeId(0L),
                         selfDescriptor,
                         Collections.singletonList(otherDescriptor),
-                        EventConstants.ROSTER_ROUND_UNDEFINED,
+                        EventConstants.ROUND_BIRTH_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

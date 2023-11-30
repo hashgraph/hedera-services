@@ -93,16 +93,16 @@ public final class RecoveryTestUtils {
         final NodeId otherId = new NodeId(random.nextLong(Long.MAX_VALUE));
 
         final EventDescriptor selfDescriptor = new EventDescriptor(
-                randomHash(random), selfId, random.nextLong(), EventConstants.ROSTER_ROUND_UNDEFINED);
+                randomHash(random), selfId, random.nextLong(), EventConstants.ROUND_BIRTH_UNDEFINED);
         final EventDescriptor otherDescriptor = new EventDescriptor(
-                randomHash(random), otherId, random.nextLong(), EventConstants.ROSTER_ROUND_UNDEFINED);
+                randomHash(random), otherId, random.nextLong(), EventConstants.ROUND_BIRTH_UNDEFINED);
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfDescriptor,
                 Collections.singletonList(otherDescriptor),
-                EventConstants.ROSTER_ROUND_UNDEFINED,
+                EventConstants.ROUND_BIRTH_UNDEFINED,
                 now,
                 transactions);
 

@@ -81,16 +81,16 @@ class TransactionHandlerTest {
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
 
         final EventDescriptor selfDescriptor = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.ROSTER_ROUND_UNDEFINED);
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.ROUND_BIRTH_UNDEFINED);
         final EventDescriptor otherDescriptor = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.ROSTER_ROUND_UNDEFINED);
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.ROUND_BIRTH_UNDEFINED);
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
                         new NodeId(0L),
                         selfDescriptor,
                         Collections.singletonList(otherDescriptor),
-                        EventConstants.ROSTER_ROUND_UNDEFINED,
+                        EventConstants.ROUND_BIRTH_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

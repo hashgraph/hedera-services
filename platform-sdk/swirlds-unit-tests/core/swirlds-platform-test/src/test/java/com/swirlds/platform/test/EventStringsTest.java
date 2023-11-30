@@ -56,16 +56,16 @@ class EventStringsTest {
         final NodeId selfId = new NodeId(id);
         final NodeId otherId = new NodeId(opId);
         final EventDescriptor selfParent =
-                new EventDescriptor(new Hash(), selfId, spGen, EventConstants.ROSTER_ROUND_UNDEFINED);
+                new EventDescriptor(new Hash(), selfId, spGen, EventConstants.ROUND_BIRTH_UNDEFINED);
         final EventDescriptor otherParent =
-                new EventDescriptor(new Hash(), otherId, opGen, EventConstants.ROSTER_ROUND_UNDEFINED);
+                new EventDescriptor(new Hash(), otherId, opGen, EventConstants.ROUND_BIRTH_UNDEFINED);
 
         BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfParent,
                 Collections.singletonList(otherParent),
-                EventConstants.ROSTER_ROUND_UNDEFINED,
+                EventConstants.ROUND_BIRTH_UNDEFINED,
                 Instant.now(),
                 new ConsensusTransactionImpl[0]);
         hashedData.setHash(new Hash());

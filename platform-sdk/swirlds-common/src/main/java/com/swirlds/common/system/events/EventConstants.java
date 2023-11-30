@@ -35,6 +35,6 @@ public final class EventConstants {
     public static final NodeId CREATOR_ID_UNDEFINED = NodeId.UNDEFINED_NODE_ID;
     /** the smallest round an event can belong to */
     public static final long MINIMUM_ROUND_CREATED = 1;
-    /** the roster round number to represent that the round is not defined */
-    public static final long ROSTER_ROUND_UNDEFINED = -1;
+    /** the round number to represent that the birth round is undefined */
+    public static final long ROUND_BIRTH_UNDEFINED = -1;
 }

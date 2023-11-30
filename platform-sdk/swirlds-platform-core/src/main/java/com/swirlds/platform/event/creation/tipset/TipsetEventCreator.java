@@ -179,7 +179,7 @@ public class TipsetEventCreator implements EventCreator {
                             event.getBaseEventHashedData().getOtherParentHash(),
                             event.getBaseEventUnhashedData().getOtherId(),
                             event.getBaseEventHashedData().getOtherParentGen(),
-                            event.getBaseEventHashedData().getRosterRound());
+                            event.getBaseEventHashedData().getRoundBirth());
 
                     childlessOtherEventTracker.registerSelfEventParents(List.of(parentDescriptor));
                 }

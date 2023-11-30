@@ -50,9 +50,9 @@ public class BaseEventUnhashedData implements SelfSerializable {
         /**
          * Removes the serialization of the sequence information and other parent creator id.
          *
-         * @since 0.45.0
+         * @since 0.46.0
          */
-        public static final int ROSTER_ROUND = 2;
+        public static final int ROUND_BIRTH = 2;
     }
 
     /**
@@ -60,7 +60,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * <p>
      * DEPRECATED: Remove after 0.45 is delivered to mainnet.
      */
-    private int serializedVersion = ClassVersion.ROSTER_ROUND;
+    private int serializedVersion = ClassVersion.ROUND_BIRTH;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, does NOT affect the hash that is signed:
@@ -87,7 +87,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.ROSTER_ROUND) {
+        if (serializedVersion < ClassVersion.ROUND_BIRTH) {
             out.writeLong(SEQUENCE_UNUSED);
             out.writeLong(otherId == null ? -1 : otherId.id());
             out.writeLong(SEQUENCE_UNUSED);
@@ -100,7 +100,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
-        if (version < ClassVersion.ROSTER_ROUND) {
+        if (version < ClassVersion.ROUND_BIRTH) {
             in.readLong(); // unused
             otherId = NodeId.deserializeLong(in, true);
             in.readLong(); // unused
