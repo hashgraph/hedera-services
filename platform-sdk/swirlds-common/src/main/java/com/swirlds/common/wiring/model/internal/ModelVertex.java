@@ -69,6 +69,11 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     private final Set<String> substitutedInputs = new HashSet<>();
 
     /**
+     * The groups containing this vertex from highest to lowest level.
+     */
+    private final List<String> groupHierarchy = new ArrayList<>();
+
+    /**
      * Constructor.
      *
      * @param name                the name of the vertex
@@ -133,7 +138,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      *
      * @param edge the edge to connect to
      */
-    public void connectToEdge(@NonNull final ModelEdge edge) {
+    public void connectToEdge(@NonNull final ModelEdge edge) { // TODO is this redundant?
         outgoingEdges.add(Objects.requireNonNull(edge));
     }
 
@@ -163,8 +168,26 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      *
      * @param input the input that has been substituted
      */
-    void addSubstitutedInput(@NonNull final String input) {
+    public void addSubstitutedInput(@NonNull final String input) {
         substitutedInputs.add(Objects.requireNonNull(input));
+    }
+
+    /**
+     * Get the inputs that have been substituted during diagram generation.
+     */
+    public void addToGroup(@NonNull final String group) {
+        // Groups are defined from lowest to highest level, but we want to render them from highest to lowest level.
+        groupHierarchy.add(0, Objects.requireNonNull(group));
+    }
+
+    /**
+     * Get the group hierarchy of this vertex.
+     *
+     * @return the group hierarchy of this vertex
+     */
+    @NonNull
+    public List<String> getGroupHierarchy() {
+        return groupHierarchy;
     }
 
     /**
@@ -203,6 +226,11 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      */
     @Override
     public int compareTo(@NonNull final ModelVertex that) {
+        // First sort by group hierarchy, then by name.
+        if (!this.groupHierarchy.equals(that.groupHierarchy)) {
+            return this.groupHierarchy.toString().compareTo(that.groupHierarchy.toString());
+        }
+
         return name.compareTo(that.name);
     }
 
@@ -213,7 +241,9 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      */
     public void render(@NonNull final StringBuilder sb) {
 
-        sb.append(INDENTATION).append(name);
+        final int indentationLevel = 1 + groupHierarchy.size();
+
+        sb.append(INDENTATION.repeat(indentationLevel)).append(name);
 
         switch (metaType) {
             case SUBSTITUTION -> sb.append("((");
@@ -229,8 +259,6 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
         }
 
         sb.append("\"").append(name);
-
-
 
         if (!substitutedInputs.isEmpty()) {
             sb.append("<br />");
@@ -267,7 +295,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
             };
         };
 
-        sb.append(INDENTATION)
+        sb.append(INDENTATION.repeat(indentationLevel))
                 .append("style ")
                 .append(name)
                 .append(" fill:#")
