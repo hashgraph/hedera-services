@@ -95,6 +95,7 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
@@ -171,6 +172,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -520,7 +522,7 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
         signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
 
-        final SignedStateNexus latestCompleteState = new SignedStateNexus();
+        final LatestCompleteStateNexus latestCompleteState = new LatestCompleteStateNexus(stateConfig);
         final RunningAverageMetric.Config avgRoundSupermajorityConfig = new RunningAverageMetric.Config(
                         PLATFORM_CATEGORY, "roundSup")
                 .withDescription("latest round with state signed by a supermajority")
@@ -624,11 +626,16 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
+        final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs ->{
+            latestCompleteState.newIncompleteState(rs.getAndReserve("latestCompleteState.newIncompleteState"));
+            stateManagementComponent.newSignedStateFromTransactions(rs);
+        };
+
         stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state-hash-sign")
-                .setHandler(stateManagementComponent::newSignedStateFromTransactions)
+                .setHandler(newSignedStateFromTransactionsConsumer)
                 .setCapacity(1)
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build());
