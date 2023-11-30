@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.validators;
+package com.swirlds.config.extensions.validators;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.PropertyMetadata;
+import java.util.Objects;
 
 /**
  * An immutable default implementation of {@link ConfigViolation}.
@@ -45,7 +45,7 @@ public record DefaultConfigViolation(String propertyName, String value, boolean 
      * @return
      */
     public static ConfigViolation of(final PropertyMetadata<?> metadata, final String message) {
-        CommonUtils.throwArgNull(metadata, "metadata");
+        Objects.requireNonNull(metadata, "metadata can not be null");
         return new DefaultConfigViolation(metadata.getName(), metadata.getRawValue(), metadata.exists(), message);
     }
 

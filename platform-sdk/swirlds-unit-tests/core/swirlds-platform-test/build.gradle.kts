@@ -19,16 +19,6 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-jmhModuleInfo {
-    requires("com.swirlds.base")
-    requires("com.swirlds.common")
-    requires("com.swirlds.config.api")
-    requires("com.swirlds.platform.core")
-    requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.platform.core.test.fixtures")
-    requires("jmh.core")
-}
-
 testModuleInfo {
     requires("com.swirlds.common.testing")
     requires("com.swirlds.merkle")
