@@ -280,8 +280,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ALLOWANCE_OWNER_ID))
                 .then(getAccountDetails(owner)
                         .payingWith(GENESIS)
-                        .hasCostAnswerPrecheck(ACCOUNT_DELETED)
-                        .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        .has(accountDetailsWith().deleted(true)));
     }
 
     @HapiTest
