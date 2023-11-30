@@ -210,7 +210,7 @@ public class StandardWiringModel implements WiringModel {
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
         final boolean unique =
-                vertices.put(vertexName, new ModelVertex(vertexName, type, SCHEDULER, insertionIsBlocking)) == null;
+                vertices.put(vertexName, new StandardVertex(vertexName, type, SCHEDULER, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -348,7 +348,7 @@ public class StandardWiringModel implements WiringModel {
         }
 
         // Create an ad hoc vertex.
-        final ModelVertex adHocVertex = new ModelVertex(vertexName, DIRECT, SCHEDULER, true);
+        final StandardVertex adHocVertex = new StandardVertex(vertexName, DIRECT, SCHEDULER, true);
 
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;

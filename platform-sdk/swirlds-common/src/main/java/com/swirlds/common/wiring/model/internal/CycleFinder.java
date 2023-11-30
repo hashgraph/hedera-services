@@ -80,7 +80,7 @@ public final class CycleFinder {
 
             final ModelVertex parent = stack.removeLast();
 
-            for (final ModelEdge childEdge : parent) {
+            for (final ModelEdge childEdge : parent.getOutgoingEdges()) {
                 if (!childEdge.isInsertionIsBlocking()) {
                     // Ignore non-blocking edges.
                     continue;

@@ -17,7 +17,6 @@
 package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
-import static com.swirlds.common.wiring.model.internal.LegacyWiringFlowchart.INDENTATION;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -79,7 +78,7 @@ public class ModelEdge
      *
      * @param destination the destination vertex
      */
-    public void setDestination(@NonNull final ModelVertex destination) {
+    public void setDestination(@NonNull final StandardVertex destination) {
         this.destination = Objects.requireNonNull(destination);
     }
 
@@ -145,7 +144,7 @@ public class ModelEdge
      * @param sb the string builder to render to
      */
     public void render(@NonNull final StringBuilder sb) {
-        sb.append(INDENTATION).append(source.getName());
+        sb.append(source.getName());
 
         if (insertionIsBlocking) {
             if (label.isEmpty()) {

@@ -151,7 +151,7 @@ public final class DirectSchedulerChecks {
         while (!stack.isEmpty()) {
             final ModelVertex next = stack.removeLast();
 
-            for (final ModelEdge edge : next) {
+            for (final ModelEdge edge : next.getOutgoingEdges()) {
                 final ModelVertex destination = edge.getDestination();
                 final TaskSchedulerType destinationType = destination.getType();
 

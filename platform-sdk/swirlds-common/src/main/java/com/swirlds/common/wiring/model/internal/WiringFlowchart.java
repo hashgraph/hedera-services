@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,11 +21,18 @@ import java.util.Objects;
  */
 public class WiringFlowchart {
 
+    public static final String SCHEDULER_COLOR = "ff9";
+    public static final String DIRECT_SCHEDULER_COLOR = "ccc";
+    public static final String TEXT_COLOR = "000";
+    public static final String GROUP_COLOR = "9cf";
+    public static final String SUBSTITUTION_COLOR = "f88";
+
     /**
      * A map from vertex name to vertex.
      */
     private final Map<String, ModelVertex> vertexMap;
 
+    // TODO javadoc
     public WiringFlowchart(
             @NonNull final Map<String, ModelVertex> modelVertexMap,
             @NonNull final List<ModelEdgeSubstitution> substitutions,
@@ -44,12 +52,16 @@ public class WiringFlowchart {
      * @return a deep copy of the vertex map
      */
     @NonNull
-    private Map<String, ModelVertex> copyVertexMap(@NonNull final Map<String, ModelVertex> modelVertexMap) {
+    private Map<String, ModelVertex> copyVertexMap(@NonNull final Map<String, ModelVertex> original) {
         final Map<String, ModelVertex> copy = new HashMap<>();
 
         // First, copy the vertices without copying the edges.
-        for (final ModelVertex vertex : modelVertexMap.values()) {
-            final ModelVertex vertexCopy = new ModelVertex(
+        // We should only encounter StandardVertex instances here.
+        for (final ModelVertex vertex : original.values()) {
+            if (!(vertex instanceof StandardVertex)) {
+                throw new IllegalStateException("Encountered a vertex that is not a StandardVertex");
+            }
+            final StandardVertex vertexCopy = new StandardVertex(
                     vertex.getName(),
                     vertex.getType(),
                     SCHEDULER,
@@ -59,8 +71,8 @@ public class WiringFlowchart {
         }
 
         // Next, copy the edges.
-        for (final ModelVertex vertex : modelVertexMap.values()) {
-            for (final ModelEdge edge : vertex) {
+        for (final ModelVertex vertex : original.values()) {
+            for (final ModelEdge edge : vertex.getOutgoingEdges()) {
 
                 final ModelVertex source = copy.get(edge.getSource().getName());
                 final ModelVertex destination = copy.get(edge.getDestination().getName());
@@ -92,7 +104,7 @@ public class WiringFlowchart {
      */
     private void substituteEdge(@NonNull final ModelEdgeSubstitution substitution) {
         // First, create a new vertex that will represent the destination of the substitution.
-        final ModelVertex substitutedVertex = new ModelVertex(
+        final StandardVertex substitutedVertex = new StandardVertex(
                 substitution.substitution(),
                 DIRECT,
                 SUBSTITUTION,
@@ -130,79 +142,72 @@ public class WiringFlowchart {
      */
     private void handleGroups(@NonNull final List<ModelGroup> groups) {
         for (final ModelGroup group : groups) {
+            createGroup(group);
             if (group.collapse()) {
-                collapseGroup(group);
-            } else {
-                labelGroup(group);
+                // TODO
             }
         }
     }
 
     /**
-     * Collapse a group into a single vertex.
+     * Collect all vertices that are contained within the given group and create a new vertex that represents the
+     * group.
      *
-     * @param group the group to collapse
+     * @param group the group to create a vertex for
+     * @return the new vertex
      */
-    private void collapseGroup(@NonNull final ModelGroup group) {
+    private GroupVertex createGroup(@NonNull final ModelGroup group) { // TODO is return value needed?
+        // Collect all vertices that are contained within the group.
+        final List<ModelVertex> subVertices = new ArrayList<>();
 
-    }
-
-    /**
-     * Apply a group label to all vertices in the group. Used for groups that are not collapsed.
-     *
-     * @param group the group to label
-     */
-    private void labelGroup(@NonNull final ModelGroup group) {
         for (final String vertexName : group.elements()) {
-            if (group.elements().contains(vertexName)) {
-                vertexMap.get(vertexName).addToGroup(group.name());
+            final ModelVertex subVertex = vertexMap.get(vertexName);
+            if (subVertex == null) {
+                throw new IllegalStateException(
+                        "Vertex " + vertexName + " is not in the vertex map. Can not insert into group "
+                                + group.name() + ".");
             }
+
+            subVertices.add(subVertex);
         }
+
+        // Remove those vertices from the vertex map.
+        for (final ModelVertex subVertex : subVertices) {
+            vertexMap.remove(subVertex.getName());
+        }
+
+        // Create a new vertex that represents the group.
+        final GroupVertex groupVertex = new GroupVertex(group.name(), subVertices);
+        vertexMap.put(group.name(), groupVertex);
+
+        return groupVertex;
     }
 
     /**
-     * Groups are represented as subgraphs in the flowchart. This method the subgraph labels, as needed.
+     * Get all edges in the flowchart.
      *
-     * @param sb                the string builder to append to
-     * @param previousHierarchy the hierarchy of the previous vertex
-     * @param currentHierarchy  the hierarchy of the current vertex
+     * @return all edges in the flowchart, sorted
      */
-    private void renderSubgraph(
-            @NonNull final StringBuilder sb,
-            @NonNull final List<String> previousHierarchy,
-            @NonNull final List<String> currentHierarchy) {
+    private List<ModelEdge> collectEdges() {
+        final List<ModelEdge> edges = new ArrayList<>();
+        final LinkedList<ModelVertex> stack = new LinkedList<>();
 
+        for (final ModelVertex vertex : vertexMap.values()) {
+            stack.addLast(vertex);
+        }
 
-        final List<String> groupsToEnd = new ArrayList<>();
-        boolean foundDifference = false;
-        for (int i = 0; i < previousHierarchy.size(); i++) {
-            if (foundDifference) {
-                groupsToEnd.add(previousHierarchy.get(i));
-            } else if (i >= currentHierarchy.size() || !previousHierarchy.get(i).equals(currentHierarchy.get(i))) {
-                foundDifference = true;
-                groupsToEnd.add(previousHierarchy.get(i));
+        while (!stack.isEmpty()) {
+            final ModelVertex vertex = stack.removeLast();
+            edges.addAll(vertex.getOutgoingEdges());
+            if (vertex instanceof final GroupVertex groupVertex) {
+                for (final ModelVertex subVertex : groupVertex.getSubVertices()) {
+                    stack.addLast(subVertex);
+                }
             }
         }
 
-        final List<String> groupsToStart = new ArrayList<>();
-        foundDifference = false;
-        for (int i = 0; i < currentHierarchy.size(); i++) {
-            if (foundDifference) {
-                groupsToStart.add(currentHierarchy.get(i));
-            } else if (i >= previousHierarchy.size() || !currentHierarchy.get(i).equals(previousHierarchy.get(i))) {
-                foundDifference = true;
-                groupsToStart.add(currentHierarchy.get(i));
-            }
-        }
-
-        // TODO fix indentation
-        for (final String group : groupsToEnd) {
-            sb.append("end\n");// %% ").append(group).append("\n");
-        }
-
-        for (final String group : groupsToStart) {
-            sb.append("subgraph ").append(group).append("\n");
-        }
+        Collections.sort(edges);
+        return edges;
     }
 
     /**
@@ -216,29 +221,14 @@ public class WiringFlowchart {
         sb.append("flowchart LR\n");
 
         final List<ModelVertex> sortedVertices = vertexMap.values().stream().sorted().toList();
-
-        final List<ModelEdge> sortedEdges = new ArrayList<>();
         for (final ModelVertex vertex : sortedVertices) {
-            for (final ModelEdge edge : vertex) {
-                sortedEdges.add(edge);
-            }
-        }
-        Collections.sort(sortedEdges);
-
-        List<String> currentHierarchy = List.of();
-        for (final ModelVertex vertex : sortedVertices) {
-            renderSubgraph(sb, currentHierarchy, vertex.getGroupHierarchy());
             vertex.render(sb);
-            currentHierarchy = vertex.getGroupHierarchy();
         }
 
-        renderSubgraph(sb, currentHierarchy, List.of());
-
-        for (final ModelEdge edge : sortedEdges) {
+        for (final ModelEdge edge : collectEdges()) {
             edge.render(sb);
         }
 
         return sb.toString();
     }
-
 }
