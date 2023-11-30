@@ -95,7 +95,6 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
-import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
@@ -539,7 +538,6 @@ public class SwirldsPlatform implements Platform {
             // the nexus expects a state to be reserved for it
             // in the future, all of these reservations will be done by the wiring
             latestCompleteState.setState(ss.reserve("setting latest complete state"));
-
         };
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -626,7 +624,7 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
-        final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs ->{
+        final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs -> {
             latestCompleteState.newIncompleteState(rs.getAndReserve("latestCompleteState.newIncompleteState"));
             stateManagementComponent.newSignedStateFromTransactions(rs);
         };

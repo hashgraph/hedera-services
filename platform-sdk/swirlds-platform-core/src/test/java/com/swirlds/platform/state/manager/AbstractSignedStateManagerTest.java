@@ -140,7 +140,7 @@ public class AbstractSignedStateManagerTest {
                     // the most recent state has an extra reservation inside the SSM
                     expectedReservationCount++;
                 }
-                if(round == highestCompleteRound.get()) {
+                if (round == highestCompleteRound.get()) {
                     // the most recent complete state has an extra reservation held by the nexus
                     expectedReservationCount++;
                 }
@@ -148,18 +148,15 @@ public class AbstractSignedStateManagerTest {
                         expectedReservationCount,
                         signedState.getReservationCount(),
                         ("unexpected reservation count!%n"
-                                + "round: %d%n"
-                                + "highestRound: %d%n"
-                                + "highestCompleteRound: %d%n"
-                                + "history:%n%s")
+                                        + "round: %d%n"
+                                        + "highestRound: %d%n"
+                                        + "highestCompleteRound: %d%n"
+                                        + "history:%n%s")
                                 .formatted(
                                         round,
                                         highestRound.get(),
                                         highestCompleteRound.get(),
-                                        signedState.getHistory()
-
-                                )
-                );
+                                        signedState.getHistory()));
             }
         }
     }
