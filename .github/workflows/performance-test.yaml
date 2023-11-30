@@ -79,16 +79,19 @@ jobs:
           ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
           ARTIFACT_PATH="gs://${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}/${ARTIFACT_NAME}.zip"
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
-          gsutil -q stat "${ARTIFACT_PATH}"
-          PATH_EXIST=$?
-          if [ ${PATH_EXIST} -eq 0 ]; then
-            echo "Artifact Already Exist"
-            echo "exist=true" >>"${GITHUB_OUTPUT}"
-          else
-            echo "Artifact Not Exist"
-            echo "exist=false" >>"${GITHUB_OUTPUT}"
-          fi
-          git branch
+          
+          while true
+          do
+            gsutil -q stat "${ARTIFACT_PATH}"
+            PATH_EXIST=$?
+            if [ ${PATH_EXIST} -eq 0 ]; then
+              echo "Artifact Already Exist"
+              break
+            else
+              echo "Sleep 2 minutes"
+              sleep 2m
+            fi   
+          done          
 
       - name: Reset Network
         id: reset-network
