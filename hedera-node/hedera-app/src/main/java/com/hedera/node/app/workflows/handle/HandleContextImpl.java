@@ -44,7 +44,6 @@ import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
@@ -666,7 +665,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
         final DispatchValidationResult dispatchValidationResult;
         try {
-            System.out.println("dispatchSyntheticTxn: " + category + " childCategory: " + childCategory);
             dispatchValidationResult = validate(
                     callback == null ? null : childVerifier,
                     function,
@@ -708,8 +706,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (dispatchValidationResult != null) {
             childContext.feeAccumulator.chargeFees(
                     syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
-            System.out.println("dispatchSyntheticTxn: " + dispatchValidationResult.key() + " network fees : "
-                    + dispatchValidationResult.fees().copyBuilder().build());
         }
         try {
             dispatcher.dispatchHandle(childContext);
@@ -729,7 +725,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                         childRecordBuilder);
                 childRecordFinalizer.finalizeChildRecord(finalizeContext);
                 childStack.commitFullStack();
-                logger.warn("child trx", e);
+                final String message =
+                        """
+                           Child transaction with category %s failed with status %s.\
+                           Generating failure record and returning to parent.""";
+                logger.info(message.formatted(childCategory, e.getStatus()));
             } else {
                 recordListBuilder.revertChildrenOf(recordBuilder);
             }
@@ -751,7 +751,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         dispatcher.dispatchPreHandle(preHandleContext);
 
         DispatchValidationResult dispatchValidationResult = null;
-        System.out.println("enforceHapiPayerChecks: " + enforceHapiPayerChecks);
         if (enforceHapiPayerChecks) {
             // In the current system only the schedule service needs to specify its
             // child transaction id, and will never use a duplicate, so this check is
@@ -775,25 +774,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // transaction ids dispatched by the schedule service, since these ids derive from their
             // ScheduleCreate id, which could have happened long ago
             Key syntheticPayerKey = payerAccount.keyOrThrow();
-            System.out.println("payerAccount: " + payerAccount);
-            System.out.println("AccountStore(1002): "
-                    + readableStoreFactory
-                            .getStore(ReadableAccountStore.class)
-                            .getAccountById(
-                                    AccountID.newBuilder().accountNum(1002).build()));
-            System.out.println("AccountStore(1001): "
-                    + readableStoreFactory
-                            .getStore(ReadableAccountStore.class)
-                            .getAccountById(
-                                    AccountID.newBuilder().accountNum(1001).build()));
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
             dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, fee);
-            System.out.println("dispatchValidationResult: " + dispatchValidationResult.key() + " fees : "
-                    + dispatchValidationResult.fees());
         }
 
         // Given the current HTS system contract interface and ScheduleService

@@ -2402,11 +2402,9 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                             .withEntityMemo(randomUppercase(100))
                             .designatingPayer(PAYING_ACCOUNT_2)
                             .payingWith(PAYING_ACCOUNT)
-                            // we are always busy with long term enabled in this case
-                            // because
+                            // we are always busy with long term enabled in this case because
                             // there are no throttles for SystemDelete and we deeply check
-                            // with
-                            // long term enabled
+                            // with long term enabled
                             .hasPrecheck(BUSY));
         }
 
