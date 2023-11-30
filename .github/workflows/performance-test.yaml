@@ -19,7 +19,9 @@ on:
 #  schedule:
 #    - cron: '0 */12 * * *'
   workflow_dispatch:
-  push
+  push:
+    branches:
+      - 09445-D-ci-performance-testing
 defaults:
   run:
     shell: bash
