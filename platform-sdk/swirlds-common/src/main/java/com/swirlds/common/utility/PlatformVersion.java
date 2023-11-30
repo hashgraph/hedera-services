@@ -297,23 +297,6 @@ public final class PlatformVersion implements SoftwareVersion {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (obj == null || obj.getClass() != this.getClass()) {
-            return false;
-        }
-        final var that = (PlatformVersion) obj;
-        return Objects.equals(this.versionNumber, that.versionNumber) && Objects.equals(this.commit, that.commit);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(versionNumber, commit);
-    }
-
-    @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .append("versionNumber", versionNumber)

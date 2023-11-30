@@ -108,29 +108,9 @@ public class BasicSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (!(o instanceof BasicSoftwareVersion that)) {
-            return false;
-        }
-
-        return softwareVersion == that.softwareVersion;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return Long.hashCode(softwareVersion);
-    }
+    // Intentionally do not implement equals() or hashCode(). Although it is legal to do so, it is not required,
+    // and all platform operations should be functional without it. Since this class is used for platform testing,
+    // we should make sure this crutch is not available.
 
     /**
      * {@inheritDoc}

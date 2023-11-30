@@ -522,7 +522,7 @@ public final class StartupStateUtils {
 
         if (oldHash.equals(newHash)) {
             logger.info(STARTUP.getMarker(), "Loaded state's hash is the same as when it was saved.");
-        } else if (loadedVersion.equals(currentSoftwareVersion)) {
+        } else if (loadedVersion.compareTo(currentSoftwareVersion) == 0) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "The saved state file {} was created with the current version of the software, "

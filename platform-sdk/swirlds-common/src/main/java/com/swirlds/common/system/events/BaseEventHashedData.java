@@ -252,7 +252,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
                 && Objects.equals(otherParentHash, that.otherParentHash)
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
-                && Objects.equals(softwareVersion, that.softwareVersion);
+                && (softwareVersion.compareTo(that.softwareVersion) == 0);
     }
 
     @Override

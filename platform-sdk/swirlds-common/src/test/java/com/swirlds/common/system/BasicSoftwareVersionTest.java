@@ -16,7 +16,6 @@
 
 package com.swirlds.common.system;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -62,57 +61,5 @@ class BasicSoftwareVersionTest {
     void testToString() {
         assertEquals("1", VERSION_ONE.toString(), "VERSION_ONE not reporting its version as 1.");
         assertEquals("2", VERSION_TWO.toString(), "VERSION_TWO not reporting its version as 2.");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("A BasicSoftwareVersion is equal to itself")
-    void selfEquals() {
-        final var ver = new BasicSoftwareVersion(1);
-        assertThat(ver).isEqualTo(ver);
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Two BasicSoftwareVersion are equal if their versions are equal")
-    void equals() {
-        final var ver1 = new BasicSoftwareVersion(1);
-        final var ver2 = new BasicSoftwareVersion(1);
-        assertThat(ver1).isEqualTo(ver2);
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("A BasicSoftwareVersion is not equal to null")
-    void notEqualToNull() {
-        final var ver = new BasicSoftwareVersion(1);
-        assertThat(ver).isNotEqualTo(null);
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Two BasicSoftwareVersion of different versions are not equal")
-    void unequal() {
-        final var ver1 = new BasicSoftwareVersion(1);
-        final var ver2 = new BasicSoftwareVersion(2);
-        assertThat(ver1).isNotEqualTo(ver2);
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Two equal BasicSoftwareVersion produce the same hashcode")
-    void hashCodeConsistentWithEquals() {
-        final var ver1 = new BasicSoftwareVersion(1);
-        final var ver2 = new BasicSoftwareVersion(1);
-        assertThat(ver1).hasSameHashCodeAs(ver2);
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Two different BasicSoftwareVersion probably produce different hash codes")
-    void differentHashCodesConsistentWithNotEquals() {
-        final var ver1 = new BasicSoftwareVersion(1);
-        final var ver2 = new BasicSoftwareVersion(2);
-        assertThat(ver1.hashCode()).isNotEqualTo(ver2.hashCode());
     }
 }
