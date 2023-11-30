@@ -30,12 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This iterator was designed specifically for use with {@link VirtualRootNode} during reconnect on the
  * learner, but in concept could be adapted for more general use. This class enables a publisher/subscriber
- * approach to an iterator. New items are added via {@link #supply(Object, long, TimeUnit)}, while items are
+ * approach to an iterator. New items are added via {@link #supply(Object)}, while items are
  * consumed using {@link #next()}. {@link #hasNext()} will return true until there are no more items to
  * consume and will block if there are no items and {@link #close()} has not been called. Critically,
  * you must call {@link #close()} for the iterator to ever return {@code false} from {@link #hasNext()} or
  * throw {@link NoSuchElementException} from {@link #next()}. If new elements are supplied faster than they
- * are consumed, then {@link #supply(Object, long, TimeUnit)} will block until space becomes available. The
+ * are consumed, then {@link #supply(Object)} will block until space becomes available. The
  * constructor allows you to define what the size of the inner buffer is.
  *
  * @param <T>
@@ -142,17 +142,16 @@ public class ConcurrentBlockingIterator<T> implements Iterator<T> {
      *
      * @param element
      * 		The element to add. Cannot be null.
-     * @return true if submitted, false if the timeout was exceeded.
      * @throws InterruptedException
      * 		If interrupted while waiting
      */
-    public boolean supply(final T element, final long timeout, final TimeUnit timeUnit) throws InterruptedException {
+    public void supply(final T element) throws InterruptedException {
         if (closed.get()) {
             throw new IllegalStateException("Cannot supply elements to a closed ConcurrentBlockingIterator");
         }
 
         Objects.requireNonNull(element);
-        return buffer.offer(element, timeout, timeUnit);
+        buffer.put(element);
     }
 
     /**

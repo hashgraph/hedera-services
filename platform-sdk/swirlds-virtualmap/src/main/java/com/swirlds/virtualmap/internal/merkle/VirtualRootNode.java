@@ -495,12 +495,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                                 VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
                                 assert leafRecord != null : "Leaf record should not be null";
                                 try {
-                                    final boolean success =
-                                            rehashIterator.supply(leafRecord, Integer.MAX_VALUE, SECONDS);
-                                    if (!success) {
-                                        throw new MerkleSynchronizationException(
-                                                "Timed out waiting to supply a new leaf to the hashing iterator buffer");
-                                    }
+                                    rehashIterator.supply(leafRecord);
                                 } catch (final MerkleSynchronizationException e) {
                                     throw e;
                                 } catch (final InterruptedException e) {
@@ -1435,11 +1430,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public void handleReconnectLeaf(final VirtualLeafRecord<K, V> leafRecord) {
         try {
-            final boolean success = reconnectIterator.supply(leafRecord, MAX_RECONNECT_HASHING_BUFFER_TIMEOUT, SECONDS);
-            if (!success) {
-                throw new MerkleSynchronizationException(
-                        "Timed out waiting to supply a new leaf to the hashing iterator buffer");
-            }
+            reconnectIterator.supply(leafRecord);
         } catch (final MerkleSynchronizationException e) {
             throw e;
         } catch (final InterruptedException e) {
