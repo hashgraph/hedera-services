@@ -6,6 +6,12 @@
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
 cd $SCRIPT_PATH
 
-rm -rf ~/.gradle
-rm -rf $(find ../ -name .gradle)
-rm -rf $(find ../ -name build)
+# Navigate to the root of the project.
+{
+  cd $SCRIPT_PATH/../..
+
+  rm -rf ~/.gradle
+
+  find . -name .gradle -exec rm -rvf {} \;
+  find . -name build -exec rm -rvf {} \;
+}
