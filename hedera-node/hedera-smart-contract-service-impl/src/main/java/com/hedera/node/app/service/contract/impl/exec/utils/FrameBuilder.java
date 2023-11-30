@@ -107,12 +107,7 @@ public class FrameBuilder {
         if (transaction.isCreate()) {
             return finishedAsCreate(to, builder, transaction);
         } else {
-            return finishedAsCall(
-                    to,
-                    worldUpdater,
-                    builder,
-                    transaction,
-                    featureFlags.isAllowCallsToNonContractAccountsEnabled(config));
+            return finishedAsCall(to, worldUpdater, builder, transaction, featureFlags, config);
         }
     }
 
@@ -156,12 +151,13 @@ public class FrameBuilder {
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final MessageFrame.Builder builder,
             @NonNull final HederaEvmTransaction transaction,
-            final boolean isAllowCallsToNonContractAccountsEnabled) {
+            @NonNull final FeatureFlags featureFlags,
+            @NonNull final Configuration config) {
         Code code = CodeV0.EMPTY_CODE;
         final var toAccount = worldUpdater.getHederaAccount(transaction.contractIdOrThrow());
-        if (toAccount != null || !isAllowCallsToNonContractAccountsEnabled) {
+        if (toAccount != null || worldUpdater.contractMustBePresent()) {
             final var account = worldUpdater.getHederaAccount(to);
-            if (account == null && !isAllowCallsToNonContractAccountsEnabled) {
+            if (account == null && worldUpdater.contractMustBePresent()) {
                 validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
             } else {
                 code = account.getEvmCode();

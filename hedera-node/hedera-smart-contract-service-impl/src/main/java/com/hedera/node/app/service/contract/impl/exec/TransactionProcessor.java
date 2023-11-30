@@ -217,7 +217,7 @@ public class TransactionProcessor {
             parties = new InvolvedParties(sender, relayer, to);
         } else {
             final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
-            if (featureFlags.isAllowCallsToNonContractAccountsEnabled(config)) {
+            if (featureFlags.isAllowCallsToNonContractAccountsEnabled(config, to)) {
                 parties = partiesWhenContractNotRequired(to, sender, relayer, transaction, updater, config);
             } else {
                 parties = partiesWhenContractRequired(to, sender, relayer, transaction, updater, config);

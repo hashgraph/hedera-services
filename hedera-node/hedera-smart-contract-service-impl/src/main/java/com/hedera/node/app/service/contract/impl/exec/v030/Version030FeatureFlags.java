@@ -19,9 +19,11 @@ package com.hedera.node.app.service.contract.impl.exec.v030;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -48,7 +50,8 @@ public class Version030FeatureFlags implements FeatureFlags {
     }
 
     @Override
-    public boolean isAllowCallsToNonContractAccountsEnabled(@NonNull Configuration config) {
+    public boolean isAllowCallsToNonContractAccountsEnabled(
+            @NonNull Configuration config, @Nullable HederaEvmAccount possiblyGrandfathered) {
         return false;
     }
 }
