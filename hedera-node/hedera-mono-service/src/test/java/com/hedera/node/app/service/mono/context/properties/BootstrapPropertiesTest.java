@@ -240,7 +240,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_45Module.EVM_VERSION_0_45;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_38Module.EVM_VERSION_0_38;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_GET;
@@ -369,7 +369,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
             entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
-            entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_45),
+            entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
             entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
             entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
