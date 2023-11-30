@@ -742,6 +742,9 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
+        if(customizer.shouldSuppressAccountId()) {
+            return this;
+        }
         requireNonNull(accountID, "accountID must not be null");
         transactionReceiptBuilder.accountID(accountID);
         return this;

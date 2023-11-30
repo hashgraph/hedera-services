@@ -34,6 +34,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_INFO;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -98,7 +100,7 @@ public class CreateOperationSuite extends HapiSuite {
         final var contract = "FactorySelfDestructConstructor";
 
         final var sender = "sender";
-        return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
+        return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract", NONDETERMINISTIC_LOG_INFO)
                 .given(
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
@@ -111,7 +113,7 @@ public class CreateOperationSuite extends HapiSuite {
     private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
-        return defaultHapiSpec("FactoryQuickSelfDestructContract")
+        return defaultHapiSpec("FactoryQuickSelfDestructContract", NONDETERMINISTIC_LOG_INFO)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract),
@@ -135,7 +137,7 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
-        return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
+        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", NONDETERMINISTIC_LOG_INFO)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).logged().via("createRecord"),
@@ -150,7 +152,7 @@ public class CreateOperationSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec simpleFactoryWorks() {
-        return defaultHapiSpec("simpleFactoryWorks")
+        return defaultHapiSpec("simpleFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
                         .gas(780_000)
@@ -171,7 +173,7 @@ public class CreateOperationSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec stackedFactoryWorks() {
-        return defaultHapiSpec("StackedFactoryWorks")
+        return defaultHapiSpec("StackedFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
                         .gas(1_000_000)

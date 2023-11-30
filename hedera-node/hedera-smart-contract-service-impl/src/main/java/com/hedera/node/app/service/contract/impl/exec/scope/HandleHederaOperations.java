@@ -28,6 +28,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
@@ -36,8 +37,10 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -347,28 +350,36 @@ public class HandleHederaOperations implements HederaOperations {
     }
 
     private ExternalizedRecordCustomizer contractBodyCustomizerFor(@NonNull final ContractCreateTransactionBody op) {
-        return transaction -> {
-            try {
-                final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                        transaction.signedTransactionBytes().toReadableSequentialData());
-                final var body = TransactionBody.PROTOBUF.parseStrict(
-                        signedTransaction.bodyBytes().toReadableSequentialData());
-                if (!body.hasCryptoCreateAccount()) {
-                    throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
+        return new ExternalizedRecordCustomizer() {
+            @Override
+            public Transaction apply(Transaction transaction) {
+                try {
+                    final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                            transaction.signedTransactionBytes().toReadableSequentialData());
+                    final var body = TransactionBody.PROTOBUF.parseStrict(
+                            signedTransaction.bodyBytes().toReadableSequentialData());
+                    if (!body.hasCryptoCreateAccount()) {
+                        throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
+                    }
+                    final var finishedBody =
+                            body.copyBuilder().contractCreateInstance(op).build();
+                    final var finishedSignedTransaction = signedTransaction
+                            .copyBuilder()
+                            .bodyBytes(TransactionBody.PROTOBUF.toBytes(finishedBody))
+                            .build();
+                    return transaction
+                            .copyBuilder()
+                            .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(finishedSignedTransaction))
+                            .build();
+                } catch (IOException internal) {
+                    // This should never happen
+                    throw new UncheckedIOException(internal);
                 }
-                final var finishedBody =
-                        body.copyBuilder().contractCreateInstance(op).build();
-                final var finishedSignedTransaction = signedTransaction
-                        .copyBuilder()
-                        .bodyBytes(TransactionBody.PROTOBUF.toBytes(finishedBody))
-                        .build();
-                return transaction
-                        .copyBuilder()
-                        .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(finishedSignedTransaction))
-                        .build();
-            } catch (IOException internal) {
-                // This should never happen
-                throw new UncheckedIOException(internal);
+            }
+
+            @Override
+            public boolean shouldSuppressAccountId() {
+                return true;
             }
         };
     }

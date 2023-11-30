@@ -61,5 +61,9 @@ public enum SnapshotMatchMode {
      * fuzzy-matching of records that have different ids. Also, when auto-creation fails the charged fee to payer is not re-claimed
      * in mono-service. So the  transaction fee differs a lot.
      */
-    ALLOW_SKIPPED_ENTITY_IDS
+    ALLOW_SKIPPED_ENTITY_IDS,
+    /**
+     * Allows for non-deterministic logs.
+     */
+    NONDETERMINISTIC_LOG_INFO,
 }
