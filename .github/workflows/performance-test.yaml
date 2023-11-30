@@ -57,11 +57,14 @@ jobs:
       - name: Verify Workflow Parameters
         id: parameters
         run: |
-          git checkout "${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${BRANCH_NAME##origin/}"
           BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
           BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
+          
+          git --version
+
+          git checkout -b "${BRANCH_NAME}" origin/"${BRANCH_NAME}"
 
           echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
           echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
