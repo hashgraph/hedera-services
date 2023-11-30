@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -44,7 +44,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(gasCalculator, enhancement, verificationStrategy, sender, token, spender, amount, tokenType);
+        super(gasCalculator, enhancement, verificationStrategy, sender, token, spender, amount, tokenType, false);
     }
 
     @NonNull
@@ -57,15 +57,16 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
                     : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                             .getOutputs()
                             .encodeElements();
-            return gasOnly(successResult(encodedOutput, gasRequirement));
+            return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
         }
     }
 }

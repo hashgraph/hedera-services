@@ -45,6 +45,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -54,7 +55,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +88,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private TinybarValues tinybarValues;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     private HandleHederaOperations subject;
 
@@ -170,6 +173,8 @@ class HandleHederaOperationsTest {
     @Test
     void gasPriceInTinybarsDelegates() {
         given(tinybarValues.topLevelTinybarGasPrice()).willReturn(1234L);
+        given(context.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(feeCalculator.getCongestionMultiplier()).willReturn(1L);
         assertEquals(1234L, subject.gasPriceInTinybars());
     }
 
@@ -251,7 +256,7 @@ class HandleHederaOperationsTest {
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
                 .willReturn(contractCreateRecordBuilder);
@@ -326,7 +331,7 @@ class HandleHederaOperationsTest {
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
@@ -339,7 +344,7 @@ class HandleHederaOperationsTest {
                 .dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class));
         verify(tokenServiceApi)
@@ -364,7 +369,7 @@ class HandleHederaOperationsTest {
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
                         eq(ContractCreateRecordBuilder.class),
-                        any(Predicate.class),
+                        eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);

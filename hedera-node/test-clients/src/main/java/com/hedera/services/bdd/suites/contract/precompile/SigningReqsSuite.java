@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -38,12 +39,14 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 import org.apache.logging.log4j.*;
+import org.junit.jupiter.api.Tag;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class SigningReqsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SigningReqsSuite.class);
 

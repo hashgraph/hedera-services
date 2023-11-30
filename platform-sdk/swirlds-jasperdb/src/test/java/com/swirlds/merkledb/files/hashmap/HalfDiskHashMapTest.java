@@ -143,7 +143,13 @@ class HalfDiskHashMapTest {
         // create map
         final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 10_000);
         final DataFileCompactor dataFileCompactor = new DataFileCompactor(
-                "HalfDiskHashMapTest", map.getFileCollection(), map.getBucketIndexToBucketLocation(), null, null, null);
+                "HalfDiskHashMapTest",
+                map.getFileCollection(),
+                map.getBucketIndexToBucketLocation(),
+                null,
+                null,
+                null,
+                null);
         // create some data
         createSomeData(testType, map, 1, 1111, 1);
         checkData(testType, map, 1, 1111, 1);

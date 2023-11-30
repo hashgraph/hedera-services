@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -74,8 +75,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(TOKEN)
 public class TokenAssociationSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
@@ -240,7 +243,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                                         .freeze(FreezeNotApplicable)));
     }
 
-    @HapiTest
+    // Enable when token expiration is implemented
+    // @HapiTest
     public HapiSpec dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
@@ -369,7 +373,6 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
     }
 
-    //    @HapiTest Will pass after fees in NetworkTransactionGetRecordHandler are implemented
     public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
@@ -440,8 +443,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    // enable when TokenDissociateFromAccountHandler.tokenIsExpired is implemented
-    // @HapiTest
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())

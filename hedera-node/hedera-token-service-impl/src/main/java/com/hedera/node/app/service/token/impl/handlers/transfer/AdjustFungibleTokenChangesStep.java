@@ -110,8 +110,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             }
         }
 
-        modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
+        modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
     }
 
     /**

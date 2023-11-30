@@ -87,4 +87,10 @@ public interface ReadableTokenStore {
      */
     @Nullable
     Token get(@NonNull TokenID id);
+
+    /**
+     * Returns the number of tokens in the state.
+     * @return the number of tokens in the state.
+     */
+    public long sizeOfState();
 }

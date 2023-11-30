@@ -33,6 +33,7 @@ javaModuleDependencies {
     moduleNameToGA.put("com.swirlds.common.testing", "com.swirlds:swirlds-common-testing")
     moduleNameToGA.put("com.swirlds.config.api", "com.swirlds:swirlds-config-api")
     moduleNameToGA.put("com.swirlds.config.impl", "com.swirlds:swirlds-config-impl")
+    moduleNameToGA.put("com.swirlds.config.extensions", "com.swirlds:swirlds-config-extensions")
     moduleNameToGA.put("com.swirlds.merkle.test", "com.swirlds:swirlds-merkle-test")
     moduleNameToGA.put("com.swirlds.merkledb", "com.swirlds:swirlds-merkledb")
     moduleNameToGA.put("com.swirlds.platform.core", "com.swirlds:swirlds-platform-core")
@@ -53,6 +54,8 @@ javaModuleDependencies {
     )
 
     // Testing only
+    moduleNameToGA.put("com.google.protobuf.util", "com.google.protobuf:protobuf-java-util")
+    moduleNameToGA.put("org.hamcrest", "org.hamcrest:hamcrest")
     moduleNameToGA.put("org.mockito.junit.jupiter", "org.mockito:mockito-junit-jupiter")
     moduleNameToGA.put("org.objenesis", "org.objenesis:objenesis")
 }

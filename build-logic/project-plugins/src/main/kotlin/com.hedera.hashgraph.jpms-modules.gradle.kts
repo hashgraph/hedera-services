@@ -22,12 +22,6 @@ plugins {
 }
 
 dependencies.components {
-    // TODO remove, once a new version of 'com.hedera.pbj.runtime' has been
-    //  published with fix from https://github.com/hashgraph/pbj/pull/92
-    withModule("com.hedera.pbj:pbj-runtime") {
-        allVariants { withDependencies { removeAll { it.name != "antlr4-runtime" } } }
-    }
-
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-netty")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf-lite")
@@ -95,7 +89,9 @@ extraJavaModuleInfo {
     }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
-        requireAllDefinedDependencies()
+        // requireAllDefinedDependencies() <- Currently not possible due to a Gradlex plugin
+        // limitation
+        requires("com.google.guava.failureaccess")
         requires("java.logging")
     }
     module("com.google.guava:failureaccess", "com.google.guava.failureaccess") {
@@ -218,11 +214,7 @@ extraJavaModuleInfo {
         exportAllPackages()
         // no dependencies
     }
-    module("org.yaml:snakeyaml", "org.yaml.snakeyaml") {
-        exportAllPackages()
-        // no dependencies
-    }
-    module("org.hyperledger.besu.internal:algorithms", "org.hyperledger.besu.internal.algorithms") {
+    module("org.hyperledger.besu.internal:algorithms", "org.hyperledger.besu.internal.crypto") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
@@ -230,15 +222,15 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic") {
+    module("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.nativelib.arithmetic") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf") {
+    module("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.nativelib.blake2bf") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381") {
+    module("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.nativelib.bls12_381") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
@@ -254,11 +246,11 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1") {
+    module("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.nativelib.secp256k1") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1") {
+    module("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.nativelib.secp256r1") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
@@ -323,6 +315,8 @@ extraJavaModuleInfo {
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
     knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
+    knownModule("com.squareup:javapoet", "com.squareup.javapoet")
+    knownModule("com.google.auto.service:auto-service-annotations", "com.google.auto.service")
 
     // Annotation processing only
     automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")
@@ -334,14 +328,14 @@ extraJavaModuleInfo {
     )
     automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
     automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
-    automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
     automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
+    automaticModule("com.google.auto.service:auto-service", "com.google.auto.service.processor")
+    automaticModule("com.google.auto:auto-common", "com.google.auto.common")
 
     // Testing only
     automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")
     automaticModule("org.awaitility:awaitility", "awaitility")
-    automaticModule("org.hamcrest:hamcrest", "org.hamcrest")
     automaticModule("org.hamcrest:hamcrest-core", "org.hamcrest.core")
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
     automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
@@ -349,7 +343,6 @@ extraJavaModuleInfo {
         "uk.org.webcompere:system-stubs-jupiter",
         "uk.org.webcompere.systemstubs.jupiter"
     )
-    automaticModule("com.google.protobuf:protobuf-java-util", "com.google.protobuf.util")
 
     // JMH only
     automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
