@@ -193,12 +193,15 @@ public class SyncGossip extends AbstractGossip {
                 false,
                 () -> {});
 
-        clearAllInternalPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
-                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-                        Pair.of(shadowGraph, "shadowGraph")));
+        final List<Pair<Clearable, String>> objectsToClear = new ArrayList<>();
+        objectsToClear.add(Pair.of(intakeQueue, "intakeQueue"));
+
+        if (platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            objectsToClear.add(Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"));
+            objectsToClear.add(Pair.of(shadowGraph, "shadowGraph"));
+        }
+
+        clearAllInternalPipelines = new LoggingClearables(RECONNECT.getMarker(), objectsToClear);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
