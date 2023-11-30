@@ -8,8 +8,9 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
 {
   cd $SCRIPT_PATH/../..
 
-  rm -rvf ~/.gradle
+  pkill -9 -f gradle
 
+  rm -rvf ~/.gradle
   find . -name .gradle -exec rm -rvf {} \;
   find . -name build -exec rm -rvf {} \;
 }
