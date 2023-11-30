@@ -2214,7 +2214,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS))
                 .then(
                         freezeAbort().payingWith(GENESIS),
-                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2256,8 +2255,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                     // because
                                     // there are no throttles for freeze and we deeply check with
                                     // long term enabled
-                                    .hasPrecheck(BUSY),
-                            overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST));
+                                    .hasPrecheck(BUSY));
         }
         return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFails")
                 .given(
@@ -2285,7 +2283,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS))
                 .then(
                         freezeAbort().payingWith(GENESIS),
-                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2317,7 +2314,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2351,7 +2347,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2383,7 +2378,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                         withOpContext((spec, opLog) -> {
@@ -2419,8 +2413,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                     // there are no throttles for SystemDelete and we deeply check
                                     // with
                                     // long term enabled
-                                    .hasPrecheck(BUSY),
-                            overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST));
+                                    .hasPrecheck(BUSY));
         }
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFails")
@@ -2441,7 +2434,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, DEFAULT_WHITELIST),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         getFileInfo("misc").nodePayment(1_234L),
                         withOpContext((spec, opLog) -> {
@@ -2534,9 +2526,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                         percentCongestionMultiplier,
                                         HapiSpecSetup.getDefaultNodeProps().get(percentCongestionMultiplier),
                                         minCongestionPeriod,
-                                        HapiSpecSetup.getDefaultNodeProps().get(minCongestionPeriod),
-                                        SCHEDULING_WHITELIST,
-                                        DEFAULT_WHITELIST)),
+                                        HapiSpecSetup.getDefaultNodeProps().get(minCongestionPeriod))),
                         cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
                                 .payingWith(GENESIS),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
