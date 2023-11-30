@@ -26,6 +26,7 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,13 +41,14 @@ class PlatformWiringTests {
         final PlatformWiring wiring =
                 new PlatformWiring(TestPlatformContextBuilder.create().build(), new FakeTime());
 
-        wiring.bind(
+        wiring.bindIntake(
                 mock(InternalEventValidator.class),
                 mock(EventDeduplicator.class),
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class));
+        wiring.bind(mock(SignedStateFileManager.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

@@ -83,8 +83,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
@@ -174,14 +172,12 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.platform.wiring.SignedStateFileManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -493,20 +489,15 @@ public class SwirldsPlatform implements Platform {
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         components.add(model);
-        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
-                .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
-                .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
-                .build()
-                .cast();
-        final SignedStateFileManagerWiring signedStateFileManagerWiring =
-                new SignedStateFileManagerWiring(savedStateScheduler);
-        signedStateFileManagerWiring.bind(signedStateFileManager);
-        signedStateFileManagerWiring.solderPces(preconsensusEventWriter);
-        signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
-        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
+
+        platformWiring = new PlatformWiring(platformContext, time);
+        platformWiring.wireExternalComponents(
+                preconsensusEventWriter, platformStatusManager, appCommunicationComponent);
+
+        platformWiring.bind(signedStateFileManager);
 
         final SavedStateController savedStateController =
-                new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
+                new SavedStateController(stateConfig, platformWiring.getSaveStateToDiskInput()::offer);
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -518,7 +509,7 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 platformStatusManager,
                 savedStateController,
-                signedStateFileManagerWiring.dumpStateToDisk()::put);
+                platformWiring.getDumpStateToDiskInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -699,7 +690,6 @@ public class SwirldsPlatform implements Platform {
         final EventValidator eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
-        platformWiring = new PlatformWiring(platformContext, time);
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
         } else {
@@ -727,7 +717,7 @@ public class SwirldsPlatform implements Platform {
                     preConsensusEventHandler::preconsensusEvent,
                     intakeEventCounter);
 
-            platformWiring.bind(
+            platformWiring.bindIntake(
                     internalEventValidator,
                     eventDeduplicator,
                     eventSignatureValidator,

@@ -23,18 +23,25 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.StateDumpRequest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -52,6 +59,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final SignedStateFileManagerWiring signedStateFileManagerWiring;
 
     /**
      * Constructor.
@@ -73,6 +81,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+        signedStateFileManagerWiring =
+                SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
 
         wire();
     }
@@ -117,7 +127,37 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Bind components to the wiring.
+     * Wire components that adhere to the framework to components that don't
+     * <p>
+     * Future work: as more components are moved to the framework, this method should shrink, and eventually be
+     * removed.
+     *
+     * @param preconsensusEventWriter   the preconsensus event writer to wire
+     * @param statusManager             the status manager to wire
+     * @param appCommunicationComponent the app communication component to wire
+     */
+    public void wireExternalComponents(
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
+            @NonNull final PlatformStatusManager statusManager,
+            @NonNull final AppCommunicationComponent appCommunicationComponent) {
+
+        signedStateFileManagerWiring
+                .oldestMinimumGenerationOnDiskOutputWire()
+                .solderTo(
+                        "PCES minimum generation to store",
+                        preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
+        signedStateFileManagerWiring
+                .stateWrittenToDiskOutputWire()
+                .solderTo("status manager", statusManager::submitStatusAction);
+        signedStateFileManagerWiring
+                .stateSavingResultOutputWire()
+                .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
+    }
+
+    /**
+     * Bind the intake components to the wiring.
+     * <p>
+     * Future work: this method should be merged with {@link #bind} once the feature flag for the new intake pipeline has been removed
      *
      * @param internalEventValidator  the internal event validator to bind
      * @param eventDeduplicator       the event deduplicator to bind
@@ -126,7 +166,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
      */
-    public void bind(
+    public void bindIntake(
             @NonNull final InternalEventValidator internalEventValidator,
             @NonNull final EventDeduplicator eventDeduplicator,
             @NonNull final EventSignatureValidator eventSignatureValidator,
@@ -140,6 +180,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
+    }
+
+    /**
+     * Bind components to the wiring.
+     *
+     * @param signedStateFileManager the signed state file manager to bind
+     */
+    public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
+        signedStateFileManagerWiring.bind(signedStateFileManager);
 
         // FUTURE WORK: bind all the things!
     }
@@ -152,6 +201,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input method for the internal event validator, which is the first step in the intake pipeline
      */
+    @NonNull
     public InterruptableConsumer<GossipEvent> getEventInput() {
         return internalEventValidatorWiring.eventInput()::put;
     }
@@ -163,8 +213,35 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @return the input method for the address book update
      */
+    @NonNull
     public Consumer<AddressBookUpdate> getAddressBookUpdateInput() {
         return eventSignatureValidatorWiring.addressBookUpdateInput()::inject;
+    }
+
+    /**
+     * Get the input wire for saving a state to disk
+     * <p>
+     * Future work: this is a temporary hook to allow the components to save state a state to disk, prior to the whole
+     * system being migrated to the new framework.
+     *
+     * @return the input wire for saving a state to disk
+     */
+    @NonNull
+    public InputWire<ReservedSignedState> getSaveStateToDiskInput() {
+        return signedStateFileManagerWiring.saveStateToDisk();
+    }
+
+    /**
+     * Get the input wire for dumping a state to disk
+     * <p>
+     * Future work: this is a temporary hook to allow the components to dump a state to disk, prior to the whole
+     * system being migrated to the new framework.
+     *
+     * @return the input wire for dumping a state to disk
+     */
+    @NonNull
+    public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
+        return signedStateFileManagerWiring.dumpStateToDisk();
     }
 
     /**
