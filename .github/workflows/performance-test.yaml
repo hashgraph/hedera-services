@@ -57,6 +57,7 @@ jobs:
       - name: Verify Workflow Parameters
         id: parameters
         run: |
+          git checkout "${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${BRANCH_NAME##origin/}"
           BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
@@ -70,7 +71,6 @@ jobs:
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
-          access-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
