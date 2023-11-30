@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -31,6 +33,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -41,6 +44,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -82,12 +86,19 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        // Run its in-scope transaction and get the outcome
-        final var outcome = component.contextTransactionProcessor().call();
+        final var hevmTransactionFactory = component.contextTransactionProcessor().hevmTransactionFactory;
+        final var hevmTransaction = hevmTransactionFactory.fromHapiTransaction(context.body());
+
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var sender = accountStore.getAccountById(Objects.requireNonNull(hevmTransaction.senderId()));
 
         // Assemble the appropriate top-level record for the result
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
+
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()))
                 .status(outcome.status());
@@ -98,6 +109,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
+
+        validateTrue(sender.ethereumNonce() == ethTxData.nonce(), WRONG_NONCE);
+
         throwIfUnsuccessful(outcome.status());
     }
 }
