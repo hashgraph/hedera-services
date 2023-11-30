@@ -41,6 +41,11 @@ env:
   LOKI_ADDR: ${{ secrets.LOKI_ADDR }}
   LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
   LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   performance-test:
     name: Performance Test
