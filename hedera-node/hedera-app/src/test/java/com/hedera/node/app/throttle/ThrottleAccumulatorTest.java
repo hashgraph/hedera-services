@@ -1025,7 +1025,6 @@ class ThrottleAccumulatorTest {
         assertFalse(subject.gasLimitThrottle().allow(TIME_INSTANT, 100));
     }
 
-
     @Test
     void alwaysThrottleNOfUnmanaged() throws IOException {
         subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE);
