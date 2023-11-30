@@ -129,9 +129,11 @@ public class ConsensusHashManager {
             final DispatchBuilder dispatchBuilder,
             final AddressBook addressBook,
             final Hash currentEpochHash,
-            final SoftwareVersion currentSoftwareVersion,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
+
+        Objects.requireNonNull(currentSoftwareVersion);
 
         final ConsensusConfig consensusConfig =
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
@@ -254,6 +256,11 @@ public class ConsensusHashManager {
 
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
+
+        if (eventVersion == null) {
+            // Illegal event version, ignore.
+            return;
+        }
 
         if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
             // We are still replaying preconsensus events and we are configured to ignore signatures during replay
