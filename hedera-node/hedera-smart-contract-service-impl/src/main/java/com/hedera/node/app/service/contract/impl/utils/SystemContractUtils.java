@@ -19,15 +19,13 @@ package com.hedera.node.app.service.contract.impl.utils;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
 import com.google.common.primitives.Longs;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Utilities for system contracts.
@@ -60,22 +58,19 @@ public final class SystemContractUtils {
      * Create a successful contract function result.
      * @param gasUsed       Report the gas used.
      * @param result        The result of the contract call.
-     * @param contractID    The contract ID.
-     * @param frame         The message frame.
+     * @param gas           The remaining gas.
+     * @param inputData     The input data.
+     * @param senderId      The sender id.
      * @return              The created contract function result for a successful call.
      */
     @NonNull
     public static ContractFunctionResult contractFunctionResultSuccessFor(
-            final long gasUsed, final Bytes result, final ContractID contractID, MessageFrame frame) {
-        var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-        final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
-
+            final long gasUsed, final Bytes result, long gas, Bytes inputData, AccountID senderId) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
-                .gas(frame.getRemainingGas())
+                .gas(gas)
                 .contractCallResult(tuweniToPbjBytes(result))
-                .contractID(contractID)
-                .functionParameters(tuweniToPbjBytes(frame.getInputData()))
+                .functionParameters(tuweniToPbjBytes(inputData))
                 .senderId(senderId)
                 .contractID(HTS_PRECOMPILE_MIRROR_ID)
                 .build();

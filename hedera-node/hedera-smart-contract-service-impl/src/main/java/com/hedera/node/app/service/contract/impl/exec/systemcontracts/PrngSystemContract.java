@@ -115,7 +115,10 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(randomNum);
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-            var data = contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID, frame);
+            final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+
+            var data = contractFunctionResultSuccessFor(
+                    gasRequirement, randomNum, frame.getRemainingGas(), frame.getInputData(), senderId);
             updater.externalizeSystemContractResults(data, SUCCESS);
         }
     }
