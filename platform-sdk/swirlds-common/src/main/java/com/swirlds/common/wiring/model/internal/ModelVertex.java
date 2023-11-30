@@ -27,9 +27,11 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A vertex in a wiring model.
@@ -60,6 +62,11 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * The outgoing edges of this vertex.
      */
     private final List<ModelEdge> outgoingEdges = new ArrayList<>();
+
+    /**
+     * Used to track inputs that have been substituted during diagram generation.
+     */
+    private final Set<String> substitutedInputs = new HashSet<>();
 
     /**
      * Constructor.
@@ -152,6 +159,15 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     }
 
     /**
+     * Add an input that has been substituted during diagram generation.
+     *
+     * @param input the input that has been substituted
+     */
+    void addSubstitutedInput(@NonNull final String input) {
+        substitutedInputs.add(Objects.requireNonNull(input));
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -214,16 +230,18 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
 
         sb.append("\"").append(name);
 
-        // TODO
-//        if (substitutedInputs != null) {
-//            sb.append("<br />" + substitutedInputs);
-//        }
+
+
+        if (!substitutedInputs.isEmpty()) {
+            sb.append("<br />");
+            substitutedInputs.stream().sorted().forEachOrdered(sb::append);
+        }
 
         sb.append("\"");
 
         switch (metaType) {
-            case SUBSTITUTION -> sb.append("((");
-            case GROUP -> sb.append("[");
+            case SUBSTITUTION -> sb.append("))");
+            case GROUP -> sb.append("]");
             case SCHEDULER -> {
                 switch (type) {
                     case CONCURRENT -> sb.append("]]");
@@ -237,19 +255,16 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
         sb.append("\n");
 
         // TODO future cody:
-        //  - figure out why this doesn't compile
         //  - generate the graph
         //  - figure out why things aren't connected the expected way
         final String color = switch (metaType) {
             case SUBSTITUTION -> SUBSTITUTION_COLOR;
             case GROUP -> GROUP_COLOR;
-            case SCHEDULER -> {
-                switch (type) {
-                    case DIRECT -> DIRECT_SCHEDULER_COLOR;
-                    case DIRECT_STATELESS -> DIRECT_SCHEDULER_COLOR;
-                    default -> SCHEDULER_COLOR;
-                }
-            }
+            case SCHEDULER -> switch (type) {
+                case DIRECT -> DIRECT_SCHEDULER_COLOR;
+                case DIRECT_STATELESS -> DIRECT_SCHEDULER_COLOR;
+                default -> SCHEDULER_COLOR;
+            };
         };
 
         sb.append(INDENTATION)

@@ -10,6 +10,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -101,28 +102,27 @@ public class WiringFlowchart {
 
         // Next, cause all substituted edges to point to this new vertex.
         for (final ModelVertex vertex : vertexMap.values()) {
-            if (substitution.source().equals(vertex.getName())) {
+            if (!substitution.source().equals(vertex.getName())) {
                 // Only replace edges with the given source.
                 continue;
             }
 
-            final List<ModelEdge> edges = new ArrayList<>(vertex.getOutgoingEdges());
+            final HashSet<ModelEdge> uniqueEdges = new HashSet<>();
 
-            // Clear out the edge set, it's not legal to modify data that effects equals and hash code for
-            // data in a set. We will re-populate the set with the modified edges as we go. Some edges may be
-            // duplicates of each other after modification, but that's okay, the set will de-duplicate them.
-            vertex.getOutgoingEdges().clear();
-
-            for (final ModelEdge edge : edges) {
+            for (final ModelEdge edge : vertex.getOutgoingEdges()) {
                 if (!substitution.edge().equals(edge.getLabel())) {
                     // Only replace destinations for edges with the given label.
                     vertex.getOutgoingEdges().add(edge);
                     continue;
                 }
 
+                edge.getDestination().addSubstitutedInput(substitution.substitution());
                 edge.setDestination(substitutedVertex);
-                vertex.getOutgoingEdges().add(edge);
+                uniqueEdges.add(edge);
             }
+
+            vertex.getOutgoingEdges().clear();
+            vertex.getOutgoingEdges().addAll(uniqueEdges);
         }
     }
 
