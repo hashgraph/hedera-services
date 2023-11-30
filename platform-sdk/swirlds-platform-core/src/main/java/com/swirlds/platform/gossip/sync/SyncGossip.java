@@ -196,6 +196,9 @@ public class SyncGossip extends AbstractGossip {
         final List<Pair<Clearable, String>> objectsToClear = new ArrayList<>();
         objectsToClear.add(Pair.of(intakeQueue, "intakeQueue"));
 
+        // if we are using the legacy intake, we need to clear the event linker and shadowgraph
+        // the shadowgraph isn't cleared when using the new intake pipeline, since we also don't clear the internal
+        // state of the individual pipeline components
         if (platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
             objectsToClear.add(Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"));
             objectsToClear.add(Pair.of(shadowGraph, "shadowGraph"));
