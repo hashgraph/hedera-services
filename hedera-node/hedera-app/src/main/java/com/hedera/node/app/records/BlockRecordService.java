@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -26,6 +25,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link Service} for managing the state of the running hashes and block information. Used by the
@@ -34,6 +35,7 @@ import javax.inject.Singleton;
 @SuppressWarnings("rawtypes")
 @Singleton
 public final class BlockRecordService implements Service {
+    private static final Logger logger = LogManager.getLogger(BlockRecordService.class);
     /** The name of this service */
     public static final String NAME = "BlockRecordService";
     /** The key for the {@link RunningHashes} object in state */
@@ -41,8 +43,6 @@ public final class BlockRecordService implements Service {
     /** The key for the {@link BlockInfo} object in state */
     public static final String BLOCK_INFO_STATE_KEY = "BLOCKS";
 
-    /** The original version of the state */
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     /** The original hash, only used at genesis */
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
 
@@ -54,7 +54,7 @@ public final class BlockRecordService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(GENESIS_VERSION) {
+        registry.register(new Schema(RELEASE_045_VERSION) {
             /** {@inheritDoc} */
             @NonNull
             @Override
@@ -68,14 +68,20 @@ public final class BlockRecordService implements Service {
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
                 final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
-                final var runningHashes =
-                        RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
-                runningHashState.put(runningHashes);
-
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
-                // Last block is set to 0 because the first valid block is 1
-                final var blocks = new BlockInfo(0, null, Bytes.EMPTY, null, false);
-                blocksState.put(blocks);
+                final var isGenesis = ctx.previousStates().isEmpty();
+                if (isGenesis) {
+                    final var blocks = new BlockInfo(0, null, Bytes.EMPTY, null, false);
+                    blocksState.put(blocks);
+                    final var runningHashes =
+                            RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
+                    runningHashState.put(runningHashes);
+                }
+            }
+
+            @Override
+            public void restart(@NonNull final MigrationContext ctx) {
+                // TODO : seems there should be something done here to match hash of the state after loading on restart
             }
         });
     }
