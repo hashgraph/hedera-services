@@ -4,7 +4,6 @@
 
 # The location were this script can be found.
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
-cd $SCRIPT_PATH
 
 # Navigate to the root of the project.
 {
