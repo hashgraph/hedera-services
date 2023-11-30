@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A configuration that can be used to configure the logging levels of loggers. This class supports to define levels for
@@ -69,12 +70,12 @@ public class HandlerLoggingLevelConfig {
     /**
      * The cache for the markers.
      */
-    private final Map<String, MarkerState> markerCache;
+    private final AtomicReference<Map<String, MarkerState>> markerConfigCache;
 
     /**
      * The configuration properties.
      */
-    private final Map<String, ConfigLevel> levelConfigProperties;
+    private final AtomicReference<Map<String, ConfigLevel>> levelConfigProperties;
 
     /**
      * The prefix for the configuration.
@@ -90,13 +91,9 @@ public class HandlerLoggingLevelConfig {
     public HandlerLoggingLevelConfig(@NonNull Configuration configuration, @Nullable String name) {
         this.name = name;
         this.levelCache = new ConcurrentHashMap<>();
-        this.markerCache = new ConcurrentHashMap<>();
-        this.levelConfigProperties = new ConcurrentHashMap<>();
-        try {
-            update(configuration);
-        } catch (Exception e) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Initial configuration for handler %s failed".formatted(name), e);
-        }
+        this.markerConfigCache = new AtomicReference<>(new ConcurrentHashMap<>());
+        this.levelConfigProperties = new AtomicReference<>(new ConcurrentHashMap<>());
+        update(configuration);
     }
 
     /**
@@ -123,8 +120,8 @@ public class HandlerLoggingLevelConfig {
         final Boolean inheritLevels = configuration.getValue(
                 PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(name), Boolean.class, Boolean.TRUE);
 
-        levelConfigProperties.clear();
-        markerCache.clear();
+        final Map<String, ConfigLevel> levelConfigProperties = new ConcurrentHashMap<>();
+        final Map<String, MarkerState> markerConfigStore = new ConcurrentHashMap<>();
 
         if (name != null) {
             defaultHandlerLevel = configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
@@ -146,15 +143,18 @@ public class HandlerLoggingLevelConfig {
 
         if (Boolean.TRUE.equals(inheritLevels)) {
             levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
-            markerCache.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
+            markerConfigStore.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
         }
 
         levelCache.clear();
 
         if (name != null) {
             levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
-            markerCache.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
+            markerConfigStore.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
         }
+
+        this.levelConfigProperties.set(Collections.unmodifiableMap(levelConfigProperties));
+        this.markerConfigCache.set(markerConfigStore);
     }
 
     @NonNull
@@ -219,7 +219,7 @@ public class HandlerLoggingLevelConfig {
         if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
             final List<MarkerState> markerStates = allMarkerNames.stream()
-                    .map(markerName -> markerCache.computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
+                    .map(markerName -> markerConfigCache.get().computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
                     .filter(markerState -> markerState != MarkerState.UNDEFINED)
                     .toList();
             if (!markerStates.isEmpty()) {
@@ -237,9 +237,10 @@ public class HandlerLoggingLevelConfig {
 
     @NonNull
     private ConfigLevel getConfiguredLevel(@NonNull String name) {
-        return levelConfigProperties.keySet().stream()
+        final Map<String, ConfigLevel> stringConfigLevelMap = levelConfigProperties.get();
+        return stringConfigLevelMap.keySet().stream()
                 .filter(n -> name.trim().startsWith(n))
-                .filter(key -> levelConfigProperties.get(key) != ConfigLevel.UNDEFINED)
+                .filter(key -> stringConfigLevelMap.get(key) != ConfigLevel.UNDEFINED)
                 .reduce((a, b) -> {
                     if (a.length() > b.length()) {
                         return a;
@@ -247,7 +248,7 @@ public class HandlerLoggingLevelConfig {
                         return b;
                     }
                 })
-                .map(levelConfigProperties::get)
+                .map(stringConfigLevelMap::get)
                 .orElseThrow();
     }
 }

@@ -340,6 +340,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenFromContractWithApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
@@ -2035,6 +2036,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"));
     }
 
+    @HapiTest
     private HapiSpec whitelistPositiveCase() {
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();

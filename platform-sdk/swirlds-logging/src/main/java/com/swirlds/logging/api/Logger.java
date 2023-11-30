@@ -77,8 +77,6 @@ public interface Logger {
         log(Level.ERROR, message, arg1, arg2);
     }
 
-    // TODO: How many methods with explizit arguments instead of varArgs do we need?
-
     /**
      * Log a message (+ exception) at the error level ({@link Level#ERROR}). The message can contain placeholders
      * ({@code {}}) that will be replaced by the given arguments.

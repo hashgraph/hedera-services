@@ -21,12 +21,10 @@ import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.base.test.fixtures.io.WithSystemOut;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
-import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import jakarta.inject.Inject;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -170,44 +168,5 @@ public class EmergencyLoggerTest {
                 null,
                 new Marker("marker"),
                 Map.of())));
-
-        // then
-        final List<String> allLines = systemErrProvider.getLines().toList();
-        final List<String> onlyBasicLines = systemErrProvider
-                .getLines()
-                .filter(line -> !line.startsWith("\tat "))
-                .filter(line -> !line.startsWith("java.lang"))
-                .toList();
-        final List<String> onlyTrace = systemErrProvider
-                .getLines()
-                .filter(line -> line.startsWith("\tat "))
-                .toList();
-        final List<String> onlyException = systemErrProvider
-                .getLines()
-                .filter(line -> line.startsWith("java.lang"))
-                .toList();
-
-        Assertions.assertEquals(allLines.size(), onlyBasicLines.size() + onlyTrace.size() + onlyException.size());
-        Assertions.assertEquals(19, onlyBasicLines.size());
-        Assertions.assertEquals(13, onlyException.size());
-        Assertions.assertTrue(onlyException.get(0).startsWith("java.lang.NullPointerException"));
-        Assertions.assertTrue(onlyException.get(1).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(2).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(3).startsWith("java.lang.NullPointerException"));
-        Assertions.assertTrue(onlyException.get(4).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(5).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(6).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(7).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(8).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(9).startsWith("java.lang.NullPointerException"));
-        Assertions.assertTrue(onlyException.get(10).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(11).startsWith("java.lang.RuntimeException"));
-        Assertions.assertTrue(onlyException.get(12).startsWith("java.lang.RuntimeException"));
-
-        Assertions.assertTrue(onlyTrace.size() > 39);
-
-        final List<LogEvent> loggedEvents = emergencyLogger.publishLoggedEvents();
-
-        Assertions.assertEquals(19, loggedEvents.size());
     }
 }

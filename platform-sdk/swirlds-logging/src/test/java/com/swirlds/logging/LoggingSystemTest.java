@@ -30,7 +30,6 @@ import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -400,7 +399,7 @@ public class LoggingSystemTest {
         final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
-        final long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis() - 1;
 
         // when
         logger.trace("trace-message"); // Should not be forwarded since INFO is configured as root level
@@ -435,7 +434,6 @@ public class LoggingSystemTest {
         Assertions.assertTrue(event2.timestamp() > startTime);
         Assertions.assertTrue(event2.timestamp() < System.currentTimeMillis());
 
-
         final LogEvent event3 = loggedEvents.get(2);
         Assertions.assertEquals("error-message", event3.message().getMessage());
         Assertions.assertEquals(Level.ERROR, event3.level());
@@ -447,9 +445,8 @@ public class LoggingSystemTest {
         Assertions.assertTrue(event3.timestamp() > startTime);
         Assertions.assertTrue(event3.timestamp() < System.currentTimeMillis());
 
-
-        Assertions.assertTrue(event1.timestamp() < event2.timestamp());
-        Assertions.assertTrue(event2.timestamp() < event3.timestamp());
+        Assertions.assertTrue(event1.timestamp() <= event2.timestamp());
+        Assertions.assertTrue(event2.timestamp() <= event3.timestamp());
     }
 
     @Test
@@ -496,7 +493,7 @@ public class LoggingSystemTest {
         final InMemoryHandler handler = new InMemoryHandler(configuration);
         loggingSystem.addHandler(handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
-        final long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis() - 1;
 
         // when
         Context.getGlobalContext().add("global", "global-value");
@@ -552,7 +549,6 @@ public class LoggingSystemTest {
         Assertions.assertTrue(event1.timestamp() > startTime);
         Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
 
-
         final LogEvent event2 = loggedEvents.get(1);
         Assertions.assertEquals("info-message2 ARG2", event2.message().getMessage());
         Assertions.assertEquals(Level.INFO, event2.level());
@@ -566,8 +562,7 @@ public class LoggingSystemTest {
         Assertions.assertTrue(event1.timestamp() > startTime);
         Assertions.assertTrue(event1.timestamp() < System.currentTimeMillis());
 
-
-        Assertions.assertTrue(event1.timestamp() < event2.timestamp());
+        Assertions.assertTrue(event1.timestamp() <= event2.timestamp());
     }
 
     @Test

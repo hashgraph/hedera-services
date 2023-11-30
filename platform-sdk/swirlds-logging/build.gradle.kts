@@ -21,9 +21,7 @@ plugins {
     id("java-test-fixtures")
 }
 
-jmhModuleInfo {
-    requires("com.swirlds.config.api")
-}
+jmhModuleInfo { requires("com.swirlds.config.api") }
 
 testModuleInfo {
     requires("com.swirlds.test.framework")

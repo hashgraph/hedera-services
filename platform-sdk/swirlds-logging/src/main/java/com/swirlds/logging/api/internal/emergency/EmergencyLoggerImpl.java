@@ -145,15 +145,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
 
     @Override
     public void log(@NonNull Level level, @NonNull String message, @Nullable Throwable thrown) {
-        if (level == null && message == null) {
-            log(logEventFactory.createLogEvent(Level.ERROR, EMERGENCY_LOGGER_NAME, UNDEFINED_MESSAGE, thrown));
-        } else if (level == null) {
-            log(logEventFactory.createLogEvent(Level.ERROR, EMERGENCY_LOGGER_NAME, message, thrown));
-        } else if (message == null) {
-            log(logEventFactory.createLogEvent(level, EMERGENCY_LOGGER_NAME, UNDEFINED_MESSAGE, thrown));
-        } else {
-            log(logEventFactory.createLogEvent(level, EMERGENCY_LOGGER_NAME, message, thrown));
-        }
+        log(logEventFactory.createLogEvent(level, EMERGENCY_LOGGER_NAME, message, thrown));
     }
 
     @Override
