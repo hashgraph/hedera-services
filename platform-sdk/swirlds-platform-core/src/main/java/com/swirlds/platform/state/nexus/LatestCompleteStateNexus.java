@@ -18,7 +18,6 @@ package com.swirlds.platform.state.nexus;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

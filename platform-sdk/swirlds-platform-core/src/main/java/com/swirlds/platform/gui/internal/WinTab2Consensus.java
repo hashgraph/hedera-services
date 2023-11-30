@@ -26,7 +26,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.state.signed.SignedStateInfo;
-import com.swirlds.platform.state.signed.SignedStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.List;
