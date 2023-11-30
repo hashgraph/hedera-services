@@ -44,6 +44,7 @@ import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
@@ -665,6 +666,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         final var childVerifier = callback != null ? new DelegateKeyVerifier(callback) : verifier;
         final DispatchValidationResult dispatchValidationResult;
         try {
+            System.out.println("dispatchSyntheticTxn: " + category + " childCategory: " + childCategory);
             dispatchValidationResult = validate(
                     callback == null ? null : childVerifier,
                     function,
@@ -673,6 +675,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     networkInfo().selfNodeInfo().nodeId(),
                     dispatchNeedsHapiPayerChecks(childCategory));
         } catch (final PreCheckException e) {
+            logger.warn("Possible bug: synthetic transaction failed pre-checks", e);
             childRecordBuilder.status(e.responseCode());
             return;
         }
@@ -706,12 +709,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childContext.feeAccumulator.chargeFees(
                     syntheticPayer,
                     networkInfo().selfNodeInfo().accountId(),
-                    dispatchValidationResult
-                            .fees()
-                            .copyBuilder()
-                            .networkFee(0)
-                            .nodeFee(0)
-                            .build());
+                    dispatchValidationResult.fees());
+            System.out.println("dispatchSyntheticTxn: " + dispatchValidationResult.key() + " network fees : " + dispatchValidationResult.fees().copyBuilder().build());
         }
         try {
             dispatcher.dispatchHandle(childContext);
@@ -724,8 +723,20 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childStack.commitFullStack();
         } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(recordBuilder);
+            if (childCategory == SCHEDULED) {
+                final var finalizeContext =
+                        new ChildFinalizeContextImpl(
+                                new ReadableStoreFactory(childStack),
+                                new WritableStoreFactory(childStack, TokenService.NAME),
+                                childRecordBuilder);
+                childRecordFinalizer.finalizeChildRecord(finalizeContext);
+                childStack.commitFullStack();
+                logger.warn("child trx", e);
+            } else {
+                recordListBuilder.revertChildrenOf(recordBuilder);
+            }
         }
+
     }
 
     private @Nullable DispatchValidationResult validate(
@@ -743,6 +754,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         dispatcher.dispatchPreHandle(preHandleContext);
 
         DispatchValidationResult dispatchValidationResult = null;
+        System.out.println("enforceHapiPayerChecks: " + enforceHapiPayerChecks);
         if (enforceHapiPayerChecks) {
             // In the current system only the schedule service needs to specify its
             // child transaction id, and will never use a duplicate, so this check is
@@ -753,7 +765,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             }
 
             // Check the status and solvency of the payer
-            final var fee = dispatchComputeFees(transactionBody, syntheticPayerId);
+            final var fee = dispatchComputeFees(transactionBody, syntheticPayerId)
+                    .copyBuilder()
+                    .networkFee(0)
+                    .nodeFee(0)
+                    .build();
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
             solvencyPreCheck.checkSolvency(transactionBody, syntheticPayerId, functionality, payerAccount, fee, true);
             // FUTURE - charge fees here?
@@ -762,12 +778,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // transaction ids dispatched by the schedule service, since these ids derive from their
             // ScheduleCreate id, which could have happened long ago
             Key syntheticPayerKey = payerAccount.keyOrThrow();
+            System.out.println("payerAccount: " + payerAccount);
+            System.out.println("AccountStore(1002): " + readableStoreFactory.getStore(ReadableAccountStore.class).getAccountById(AccountID.newBuilder().accountNum(1002).build()));
+            System.out.println("AccountStore(1001): " + readableStoreFactory.getStore(ReadableAccountStore.class).getAccountById(AccountID.newBuilder().accountNum(1001).build()));
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
             dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, fee);
+            System.out.println("dispatchValidationResult: " + dispatchValidationResult.key() + " fees : " + dispatchValidationResult.fees());
         }
 
         // Given the current HTS system contract interface and ScheduleService
