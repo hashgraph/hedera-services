@@ -71,6 +71,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
         return ss -> {
             assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
             stateHasEnoughSignaturesCount.getAndIncrement();
+            highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
         };
     }
 
@@ -130,7 +131,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");
                 } else {
-                    assertNull(lastCompletedState.getNullable(), "no states should be completed yet");
+                    assertNull(lastCompletedState, "no states should be completed yet");
                 }
             }
 

@@ -118,7 +118,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         assertEquals(
                 stateFromDisk.getState().getPlatformState().getPlatformData().getRound(), manager.getFirstStateRound());
 
-        assertNull(manager.getLatestSignedState("test").getNullable());
+        assertNull(manager.getLatestSignedState("test"));
         assertEquals(-1, manager.getLastCompleteRound());
 
         try (final ReservedSignedState wrapper =
