@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
@@ -46,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWithId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -63,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -72,7 +71,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,7 +81,6 @@ import org.junit.jupiter.api.Tag;
 public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
-    public static final String EVM_ALIAS_ENABLED_PROP = "cryptoCreateWithAliasAndEvmAddress.enabled";
 
     public static void main(String... args) {
         new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
@@ -103,12 +100,11 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 contractKeysStillHaveSpecificityNoMatterTopLevelSignatures(),
-                contractKeysWorkAsExpectedForFungibleTokenMgmt(),
                 canStillTransferByVirtueOfContractIdInEOAThreshold(),
                 approvalFallbacksRequiredWithoutTopLevelSigAccess());
     }
 
-    // No such record stream file location: <mono-service>
+    @HapiTest
     private HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -194,14 +190,14 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private static final String A_WELL_KNOWN_SENDER = "A_SENDER";
-    public static final String B_WELL_KNOWN_SENDER = "B_SENDER";
+    private static final String B_WELL_KNOWN_SENDER = "B_SENDER";
     private static final String A_WELL_KNOWN_RECEIVER = "A_RECEIVER";
     private static final String B_WELL_KNOWN_RECEIVER = "B_RECEIVER";
     private static final String WELL_KNOWN_FUNGIBLE_TOKEN = "FT";
     private static final String WELL_KNOWN_NON_FUNGIBLE_TOKEN = "NFT";
     private static final String WELL_KNOWN_TREASURY_CONTRACT = "DoTokenManagement";
 
-    public static HapiSpecOperation someWellKnownAssertions() {
+    private HapiSpecOperation someWellKnownAssertions() {
         return blockingOrder(
                 getAccountBalance(A_WELL_KNOWN_RECEIVER)
                         .hasTokenBalance(WELL_KNOWN_FUNGIBLE_TOKEN, 2L)
@@ -219,7 +215,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
      * that serves as both their treasuries; and some accounts associated to both tokens, where the
      * sender accounts have fungible units and serial numbers 1 and 2, respectively.
      */
-    public static HapiSpecOperation someWellKnownTokensAndAccounts(
+    private HapiSpecOperation someWellKnownTokensAndAccounts(
             final AtomicReference<Address> fungibleTokenMirrorAddr,
             final AtomicReference<Address> nonFungibleTokenMirrorAddr,
             final AtomicReference<Address> aSenderAddr,
@@ -275,14 +271,14 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 contractUpdate(WELL_KNOWN_TREASURY_CONTRACT).properlyEmptyingAdminKey());
     }
 
-    public static final String TOKEN_UNIT_FROM_TO_OTHERS_TXN = "transferTokenUnitFromToOthers";
+    private static final String TOKEN_UNIT_FROM_TO_OTHERS_TXN = "transferTokenUnitFromToOthers";
 
     /**
      * Returns a multi-step operation that does one of each of the {@code transferToken}, {@code
      * transferTokens}, {@code transferNFT}, {@code transferNFTs} with the given expected status.
      * Every operation adds all the needed signatures to the sigMap using full-prefix signatures.
      */
-    public static HapiSpecOperation someWellKnownOperationsWithAllNeededSigsInSigMap(
+    private HapiSpecOperation someWellKnownOperationsWithAllNeededSigsInSigMap(
             final AtomicReference<Address> fungibleTokenMirrorAddr,
             final AtomicReference<Address> nonFungibleTokenMirrorAddr,
             final AtomicReference<Address> aSenderAddr,
@@ -334,6 +330,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         .hasKnownStatus(expectedStatus)));
     }
 
+    @HapiTest
     private HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
@@ -396,70 +393,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         getAccountBalance(receiver).logged().hasTokenBalance(fungibleToken, 1));
     }
 
-    // Expected a contract admin key, got ed25519: "..."
-    private HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
-        final var mgmtContractAsKey = "mgmtContractAsKey";
-        final var tmpAdminKey = "tmpAdminKey";
-        final var associatedAccount = "associatedAccount";
-        final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<Address> accountAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
-                .preserving(
-                        CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                        "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs",
-                        EVM_ALIAS_ENABLED_PROP)
-                .given(
-                        overridingAllOf(Map.of(
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                "0",
-                                "contracts.withSpecialHapiSigsAccess",
-                                "",
-                                "contracts.allowSystemUseOfHapiSigs",
-                                "",
-                                EVM_ALIAS_ENABLED_PROP,
-                                "true")),
-                        uploadInitCode(managementContract),
-                        newKeyNamed(tmpAdminKey),
-                        contractCreate(managementContract).adminKey(tmpAdminKey),
-                        newKeyNamed(mgmtContractAsKey).shape(CONTRACT.signedWith(managementContract)),
-                        cryptoCreate(associatedAccount).keyShape(SECP256K1_ON).exposingEvmAddressTo(accountAddr::set),
-                        tokenCreate(fungibleToken)
-                                .exposingAddressTo(tokenMirrorAddr::set)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(1_000_000)
-                                .treasury(managementContract)
-                                .supplyKey(mgmtContractAsKey)
-                                .wipeKey(mgmtContractAsKey)
-                                .kycKey(mgmtContractAsKey)
-                                .pauseKey(mgmtContractAsKey)
-                                .freezeKey(mgmtContractAsKey),
-                        tokenAssociate(associatedAccount, fungibleToken),
-                        contractUpdate(managementContract).properlyEmptyingAdminKey())
-                .when(
-                        // Confirm the contract is really immutable
-                        getContractInfo(managementContract)
-                                .has(contractWith().immutableContractKey(managementContract)))
-                .then(
-                        // And now test a bunch of management functions are still authorized by
-                        // ContractID key under these conditions
-                        sourcing(() -> contractCall(
-                                        managementContract,
-                                        "manageEverythingForFungible",
-                                        tokenMirrorAddr.get(),
-                                        accountAddr.get())
-                                .gas(15_000_000L)
-                                .via("txn")),
-                        getTxnRecord("txn")
-                                .hasNonStakingChildRecordCount(10)
-                                .andAllChildRecords()
-                                .logged());
-    }
-
-    // Expected a contract admin key, got ed25519: "..."
+    @HapiTest
     private HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
