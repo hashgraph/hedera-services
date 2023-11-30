@@ -255,6 +255,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                 }
                 assertEquals(actualCount, usedCount);
             });
+            if (tokenAssociationsCount.isPresent()) {
+                assertEquals(tokenAssociationsCount.get(), actualInfo.getTokenRelationshipsCount());
+            }
             actualInfo = actualInfo.toBuilder()
                     .addAllTokenRelationships(actualTokenRels)
                     .build();
@@ -274,9 +277,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                 maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
         if (expectedLedgerId.isPresent()) {
             assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
-        }
-        if (tokenAssociationsCount.isPresent()) {
-            assertEquals(tokenAssociationsCount.get(), actualInfo.getTokenRelationshipsCount());
         }
         if (registryEntry.isPresent()) {
             spec.registry().saveAccountInfo(registryEntry.get(), actualInfo);
