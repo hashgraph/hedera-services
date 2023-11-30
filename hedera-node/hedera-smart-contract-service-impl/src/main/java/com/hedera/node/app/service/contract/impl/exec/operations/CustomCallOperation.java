@@ -79,8 +79,9 @@ public class CustomCallOperation extends CallOperation {
     private boolean addressIsInvalid(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
         final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
         // passing value to long zero addresses is not allowed unless it is a system account
-        final var valueToLongZero = isLongZero(toAddress) && !addressChecks.isSystemAccount(toAddress) &&
-                value(frame).greaterThan(Wei.ZERO);
+        final var valueToLongZero = isLongZero(toAddress)
+                && !addressChecks.isSystemAccount(toAddress)
+                && value(frame).greaterThan(Wei.ZERO);
         return isMissing || valueToLongZero;
     }
 
