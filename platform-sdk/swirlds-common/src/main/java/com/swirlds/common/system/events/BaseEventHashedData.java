@@ -221,8 +221,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
             otherParents = otherParentHash == null
                     ? Collections.emptyList()
-                    : Collections.singletonList(new EventDescriptor(
-                            otherParentHash, otherParentGen, EventConstants.ROUND_BIRTH_UNDEFINED));
+                    : Collections.singletonList(
+                            new EventDescriptor(otherParentHash, otherParentGen, EventConstants.ROUND_BIRTH_UNDEFINED));
             roundBirth = EventConstants.ROUND_BIRTH_UNDEFINED;
         } else {
             creatorId = in.readSerializable(false, NodeId::new);
