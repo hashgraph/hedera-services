@@ -65,7 +65,6 @@ jobs:
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
-        secrets:
           access-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Google Cloud SDK
