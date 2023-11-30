@@ -37,6 +37,7 @@ public class RetryInterceptor implements ClientInterceptor {
 
         ClientCall<ReqT, RespT> call = next.newCall(method, callOptions);
         int callId = System.identityHashCode(call);
+        System.out.printf("RetryInterceptor: call id: %d\n", callId);
 
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(call) {
 
@@ -49,20 +50,26 @@ public class RetryInterceptor implements ClientInterceptor {
 
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
+                System.out.println("SimpleForwardingClientCall: Calling start");
+
                 ClientCall.Listener<RespT> newListener = new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
                     @Override
                     public void onClose(Status status, Metadata trailers) {
-                        System.out.println("called onClose - close client");
+                        System.out.printf("called onClose - close client - status code: %s\n", status.getCode());
                         if (retries.getAndDecrement() > 0 && status.getCode() == Status.Code.UNAVAILABLE) {
-                            System.out.println("retrying call");
+                            System.out.printf("retrying call: %d\n", callId);
                             // Handle reconnection logic here if it's a GOAWAY issue
                             // This may involve creating a new channel and retrying the operation
                             final var newStub = client.recreateChannelAndStub(stub, useTls);
+                            final var oldChannel = stub.channel();
+                            System.out.printf("oldChannel shut down? %s\n", oldChannel.isShutdown());
                             final var newChannel = newStub.channel();
 
                             // Retry the call on the new channel.
-                            retryCall(method, callOptions, newChannel, this, headers, callId);
+                            retryCall(method, callOptions, newChannel, this, headers, callId, oldChannel);
+
                         } else {
+                            System.out.println("closing SimpleForwardingClientCallListener");
                             super.onClose(status, trailers);
                         }
                     }
@@ -84,14 +91,16 @@ public class RetryInterceptor implements ClientInterceptor {
             Channel newChannel,
             ClientCall.Listener<RespT> originalListener,
             Metadata originalHeaders,
-            int callId) {
+            int callId,
+            ManagedChannel oldChannel) {
 
         if (this.retryCallbacks != null) {
-            if (!retryCallbacks.onRetry(method, callOptions, newChannel, originalListener, originalHeaders)) {
-                // The callback is allowed to cancel the execution of retry
-                // when false is returned.
-                return;
-            }
+            retryCallbacks.onRetry(method, callOptions, newChannel, originalListener, originalHeaders);
+//            if (!retryCallbacks.onRetry(method, callOptions, newChannel, originalListener, originalHeaders)) {
+//                // The callback is allowed to cancel the execution of retry
+//                // when false is returned.
+//                return;
+//            }
         }
 
         ClientCall<ReqT, RespT> retryCall = newChannel.newCall(method, callOptions);
@@ -100,34 +109,45 @@ public class RetryInterceptor implements ClientInterceptor {
             @Override
             public void onHeaders(Metadata headers) {
                 System.out.printf("called onHeaders: %s\n", headers);
-                originalListener.onHeaders(headers); }
+                originalListener.onHeaders(headers);
+                super.onHeaders(headers);
+            }
 
             @Override
             public void onMessage(RespT message) {
                 System.out.println("called onMessage");
                 originalListener.onMessage(message);
+                super.onMessage(message);
             }
 
             @Override
             public void onClose(Status status, Metadata trailers) {
                 System.out.println("called onClose");
                 originalListener.onClose(status, trailers);
+                super.onClose(status, trailers);
             }
 
             @Override
             public void onReady() {
                 System.out.println("called onReady");
                 originalListener.onReady();
+                super.onReady();
             }
         }, originalHeaders);
 
         // You need to resend the request message.
         // This requires storing the original request message or having a way to recreate it.
         ReqT lastRequest = (ReqT) requestMessages.get(callId);
+
 //        System.out.printf("lastRequest: %s", lastRequest);
         if (lastRequest != null) {
+            System.out.println("Sending request to server again");
             retryCall.sendMessage(lastRequest);
+            System.out.println("half close");
             retryCall.halfClose(); // Indicate the end of messages for this RPC
+            System.out.println("did half close");
+        } else {
+            System.out.println("last request is null");
         }
     }
 

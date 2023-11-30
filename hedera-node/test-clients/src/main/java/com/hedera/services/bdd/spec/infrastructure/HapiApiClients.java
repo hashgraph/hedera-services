@@ -115,7 +115,7 @@ public class HapiApiClients {
             } else {
                 channel = NettyChannelBuilder.forAddress(host, port)
                         .usePlaintext()
-                        .enableRetry()
+//                        .enableRetry()
                         .build();
             }
             return channel;
@@ -150,10 +150,14 @@ public class HapiApiClients {
     }
 
     public ChannelStubs recreateChannelAndStub(ChannelStubs stub, boolean useTls) {
-        var channel = stub.channel();
-        if (!channel.isShutdown()) {
-            channel.shutdown();
-        }
+//        var channel = stub.channel();
+//        if (!channel.isShutdown()) {
+//            System.out.println("channel is not shut down. shutting down channel");
+//            var managed = channel.shutdown();
+////            managed.newCall()
+//        } else {
+//            System.out.println("channel is already shut down");
+//        }
 
         final var node = stub.node();
         final var uri = useTls ? node.tlsUri() : node.uri();
