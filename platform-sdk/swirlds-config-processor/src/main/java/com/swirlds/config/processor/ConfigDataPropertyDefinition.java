@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.api.extensions.provider;
+package com.swirlds.config.processor;
 
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A log provider factory that can be used to create log providers. The factory uses SPI.
+ * Metadata for a config property definition.
+ * @param fieldName   the field name like "maxSize"
+ * @param name         the full name like "com.swirlds.config.foo.bar"
+ * @param type        the type like "int"
+ * @param defaultValue the default value like "100"
+ * @param description the description like "the maximum size"
  */
-public interface LogProviderFactory {
-
-    /**
-     * Creates a new log provider.
-     *
-     * @param configuration the configuration
-     * @return the log provider
-     */
-    @NonNull
-    LogProvider create(@NonNull Configuration configuration);
-}
+public record ConfigDataPropertyDefinition(
+        @NonNull String fieldName,
+        @NonNull String name,
+        @NonNull String type,
+        @Nullable String defaultValue,
+        @Nullable String description) {}

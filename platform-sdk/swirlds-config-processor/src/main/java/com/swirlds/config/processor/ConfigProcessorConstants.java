@@ -14,25 +14,30 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.api.extensions.handler;
-
-import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.swirlds.config.processor;
 
 /**
- * A factory that creates {@link LogHandler}s. The factory is used by the Java SPI to create log handlers.
- *
- * @see LogHandler
- * @see java.util.ServiceLoader
+ * Constants used by the config processor.
  */
-public interface LogHandlerFactory {
+public final class ConfigProcessorConstants {
 
     /**
-     * Creates a new log handler.
-     *
-     * @param configuration the configuration
-     * @return the log handler
+     * The extension for java files.
      */
-    @NonNull
-    LogHandler create(@NonNull Configuration configuration);
+    public static final String JAVA_FILE_EXTENSION = ".java";
+
+    /**
+     * Suffix for the generated classes
+     */
+    public static final String CONSTANTS_CLASS_SUFFIX = "_";
+
+    /**
+     * Class name of the ConfigData annotation.
+     */
+    public static final String CONFIG_DATA_ANNOTATION = "com.swirlds.config.api.ConfigData";
+
+    /**
+     * private constructor for utility class.
+     */
+    private ConfigProcessorConstants() {}
 }
