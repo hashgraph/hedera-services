@@ -91,6 +91,7 @@ jobs:
             echo "Artifact Not Exist"
             echo "exist=false" >>"${GITHUB_OUTPUT}"
           fi
+          git branch
 
 #
 #      - name: Reset Network
