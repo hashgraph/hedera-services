@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Assertions;
  * </ol>
  */
 public class EventualRecordStreamAssertion extends EventualAssertion {
+    private static final String HAPI_TEST_STREAMS_LOC_TEST_NETWORK = "build/hapi-test/node0";
     private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
     private final Function<HapiSpec, RecordStreamAssertion> assertionFactory;
 
@@ -80,9 +81,12 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
 
     @Override
     protected boolean submitOp(final HapiSpec spec) throws Throwable {
-        final var locToUse = HapiSpec.isRunningInCi()
-                ? TEST_CONTAINER_NODE0_STREAMS
-                : spec.setup().defaultRecordLoc();
+        final var locToUse =
+                switch (spec.targetNetworkType()) {
+                    case HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
+                    case CI_DOCKER_NETWORK -> TEST_CONTAINER_NODE0_STREAMS;
+                    case STANDALONE_MONO_NETWORK -> spec.setup().defaultRecordLoc();
+                };
         final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
         assertion = Objects.requireNonNull(assertionFactory.apply(spec));
         unsubscribe = validatingListener.subscribe(new StreamDataListener() {

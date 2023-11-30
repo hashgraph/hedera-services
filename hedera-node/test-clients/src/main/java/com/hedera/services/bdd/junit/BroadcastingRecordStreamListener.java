@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStrea
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isSidecarFile;
 
 import java.io.File;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
@@ -53,9 +54,38 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
 
     @Override
     public void onFileCreate(final File file) {
+        final var newFilePath = file.getPath();
+
         final var fileType = typeOf(file);
         switch (fileType) {
-            case RECORD_STREAM_FILE -> exposeItems(file);
+            case RECORD_STREAM_FILE -> {
+                var retryCount = 0;
+                while (true) {
+                    retryCount++;
+                    try {
+                        exposeItems(file);
+                        return;
+                    } catch (UncheckedIOException e) {
+                        log.warn(
+                                "Attempt #{} - an error occurred trying to parse" + " recordStream file {} - {}.",
+                                retryCount,
+                                newFilePath,
+                                e);
+
+                        if (retryCount < 8) {
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException ignored) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                        } else {
+                            log.fatal("Could not read recordStream file {} - {}, exiting now.", newFilePath, e);
+                            throw new IllegalStateException();
+                        }
+                    }
+                }
+            }
             case SIDE_CAR_FILE -> exposeSidecars(file);
             case OTHER -> {
                 // Nothing to expose
