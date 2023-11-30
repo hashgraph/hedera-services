@@ -169,10 +169,7 @@ public class ConcurrentBlockingIteratorTest {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
         itr.supply(1);
         itr.close();
-        assertThrows(
-                IllegalStateException.class,
-                () -> itr.supply(2),
-                "Should have thrown IllegalStateException");
+        assertThrows(IllegalStateException.class, () -> itr.supply(2), "Should have thrown IllegalStateException");
     }
 
     @Test
