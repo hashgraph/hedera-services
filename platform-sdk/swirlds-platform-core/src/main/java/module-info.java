@@ -128,7 +128,6 @@ module com.swirlds.platform.core {
             com.hedera.node.test.clients,
             com.swirlds.common,
             com.swirlds.config.impl;
-    exports com.swirlds.platform.state.nexus;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
