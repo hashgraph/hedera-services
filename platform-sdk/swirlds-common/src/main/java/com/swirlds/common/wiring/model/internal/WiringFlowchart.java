@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
@@ -27,21 +43,27 @@ public class WiringFlowchart {
     public static final String GROUP_COLOR = "9cf";
     public static final String SUBSTITUTION_COLOR = "f88";
 
-    private final MermaidNameProvider nameProvider = new MermaidNameProvider();
+    private final MermaidNameShortener nameProvider = new MermaidNameShortener();
+    private final MermaidStyleManager styleManager = new MermaidStyleManager();
 
     /**
      * A map from vertex name to vertex.
      */
     private final Map<String, ModelVertex> vertexMap;
 
-    // TODO javadoc
+    /**
+     * Draws a mermaid flowchart from the given wiring model.
+     *
+     * @param modelVertexMap a map from vertex name to vertex
+     * @param substitutions  a list of edge substitutions to perform
+     * @param groups         a list of groups to create
+     */
     public WiringFlowchart(
             @NonNull final Map<String, ModelVertex> modelVertexMap,
             @NonNull final List<ModelEdgeSubstitution> substitutions,
             @NonNull final List<ModelGroup> groups) {
 
         Objects.requireNonNull(modelVertexMap);
-        // TODO
 
         vertexMap = copyVertexMap(modelVertexMap);
         substituteEdges(substitutions);
@@ -63,11 +85,8 @@ public class WiringFlowchart {
             if (!(vertex instanceof StandardVertex)) {
                 throw new IllegalStateException("Encountered a vertex that is not a StandardVertex");
             }
-            final StandardVertex vertexCopy = new StandardVertex(
-                    vertex.getName(),
-                    vertex.getType(),
-                    SCHEDULER,
-                    vertex.isInsertionIsBlocking());
+            final StandardVertex vertexCopy =
+                    new StandardVertex(vertex.getName(), vertex.getType(), SCHEDULER, vertex.isInsertionIsBlocking());
 
             copy.put(vertex.getName(), vertexCopy);
         }
@@ -79,11 +98,8 @@ public class WiringFlowchart {
                 final ModelVertex source = copy.get(edge.getSource().getName());
                 final ModelVertex destination = copy.get(edge.getDestination().getName());
 
-                final ModelEdge edgeCopy = new ModelEdge(
-                        source,
-                        destination,
-                        edge.getLabel(),
-                        edge.isInsertionIsBlocking());
+                final ModelEdge edgeCopy =
+                        new ModelEdge(source, destination, edge.getLabel(), edge.isInsertionIsBlocking());
 
                 source.connectToEdge(edgeCopy);
             }
@@ -106,11 +122,8 @@ public class WiringFlowchart {
      */
     private void substituteEdge(@NonNull final ModelEdgeSubstitution substitution) {
         // First, create a new vertex that will represent the destination of the substitution.
-        final StandardVertex substitutedVertex = new StandardVertex(
-                substitution.substitution(),
-                DIRECT,
-                SUBSTITUTION,
-                true);
+        final StandardVertex substitutedVertex =
+                new StandardVertex(substitution.substitution(), DIRECT, SUBSTITUTION, true);
         vertexMap.put(substitution.substitution(), substitutedVertex);
 
         // Next, cause all substituted edges to point to this new vertex.
@@ -143,10 +156,10 @@ public class WiringFlowchart {
      * Handle groups in the order provided.
      */
     private void handleGroups(@NonNull final List<ModelGroup> groups) {
-        for (final ModelGroup group : groups) {
-            createGroup(group);
+        for (final ModelGroup group : groups) { // TODO groups are not sorted when included with collapsed groups!
+            final GroupVertex groupVertex = createGroup(group);
             if (group.collapse()) {
-                // TODO
+                collapseGroup(groupVertex);
             }
         }
     }
@@ -158,16 +171,15 @@ public class WiringFlowchart {
      * @param group the group to create a vertex for
      * @return the new vertex
      */
-    private GroupVertex createGroup(@NonNull final ModelGroup group) { // TODO is return value needed?
+    private GroupVertex createGroup(@NonNull final ModelGroup group) {
         // Collect all vertices that are contained within the group.
         final List<ModelVertex> subVertices = new ArrayList<>();
 
         for (final String vertexName : group.elements()) {
             final ModelVertex subVertex = vertexMap.get(vertexName);
             if (subVertex == null) {
-                throw new IllegalStateException(
-                        "Vertex " + vertexName + " is not in the vertex map. Can not insert into group "
-                                + group.name() + ".");
+                throw new IllegalStateException("Vertex " + vertexName
+                        + " is not in the vertex map. Can not insert into group " + group.name() + ".");
             }
 
             subVertices.add(subVertex);
@@ -183,6 +195,10 @@ public class WiringFlowchart {
         vertexMap.put(group.name(), groupVertex);
 
         return groupVertex;
+    }
+
+    private void collapseGroup(@NonNull final GroupVertex group) {
+        // TODO
     }
 
     /**
@@ -222,14 +238,17 @@ public class WiringFlowchart {
         final StringBuilder sb = new StringBuilder();
         sb.append("flowchart LR\n");
 
-        final List<ModelVertex> sortedVertices = vertexMap.values().stream().sorted().toList();
+        final List<ModelVertex> sortedVertices =
+                vertexMap.values().stream().sorted().toList();
         for (final ModelVertex vertex : sortedVertices) {
-            vertex.render(sb, nameProvider);
+            vertex.render(sb, nameProvider, styleManager);
         }
 
         for (final ModelEdge edge : collectEdges()) {
             edge.render(sb, nameProvider);
         }
+
+        styleManager.render(sb);
 
         return sb.toString();
     }

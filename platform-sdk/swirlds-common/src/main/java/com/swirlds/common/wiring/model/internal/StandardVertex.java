@@ -106,15 +106,6 @@ public class StandardVertex implements ModelVertex {
     /**
      * {@inheritDoc}
      */
-    @NonNull
-    @Override
-    public ModelVertexMetaType getMetaType() {
-        return metaType;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean isInsertionIsBlocking() {
         return insertionIsBlocking;
@@ -177,12 +168,38 @@ public class StandardVertex implements ModelVertex {
     }
 
     /**
+     * Generate the style for this vertex.
+     *
+     * @return the style for this vertex
+     */
+    @NonNull
+    private String generateStyle() {
+        final String color =
+                switch (metaType) {
+                    case SUBSTITUTION -> SUBSTITUTION_COLOR;
+                    case GROUP -> GROUP_COLOR;
+                    case SCHEDULER -> switch (type) {
+                        case DIRECT -> DIRECT_SCHEDULER_COLOR;
+                        case DIRECT_STATELESS -> DIRECT_SCHEDULER_COLOR;
+                        default -> SCHEDULER_COLOR;
+                    };
+                };
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("fill:#").append(color).append(",stroke:#").append(TEXT_COLOR).append(",stroke-width:2px");
+
+        return sb.toString();
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
-    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider) {
-
-        final String shortenedName = nameProvider.getShortenedName(name);
+    public void render(
+            @NonNull final StringBuilder sb,
+            @NonNull final MermaidNameShortener nameProvider,
+            @NonNull final MermaidStyleManager styleManager) {
+        final String shortenedName = nameProvider.getShortVertexName(name);
         sb.append(shortenedName);
 
         switch (metaType) {
@@ -222,22 +239,14 @@ public class StandardVertex implements ModelVertex {
 
         sb.append("\n");
 
-        final String color = switch (metaType) {
-            case SUBSTITUTION -> SUBSTITUTION_COLOR;
-            case GROUP -> GROUP_COLOR;
-            case SCHEDULER -> switch (type) {
-                case DIRECT -> DIRECT_SCHEDULER_COLOR;
-                case DIRECT_STATELESS -> DIRECT_SCHEDULER_COLOR;
-                default -> SCHEDULER_COLOR;
-            };
-        };
+        styleManager.registerStyle(shortenedName, generateStyle());
+    }
 
-        sb.append("style ")
-                .append(shortenedName)
-                .append(" fill:#")
-                .append(color)
-                .append(",stroke:#")
-                .append(TEXT_COLOR)
-                .append(",stroke-width:2px\n");
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setDepth(final int depth) {
+        // ignored
     }
 }

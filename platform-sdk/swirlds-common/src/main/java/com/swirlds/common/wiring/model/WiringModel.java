@@ -27,7 +27,6 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Set;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring

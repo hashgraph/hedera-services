@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -9,7 +25,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -30,8 +45,7 @@ public class EventCreationManagerWiring {
      * @return the new wiring instance
      */
     @NonNull
-    public static EventCreationManagerWiring create(
-            @NonNull final TaskScheduler<GossipEvent> taskScheduler) {
+    public static EventCreationManagerWiring create(@NonNull final TaskScheduler<GossipEvent> taskScheduler) {
         return new EventCreationManagerWiring(taskScheduler);
     }
 
@@ -47,8 +61,7 @@ public class EventCreationManagerWiring {
         newEventOutput = taskScheduler.getOutputWire();
 
         // TODO frequency needs to be configurable
-        heartbeatBindable =
-                taskScheduler.buildHeartbeatInputWire("attempt event creation", 100);
+        heartbeatBindable = taskScheduler.buildHeartbeatInputWire("attempt event creation", 100);
     }
 
     /**
@@ -57,17 +70,15 @@ public class EventCreationManagerWiring {
      * @param eventCreationManager the event creation manager to bind
      */
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
-        eventInput.bind(
-                (@NonNull final GossipEvent event) -> {
-                    // FUTURE WORK: once the feature flag has been removed,
-                    // convert the internals of event creation to use GossipEvent
-                    // instead of EventImpl.
-                    final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
-                    eventCreationManager.registerEvent(eventImpl);
-                });
+        eventInput.bind((@NonNull final GossipEvent event) -> {
+            // FUTURE WORK: once the feature flag has been removed,
+            // convert the internals of event creation to use GossipEvent
+            // instead of EventImpl.
+            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
+            eventCreationManager.registerEvent(eventImpl);
+        });
 
-        minimumGenerationNonAncientInput.bind(
-                eventCreationManager::setMinimumGenerationNonAncient);
+        minimumGenerationNonAncientInput.bind(eventCreationManager::setMinimumGenerationNonAncient);
 
         pauseInput.bind(eventCreationManager::setPauseStatus);
 

@@ -175,10 +175,8 @@ public class StandardWiringModel implements WiringModel {
         final List<ModelEdgeSubstitution> edgeSubstitutions = new ArrayList<>();
 
         // TODO this should be a CLI argument
-        edgeSubstitutions.add(new ModelEdgeSubstitution(
-                "getMinimumGenerationNonAncient",
-                "minimum generation non ancient",
-                "*"));
+        edgeSubstitutions.add(
+                new ModelEdgeSubstitution("getMinimumGenerationNonAncient", "minimum generation non ancient", "*"));
 
         final WiringFlowchart flowchart = new WiringFlowchart(vertices, edgeSubstitutions, groups);
         return flowchart.render();

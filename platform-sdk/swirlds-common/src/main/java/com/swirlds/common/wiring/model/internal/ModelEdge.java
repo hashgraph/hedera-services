@@ -25,8 +25,7 @@ import java.util.Objects;
 /**
  * A directed edge between to vertices.
  */
-public class ModelEdge
-        implements Comparable<ModelEdge> {
+public class ModelEdge implements Comparable<ModelEdge> {
 
     private final ModelVertex source;
     private ModelVertex destination;
@@ -144,9 +143,9 @@ public class ModelEdge
      * @param sb           the string builder to render to
      * @param nameProvider provides short names for vertices
      */
-    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider) {
+    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameShortener nameProvider) {
 
-        final String sourceName = nameProvider.getShortenedName(source.getName());
+        final String sourceName = nameProvider.getShortVertexName(source.getName());
         sb.append(sourceName);
 
         if (insertionIsBlocking) {
@@ -163,7 +162,7 @@ public class ModelEdge
             }
         }
 
-        final String destinationName = nameProvider.getShortenedName(destination.getName());
+        final String destinationName = nameProvider.getShortVertexName(destination.getName());
         sb.append(destinationName).append("\n");
     }
 }

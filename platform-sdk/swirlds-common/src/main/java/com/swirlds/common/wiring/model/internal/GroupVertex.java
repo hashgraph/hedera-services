@@ -1,6 +1,23 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.wiring.model.internal;
 
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.GROUP;
+import static com.swirlds.common.wiring.model.internal.WiringFlowchart.GROUP_COLOR;
+import static com.swirlds.common.wiring.model.internal.WiringFlowchart.TEXT_COLOR;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,12 +45,16 @@ public class GroupVertex implements ModelVertex {
      */
     private final List<ModelVertex> subVertices;
 
-    public GroupVertex(
-            @NonNull final String name,
-            @NonNull final List<ModelVertex> subVertices) {
+    private int depth;
+
+    public GroupVertex(@NonNull final String name, @NonNull final List<ModelVertex> subVertices) {
 
         this.name = Objects.requireNonNull(name);
         this.subVertices = Objects.requireNonNull(subVertices);
+
+        for (final ModelVertex vertex : subVertices) {
+            vertex.setDepth(1);
+        }
     }
 
     /**
@@ -51,17 +72,7 @@ public class GroupVertex implements ModelVertex {
     @NonNull
     @Override
     public TaskSchedulerType getType() {
-        // TODO
         return TaskSchedulerType.DIRECT;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ModelVertexMetaType getMetaType() {
-        return GROUP;
     }
 
     /**
@@ -76,9 +87,7 @@ public class GroupVertex implements ModelVertex {
      * {@inheritDoc}
      */
     @Override
-    public void connectToEdge(@NonNull final ModelEdge edge) {
-
-    }
+    public void connectToEdge(@NonNull final ModelEdge edge) {}
 
     /**
      * {@inheritDoc}
@@ -110,16 +119,46 @@ public class GroupVertex implements ModelVertex {
      * {@inheritDoc}
      */
     @Override
-    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider) {
-        // TODO indentation
+    public void setDepth(final int depth) {
+        this.depth = depth;
+        for (final ModelVertex vertex : subVertices) {
+            vertex.setDepth(depth + 1);
+        }
+    }
 
-        final String shortName = nameProvider.getShortenedName(name);
+    /**
+     * Generate the style for this vertex.
+     *
+     * @return the style for this vertex
+     */
+    @NonNull
+    private String generateStyle() {
+        final int baseRedValue = Integer.parseInt(String.valueOf(GROUP_COLOR.charAt(0)), 16);
+        final int baseGreenValue = Integer.parseInt(String.valueOf(GROUP_COLOR.charAt(1)), 16);
+        final int baseBlueValue = Integer.parseInt(String.valueOf(GROUP_COLOR.charAt(2)), 16);
+
+        final int redValue = Math.min(0xF, baseRedValue + depth * 2);
+        final int greenValue = Math.min(0xF, baseGreenValue + depth * 2);
+        final int blueValue = Math.min(0xF, baseBlueValue + depth * 2);
+
+        final String color = String.format("%X%X%X", redValue, greenValue, blueValue);
+
+        return "fill:#" + color + ",stroke:#" + TEXT_COLOR + ",stroke-width:2px";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void render(
+            @NonNull final StringBuilder sb,
+            @NonNull final MermaidNameShortener nameProvider,
+            @NonNull final MermaidStyleManager styleManager) {
+        final String shortName = nameProvider.getShortVertexName(name);
+        styleManager.registerStyle(shortName, generateStyle());
+
         sb.append("subgraph ").append(shortName).append("[\"").append(name).append("\"]\n");
-
-        subVertices.stream().sorted().forEachOrdered(vertex -> vertex.render(sb, nameProvider));
-
+        subVertices.stream().sorted().forEachOrdered(vertex -> vertex.render(sb, nameProvider, styleManager));
         sb.append("end\n");
-
-        // TODO subgraph style
     }
 }

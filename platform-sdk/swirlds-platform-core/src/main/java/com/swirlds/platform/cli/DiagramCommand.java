@@ -32,7 +32,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import picocli.CommandLine;

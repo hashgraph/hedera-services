@@ -97,7 +97,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(
+                eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
     }
 
     /**

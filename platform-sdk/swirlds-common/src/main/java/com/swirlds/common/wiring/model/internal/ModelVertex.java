@@ -44,14 +44,6 @@ public interface ModelVertex extends Comparable<ModelVertex> {
     TaskSchedulerType getType();
 
     /**
-     * Get the meta-type of this vertex. Used to generate the wiring diagram, ignored by other use cases.
-     *
-     * @return the meta-type of this vertex
-     */
-    @NonNull
-    ModelVertexMetaType getMetaType();
-
-    /**
      * Get whether the insertion of this vertex may block until capacity is available.
      *
      * @return true if the insertion of this vertex may block until capacity is available
@@ -85,8 +77,12 @@ public interface ModelVertex extends Comparable<ModelVertex> {
      *
      * @param sb           the string builder to render to
      * @param nameProvider provides short names for vertices
+     * @param styleManager manages the styles of vertices
      */
-    void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider);
+    void render(
+            @NonNull final StringBuilder sb,
+            @NonNull final MermaidNameShortener nameProvider,
+            @NonNull final MermaidStyleManager styleManager);
 
     /**
      * Sorts by name.
@@ -94,4 +90,12 @@ public interface ModelVertex extends Comparable<ModelVertex> {
     default int compareTo(@NonNull final ModelVertex that) {
         return this.getName().compareTo(that.getName());
     }
+
+    /**
+     * Set the depth of this vertex in the wiring diagram. Depth increases by 1 for every group that this vertex is
+     * nested within.
+     *
+     * @param depth the depth of this vertex in the wiring diagram
+     */
+    void setDepth(int depth);
 }

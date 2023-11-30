@@ -105,6 +105,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .build().cast());
+                        .build()
+                        .cast());
     }
 }
