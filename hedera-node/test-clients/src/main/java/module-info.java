@@ -27,7 +27,6 @@ module com.hedera.node.test.clients {
     requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
-    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
     requires com.swirlds.test.framework;
     requires grpc.netty;

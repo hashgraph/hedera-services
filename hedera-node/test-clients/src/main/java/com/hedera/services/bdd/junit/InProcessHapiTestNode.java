@@ -28,7 +28,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -214,7 +213,6 @@ public class InProcessHapiTestNode implements HapiTestNode {
             threadsToStop.forEach(Thread::interrupt);
             threadsToStop.forEach(Thread::stop);
 
-            MerkleDb.setDefaultPath(null);
             ConstructableRegistry.getInstance().reset();
         }
     }
