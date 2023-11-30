@@ -27,6 +27,8 @@ public class WiringFlowchart {
     public static final String GROUP_COLOR = "9cf";
     public static final String SUBSTITUTION_COLOR = "f88";
 
+    private final MermaidNameProvider nameProvider = new MermaidNameProvider();
+
     /**
      * A map from vertex name to vertex.
      */
@@ -222,11 +224,11 @@ public class WiringFlowchart {
 
         final List<ModelVertex> sortedVertices = vertexMap.values().stream().sorted().toList();
         for (final ModelVertex vertex : sortedVertices) {
-            vertex.render(sb);
+            vertex.render(sb, nameProvider);
         }
 
         for (final ModelEdge edge : collectEdges()) {
-            edge.render(sb);
+            edge.render(sb, nameProvider);
         }
 
         return sb.toString();

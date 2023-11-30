@@ -180,9 +180,10 @@ public class StandardVertex implements ModelVertex {
      * {@inheritDoc}
      */
     @Override
-    public void render(@NonNull final StringBuilder sb) {
+    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider) {
 
-        sb.append(name);
+        final String shortenedName = nameProvider.getShortenedName(name);
+        sb.append(shortenedName);
 
         switch (metaType) {
             case SUBSTITUTION -> sb.append("((");
@@ -232,7 +233,7 @@ public class StandardVertex implements ModelVertex {
         };
 
         sb.append("style ")
-                .append(name)
+                .append(shortenedName)
                 .append(" fill:#")
                 .append(color)
                 .append(",stroke:#")

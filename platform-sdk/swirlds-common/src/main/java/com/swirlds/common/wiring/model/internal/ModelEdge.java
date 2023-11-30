@@ -141,10 +141,13 @@ public class ModelEdge
     /**
      * Render this edge to a string builder.
      *
-     * @param sb the string builder to render to
+     * @param sb           the string builder to render to
+     * @param nameProvider provides short names for vertices
      */
-    public void render(@NonNull final StringBuilder sb) {
-        sb.append(source.getName());
+    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider) {
+
+        final String sourceName = nameProvider.getShortenedName(source.getName());
+        sb.append(sourceName);
 
         if (insertionIsBlocking) {
             if (label.isEmpty()) {
@@ -160,6 +163,7 @@ public class ModelEdge
             }
         }
 
-        sb.append(destination.getName()).append("\n");
+        final String destinationName = nameProvider.getShortenedName(destination.getName());
+        sb.append(destinationName).append("\n");
     }
 }

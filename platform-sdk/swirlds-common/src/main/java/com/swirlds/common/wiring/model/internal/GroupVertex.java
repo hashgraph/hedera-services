@@ -110,11 +110,13 @@ public class GroupVertex implements ModelVertex {
      * {@inheritDoc}
      */
     @Override
-    public void render(@NonNull final StringBuilder sb) {
+    public void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider) {
         // TODO indentation
-        sb.append("subgraph ").append(getName()).append("\n");
 
-        subVertices.stream().sorted().forEachOrdered(vertex -> vertex.render(sb));
+        final String shortName = nameProvider.getShortenedName(name);
+        sb.append("subgraph ").append(shortName).append("[\"").append(name).append("\"]\n");
+
+        subVertices.stream().sorted().forEachOrdered(vertex -> vertex.render(sb, nameProvider));
 
         sb.append("end\n");
 

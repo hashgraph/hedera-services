@@ -18,7 +18,6 @@ package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -84,9 +83,10 @@ public interface ModelVertex extends Comparable<ModelVertex> {
     /**
      * Render this vertex in mermaid format. Used when generating a wiring diagram.
      *
-     * @param sb the string builder to render to
+     * @param sb           the string builder to render to
+     * @param nameProvider provides short names for vertices
      */
-    void render(@NonNull final StringBuilder sb);
+    void render(@NonNull final StringBuilder sb, @NonNull final MermaidNameProvider nameProvider);
 
     /**
      * Sorts by name.
