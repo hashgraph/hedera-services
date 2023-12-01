@@ -671,7 +671,7 @@ public class SwirldsPlatform implements Platform {
         eventLinker = buildEventLinker(isDuplicateChecks, intakeEventCounter);
 
         final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
-                        platformContext, time, "platform", EventIntakePhase.class)
+                platformContext, time, "platform", EventIntakePhase.class)
                 .setInitialPhase(EventIntakePhase.IDLE)
                 .enableFractionalMetrics()
                 .build();
@@ -760,19 +760,23 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
-        eventCreator = buildEventCreationManager(
-                platformContext,
-                threadManager,
-                time,
-                this,
-                currentAddressBook,
-                selfId,
-                appVersion,
-                transactionPool,
-                intakeQueue,
-                eventObserverDispatcher,
-                platformStatusManager::getCurrentStatus,
-                latestReconnectRound::get);
+        if (eventConfig.useLegacyIntake()) {
+            eventCreator = buildEventCreationManager(
+                    platformContext,
+                    threadManager,
+                    time,
+                    this,
+                    currentAddressBook,
+                    selfId,
+                    appVersion,
+                    transactionPool,
+                    intakeQueue,
+                    eventObserverDispatcher,
+                    platformStatusManager::getCurrentStatus,
+                    latestReconnectRound::get);
+        } else {
+            eventCreator = null;
+        }
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
@@ -846,7 +850,13 @@ public class SwirldsPlatform implements Platform {
             });
         }
 
-        final Clearable pauseEventCreation = eventCreator::pauseEventCreation;
+        final Clearable pauseEventCreation;
+        if (eventCreator != null) {
+            pauseEventCreation = eventCreator::pauseEventCreation;
+        } else {
+            pauseEventCreation = () -> {
+            };
+        }
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -856,7 +866,7 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(transactionPool, "transactionPool"),
-                        Pair.of(platformWiring, "platformWiring")));
+                        Pair.of(() -> platformWiring.clear(platformStatusManager), "platformWiring")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
             components.add(new JvmAnchor(threadManager));
@@ -958,6 +968,12 @@ public class SwirldsPlatform implements Platform {
      */
     private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
+
+        if (eventCreator == null) {
+            // Event creator is null when using the new intake pipeline. New intake pipeline
+            // is not compatible with old states that contain events that need to be loaded.
+            return;
+        }
 
         try {
             eventCreator.setMinimumGenerationNonAncient(
@@ -1127,7 +1143,10 @@ public class SwirldsPlatform implements Platform {
         }
 
         gossip.resetFallenBehind();
-        eventCreator.resumeEventCreation();
+
+        if (eventCreator != null) {
+            eventCreator.resumeEventCreation();
+        }
     }
 
     /**
@@ -1172,7 +1191,7 @@ public class SwirldsPlatform implements Platform {
     /**
      * Build the preconsensus event file manager.
      *
-     * @param startingRound   the round number of the initial state being loaded into the system
+     * @param startingRound the round number of the initial state being loaded into the system
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(final long startingRound) {
@@ -1214,10 +1233,12 @@ public class SwirldsPlatform implements Platform {
 
         metrics.start();
 
-        // The event creator is intentionally started before replaying the preconsensus event stream.
-        // This prevents the event creator's intake queue from filling up and blocking. Note that
-        // this component won't actually create events until the platform has the appropriate status.
-        eventCreator.start();
+        if (eventCreator != null) {
+            // The event creator is intentionally started before replaying the preconsensus event stream.
+            // This prevents the event creator's intake queue from filling up and blocking. Note that
+            // this component won't actually create events until the platform has the appropriate status.
+            eventCreator.start();
+        }
 
         replayPreconsensusEvents();
         gossip.start();
@@ -1234,7 +1255,9 @@ public class SwirldsPlatform implements Platform {
      */
     public void performPcesRecovery() {
         components.start();
-        eventCreator.start();
+        if (eventCreator != null) {
+            eventCreator.start();
+        }
         replayPreconsensusEvents();
         stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }

@@ -42,7 +42,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
-        @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler) {
+        @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
+        @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -94,6 +95,13 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("linkedEventIntake")
                         .withType(config.getLinkedEventIntakeSchedulerType())
                         .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
+                        .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("eventCreationManager")
+                        .withType(config.getEventCreationManagerSchedulerType())
+                        .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
