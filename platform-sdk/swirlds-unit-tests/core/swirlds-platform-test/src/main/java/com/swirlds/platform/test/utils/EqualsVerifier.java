@@ -76,16 +76,16 @@ public final class EqualsVerifier {
 
         final NodeId selfId = new NodeId(r.nextLong(Long.MAX_VALUE));
         final EventDescriptor selfParent = new EventDescriptor(
-                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.ROUND_BIRTH_UNDEFINED);
+                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherParent = new EventDescriptor(
-                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.ROUND_BIRTH_UNDEFINED);
+                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.BIRTH_ROUND_UNDEFINED);
 
         final BaseEventHashedData data = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfParent,
                 Collections.singletonList(otherParent),
-                EventConstants.ROUND_BIRTH_UNDEFINED,
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 randomInstant(r),
                 transactions);
         data.setHash(randomHash(r));

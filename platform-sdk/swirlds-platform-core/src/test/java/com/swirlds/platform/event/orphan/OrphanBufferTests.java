@@ -100,7 +100,7 @@ class OrphanBufferTests {
     private EventDescriptor createBootstrapEvent(
             @NonNull final NodeId nodeId, @NonNull final List<EventDescriptor> parentCandidates) {
         final EventDescriptor bootstrapEvent =
-                new EventDescriptor(randomHash(random), nodeId, 0, EventConstants.ROUND_BIRTH_UNDEFINED);
+                new EventDescriptor(randomHash(random), nodeId, 0, EventConstants.BIRTH_ROUND_UNDEFINED);
 
         parentCandidates.add(bootstrapEvent);
 
@@ -144,7 +144,7 @@ class OrphanBufferTests {
         when(event.getUnhashedData()).thenReturn(unhashedData);
         when(event.getDescriptor())
                 .thenReturn(new EventDescriptor(
-                        eventHash, eventCreator, eventGeneration, EventConstants.ROUND_BIRTH_UNDEFINED));
+                        eventHash, eventCreator, eventGeneration, EventConstants.BIRTH_ROUND_UNDEFINED));
         when(event.getGeneration()).thenReturn(eventGeneration);
         when(event.getSenderId()).thenReturn(eventCreator);
 
@@ -348,13 +348,13 @@ class OrphanBufferTests {
         final GossipEvent event = mock(GossipEvent.class);
 
         final EventDescriptor selfParent =
-                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.ROUND_BIRTH_UNDEFINED);
+                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherParent1 =
-                new EventDescriptor(new Hash(), new NodeId(1), 1, EventConstants.ROUND_BIRTH_UNDEFINED);
+                new EventDescriptor(new Hash(), new NodeId(1), 1, EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherParent2 =
-                new EventDescriptor(new Hash(), new NodeId(2), 2, EventConstants.ROUND_BIRTH_UNDEFINED);
+                new EventDescriptor(new Hash(), new NodeId(2), 2, EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherParent3 =
-                new EventDescriptor(new Hash(), new NodeId(3), 3, EventConstants.ROUND_BIRTH_UNDEFINED);
+                new EventDescriptor(new Hash(), new NodeId(3), 3, EventConstants.BIRTH_ROUND_UNDEFINED);
         final List<EventDescriptor> otherParents = new ArrayList<>();
         otherParents.add(otherParent1);
         otherParents.add(otherParent2);

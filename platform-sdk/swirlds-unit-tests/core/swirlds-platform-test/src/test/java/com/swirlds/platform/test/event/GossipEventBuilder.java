@@ -189,33 +189,33 @@ public class GossipEventBuilder {
                         getSelfParentGossip().getHashedData().getHash(),
                         creatorId,
                         selfParentGen,
-                        EventConstants.ROUND_BIRTH_UNDEFINED)
+                        EventConstants.BIRTH_ROUND_UNDEFINED)
                 : selfParentGen > EventConstants.GENERATION_UNDEFINED
                         ? new EventDescriptor(
                                 RandomUtils.randomHash(random),
                                 creatorId,
                                 selfParentGen,
-                                EventConstants.ROUND_BIRTH_UNDEFINED)
+                                EventConstants.BIRTH_ROUND_UNDEFINED)
                         : null;
         final EventDescriptor otherParent = getOtherParentGossip() != null
                 ? new EventDescriptor(
                         getOtherParentGossip().getHashedData().getHash(),
                         getOtherParentGossip().getHashedData().getCreatorId(),
                         otherParentGen,
-                        EventConstants.ROUND_BIRTH_UNDEFINED)
+                        EventConstants.BIRTH_ROUND_UNDEFINED)
                 : otherParentGen > EventConstants.GENERATION_UNDEFINED
                         ? new EventDescriptor(
                                 RandomUtils.randomHash(random),
                                 creatorId,
                                 otherParentGen,
-                                EventConstants.ROUND_BIRTH_UNDEFINED)
+                                EventConstants.BIRTH_ROUND_UNDEFINED)
                         : null;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfParent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                EventConstants.ROUND_BIRTH_UNDEFINED,
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 timestamp == null ? getParentTime().plusMillis(1 + creatorId.id()) : timestamp,
                 tr);
 

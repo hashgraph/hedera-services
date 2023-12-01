@@ -59,7 +59,7 @@ import org.junit.jupiter.api.Test;
 class TipsetWeightCalculatorTests {
 
     /**
-     * Create a new event descriptor with the given parameters and {@link EventConstants#ROUND_BIRTH_UNDEFINED} for the birth round.
+     * Create a new event descriptor with the given parameters and {@link EventConstants#BIRTH_ROUND_UNDEFINED} for the birth round.
      * @param hash the hash of the event
      * @param creator the creator of the event
      * @param generation the generation of the event
@@ -67,7 +67,7 @@ class TipsetWeightCalculatorTests {
      */
     private EventDescriptor newEventDescriptor(
             @NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
-        return new EventDescriptor(hash, creator, generation, EventConstants.ROUND_BIRTH_UNDEFINED);
+        return new EventDescriptor(hash, creator, generation, EventConstants.BIRTH_ROUND_UNDEFINED);
     }
 
     @Test

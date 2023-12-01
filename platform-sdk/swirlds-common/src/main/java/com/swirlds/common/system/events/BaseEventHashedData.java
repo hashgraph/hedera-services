@@ -73,11 +73,11 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         /**
          * Event descriptors replace the hashes and generation of the parents in the event.
          * Multiple otherParents are supported.
-         * roundBirth is added for lookup of the effective roster at the time of event creation.
+         * birthRound is added for lookup of the effective roster at the time of event creation.
          *
          * @since 0.46.0
          */
-        public static final int ROUND_BIRTH = 4;
+        public static final int BIRTH_ROUND = 4;
     }
 
     /**
@@ -85,7 +85,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * DEPRECATED:  remove after 0.46.0 goes to mainnet.
      */
-    private int serializedVersion = ClassVersion.ROUND_BIRTH;
+    private int serializedVersion = ClassVersion.BIRTH_ROUND;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, affects the hash that is signed:
@@ -96,7 +96,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /** ID of this event's creator (translate before sending) */
     private NodeId creatorId;
     /** the round number in which this event was created, used to look up the effective roster at that time. */
-    private long roundBirth;
+    private long birthRound;
     /** the self parent event descriptor */
     private EventDescriptor selfParent;
     /** the other parents' event descriptors */
@@ -119,7 +119,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *         self parent event descriptor
      * @param otherParents
      *        other parent event descriptors
-     * @param roundBirth
+     * @param birthRound
      *         the round in which this event was created.
      * @param timeCreated
      * 		creation time, as claimed by its creator
@@ -131,7 +131,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptor selfParent,
             @NonNull final List<EventDescriptor> otherParents,
-            final long roundBirth,
+            final long birthRound,
             @NonNull final Instant timeCreated,
             @Nullable final ConsensusTransactionImpl[] transactions) {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
@@ -140,7 +140,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         Objects.requireNonNull(otherParents, "The otherParents must not be null");
         otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
-        this.roundBirth = roundBirth;
+        this.birthRound = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
     }
@@ -155,7 +155,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final SerializableDataOutputStream out, @NonNull final EventSerializationOptions option)
             throws IOException {
         out.writeSerializable(softwareVersion, true);
-        if (serializedVersion < ClassVersion.ROUND_BIRTH) {
+        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
             out.writeLong(creatorId.id());
             out.writeLong(selfParent != null ? selfParent.getGeneration() : EventConstants.GENERATION_UNDEFINED);
             out.writeLong(
@@ -168,7 +168,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             out.writeSerializable(creatorId, false);
             out.writeSerializable(selfParent, false);
             out.writeSerializableList(otherParents, false, true);
-            out.writeLong(roundBirth);
+            out.writeLong(birthRound);
         }
         out.writeInstant(timeCreated);
 
@@ -206,7 +206,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         } else {
             softwareVersion = SoftwareVersion.NO_VERSION;
         }
-        if (version < ClassVersion.ROUND_BIRTH) {
+        if (version < ClassVersion.BIRTH_ROUND) {
             // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
             // Changing the event format may require a HIP.  The old format is preserved for now.
             creatorId = NodeId.deserializeLong(in, false);
@@ -217,13 +217,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             selfParent = selfParentHash == null
                     ? null
                     : new EventDescriptor(
-                            selfParentHash, creatorId, selfParentGen, EventConstants.ROUND_BIRTH_UNDEFINED);
+                            selfParentHash, creatorId, selfParentGen, EventConstants.BIRTH_ROUND_UNDEFINED);
             // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
             otherParents = otherParentHash == null
                     ? Collections.emptyList()
                     : Collections.singletonList(
-                            new EventDescriptor(otherParentHash, otherParentGen, EventConstants.ROUND_BIRTH_UNDEFINED));
-            roundBirth = EventConstants.ROUND_BIRTH_UNDEFINED;
+                            new EventDescriptor(otherParentHash, otherParentGen, EventConstants.BIRTH_ROUND_UNDEFINED));
+            birthRound = EventConstants.BIRTH_ROUND_UNDEFINED;
         } else {
             creatorId = in.readSerializable(false, NodeId::new);
             if (creatorId == null) {
@@ -231,7 +231,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             }
             selfParent = in.readSerializable(false, EventDescriptor::new);
             otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
-            roundBirth = in.readLong();
+            birthRound = in.readLong();
         }
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
@@ -253,7 +253,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return (Objects.equals(creatorId, that.creatorId))
                 && Objects.equals(selfParent, that.selfParent)
                 && Objects.equals(otherParents, that.otherParents)
-                && roundBirth == that.roundBirth
+                && birthRound == that.birthRound
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
                 && Objects.equals(softwareVersion, that.softwareVersion);
@@ -261,7 +261,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(softwareVersion, creatorId, selfParent, otherParents, roundBirth, timeCreated);
+        int result = Objects.hash(softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated);
         result = 31 * result + Arrays.hashCode(transactions);
         return result;
     }
@@ -273,7 +273,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
                 .append("creatorId", creatorId)
                 .append("selfParent", selfParent)
                 .append("otherParents", otherParents)
-                .append("roundBirth", roundBirth)
+                .append("birthRound", birthRound)
                 .append("timeCreated", timeCreated)
                 .append("transactions size", transactions == null ? "null" : transactions.length)
                 .append("hash", CommonUtils.hex(valueOrNull(getHash()), TO_STRING_BYTE_ARRAY_LENGTH))
@@ -320,8 +320,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return the birth round of the event
      */
-    public long getRoundBirth() {
-        return roundBirth;
+    public long getBirthRound() {
+        return birthRound;
     }
 
     /**
@@ -479,6 +479,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      */
     @NonNull
     public EventDescriptor createEventDescriptor() {
-        return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getRoundBirth());
+        return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
     }
 }

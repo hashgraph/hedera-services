@@ -52,7 +52,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
          *
          * @since 0.46.0
          */
-        public static final int ROUND_BIRTH = 2;
+        public static final int BIRTH_ROUND = 2;
     }
 
     /**
@@ -60,7 +60,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * <p>
      * DEPRECATED: Remove after 0.45 is delivered to mainnet.
      */
-    private int serializedVersion = ClassVersion.ROUND_BIRTH;
+    private int serializedVersion = ClassVersion.BIRTH_ROUND;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, does NOT affect the hash that is signed:
@@ -87,7 +87,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.ROUND_BIRTH) {
+        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
             out.writeLong(SEQUENCE_UNUSED);
             out.writeLong(otherId == null ? -1 : otherId.id());
             out.writeLong(SEQUENCE_UNUSED);
@@ -100,7 +100,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
-        if (version < ClassVersion.ROUND_BIRTH) {
+        if (version < ClassVersion.BIRTH_ROUND) {
             in.readLong(); // unused
             otherId = NodeId.deserializeLong(in, true);
             in.readLong(); // unused

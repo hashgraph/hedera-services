@@ -67,7 +67,7 @@ public class TestUtils {
                         creatorId,
                         selfDescriptor,
                         Collections.singletonList(otherDescriptor),
-                        EventConstants.ROUND_BIRTH_UNDEFINED,
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         startTime,
                         new SwirldTransaction[0]),
                 new BaseEventUnhashedData(otherId, new byte[] {0, 0, 0, 0}),

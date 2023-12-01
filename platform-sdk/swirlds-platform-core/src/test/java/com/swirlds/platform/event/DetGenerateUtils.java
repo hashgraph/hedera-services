@@ -56,19 +56,19 @@ public abstract class DetGenerateUtils {
                 generateRandomHash(random, DEFAULT_HASH_TYPE),
                 selfId,
                 nextLong(random, 0),
-                EventConstants.ROUND_BIRTH_UNDEFINED);
+                EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherDescriptor = new EventDescriptor(
                 generateRandomHash(random, DEFAULT_HASH_TYPE),
                 new NodeId(nextLong(random, 0)),
                 nextLong(random, 0),
-                EventConstants.ROUND_BIRTH_UNDEFINED);
+                EventConstants.BIRTH_ROUND_UNDEFINED);
 
         return new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 new NodeId(nextLong(random, 0)), // creatorId, must be positive
                 selfDescriptor, // selfParent
                 Collections.singletonList(otherDescriptor), // otherParents
-                EventConstants.ROUND_BIRTH_UNDEFINED, // roundBirth
+                EventConstants.BIRTH_ROUND_UNDEFINED, // birth round
                 generateRandomInstant(random, DEFAULT_MAX_EPOCH), // timeCreated
                 generateTransactions(DEFAULT_TRANSACTION_NUMBER, DEFAULT_TRANSACTION_MAX_SIZE, random)
                         .toArray(new ConsensusTransactionImpl[0])); // transactions

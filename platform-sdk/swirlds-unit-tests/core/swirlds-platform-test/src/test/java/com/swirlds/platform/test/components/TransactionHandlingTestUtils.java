@@ -55,9 +55,9 @@ public final class TransactionHandlingTestUtils {
         }
 
         final EventDescriptor selfParent = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.ROUND_BIRTH_UNDEFINED);
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
         final EventDescriptor otherParent = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.ROUND_BIRTH_UNDEFINED);
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
 
         return new EventImpl(
                 new BaseEventHashedData(
@@ -65,7 +65,7 @@ public final class TransactionHandlingTestUtils {
                         new NodeId(0),
                         selfParent,
                         Collections.singletonList(otherParent),
-                        EventConstants.ROUND_BIRTH_UNDEFINED,
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

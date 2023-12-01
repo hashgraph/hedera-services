@@ -44,17 +44,17 @@ public class EventDescriptor implements SelfSerializable {
          */
         public static final int SELF_SERIALIZABLE_NODE_ID = 2;
         /**
-         * The roundBirth field is added.
+         * The birthRound field is added.
          *
          * @since 0.46.0
          */
-        public static final int ROUND_BIRTH = 3;
+        public static final int BIRTH_ROUND = 3;
     }
 
     private Hash hash;
     private NodeId creator;
     private long generation;
-    private long roundBirth;
+    private long birthRound;
 
     /**
      * Zero arg constructor, required for deserialization. Do not use manually.
@@ -67,14 +67,14 @@ public class EventDescriptor implements SelfSerializable {
      * @param hash        the hash of the event
      * @param creator     the creator of the event
      * @param generation  the age of an event, smaller is older
-     * @param roundBirth  the round when the event was created
+     * @param birthRound  the round when the event was created
      */
     public EventDescriptor(
-            @NonNull final Hash hash, @NonNull final NodeId creator, final long generation, final long roundBirth) {
+            @NonNull final Hash hash, @NonNull final NodeId creator, final long generation, final long birthRound) {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.generation = generation;
-        this.roundBirth = roundBirth;
+        this.birthRound = birthRound;
     }
 
     /**
@@ -83,13 +83,13 @@ public class EventDescriptor implements SelfSerializable {
      *
      * @param hash        the hash of the event
      * @param generation  the age of an event, smaller is older
-     * @param roundBirth  the round when the event was created
+     * @param birthRound  the round when the event was created
      * @deprecated (since = "0.46.0", forRemoval = true)
      */
-    protected EventDescriptor(@NonNull final Hash hash, final long generation, final long roundBirth) {
+    protected EventDescriptor(@NonNull final Hash hash, final long generation, final long birthRound) {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.generation = generation;
-        this.roundBirth = roundBirth;
+        this.birthRound = birthRound;
         this.creator = null;
     }
 
@@ -148,8 +148,8 @@ public class EventDescriptor implements SelfSerializable {
      *
      * @return the round when the event was created
      */
-    public long getRoundBirth() {
-        return roundBirth;
+    public long getBirthRound() {
+        return birthRound;
     }
 
     /**
@@ -165,7 +165,7 @@ public class EventDescriptor implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ROUND_BIRTH;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
@@ -181,7 +181,7 @@ public class EventDescriptor implements SelfSerializable {
         out.writeSerializable(hash, false);
         out.writeSerializable(creator, false);
         out.writeLong(generation);
-        out.writeLong(roundBirth);
+        out.writeLong(birthRound);
     }
 
     /**
@@ -198,10 +198,10 @@ public class EventDescriptor implements SelfSerializable {
             throw new IOException("creator cannot be null");
         }
         generation = in.readLong();
-        if (version < ClassVersion.ROUND_BIRTH) {
-            roundBirth = EventConstants.ROUND_BIRTH_UNDEFINED;
+        if (version < ClassVersion.BIRTH_ROUND) {
+            birthRound = EventConstants.BIRTH_ROUND_UNDEFINED;
         } else {
-            roundBirth = in.readLong();
+            birthRound = in.readLong();
         }
     }
 
@@ -221,7 +221,7 @@ public class EventDescriptor implements SelfSerializable {
 
         return Objects.equals(creator, that.creator)
                 && generation == that.generation
-                && roundBirth == that.roundBirth
+                && birthRound == that.birthRound
                 && hash.equals(that.hash);
     }
 
@@ -241,7 +241,7 @@ public class EventDescriptor implements SelfSerializable {
         return new ToStringBuilder(this)
                 .append("creator", creator)
                 .append("generation", generation)
-                .append("roundBirth", roundBirth)
+                .append("birthRound", birthRound)
                 .append("hash", hex(hash.getValue()).substring(0, 12))
                 .toString();
     }

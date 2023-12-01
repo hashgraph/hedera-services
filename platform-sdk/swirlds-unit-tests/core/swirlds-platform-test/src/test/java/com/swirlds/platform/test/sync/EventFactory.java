@@ -66,7 +66,7 @@ public class EventFactory {
                 selfId,
                 selfDescriptor,
                 otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
-                EventConstants.ROUND_BIRTH_UNDEFINED,
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 Instant.EPOCH,
                 null);
 

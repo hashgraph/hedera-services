@@ -36,5 +36,5 @@ public final class EventConstants {
     /** the smallest round an event can belong to */
     public static final long MINIMUM_ROUND_CREATED = 1;
     /** the round number to represent that the birth round is undefined */
-    public static final long ROUND_BIRTH_UNDEFINED = -1;
+    public static final long BIRTH_ROUND_UNDEFINED = -1;
 }
