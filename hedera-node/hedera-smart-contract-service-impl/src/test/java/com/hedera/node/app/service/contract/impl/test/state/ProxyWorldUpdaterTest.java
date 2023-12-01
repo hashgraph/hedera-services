@@ -98,9 +98,6 @@ class ProxyWorldUpdaterTest {
     @Mock
     private ProxyEvmAccount proxyEvmAccount;
 
-    //    @Mock
-    //    private MutableAccount mutableAccount;
-
     @Mock
     private MessageFrame frame;
 
