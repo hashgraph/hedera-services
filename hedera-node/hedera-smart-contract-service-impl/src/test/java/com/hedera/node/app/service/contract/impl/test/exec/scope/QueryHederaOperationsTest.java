@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,7 +53,7 @@ class QueryHederaOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new QueryHederaOperations(context);
+        subject = new QueryHederaOperations(context, DEFAULT_HEDERA_CONFIG);
     }
 
     @Test

@@ -108,6 +108,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     result.recipientId(),
                     result.gasPrice());
         } catch (HandleException abort) {
+            abort.printStackTrace();
             // try to resolve the sender if it is an alias
             var sender = feesOnlyUpdater.get().getHederaAccount(hevmTransaction.senderId());
             var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();

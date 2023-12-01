@@ -1526,6 +1526,7 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
 
+    @HapiTest
     HapiSpec invalidContract() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
