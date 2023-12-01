@@ -68,6 +68,7 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -79,6 +80,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Sync gossip using the protocol negotiator.
@@ -130,6 +132,7 @@ public class SyncGossip extends AbstractGossip {
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
+     * @param emergencyStateSupplier        returns the emergency state if available
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -152,7 +155,8 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
         super(
                 platformContext,
                 threadManager,
@@ -260,11 +264,10 @@ public class SyncGossip extends AbstractGossip {
                                             otherId,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
-                                            stateManagementComponent,
+                                            emergencyStateSupplier,
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager,
                                             platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(

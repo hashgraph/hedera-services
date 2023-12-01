@@ -32,7 +32,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -40,8 +39,6 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.signed.SignedStateFinder;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.Instant;
@@ -100,9 +97,6 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
 
-        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
-
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 Time.getCurrent(),
                 getStaticThreadManager(),
@@ -110,11 +104,10 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
-                mock(SignedStateManager.class),
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                fallenBehindManager,
                 mock(StatusActionSubmitter.class),
                 configuration);
 
@@ -128,9 +121,6 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!teacherIsThrottled);
 
-        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
-
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 Time.getCurrent(),
                 getStaticThreadManager(),
@@ -138,11 +128,10 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
-                mock(SignedStateManager.class),
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
-                fallenBehindManager,
                 mock(StatusActionSubmitter.class),
                 configuration);
 
@@ -164,9 +153,6 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController = new ReconnectController(
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
-        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
-
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 Time.getCurrent(),
                 getStaticThreadManager(),
@@ -174,11 +160,10 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 emergencyRecoveryManager,
                 teacherThrottle,
-                mock(SignedStateFinder.class),
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                fallenBehindManager,
                 mock(StatusActionSubmitter.class),
                 configuration);
 
@@ -219,9 +204,6 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectThrottle teacherThrottle =
                 new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
-        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
-
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 Time.getCurrent(),
                 getStaticThreadManager(),
@@ -229,11 +211,10 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
-                mock(SignedStateFinder.class),
+                () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
-                fallenBehindManager,
                 mock(StatusActionSubmitter.class),
                 configuration);
 
