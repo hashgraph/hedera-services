@@ -170,8 +170,9 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         // given...return fails because it calls the real method before it can be replaced.
         BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(any(), any());
         final Set<Key> keysObtained = testHandler.allKeysForTransaction(scheduleInState, spiedContext);
-        assertThat(keysObtained).isNotEmpty();
-        assertThat(keysObtained).containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
+        assertThat(keysObtained)
+                .isNotEmpty()
+                .containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
     }
 
     @Test
@@ -195,7 +196,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             // we *mock* verificationFor side effects, which is what fills in/clears the sets,
             // so results should all be the same, despite empty signatories and mocked HandleContext.
             // We do so based on verifier calls, so it still exercises the code to be tested, however.
-            assertThat(keysRequired).isNotEmpty().hasSize(2).containsExactly(optionKey, schedulerKey);
+            assertThat(keysRequired).isNotEmpty().hasSize(1).containsExactly(optionKey);
             assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactly(payerKey, adminKey);
         }
     }

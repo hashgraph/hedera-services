@@ -77,8 +77,10 @@ abstract class AbstractScheduleHandler {
     @NonNull
     protected ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
+        final AccountID originalPayer =
+                        scheduleInState.originalCreateTransaction().transactionID().accountID();
         // note, payerAccount should never be null, but we're playing it safe here.
-        final AccountID payer = scheduleInState.payerAccountIdOrElse(context.payer());
+        final AccountID payer = scheduleInState.payerAccountIdOrElse(originalPayer);
         final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
         TransactionKeys keyStructure = null;
         try {
@@ -98,6 +100,13 @@ abstract class AbstractScheduleHandler {
         // Ensure the payer is required, some rare corner cases may not require it otherwise.
         final Key payerKey = getKeyForAccount(context, payer);
         if (payerKey != null) scheduledRequiredKeys.add(payerKey);
+        // Now remove the *original create* payer key, if it is present.  Mono intentionally does not require that key
+        // because it had to have signed the original create, and mono tries not to store keys.
+        // @todo('9447') do not specifically exclude the original payer, that key might change before execution
+        //     and we should revalidate immediately prior to executing the schedule (and charging fees).
+        final Key originalPayerKey = getKeyForAccount(context, originalPayer);
+        scheduledRequiredKeys.remove(originalPayerKey);
+        // We have required signatories, so check valid keys and get the remaining (not-yet-signed) set.
         final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
         final Set<Key> remainingRequiredKeys =
                 filterRemainingRequiredKeys(context, scheduledRequiredKeys, currentSignatories);
