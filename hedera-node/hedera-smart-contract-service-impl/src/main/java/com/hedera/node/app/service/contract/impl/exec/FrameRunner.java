@@ -95,16 +95,16 @@ public class FrameRunner {
         // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         var updater = ((ProxyWorldUpdater)frame.getWorldUpdater());
+
+        HederaEvmTransactionResult result;
         if (frame.getState() == COMPLETED_SUCCESS) {
-            var result = successFrom(
+            result = successFrom(
                     gasUsed, senderId, recipientMetadata.hederaId(), asEvmContractId(recipientAddress), frame);
-            updater.addActionAndStateChangesSidecars(tracer, result.stateChanges());
-            return result;
         } else {
-            var result = failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId());
-            updater.addActionAndStateChangesSidecars(tracer, result.stateChanges());
-            return result;
+            result = failureFrom(gasUsed, senderId, frame, recipientMetadata.postFailureHederaId());
         }
+        updater.addActionAndStateChangesSidecars(tracer, result.stateChanges());
+        return result;
     }
 
     private record RecipientMetadata(boolean isPendingCreation, @NonNull ContractID hederaId) {
