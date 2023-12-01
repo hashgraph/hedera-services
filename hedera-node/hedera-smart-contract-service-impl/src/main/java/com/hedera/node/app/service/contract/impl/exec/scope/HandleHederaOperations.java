@@ -413,32 +413,30 @@ public class HandleHederaOperations implements HederaOperations {
 
         if (enabledSidecars.contains(SidecarType.CONTRACT_BYTECODE)) {
             var body = context.body().data().value();
-            //toplevel sidecars
-            if(frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
-                var bytecodeBuilder = ContractBytecode.newBuilder();
-                //add contract id and runtime if frame is not reverted
-                if (recipientAccount != null && !frame.getState().equals(MessageFrame.State.REVERT)) {
-                    bytecodeBuilder.contractId(recipientId);
-                    bytecodeBuilder.runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
-                }
+            var bytecodeBuilder = ContractBytecode.newBuilder();
 
-                var recordBuilder = context.recordBuilder(ContractCreateRecordBuilder.class);
-                if(body instanceof ContractCreateTransactionBody) {
-                    if(!((ContractCreateTransactionBody) body).hasInitcode()) {
-                        bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
-                    }
-                } else if (body instanceof EthereumTransactionBody) {
-                    // ethereum create has no child records, so we create new builder only for this sidecar
-                    recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
-                            .transaction(Transaction.DEFAULT);
-                } else {
-                    //find if we have any child record builders by contract number
-                    var childRecordBuilder = (ContractCreateRecordBuilder) context.getCreationChildRecordBuilder(recipientId.contractNum());
-                    recordBuilder = childRecordBuilder == null ? recordBuilder : childRecordBuilder;
+            //add contract id and runtime if frame is not reverted
+            if (recipientAccount != null && !frame.getState().equals(MessageFrame.State.REVERT)) {
+                bytecodeBuilder.contractId(recipientId);
+                bytecodeBuilder.runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
+            }
+
+            var recordBuilder = context.recordBuilder(ContractCreateRecordBuilder.class);
+            if(body instanceof ContractCreateTransactionBody) {
+                if(!((ContractCreateTransactionBody) body).hasInitcode()) {
                     bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
                 }
-                recordBuilder.addContractBytecode(bytecodeBuilder.build(), false);
+            } else if (body instanceof EthereumTransactionBody) {
+                // ethereum create has no child records, so we create new builder only for this sidecar
+                recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+                        .transaction(Transaction.DEFAULT);
+            } else {
+                //find if we have any child record builders by contract number
+                var childRecordBuilder = (ContractCreateRecordBuilder) context.getCreationChildRecordBuilder(recipientId.contractNum());
+                recordBuilder = childRecordBuilder == null ? recordBuilder : childRecordBuilder;
+                bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
             }
+            recordBuilder.addContractBytecode(bytecodeBuilder.build(), false);
         }
     }
 }
