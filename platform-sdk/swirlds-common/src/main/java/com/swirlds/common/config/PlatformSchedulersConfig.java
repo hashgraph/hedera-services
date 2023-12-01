@@ -19,30 +19,22 @@ package com.swirlds.common.config;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Contains configuration values for the platform schedulers.
  *
  * @param internalEventValidatorSchedulerType      the internal event validator scheduler type
- * @param internalEventValidatorUnhandledCapacity  number of unhandled events allowed in the internal event validator
- *                                                 scheduler
+ * @param internalEventValidatorUnhandledCapacity  number of unhandled events allowed in the internal event validator scheduler
  * @param eventDeduplicatorSchedulerType           the event deduplicator scheduler type
- * @param eventDeduplicatorUnhandledCapacity       number of unhandled tasks allowed in the event deduplicator
- *                                                 scheduler
+ * @param eventDeduplicatorUnhandledCapacity       number of unhandled tasks allowed in the event deduplicator scheduler
  * @param eventSignatureValidatorSchedulerType     the event signature validator scheduler type
- * @param eventSignatureValidatorUnhandledCapacity number of unhandled tasks allowed in the event signature validator
- *                                                 scheduler
+ * @param eventSignatureValidatorUnhandledCapacity number of unhandled tasks allowed in the event signature validator scheduler
  * @param orphanBufferSchedulerType                the orphan buffer scheduler type
  * @param orphanBufferUnhandledCapacity            number of unhandled tasks allowed in the orphan buffer scheduler
  * @param inOrderLinkerSchedulerType               the in-order linker scheduler type
  * @param inOrderLinkerUnhandledCapacity           number of unhandled tasks allowed in the in-order linker scheduler
  * @param linkedEventIntakeSchedulerType           the linked event intake scheduler type
- * @param linkedEventIntakeUnhandledCapacity       number of unhandled tasks allowed in the linked event intake
- *                                                 scheduler
- * @param eventCreationManagerSchedulerType        the event creation manager scheduler type
- * @param eventCreationManagerUnhandledCapacity    number of unhandled tasks allowed in the event creation manager
- *                                                 scheduler
+ * @param linkedEventIntakeUnhandledCapacity       number of unhandled tasks allowed in the linked event intake scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -57,16 +49,13 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") String inOrderLinkerSchedulerType,
         @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") String linkedEventIntakeSchedulerType,
-        @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") String eventCreationManagerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity) {
+        @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity) {
 
     /**
      * Get the internal event validator scheduler type
      *
      * @return the internal event validator scheduler type
      */
-    @NonNull
     public TaskSchedulerType getInternalEventValidatorSchedulerType() {
         return TaskSchedulerType.valueOf(internalEventValidatorSchedulerType);
     }
@@ -76,7 +65,6 @@ public record PlatformSchedulersConfig(
      *
      * @return the event deduplicator scheduler type
      */
-    @NonNull
     public TaskSchedulerType getEventDeduplicatorSchedulerType() {
         return TaskSchedulerType.valueOf(eventDeduplicatorSchedulerType);
     }
@@ -86,7 +74,6 @@ public record PlatformSchedulersConfig(
      *
      * @return the event signature validator scheduler type
      */
-    @NonNull
     public TaskSchedulerType getEventSignatureValidatorSchedulerType() {
         return TaskSchedulerType.valueOf(eventSignatureValidatorSchedulerType);
     }
@@ -96,7 +83,6 @@ public record PlatformSchedulersConfig(
      *
      * @return the orphan buffer scheduler type
      */
-    @NonNull
     public TaskSchedulerType getOrphanBufferSchedulerType() {
         return TaskSchedulerType.valueOf(orphanBufferSchedulerType);
     }
@@ -106,7 +92,6 @@ public record PlatformSchedulersConfig(
      *
      * @return the in-order linker scheduler type
      */
-    @NonNull
     public TaskSchedulerType getInOrderLinkerSchedulerType() {
         return TaskSchedulerType.valueOf(inOrderLinkerSchedulerType);
     }
@@ -116,18 +101,7 @@ public record PlatformSchedulersConfig(
      *
      * @return the linked event intake scheduler type
      */
-    @NonNull
     public TaskSchedulerType getLinkedEventIntakeSchedulerType() {
         return TaskSchedulerType.valueOf(linkedEventIntakeSchedulerType);
-    }
-
-    /**
-     * Get the event creation manager scheduler type
-     *
-     * @return the event creation manager scheduler type
-     */
-    @NonNull
-    public TaskSchedulerType getEventCreationManagerSchedulerType() {
-        return TaskSchedulerType.valueOf(eventCreationManagerSchedulerType);
     }
 }
