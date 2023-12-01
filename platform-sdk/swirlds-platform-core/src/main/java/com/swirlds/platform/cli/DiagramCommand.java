@@ -24,14 +24,15 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import picocli.CommandLine;
@@ -44,7 +45,8 @@ import picocli.CommandLine;
 public final class DiagramCommand extends AbstractCommand {
 
     private List<String> groupStrings = List.of();
-    private List<String> collapsedGroupStrings = List.of();
+    private Set<String> collapsedGroups = Set.of();
+    private List<String> substitutionStrings = List.of();
 
     private DiagramCommand() {}
 
@@ -56,10 +58,18 @@ public final class DiagramCommand extends AbstractCommand {
     }
 
     @CommandLine.Option(
-            names = {"-c", "--collapsed-group"},
-            description = "Specify a collapsed grouping. Format is 'GROUP_NAME:COMPONENT_NAME[,COMPONENT_NAME]*'.")
-    private void setCollapsedGroupStrings(@NonNull final List<String> collapsedGroupStrings) {
-        this.collapsedGroupStrings = collapsedGroupStrings;
+            names = {"-c", "--collapse"},
+            description = "Specify the name of a group that should be collapsed.")
+    private void setCollapsedGroups(@NonNull final Set<String> collapsedGroups) {
+        this.collapsedGroups = collapsedGroups;
+    }
+
+    @CommandLine.Option(
+            names = {"-s", "--substitute"},
+            description = "Substitute a type of edge with a symbol. Useful for spammy edges. "
+                    + "Format: SOURCE_COMPONENT:EDGE_DESCRIPTION:SYMBOL")
+    private void setCollapsedGroups(@NonNull final List<String> substitutionStrings) {
+        this.substitutionStrings = substitutionStrings;
     }
 
     /**
@@ -73,7 +83,8 @@ public final class DiagramCommand extends AbstractCommand {
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
 
-        final String diagramString = platformWiring.getModel().generateWiringDiagram(parseGroups());
+        final String diagramString =
+                platformWiring.getModel().generateWiringDiagram(parseGroups(), parseSubstitutions());
         final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
 
         final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";
@@ -87,11 +98,11 @@ public final class DiagramCommand extends AbstractCommand {
     /**
      * Parse groups from the command line arguments.
      *
-     * @return a set of zero or more groups
+     * @return a list of zero or more groups
      */
     @NonNull
-    private Set<ModelGroup> parseGroups() {
-        final Set<ModelGroup> groups = new HashSet<>();
+    private List<ModelGroup> parseGroups() {
+        final List<ModelGroup> groups = new ArrayList<>();
 
         for (final String group : groupStrings) {
             final String[] parts = group.split(":");
@@ -100,19 +111,31 @@ public final class DiagramCommand extends AbstractCommand {
             }
             final String groupName = parts[0];
             final String[] elements = parts[1].split(",");
-            groups.add(new ModelGroup(groupName, Set.of(elements), false));
-        }
-
-        for (final String group : collapsedGroupStrings) {
-            final String[] parts = group.split(":");
-            if (parts.length != 2) {
-                throw new IllegalArgumentException("Invalid group string: " + group);
-            }
-            final String groupName = parts[0];
-            final String[] elements = parts[1].split(",");
-            groups.add(new ModelGroup(groupName, Set.of(elements), true));
+            groups.add(new ModelGroup(groupName, Set.of(elements), collapsedGroups.contains(groupName)));
         }
 
         return groups;
+    }
+
+    /**
+     * Parse substitutions from the command line arguments.
+     *
+     * @return a list of zero or more substitutions
+     */
+    @NonNull
+    private List<ModelEdgeSubstitution> parseSubstitutions() {
+        final List<ModelEdgeSubstitution> substitutions = new ArrayList<>();
+        for (final String substitutionString : substitutionStrings) {
+            final String[] parts = substitutionString.split(":");
+            if (parts.length != 3) {
+                throw new IllegalArgumentException("Invalid substitution string: " + substitutionString);
+            }
+            final String sourceComponent = parts[0];
+            final String edgeDescription = parts[1];
+            final String symbol = parts[2];
+            substitutions.add(new ModelEdgeSubstitution(sourceComponent, edgeDescription, symbol));
+        }
+
+        return substitutions;
     }
 }

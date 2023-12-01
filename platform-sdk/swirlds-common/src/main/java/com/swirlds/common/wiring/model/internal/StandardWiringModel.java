@@ -16,8 +16,13 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -165,8 +170,10 @@ public class StandardWiringModel implements WiringModel {
      */
     @NonNull
     @Override
-    public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
-        return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
+    public String generateWiringDiagram(
+            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions) {
+        final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups);
+        return flowchart.render();
     }
 
     /**
@@ -176,7 +183,7 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
-        if (scheduler.getType() == TaskSchedulerType.SEQUENTIAL_THREAD) {
+        if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
         }
     }
@@ -194,7 +201,8 @@ public class StandardWiringModel implements WiringModel {
             final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
-        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
+        final boolean unique =
+                vertices.put(vertexName, new StandardVertex(vertexName, type, SCHEDULER, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -221,7 +229,7 @@ public class StandardWiringModel implements WiringModel {
         final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
 
         final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
-        origin.connectToEdge(edge);
+        origin.getOutgoingEdges().add(edge);
 
         final boolean unique = edges.add(edge);
         if (!unique) {
@@ -332,7 +340,7 @@ public class StandardWiringModel implements WiringModel {
         }
 
         // Create an ad hoc vertex.
-        final ModelVertex adHocVertex = new ModelVertex(vertexName, TaskSchedulerType.DIRECT, true);
+        final StandardVertex adHocVertex = new StandardVertex(vertexName, DIRECT, SCHEDULER, true);
 
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;
