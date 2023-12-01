@@ -196,6 +196,7 @@ jobs:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
       branch-name: ${{ github.head_ref || github.ref_name }}
+      base-branch-name: ${{ github.base_ref || '' }}
       slack-results-channel: "regression-test"
       slack-summary-channel: "regression-test"
       use-branch-for-slack-channel: false
