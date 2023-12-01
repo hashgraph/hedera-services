@@ -38,8 +38,9 @@ public class Version045FeatureFlags extends Version034FeatureFlags {
             @NonNull Configuration config, @Nullable HederaEvmAccount possiblyGrandfatheredAddress) {
         final var grandfathered = possiblyGrandfatheredAddress != null
                 && ConversionUtils.isLongZero(possiblyGrandfatheredAddress.getAddress())
-                && config.getConfigData(ContractsConfig.class).evmNonExtantContractsFail()
-                    .contains(ConversionUtils.numberOfLongZero(possiblyGrandfatheredAddress.getAddress()));
+                && config.getConfigData(ContractsConfig.class)
+                        .evmNonExtantContractsFail()
+                        .contains(ConversionUtils.numberOfLongZero(possiblyGrandfatheredAddress.getAddress()));
         return config.getConfigData(ContractsConfig.class).evmAllowCallsToNonContractAccounts() && !grandfathered;
     }
 }

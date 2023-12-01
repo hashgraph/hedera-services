@@ -46,6 +46,7 @@ class Version030FeatureFlagsTest {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertFalse(subject.isImplicitCreationEnabled(frame));
+        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(config, null));
     }
 
     @Test
