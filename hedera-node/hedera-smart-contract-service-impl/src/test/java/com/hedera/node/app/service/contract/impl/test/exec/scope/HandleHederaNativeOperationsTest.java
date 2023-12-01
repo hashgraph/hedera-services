@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -184,7 +183,7 @@ class HandleHederaNativeOperationsTest {
 
         subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
-        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID, INITIAL_CONTRACT_NONCE);
+        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID);
         verify(context).newEntityNum();
     }
 

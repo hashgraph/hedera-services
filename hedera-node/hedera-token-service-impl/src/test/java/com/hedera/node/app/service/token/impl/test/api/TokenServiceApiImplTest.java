@@ -191,13 +191,12 @@ class TokenServiceApiImplTest {
                 .key(IMMUTABILITY_SENTINEL_KEY)
                 .build());
 
-        subject.finalizeHollowAccountAsContract(CONTRACT_ACCOUNT_ID, 1L);
+        subject.finalizeHollowAccountAsContract(CONTRACT_ACCOUNT_ID);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var finalizedAccount = accountStore.getContractById(CONTRACT_ID_BY_NUM);
         assertNotNull(finalizedAccount);
         assertEquals(STANDIN_CONTRACT_KEY, finalizedAccount.key());
-        assertEquals(1L, finalizedAccount.ethereumNonce());
         assertTrue(finalizedAccount.smartContract());
     }
 
@@ -209,7 +208,7 @@ class TokenServiceApiImplTest {
                 .build());
 
         assertThrows(
-                IllegalArgumentException.class, () -> subject.finalizeHollowAccountAsContract(CONTRACT_ACCOUNT_ID, 1L));
+                IllegalArgumentException.class, () -> subject.finalizeHollowAccountAsContract(CONTRACT_ACCOUNT_ID));
     }
 
     @Test
