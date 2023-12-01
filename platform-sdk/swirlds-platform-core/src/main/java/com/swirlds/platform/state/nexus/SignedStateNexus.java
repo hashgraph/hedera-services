@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.platform.state.nexus;
 
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicLong;
