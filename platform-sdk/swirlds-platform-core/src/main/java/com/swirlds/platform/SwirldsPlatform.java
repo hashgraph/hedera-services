@@ -26,6 +26,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
+import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildLegacyEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
@@ -109,6 +110,7 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.AsyncEventCreationManager;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -671,7 +673,7 @@ public class SwirldsPlatform implements Platform {
         eventLinker = buildEventLinker(isDuplicateChecks, intakeEventCounter);
 
         final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
-                platformContext, time, "platform", EventIntakePhase.class)
+                        platformContext, time, "platform", EventIntakePhase.class)
                 .setInitialPhase(EventIntakePhase.IDLE)
                 .enableFractionalMetrics()
                 .build();
@@ -711,10 +713,11 @@ public class SwirldsPlatform implements Platform {
         final EventValidator eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
-        platformWiring = new PlatformWiring(platformContext, time);
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
+            platformWiring = null;
         } else {
+            platformWiring = components.add(new PlatformWiring(platformContext, time));
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
             final EventDeduplicator eventDeduplicator =
@@ -739,13 +742,26 @@ public class SwirldsPlatform implements Platform {
                     preConsensusEventHandler::preconsensusEvent,
                     intakeEventCounter);
 
+            final EventCreationManager eventCreationManager = buildEventCreationManager(
+                    platformContext,
+                    time,
+                    this,
+                    currentAddressBook,
+                    selfId,
+                    appVersion,
+                    transactionPool,
+                    eventObserverDispatcher,
+                    platformStatusManager::getCurrentStatus,
+                    latestReconnectRound::get);
+
             platformWiring.bind(
                     internalEventValidator,
                     eventDeduplicator,
                     eventSignatureValidator,
                     orphanBuffer,
                     inOrderLinker,
-                    linkedEventIntake);
+                    linkedEventIntake,
+                    eventCreationManager);
 
             intakeHandler = platformWiring.getEventInput();
         }
@@ -761,7 +777,7 @@ public class SwirldsPlatform implements Platform {
                 .build());
 
         if (eventConfig.useLegacyIntake()) {
-            eventCreator = buildEventCreationManager(
+            eventCreator = buildLegacyEventCreationManager(
                     platformContext,
                     threadManager,
                     time,
@@ -829,7 +845,7 @@ public class SwirldsPlatform implements Platform {
             loadStateIntoConsensus(initialState);
             loadStateIntoEventCreator(initialState);
 
-            if (eventConfig.useLegacyIntake()) {
+            if (platformWiring == null) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
                 platformWiring.updateMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
@@ -854,8 +870,7 @@ public class SwirldsPlatform implements Platform {
         if (eventCreator != null) {
             pauseEventCreation = eventCreator::pauseEventCreation;
         } else {
-            pauseEventCreation = () -> {
-            };
+            pauseEventCreation = () -> {};
         }
 
         clearAllPipelines = new LoggingClearables(
@@ -866,7 +881,13 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(transactionPool, "transactionPool"),
-                        Pair.of(() -> platformWiring.clear(platformStatusManager), "platformWiring")));
+                        Pair.of(
+                                () -> {
+                                    if (platformWiring != null) {
+                                        platformWiring.clear(platformStatusManager);
+                                    }
+                                },
+                                "platformWiring")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
             components.add(new JvmAnchor(threadManager));
@@ -1090,10 +1111,7 @@ public class SwirldsPlatform implements Platform {
             // from the ones we had before the reconnect
             intakeQueue.pause();
             try {
-                if (platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .useLegacyIntake()) {
+                if (platformWiring == null) {
                     eventValidators.replaceValidator(
                             SignatureValidator.VALIDATOR_NAME,
                             new SignatureValidator(

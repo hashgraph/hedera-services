@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -46,7 +47,8 @@ class PlatformWiringTests {
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
-                mock(LinkedEventIntake.class));
+                mock(LinkedEventIntake.class),
+                mock(EventCreationManager.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

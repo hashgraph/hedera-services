@@ -27,11 +27,11 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -64,9 +64,7 @@ public class PlatformWiring implements Startable, Stoppable {
      * @param platformContext the platform context
      * @param time            provides wall clock time
      */
-    public PlatformWiring(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time) {
+    public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         model = WiringModel.create(platformContext, time);
@@ -108,8 +106,8 @@ public class PlatformWiring implements Startable, Stoppable {
                 eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(eventCreationManagerWiring.minimumGenerationNonAncientInput(),
-                INJECT);
+        minimumGenerationNonAncientOutput.solderTo(
+                eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
     }
 
     /**
@@ -137,6 +135,7 @@ public class PlatformWiring implements Startable, Stoppable {
      * @param orphanBuffer            the orphan buffer to bind
      * @param inOrderLinker           the in order linker to bind
      * @param linkedEventIntake       the linked event intake to bind
+     * @param eventCreationManager    the event creation manager to bind
      */
     public void bind(
             @NonNull final InternalEventValidator internalEventValidator,
@@ -144,7 +143,8 @@ public class PlatformWiring implements Startable, Stoppable {
             @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
-            @NonNull final LinkedEventIntake linkedEventIntake) {
+            @NonNull final LinkedEventIntake linkedEventIntake,
+            @NonNull final EventCreationManager eventCreationManager) {
 
         internalEventValidatorWiring.bind(internalEventValidator);
         eventDeduplicatorWiring.bind(eventDeduplicator);
@@ -152,6 +152,7 @@ public class PlatformWiring implements Startable, Stoppable {
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         linkedEventIntakeWiring.bind(linkedEventIntake);
+        eventCreationManagerWiring.bind(eventCreationManager);
     }
 
     /**
