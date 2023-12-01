@@ -26,7 +26,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
+import java.util.List;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
@@ -116,11 +116,13 @@ public interface WiringModel extends Startable, Stoppable {
     /**
      * Generate a mermaid style wiring diagram.
      *
-     * @param groups optional groupings of vertices
+     * @param groups        optional groupings of vertices
+     * @param substitutions edges to substitute
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
+    String generateWiringDiagram(
+            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and
