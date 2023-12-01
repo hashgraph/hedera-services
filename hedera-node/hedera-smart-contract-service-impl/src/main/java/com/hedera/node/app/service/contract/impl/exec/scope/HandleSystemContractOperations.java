@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
@@ -30,6 +29,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -72,8 +72,12 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(syntheticPayerId);
         requireNonNull(recordBuilderClass);
 
-        return context.dispatchChildTransaction(
-                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
+        return context.dispatchRemovableChildTransaction(
+                syntheticBody,
+                recordBuilderClass,
+                activeSignatureTestWith(strategy),
+                syntheticPayerId,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     @Override
