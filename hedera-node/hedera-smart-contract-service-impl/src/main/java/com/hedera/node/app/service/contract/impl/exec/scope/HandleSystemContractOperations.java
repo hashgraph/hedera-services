@@ -92,7 +92,11 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(recordBuilderClass);
 
         return context.dispatchRemovableChildTransaction(
-                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+                syntheticBody,
+                recordBuilderClass,
+                activeSignatureTestWith(strategy),
+                syntheticPayerId,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     @Override
