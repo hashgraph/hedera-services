@@ -38,7 +38,6 @@ import java.util.function.Function;
  * based on external rules or based on paused status. Forwards created events to a consumer, and retries forwarding if
  * the consumer is not immediately able to accept the event.
  */
-// FUTURE WORK: not needed with new wiring framework, remove when feature flag is removed
 public class SyncEventCreationManager {
 
     /**

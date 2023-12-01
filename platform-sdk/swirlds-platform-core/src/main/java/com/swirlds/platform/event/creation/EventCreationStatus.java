@@ -36,7 +36,6 @@ public enum EventCreationStatus {
      * Events can't currently be created due to backpressure preventing the most recent event from being submitted to
      * the intake pipeline.
      */
-    // FUTURE WORK: not needed with new wiring framework, remove when feature flag is removed
     PIPELINE_INSERTION,
     /**
      * Event creation is not permitted by the current platform status.

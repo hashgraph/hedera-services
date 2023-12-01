@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
@@ -35,12 +36,14 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
 public class PlatformWiring implements Startable, Stoppable, Clearable {
+    private final PlatformContext platformContext;
     private final WiringModel model;
 
     private final InternalEventValidatorWiring internalEventValidatorWiring;
@@ -49,7 +52,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
-    private final EventCreationManagerWiring eventCreationManagerWiring;
 
     /**
      * Constructor.
@@ -58,6 +60,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+        this.platformContext = Objects.requireNonNull(platformContext);
         model = WiringModel.create(platformContext, time);
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
@@ -70,7 +73,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-        eventCreationManagerWiring = EventCreationManagerWiring.create(schedulers.eventCreationManagerScheduler());
 
         wire();
     }
@@ -97,8 +99,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventSignatureValidatorWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(orphanBufferWiring.minimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(inOrderLinkerWiring.minimumGenerationNonAncientInput(), INJECT);
-        minimumGenerationNonAncientOutput.solderTo(
-                eventCreationManagerWiring.minimumGenerationNonAncientInput(), INJECT);
     }
 
     /**
@@ -109,12 +109,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
         inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
-
-        eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
-
-        // TODO we need to solder pause!
 
         solderMinimumGenerationNonAncient();
 
@@ -175,8 +170,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Inject a new minimum generation non-ancient on all components that need it.
      * <p>
-     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient during
-     * startup. This method will be removed once the components are wired together.
+     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient
+     * during startup. This method will be removed once the components are wired together.
      *
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
@@ -218,19 +213,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Clear all the wiring objects.
      * <p>
-     * This doesn't guarantee that all objects will have nothing in their internal storage, but it does guarantee that
-     * the objects will no longer be emitting any events or rounds.
+     * This doesn't guarantee that all objects will have nothing in their internal storage, but it does guarantee
+     * that the objects will no longer be emitting any events or rounds.
      */
     @Override
     public void clear() {
-        // pause the orphan buffer to break the cycle, and flush the pause through
-        orphanBufferWiring.pauseInput().inject(true);
-        orphanBufferWiring.flushRunnable().run();
+        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            // pause the orphan buffer to break the cycle, and flush the pause through
+            orphanBufferWiring.pauseInput().inject(true);
+            orphanBufferWiring.flushRunnable().run();
 
-        // now that no cycles exist, flush all the wiring objects
-        flushAll();
+            // now that no cycles exist, flush all the wiring objects
+            flushAll();
 
-        // once everything has been flushed through the system, it's safe to unpause the orphan buffer
-        orphanBufferWiring.pauseInput().inject(false);
+            // once everything has been flushed through the system, it's safe to unpause the orphan buffer
+            orphanBufferWiring.pauseInput().inject(false);
+        }
     }
 }

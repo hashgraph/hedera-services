@@ -37,7 +37,6 @@ import java.util.Objects;
  * Manages the creation of events. Wraps a {@link SyncEventCreationManager} and provides an asynchronous
  * interface.
  */
-// FUTURE WORK: not needed with new wiring framework, remove when feature flag is removed
 public class AsyncEventCreationManager implements Lifecycle {
 
     /**
