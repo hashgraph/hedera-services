@@ -42,8 +42,10 @@ public class AdjustmentUtils {
      * @param denominator The denominator of the fraction
      * @param amount The given units transferred
      * @return The amount to be charged
+     * @throws ArithmeticException If denominator is 0
      */
-    public static long safeFractionMultiply(final long numerator, final long denominator, final long amount) {
+    public static long safeFractionMultiply(final long numerator, final long denominator, final long amount)
+            throws ArithmeticException {
         if (amount != 0 && numerator > Long.MAX_VALUE / amount) {
             return BigInteger.valueOf(amount)
                     .multiply(BigInteger.valueOf(numerator))
@@ -157,12 +159,10 @@ public class AdjustmentUtils {
      * Given a list of changes for a specific token, filters all fungible credits including hbar or
      * fungible token balances for a given beneficiary and returns them
      * @param result The {@link AssessmentResult} object
-     * @param tokenId The token id
      * @param sender The sender of the nft
      * @return The list of credits
      */
-    public static List<ExchangedValue> getFungibleCredits(
-            final AssessmentResult result, final TokenID tokenId, final AccountID sender) {
+    public static List<ExchangedValue> getFungibleCredits(final AssessmentResult result, final AccountID sender) {
         final var tokenChanges = result.getImmutableInputTokenAdjustments();
         // get all the fungible changes that are credited to the sender of nft in the same transaction.
         // this includes hbar and fungible token balances

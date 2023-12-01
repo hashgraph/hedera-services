@@ -256,7 +256,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
                 && birthRound == that.birthRound
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
-                && Objects.equals(softwareVersion, that.softwareVersion);
+                && (softwareVersion.compareTo(that.softwareVersion) == 0);
     }
 
     @Override
