@@ -848,15 +848,17 @@ public class SwirldsPlatform implements Platform {
 
         final Clearable pauseEventCreation = eventCreator::pauseEventCreation;
 
+        // the pipelines should be cleared in topological order from a system perspective.
+        // the clearing of a later component should not cause more work to be pushed into a previous component
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(pauseEventCreation, "eventCreator"),
                         Pair.of(gossip, "gossip"),
+                        Pair.of(platformWiring, "platformWiring"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(transactionPool, "transactionPool"),
-                        Pair.of(platformWiring, "platformWiring")));
+                        Pair.of(transactionPool, "transactionPool")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
             components.add(new JvmAnchor(threadManager));
