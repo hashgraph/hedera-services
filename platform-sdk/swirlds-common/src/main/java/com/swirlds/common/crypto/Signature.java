@@ -173,4 +173,8 @@ public class Signature implements SelfSerializable {
                 .append("sigBytes", hex(signatureBytes))
                 .toString();
     }
+
+    public SignatureType getSignatureType() {
+        return this.signatureType;
+    }
 }

@@ -129,6 +129,8 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(any())).willReturn(recordBuilder);
+        given(recordBuilder.transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CALL))
+                .willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
@@ -157,6 +159,8 @@ class HandleSystemContractOperationsTest {
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
+        given(recordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
 
         // when
@@ -181,6 +185,8 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
         given(recordBuilder.contractID(any())).willReturn(recordBuilder);
+        given(recordBuilder.transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CALL))
+                .willReturn(recordBuilder);
 
         // when
         subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);

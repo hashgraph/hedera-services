@@ -246,6 +246,7 @@ public class EndOfStakingPeriodUpdater {
                 context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
+                .transactionBodyType(TransactionBody.DataOneOfType.NODE_STAKE_UPDATE)
                 .memo("End of staking period calculation record");
     }
 

@@ -51,6 +51,19 @@ public final class BlockRecordInfoUtils {
     }
 
     /**
+     * Get the consensus time of the first transaction of the current block.
+     *
+     * @return the consensus time of the first transaction of the current block, null if there is no transaction yet.
+     */
+    @Nullable
+    public static Instant firstConsTimeOfCurrentBlock(@NonNull final BlockInfo blockInfo) {
+        final var firstConsTimeOfCurrentBlock = blockInfo.firstConsTimeOfCurrentBlock();
+        return firstConsTimeOfCurrentBlock != null
+                ? Instant.ofEpochSecond(firstConsTimeOfCurrentBlock.seconds(), firstConsTimeOfCurrentBlock.nanos())
+                : null;
+    }
+
+    /**
      * Gets the hash of the last block
      *
      * @return the last block hash, null if no blocks have been created

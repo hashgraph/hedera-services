@@ -76,6 +76,13 @@ public final class BlockRecordInfoImpl implements BlockRecordInfo {
     /** {@inheritDoc} */
     @Nullable
     @Override
+    public Instant firstConsTimeOfCurrentBlock() {
+        return BlockRecordInfoUtils.firstConsTimeOfCurrentBlock(blockInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable
+    @Override
     public Bytes lastBlockHash() {
         return BlockRecordInfoUtils.lastBlockHash(blockInfo);
     }

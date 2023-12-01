@@ -117,6 +117,8 @@ public class ServicesMain implements SwirldMain {
      * @param args First arg, if specified, will be the node ID
      */
     public static void main(final String... args) throws Exception {
+        System.out.println("Starting ServicesMain.main");
+
         BootstrapUtils.setupConstructableRegistry();
         final var registry = ConstructableRegistry.getInstance();
 

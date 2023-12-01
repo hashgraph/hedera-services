@@ -174,9 +174,13 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
             if (overrideAutoRenewPeriod != null) {
                 txnBody.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
             }
-            var txnBuilder =
-                    Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
-            recordBuilder.transaction(txnBuilder.build());
+
+            final var txnCreateAccount =
+                    TransactionBody.newBuilder().cryptoCreateAccount(txnBody).build();
+            var txnBuilder = Transaction.newBuilder().body(txnCreateAccount);
+            recordBuilder
+                    .transaction(txnBuilder.build())
+                    .transactionBodyType(TransactionBody.DataOneOfType.CRYPTO_CREATE_ACCOUNT);
 
             var balance = account.tinybarBalance();
             if (balance != 0) {

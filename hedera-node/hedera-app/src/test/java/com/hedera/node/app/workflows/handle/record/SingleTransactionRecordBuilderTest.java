@@ -35,10 +35,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.transaction.AssessedCustomFee;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.node.transaction.*;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -72,6 +69,7 @@ public class SingleTransactionRecordBuilderTest {
     public static final long NEW_TOTAL_SUPPLY = 34134546L;
     public static final String MEMO = "Yo Memo";
     private @Mock Transaction transaction;
+    private @Mock TransactionBody.DataOneOfType transactionBodyType;
     private @Mock TransactionID transactionID;
     private final Bytes transactionBytes = Bytes.wrap("Hello Tester");
     private @Mock ContractFunctionResult contractCallResult;
@@ -120,6 +118,7 @@ public class SingleTransactionRecordBuilderTest {
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
                 .transaction(transaction)
+                .transactionBodyType(transactionBodyType)
                 .transactionBytes(transactionBytes)
                 .transactionID(transactionID)
                 .memo(MEMO)
@@ -252,6 +251,7 @@ public class SingleTransactionRecordBuilderTest {
                 new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
 
         singleTransactionRecordBuilder.transaction(transaction);
+        singleTransactionRecordBuilder.transactionBodyType(transactionBodyType);
 
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
         assertNull(singleTransactionRecordBuilder.parentConsensusTimestamp());
@@ -276,6 +276,7 @@ public class SingleTransactionRecordBuilderTest {
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
                 .transaction(transaction)
+                .transactionBodyType(transactionBodyType)
                 .addTokenTransferList(tokenTransfer)
                 .addAssessedCustomFee(assessedCustomFee)
                 .addAutomaticTokenAssociation(tokenAssociation)

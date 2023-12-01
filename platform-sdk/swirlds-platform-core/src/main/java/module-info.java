@@ -68,12 +68,15 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
-            com.fasterxml.jackson.databind;
+            com.fasterxml.jackson.databind,
+            com.hedera.node.app;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
     exports com.swirlds.platform.observers to
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
+            com.swirlds.config.impl,
+            com.swirlds.common,
             com.swirlds.platform.test,
             com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
@@ -128,6 +131,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
+    exports com.swirlds.platform.event.creation to
+            com.swirlds.config.impl;
     exports com.swirlds.platform.event.creation.tipset to
             com.hedera.node.test.clients,
             com.swirlds.common,

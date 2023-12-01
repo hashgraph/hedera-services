@@ -69,7 +69,8 @@ public class BlockRecordWriterFactoryImpl implements BlockRecordWriterFactory {
                     nodeInfo,
                     signer,
                     fileSystem);
-            case 7 -> throw new IllegalArgumentException("Record file version 7 is not yet supported");
+            case 7 -> throw new IllegalArgumentException(
+                    "Record file version 7 is not supported. See BlockStreamWriterFactoryImpl instead");
             default -> throw new IllegalArgumentException("Unknown record file version: " + recordFileVersion);
         };
     }

@@ -357,6 +357,7 @@ public class HandleHederaOperations implements HederaOperations {
         final var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
+                .transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CREATE_INSTANCE)
                 .transaction(transactionWith(TransactionBody.newBuilder()
                         .contractCreateInstance(synthContractCreationFromParent(contractId, parent))
                         .build()))

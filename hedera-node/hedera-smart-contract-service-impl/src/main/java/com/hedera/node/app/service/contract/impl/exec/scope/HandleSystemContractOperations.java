@@ -89,6 +89,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
         return context.addChildRecordBuilder(ContractCallRecordBuilder.class)
                 .transaction(transactionWith(syntheticBody))
+                .transactionBodyType(syntheticBody.data().kind())
                 .status(preemptingStatus);
     }
 
@@ -101,6 +102,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
+                .transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CALL)
                 .contractID(result.contractID())
                 .status(responseStatus)
                 .contractCallResult(result);
@@ -114,6 +116,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(transaction);
         context.addChildRecordBuilder(ContractCallRecordBuilder.class)
                 .transaction(transaction)
+                .transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CALL)
                 .status(responseStatus)
                 .contractCallResult(result);
     }

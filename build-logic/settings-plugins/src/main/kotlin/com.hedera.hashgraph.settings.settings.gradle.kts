@@ -17,8 +17,16 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        mavenLocal()
         mavenCentral()
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.namespace == "com.hedera.pbj") {
+                useModule("com.hedera.pbj:${requested.id.name}:${requested.version}")
+            }
+        }
     }
 }
 

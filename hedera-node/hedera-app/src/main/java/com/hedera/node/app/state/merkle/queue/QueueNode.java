@@ -19,6 +19,7 @@ package com.hedera.node.app.state.merkle.queue;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
@@ -97,8 +98,11 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     /** Adds an element to this queue. */
     public void add(E element) {
         getQueue().add(new ValueLeaf<>(md, element));
+        final var label = getLabel();
         // Log to transaction state log, what was added
-        logQueueAdd(getLabel(), element);
+        logQueueAdd(label, element);
+        // Notify the observer.
+        BlockObserverSingleton.getInstanceOrThrow().queuePushChange(label, element);
     }
 
     /** Peek an element */
@@ -112,8 +116,11 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     /** Retrieve and remove an element */
     public E remove() {
         final var valueLeaf = getQueue().remove();
+        final var label = getLabel();
         // Log to transaction state log, what was added
-        logQueueRemove(getLabel(), valueLeaf);
+        logQueueRemove(label, valueLeaf);
+        // Notify the observer.
+        BlockObserverSingleton.getInstanceOrThrow().queuePopChange(label);
         return valueLeaf == null ? null : valueLeaf.getValue();
     }
 

@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -81,6 +82,15 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
      */
     @NonNull
     ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
+
+    /**
+     * Sets the transaction body type.
+     *
+     * @param transactionBodyType the transaction body type
+     * @return the builder
+     */
+    @NonNull
+    ContractCallRecordBuilder transactionBodyType(@NonNull final TransactionBody.DataOneOfType transactionBodyType);
 
     /**
      * Gets the newly minted serial numbers.

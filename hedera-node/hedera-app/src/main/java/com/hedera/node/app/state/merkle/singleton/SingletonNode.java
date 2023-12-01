@@ -19,6 +19,7 @@ package com.hedera.node.app.state.merkle.singleton;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logSingletonRead;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logSingletonWrite;
 
+import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -88,7 +89,10 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     public void setValue(T value) {
         ValueLeaf<T> right = getRight();
         right.setValue(value);
+        final var label = getLabel();
         // Log to transaction state log, what was written
-        logSingletonWrite(getLabel(), value);
+        logSingletonWrite(label, value);
+        // Notify the observer.
+        BlockObserverSingleton.getInstanceOrThrow().singletonUpdateChange(label, value);
     }
 }

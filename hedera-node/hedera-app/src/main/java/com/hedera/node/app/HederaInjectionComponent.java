@@ -29,7 +29,7 @@ import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.records.FunctionalBlockRecordManager;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
@@ -110,7 +110,7 @@ public interface HederaInjectionComponent {
 
     HandleWorkflow handleWorkflow();
 
-    BlockRecordManager blockRecordManager();
+    FunctionalBlockRecordManager blockRecordManager();
 
     FeeManager feeManager();
 

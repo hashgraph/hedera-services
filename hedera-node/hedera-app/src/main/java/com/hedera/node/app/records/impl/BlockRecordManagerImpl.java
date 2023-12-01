@@ -26,6 +26,8 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.FunctionalBlockRecordManager;
+import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -35,9 +37,13 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  * called from the "handle" thread!
  */
 @Singleton
-public final class BlockRecordManagerImpl implements BlockRecordManager {
+public final class BlockRecordManagerImpl implements FunctionalBlockRecordManager {
     private static final Logger logger = LogManager.getLogger(BlockRecordManagerImpl.class);
 
     /**
@@ -304,6 +310,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * {@inheritDoc}
      */
+
     @NonNull
     @Override
     public Instant consTimeOfLastHandledTxn() {
@@ -311,6 +318,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return lastHandledTxn != null
                 ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
                 : Instant.EPOCH;
+
+    @Nullable
+    @Override
+    public Instant firstConsTimeOfCurrentBlock() {
+        return BlockRecordInfoUtils.firstConsTimeOfCurrentBlock(lastBlockInfo);
     }
 
     @Override
@@ -382,6 +394,34 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 blockInfo.consTimeOfLastHandledTxn().seconds(),
                 blockInfo.consTimeOfLastHandledTxn().nanos());
         return !inst.isAfter(Instant.EPOCH);
+    }
+
+    // ========================================================================================================
+    // FunctionalBlockRecordManager Implementation
+
+    @Override
+    public void processRound(@NonNull HederaState state, @NonNull Round round, @NonNull Runnable runnable) {
+        runnable.run(); // NO-OP stub
+    }
+
+    @Override
+    public void processUserTransaction(
+            @NonNull Instant consensusTime,
+            @NonNull HederaState state,
+            @NonNull ConsensusTransaction platformTxn,
+            @NonNull Supplier<ProcessUserTransactionResult> callable) {
+        callable.get(); // NO-OP stub
+    }
+
+    public void processConsensusEvent(
+            @NonNull HederaState state, @NonNull ConsensusEvent platformEvent, @NonNull Runnable runnable) {
+        runnable.run(); // NO-OP stub
+    }
+
+    @Override
+    public void processSystemTransaction(
+            @NonNull HederaState state, @NonNull ConsensusTransaction systemTxn, @NonNull Runnable runnable) {
+        runnable.run(); // NO-OP stub
     }
 
     // ========================================================================================================

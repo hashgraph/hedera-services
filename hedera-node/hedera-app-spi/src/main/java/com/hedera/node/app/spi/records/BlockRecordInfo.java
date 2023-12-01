@@ -76,6 +76,14 @@ public interface BlockRecordInfo {
     Instant firstConsTimeOfLastBlock();
 
     /**
+     * Get the consensus time of the first transaction of the current block.
+     *
+     * @return the consensus time of the first transaction of the current block.
+     */
+    @Nullable
+    Instant firstConsTimeOfCurrentBlock();
+
+    /**
      * The current block timestamp. Its seconds is the value returned by {@code block.timestamp} for a contract
      * executing * in this block).
      *

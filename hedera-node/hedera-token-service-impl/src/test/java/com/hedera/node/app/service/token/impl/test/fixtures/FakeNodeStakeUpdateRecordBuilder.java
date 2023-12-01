@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jetbrains.annotations.NotNull;
 
 public class FakeNodeStakeUpdateRecordBuilder {
@@ -26,6 +28,7 @@ public class FakeNodeStakeUpdateRecordBuilder {
         return new NodeStakeUpdateRecordBuilder() {
             private String memo;
             private Transaction txn;
+            private TransactionBody.DataOneOfType transactionBodyType;
 
             @NotNull
             @Override
@@ -38,6 +41,14 @@ public class FakeNodeStakeUpdateRecordBuilder {
             @Override
             public NodeStakeUpdateRecordBuilder memo(@NotNull String memo) {
                 this.memo = memo;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public NodeStakeUpdateRecordBuilder transactionBodyType(
+                    @NonNull final TransactionBody.DataOneOfType transactionBodyType) {
+                this.transactionBodyType = transactionBodyType;
                 return this;
             }
         };

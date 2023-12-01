@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -59,4 +60,12 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
     // TODO check if we need transaction or we can change SingleTransactionRecord constructor
     @NonNull
     ContractCreateRecordBuilder transaction(@NonNull Transaction transaction);
+
+    /**
+     * Sets the transaction type.
+     *
+     * @param transactionType the transaction type
+     * @return the builder
+     */
+    ContractCreateRecordBuilder transactionBodyType(@NonNull final TransactionBody.DataOneOfType transactionType);
 }

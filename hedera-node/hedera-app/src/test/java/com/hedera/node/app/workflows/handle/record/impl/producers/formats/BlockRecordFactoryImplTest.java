@@ -28,7 +28,9 @@ import org.junit.jupiter.api.Test;
 final class BlockRecordFactoryImplTest extends AppTestBase {
     @Test
     void createV6BasedOnConfig() throws Exception {
-        final var app = appBuilder().build();
+        final var app = appBuilder()
+                .withConfigValue("hedera.recordStream.recordFileVersion", 6)
+                .build();
         final var factory =
                 new BlockRecordWriterFactoryImpl(app.configProvider(), selfNodeInfo, SIGNER, FileSystems.getDefault());
         final var writer = factory.create();
@@ -45,7 +47,8 @@ final class BlockRecordFactoryImplTest extends AppTestBase {
                 new BlockRecordWriterFactoryImpl(app.configProvider(), selfNodeInfo, SIGNER, FileSystems.getDefault());
         assertThatThrownBy(factory::create)
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Record file version 7 is not yet supported");
+                .hasMessageContaining(
+                        "Record file version 7 is not supported. See BlockStreamWriterFactoryImpl instead");
     }
 
     @Test

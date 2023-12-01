@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -40,4 +41,12 @@ public interface NodeStakeUpdateRecordBuilder {
      */
     @NonNull
     NodeStakeUpdateRecordBuilder memo(@NonNull final String memo);
+
+    /**
+     * Sets the transaction body type.
+     *
+     * @param transactionBodyType the transaction body type
+     * @return the builder
+     */
+    NodeStakeUpdateRecordBuilder transactionBodyType(@NonNull final TransactionBody.DataOneOfType transactionBodyType);
 }

@@ -48,6 +48,7 @@ import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
@@ -626,29 +627,33 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @Nullable final Predicate<Key> callback) {
-        // Initialize record builder list
-        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
-        final var signedTransaction =
-                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-        final var transaction = Transaction.newBuilder()
-                .signedTransactionBytes(signedTransactionBytes)
-                .build();
-        childRecordBuilder
-                .transaction(transaction)
-                .transactionBytes(signedTransactionBytes)
-                .memo(txBody.memo());
-        // If there are any failures in the child transaction, we don't want to set transfer list
-        // to be compatible with mono-service
-        if (childCategory == CHILD) {
-            childRecordBuilder.transferList(null);
-        }
+        BlockObserverSingleton.getInstanceOrThrow().recordUserChildTransactionStateChanges(() -> {
 
-        // Set the transactionId if provided
-        final var transactionID = txBody.transactionID();
-        if (transactionID != null) {
-            childRecordBuilder.transactionID(transactionID);
-        }
+            // Initialize record builder list
+            final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
+            final var signedTransaction =
+                    SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+            final var transaction = Transaction.newBuilder()
+                    .signedTransactionBytes(signedTransactionBytes)
+                    .build();
+            childRecordBuilder
+                    .transaction(transaction)
+                    .transactionBodyType(txBody.data().kind())
+                    .transactionBytes(signedTransactionBytes)
+                    .memo(txBody.memo());
+
+            // If there are any failures in the child transaction, we don't want to set transfer list
+            // to be compatible with mono-service
+            if (childCategory == CHILD) {
+                childRecordBuilder.transferList(null);
+            }
+
+            // Set the transactionId if provided
+            final var transactionID = txBody.transactionID();
+            if (transactionID != null) {
+                childRecordBuilder.transactionID(transactionID);
+            }
 
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
@@ -732,16 +737,18 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     childContext.feeAccumulator.chargeFees(
                             syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
                 }
+                childRecordBuilder.status(e.getStatus());
+                recordListBuilder.revertChildrenOf(recordBuilder);
             }
-            childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(recordBuilder);
-        }
-        final var finalizeContext = new ChildFinalizeContextImpl(
-                new ReadableStoreFactory(childStack),
-                new WritableStoreFactory(childStack, TokenService.NAME),
-                childRecordBuilder);
-        childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
-        childStack.commitFullStack();
+            final var finalizeContext = new ChildFinalizeContextImpl(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder);
+            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+            // TODO(nickpoorman): This is where we need to hook our StackObserver in so that we know what changes
+            //  were a result of this child transaction.
+            childStack.commitFullStack();
+        });
     }
 
     private @Nullable DispatchValidationResult validate(

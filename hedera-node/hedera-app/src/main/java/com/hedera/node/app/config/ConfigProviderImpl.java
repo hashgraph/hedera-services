@@ -53,6 +53,7 @@ import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -174,6 +175,7 @@ public class ConfigProviderImpl extends ConfigProviderBase {
                 .withConfigDataType(AutoRenewConfig.class)
                 .withConfigDataType(BalancesConfig.class)
                 .withConfigDataType(BlockRecordStreamConfig.class)
+                .withConfigDataType(BlockStreamConfig.class)
                 .withConfigDataType(BootstrapConfig.class)
                 .withConfigDataType(CacheConfig.class)
                 .withConfigDataType(ConsensusConfig.class)

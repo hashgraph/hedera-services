@@ -38,6 +38,7 @@ import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -291,7 +292,10 @@ public class NetworkAdminHandlerTestBase {
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
         return new SingleTransactionRecord(
-                Transaction.DEFAULT, record, List.of(), new TransactionOutputs(TokenType.FUNGIBLE_COMMON));
+                Transaction.DEFAULT,
+                record,
+                List.of(),
+                new TransactionOutputs(TokenType.FUNGIBLE_COMMON, TransactionBody.DataOneOfType.UNSET));
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {

@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle.disk;
 
 import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 
+import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -91,8 +92,11 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         } else {
             virtualMap.put(k, new OnDiskValue<>(md, value));
         }
+        final var stateKey = getStateKey();
         // Log to transaction state log, what was put
-        logMapPut(getStateKey(), key, value);
+        logMapPut(stateKey, key, value);
+        // Notify the observer.
+        BlockObserverSingleton.getInstanceOrThrow().mapUpdateChange(stateKey, key, value);
     }
 
     /** {@inheritDoc} */

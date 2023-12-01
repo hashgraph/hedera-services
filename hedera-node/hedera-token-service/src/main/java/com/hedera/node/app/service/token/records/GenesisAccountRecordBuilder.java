@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.records;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -38,6 +39,15 @@ public interface GenesisAccountRecordBuilder {
      */
     @NonNull
     GenesisAccountRecordBuilder transaction(@NonNull final Transaction txn);
+
+    /**
+     * Sets the transaction body type.
+     *
+     * @param transactionBodyType the transaction body type
+     * @return the builder
+     */
+    @NonNull
+    GenesisAccountRecordBuilder transactionBodyType(@NonNull final TransactionBody.DataOneOfType transactionBodyType);
 
     /**
      * Tracks the memo for the synthetic record

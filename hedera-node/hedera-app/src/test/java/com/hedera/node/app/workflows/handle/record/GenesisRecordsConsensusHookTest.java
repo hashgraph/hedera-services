@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.atLeastOnce;
@@ -27,8 +28,10 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
@@ -89,6 +92,10 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesSystemAccounts() {
+        given(genesisAccountRecordBuilder.transaction(any(Transaction.class))).willReturn(genesisAccountRecordBuilder);
+        given(genesisAccountRecordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(genesisAccountRecordBuilder);
+
         final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         accts.add(ACCOUNT_1);
         accts.add(ACCOUNT_2);
@@ -102,6 +109,10 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesStakingAccounts() {
+        given(genesisAccountRecordBuilder.transaction(any(Transaction.class))).willReturn(genesisAccountRecordBuilder);
+        given(genesisAccountRecordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(genesisAccountRecordBuilder);
+
         final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         accts.add(ACCOUNT_1);
         accts.add(ACCOUNT_2);
@@ -116,6 +127,10 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesMultipurposeAccounts() {
+        given(genesisAccountRecordBuilder.transaction(any(Transaction.class))).willReturn(genesisAccountRecordBuilder);
+        given(genesisAccountRecordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(genesisAccountRecordBuilder);
+
         final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         accts.add(ACCOUNT_1);
         accts.add(ACCOUNT_2);
@@ -130,6 +145,10 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesTreasuryClones() {
+        given(genesisAccountRecordBuilder.transaction(any(Transaction.class))).willReturn(genesisAccountRecordBuilder);
+        given(genesisAccountRecordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(genesisAccountRecordBuilder);
+
         final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         accts.add(ACCOUNT_1);
         accts.add(ACCOUNT_2);
@@ -144,6 +163,10 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesBlocklistAccounts() {
+        given(genesisAccountRecordBuilder.transaction(any(Transaction.class))).willReturn(genesisAccountRecordBuilder);
+        given(genesisAccountRecordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(genesisAccountRecordBuilder);
+
         final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         accts.add(ACCOUNT_1);
         accts.add(ACCOUNT_2);
@@ -158,6 +181,10 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesAllRecords() {
+        given(genesisAccountRecordBuilder.transaction(any(Transaction.class))).willReturn(genesisAccountRecordBuilder);
+        given(genesisAccountRecordBuilder.transactionBodyType(any(TransactionBody.DataOneOfType.class)))
+                .willReturn(genesisAccountRecordBuilder);
+
         final var acctId3 = ACCOUNT_ID_1.copyBuilder().accountNum(3).build();
         final var acct3 = ACCOUNT_1.copyBuilder().accountId(acctId3).build();
         final var acctId4 = ACCOUNT_ID_1.copyBuilder().accountNum(4).build();

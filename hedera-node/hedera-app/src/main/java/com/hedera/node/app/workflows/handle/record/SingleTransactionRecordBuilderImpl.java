@@ -76,6 +76,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -180,6 +181,7 @@ public class SingleTransactionRecordBuilderImpl
 
     private TokenID tokenID;
     private TokenType tokenType;
+    private TransactionBody.DataOneOfType transactionBodyType;
 
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
@@ -313,7 +315,41 @@ public class SingleTransactionRecordBuilderImpl
         logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(
-                transaction, transactionRecord, transactionSidecarRecords, new TransactionOutputs(tokenType));
+                transaction,
+                transactionRecord,
+                transactionSidecarRecords,
+                new TransactionOutputs(tokenType, getTransactionBodyType()));
+    }
+
+    @Override
+    @NonNull
+    public SingleTransactionRecordBuilderImpl transactionBodyType(
+            @NonNull final TransactionBody.DataOneOfType transactionBodyType) {
+        this.transactionBodyType = transactionBodyType;
+        return this;
+    }
+
+    private TransactionBody.DataOneOfType getTransactionBodyType() {
+        // Try to get it from our property.
+        if (this.transactionBodyType != null && this.transactionBodyType != TransactionBody.DataOneOfType.UNSET) {
+            return this.transactionBodyType;
+        }
+
+        // Otherwise we have to extract it.
+        this.transactionBodyType = extractTransactionBody(transaction).data().kind();
+        return this.transactionBodyType;
+    }
+
+    @NonNull
+    public static TransactionBody extractTransactionBody(Transaction transaction) {
+        // FUTURE: This is nasty, but we have to get the type of transaction and we don't always have it in the form we
+        // want because records are injected for genesis.
+        try {
+            final var signedTxn = SignedTransaction.PROTOBUF.parse(transaction.signedTransactionBytes());
+            return TransactionBody.PROTOBUF.parse(signedTxn.bodyBytes());
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void nullOutSideEffectFields() {
