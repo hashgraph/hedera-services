@@ -280,7 +280,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                         component.config().getConfigData(LedgerConfig.class),
                         component.config().getConfigData(ContractsConfig.class),
                         context,
-                        tinybarValues),
+                        tinybarValues,
+                        hederaConfig),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);
