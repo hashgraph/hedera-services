@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -41,6 +42,7 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -56,13 +58,15 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 /**
  * This test is to verify restart functionality. It submits a burst of mixed operations, then
  * freezes all nodes, shuts them down, restarts them, and submits the same burst of mixed operations
  * again.
  */
-// @HapiTestSuite // This should be disabled to be not run in CI, since it shuts down nodes
+@HapiTestSuite
+@Tag(RESTART) // This should be disabled to be not run in CI, since it shuts down nodes
 public class MixedOpsRestartTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsRestartTest.class);
 
