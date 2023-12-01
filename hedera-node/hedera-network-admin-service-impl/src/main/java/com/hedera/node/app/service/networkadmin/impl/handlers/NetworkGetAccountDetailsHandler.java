@@ -215,7 +215,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
         AccountID accountID; // build from accountNumber
-        while (tokenId != null  && count < maxRelsPerInfoQuery) {
+        while (tokenId != null && count < maxRelsPerInfoQuery) {
             accountID = account.accountId();
             tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
