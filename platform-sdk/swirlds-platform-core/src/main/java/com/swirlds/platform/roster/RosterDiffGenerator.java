@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class RosterDiffGenerator {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(RosterDiffGenerator.class);
 
     private AddressBook previousRoster;
     private long previousEffectiveRound;
@@ -55,7 +55,7 @@ public class RosterDiffGenerator {
     /**
      * Given a new roster, generate a diff with respect to the previous roster.
      *
-     * @param updatedRoster the new roster
+     * @param updatedRoster the new roster, must be already hashed
      * @return the diff, will return null for the very first roster added
      */
     @Nullable
@@ -63,12 +63,17 @@ public class RosterDiffGenerator {
         final AddressBook roster = updatedRoster.roster();
         final long effectiveRound = updatedRoster.effectiveRound();
 
-        try {
-            if (previousRoster == null) {
-                // This is the first roster we've seen.
-                return null;
-            }
+        if (roster.getHash() == null) {
+            throw new IllegalStateException(
+                    "Effective roster for round " + updatedRoster.effectiveRound() + " is unhashed.");
+        }
 
+        final RosterDiff diff;
+
+        if (previousRoster == null) {
+            // This is the first roster we've seen.
+            diff = null;
+        } else {
             if (previousEffectiveRound >= effectiveRound) {
                 logger.error(
                         EXCEPTION.getMarker(),
@@ -78,16 +83,13 @@ public class RosterDiffGenerator {
                         effectiveRound);
             }
 
-            if (roster.getHash() == null) {
-                // FUTURE WORK: when this is wired into the system, make sure this is thread safe
-                cryptography.digestSync(roster);
-            }
-
-            return compareRosters(previousRoster, updatedRoster);
-        } finally {
-            previousRoster = roster;
-            previousEffectiveRound = effectiveRound;
+            diff = compareRosters(previousRoster, updatedRoster);
         }
+
+        previousRoster = roster;
+        previousEffectiveRound = effectiveRound;
+
+        return diff;
     }
 
     /**
@@ -103,7 +105,6 @@ public class RosterDiffGenerator {
 
         final AddressBook roster = updatedRoster.roster();
 
-        // FUTURE WORK: make sure we've hashed the roster prior to this point in time
         if (roster.getHash().equals(previousRoster.getHash())) {
             // Simple case: the roster is identical to the previous one.
             // Short circuit the diff generation for the sake of efficiency.
