@@ -29,9 +29,6 @@ import org.apache.logging.log4j.Logger;
  * Utility methods for dealing with signed states on disk.
  */
 public final class SignedStateFileUtils {
-
-    private static final Logger logger = LogManager.getLogger(SignedStateFileUtils.class);
-
     /**
      * Fun trivia: the file extension ".swh" stands for "SWirlds Hashgraph", although
      * this is a bit misleading... as this file doesn't actually contain a hashgraph.
