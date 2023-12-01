@@ -2242,20 +2242,19 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                     .path(poeticUpgradeLoc)
                                     .payingWith(FREEZE_ADMIN))
                     .when()
-                    .then(
-                            scheduleCreate(
-                                            A_SCHEDULE,
-                                            prepareUpgrade()
-                                                    .withUpdateFile(standardUpdateFile)
-                                                    .havingHash(poeticUpgradeHash))
-                                    .withEntityMemo(randomUppercase(100))
-                                    .designatingPayer(PAYING_ACCOUNT_2)
-                                    .payingWith(PAYING_ACCOUNT)
-                                    // we are always busy with long term enabled in this case
-                                    // because
-                                    // there are no throttles for freeze and we deeply check with
-                                    // long term enabled
-                                    .hasPrecheck(BUSY));
+                    .then(scheduleCreate(
+                                    A_SCHEDULE,
+                                    prepareUpgrade()
+                                            .withUpdateFile(standardUpdateFile)
+                                            .havingHash(poeticUpgradeHash))
+                            .withEntityMemo(randomUppercase(100))
+                            .designatingPayer(PAYING_ACCOUNT_2)
+                            .payingWith(PAYING_ACCOUNT)
+                            // we are always busy with long term enabled in this case
+                            // because
+                            // there are no throttles for freeze and we deeply check with
+                            // long term enabled
+                            .hasPrecheck(BUSY));
         }
         return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFails")
                 .given(
@@ -2313,17 +2312,15 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .payingWith(PAYING_ACCOUNT)
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
-                .then(
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(successTxn).scheduled();
-                            allRunFor(spec, triggeredTx);
+                .then(getScheduleInfo(A_SCHEDULE).isExecuted(), withOpContext((spec, opLog) -> {
+                    var triggeredTx = getTxnRecord(successTxn).scheduled();
+                    allRunFor(spec, triggeredTx);
 
-                            Assertions.assertEquals(
-                                    SUCCESS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_SUCCEED);
-                        }));
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_SUCCEED);
+                }));
     }
 
     // @todo('9973') Work out permissioned file update issues
@@ -2346,17 +2343,15 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .payingWith(PAYING_ACCOUNT)
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
-                .then(
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(successTxn).scheduled();
-                            allRunFor(spec, triggeredTx);
+                .then(getScheduleInfo(A_SCHEDULE).isExecuted(), withOpContext((spec, opLog) -> {
+                    var triggeredTx = getTxnRecord(successTxn).scheduled();
+                    allRunFor(spec, triggeredTx);
 
-                            Assertions.assertEquals(
-                                    AUTHORIZATION_FAILED,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    "Scheduled transaction be AUTHORIZATION_FAILED!");
-                        }));
+                    Assertions.assertEquals(
+                            AUTHORIZATION_FAILED,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            "Scheduled transaction be AUTHORIZATION_FAILED!");
+                }));
     }
 
     @HapiTest
@@ -2403,17 +2398,16 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                             cryptoCreate(PAYING_ACCOUNT_2),
                             fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE))
                     .when()
-                    .then(
-                            scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
-                                    .withEntityMemo(randomUppercase(100))
-                                    .designatingPayer(PAYING_ACCOUNT_2)
-                                    .payingWith(PAYING_ACCOUNT)
-                                    // we are always busy with long term enabled in this case
-                                    // because
-                                    // there are no throttles for SystemDelete and we deeply check
-                                    // with
-                                    // long term enabled
-                                    .hasPrecheck(BUSY));
+                    .then(scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                            .withEntityMemo(randomUppercase(100))
+                            .designatingPayer(PAYING_ACCOUNT_2)
+                            .payingWith(PAYING_ACCOUNT)
+                            // we are always busy with long term enabled in this case
+                            // because
+                            // there are no throttles for SystemDelete and we deeply check
+                            // with
+                            // long term enabled
+                            .hasPrecheck(BUSY));
         }
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFails")

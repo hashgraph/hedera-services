@@ -707,10 +707,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         if (dispatchValidationResult != null) {
             childContext.feeAccumulator.chargeFees(
-                    syntheticPayer,
-                    networkInfo().selfNodeInfo().accountId(),
-                    dispatchValidationResult.fees());
-            System.out.println("dispatchSyntheticTxn: " + dispatchValidationResult.key() + " network fees : " + dispatchValidationResult.fees().copyBuilder().build());
+                    syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
+            System.out.println("dispatchSyntheticTxn: " + dispatchValidationResult.key() + " network fees : "
+                    + dispatchValidationResult.fees().copyBuilder().build());
         }
         try {
             dispatcher.dispatchHandle(childContext);
@@ -724,11 +723,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());
             if (childCategory == SCHEDULED) {
-                final var finalizeContext =
-                        new ChildFinalizeContextImpl(
-                                new ReadableStoreFactory(childStack),
-                                new WritableStoreFactory(childStack, TokenService.NAME),
-                                childRecordBuilder);
+                final var finalizeContext = new ChildFinalizeContextImpl(
+                        new ReadableStoreFactory(childStack),
+                        new WritableStoreFactory(childStack, TokenService.NAME),
+                        childRecordBuilder);
                 childRecordFinalizer.finalizeChildRecord(finalizeContext);
                 childStack.commitFullStack();
                 logger.warn("child trx", e);
@@ -736,7 +734,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 recordListBuilder.revertChildrenOf(recordBuilder);
             }
         }
-
     }
 
     private @Nullable DispatchValidationResult validate(
@@ -779,15 +776,24 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // ScheduleCreate id, which could have happened long ago
             Key syntheticPayerKey = payerAccount.keyOrThrow();
             System.out.println("payerAccount: " + payerAccount);
-            System.out.println("AccountStore(1002): " + readableStoreFactory.getStore(ReadableAccountStore.class).getAccountById(AccountID.newBuilder().accountNum(1002).build()));
-            System.out.println("AccountStore(1001): " + readableStoreFactory.getStore(ReadableAccountStore.class).getAccountById(AccountID.newBuilder().accountNum(1001).build()));
+            System.out.println("AccountStore(1002): "
+                    + readableStoreFactory
+                            .getStore(ReadableAccountStore.class)
+                            .getAccountById(
+                                    AccountID.newBuilder().accountNum(1002).build()));
+            System.out.println("AccountStore(1001): "
+                    + readableStoreFactory
+                            .getStore(ReadableAccountStore.class)
+                            .getAccountById(
+                                    AccountID.newBuilder().accountNum(1001).build()));
             requireNonNull(keyVerifier, "keyVerifier must not be null when enforcing HAPI-style payer checks");
             final var payerKeyVerification = keyVerifier.verificationFor(syntheticPayerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
             dispatchValidationResult = new DispatchValidationResult(syntheticPayerKey, fee);
-            System.out.println("dispatchValidationResult: " + dispatchValidationResult.key() + " fees : " + dispatchValidationResult.fees());
+            System.out.println("dispatchValidationResult: " + dispatchValidationResult.key() + " fees : "
+                    + dispatchValidationResult.fees());
         }
 
         // Given the current HTS system contract interface and ScheduleService
