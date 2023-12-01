@@ -19,8 +19,8 @@ package com.hedera.node.app.hapi.fees.usage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenExtantFeeScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import org.junit.jupiter.api.Test;
 
 class MetadataObjectContractsTest {
@@ -41,9 +41,9 @@ class MetadataObjectContractsTest {
     @Test
     void extantFeeScheduleCtxObjContractSanityChecks() {
         // given:
-        final var a = new ExtantFeeScheduleContext(12, 3);
-        final var b = new ExtantFeeScheduleContext(23, 4);
-        final var c = new ExtantFeeScheduleContext(12, 3);
+        final var a = new TokenExtantFeeScheduleContext(12, 3);
+        final var b = new TokenExtantFeeScheduleContext(23, 4);
+        final var c = new TokenExtantFeeScheduleContext(12, 3);
 
         // expect:
         assertEquals(a, c);
@@ -55,9 +55,9 @@ class MetadataObjectContractsTest {
     @Test
     void feeScheduleMetaObjContractSanityChecks() {
         // given:
-        final var a = new FeeScheduleUpdateMeta(12, 3);
-        final var b = new FeeScheduleUpdateMeta(23, 4);
-        final var c = new FeeScheduleUpdateMeta(12, 3);
+        final var a = new TokenFeeScheduleUpdateMeta(12, 3);
+        final var b = new TokenFeeScheduleUpdateMeta(23, 4);
+        final var c = new TokenFeeScheduleUpdateMeta(12, 3);
 
         // expect:
         assertEquals(a, c);

@@ -42,8 +42,8 @@ import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenExtantFeeScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.util.UtilOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -622,8 +622,8 @@ public class BaseOperationUsage {
 
         /* The canonical usage and context */
         final var newReprBytes = TOKEN_OPS_USAGE.bytesNeededToRepr(theNewSchedule);
-        final var opMeta = new FeeScheduleUpdateMeta(0L, newReprBytes);
-        final var feeScheduleCtx = new ExtantFeeScheduleContext(THREE_MONTHS_IN_SECONDS, 0);
+        final var opMeta = new TokenFeeScheduleUpdateMeta(0L, newReprBytes);
+        final var feeScheduleCtx = new TokenExtantFeeScheduleContext(THREE_MONTHS_IN_SECONDS, 0);
 
         final var into = new UsageAccumulator();
         TOKEN_OPS_USAGE.feeScheduleUpdateUsage(

@@ -54,7 +54,7 @@ import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoTransferMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -535,7 +535,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         final var op = getTxn().getTokenFeeScheduleUpdate();
         final var reprBytes = TOKEN_OPS_USAGE.bytesNeededToRepr(op.getCustomFeesList());
 
-        final var meta = new FeeScheduleUpdateMeta(effConsTime, reprBytes);
+        final var meta = new TokenFeeScheduleUpdateMeta(effConsTime, reprBytes);
         SPAN_MAP_ACCESSOR.setFeeScheduleUpdateMeta(this, meta);
     }
 

@@ -16,4 +16,4 @@
 
 package com.hedera.node.app.hapi.fees.usage.token.meta;
 
-public record FeeScheduleUpdateMeta(long effConsensusTime, int numBytesInNewFeeScheduleRepr) {}
+public record TokenFeeScheduleUpdateMeta(long effConsensusTime, int numBytesInNewFeeScheduleRepr) {}

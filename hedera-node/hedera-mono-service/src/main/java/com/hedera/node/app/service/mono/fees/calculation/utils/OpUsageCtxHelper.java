@@ -30,7 +30,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.hapi.fees.usage.file.FileAppendMeta;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenExtantFeeScheduleContext;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenMintMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
@@ -56,7 +56,7 @@ import javax.inject.Singleton;
 public class OpUsageCtxHelper {
     private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
-    private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX = new ExtantFeeScheduleContext(0, 0);
+    private static final TokenExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX = new TokenExtantFeeScheduleContext(0, 0);
 
     private final StateView workingView;
     private final HederaFileNumbers fileNumbers;
@@ -98,13 +98,13 @@ public class OpUsageCtxHelper {
         return new FileAppendMeta(op.getContents().size(), effLifetime);
     }
 
-    public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {
+    public TokenExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {
         final var key = EntityNum.fromTokenId(op.getTokenId());
         final var token = tokens.get().get(key);
         if (token == null) {
             return MISSING_FEE_SCHEDULE_UPDATE_CTX;
         }
-        return new ExtantFeeScheduleContext(token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
+        return new TokenExtantFeeScheduleContext(token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
     }
 
     public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
