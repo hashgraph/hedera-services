@@ -38,7 +38,7 @@ class StandardExemptionsTest {
     StandardExemptions subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         policies = mock(SystemOpPolicies.class);
         accessor = mock(SignedTxnAccessor.class);
 

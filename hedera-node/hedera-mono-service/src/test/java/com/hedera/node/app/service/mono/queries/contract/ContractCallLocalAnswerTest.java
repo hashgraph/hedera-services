@@ -131,7 +131,7 @@ class ContractCallLocalAnswerTest {
     private ContractCallLocalAnswer subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ContractCallLocalAnswer(
                 ids,
                 aliasManager,

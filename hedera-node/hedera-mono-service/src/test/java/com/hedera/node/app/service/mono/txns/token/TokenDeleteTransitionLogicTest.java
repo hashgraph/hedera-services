@@ -60,7 +60,7 @@ class TokenDeleteTransitionLogicTest {
     private TokenDeleteTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         txnCtx = mock(TransactionContext.class);
         accessor = mock(SignedTxnAccessor.class);
         typedTokenStore = mock(TypedTokenStore.class);

@@ -54,7 +54,7 @@ class GetVersionInfoAnswerTest {
     private GetVersionInfoAnswer subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         view = mock(StateView.class);
         semanticVersions = mock(SemanticVersions.class);
         given(semanticVersions.getDeployed()).willReturn(new ActiveVersions(expectedVersions, expectedVersions));

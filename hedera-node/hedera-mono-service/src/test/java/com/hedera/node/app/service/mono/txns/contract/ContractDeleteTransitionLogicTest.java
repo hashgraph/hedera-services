@@ -52,7 +52,7 @@ class ContractDeleteTransitionLogicTest {
     ContractDeleteTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         consensusTime = Instant.now();
 
         deletionLogic = mock(DeletionLogic.class);

@@ -164,7 +164,7 @@ class QueryDispatcherTest {
     private QueryDispatcher dispatcher;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         handlers = new QueryHandlers(
                 consensusGetTopicInfoHandler,
                 contractGetBySolidityIDHandler,

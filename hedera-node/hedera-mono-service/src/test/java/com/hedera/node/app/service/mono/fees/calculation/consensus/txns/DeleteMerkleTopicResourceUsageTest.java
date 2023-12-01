@@ -29,7 +29,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     private DeleteTopicResourceUsage subject;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         super.setup();
         subject = new DeleteTopicResourceUsage();
     }

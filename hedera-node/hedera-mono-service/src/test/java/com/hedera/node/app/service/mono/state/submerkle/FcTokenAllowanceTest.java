@@ -38,7 +38,7 @@ class FcTokenAllowanceTest {
     private FcTokenAllowance subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         serialNums.add(1L);
         serialNums.add(2L);
         subject = FcTokenAllowance.from(approvedForAll, serialNums);

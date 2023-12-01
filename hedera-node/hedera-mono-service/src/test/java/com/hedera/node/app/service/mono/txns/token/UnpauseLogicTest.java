@@ -41,7 +41,7 @@ class UnpauseLogicTest {
     private UnpauseLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new UnpauseLogic(store);
     }
 

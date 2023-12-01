@@ -67,7 +67,7 @@ class VirtualMerkleNavigationTest extends VirtualTestBase {
     private TestLeaf trlr;
 
     @BeforeEach
-    public void setup() {
+    public void setUp() {
         vm = createMap();
         vm.put(A_KEY, APPLE);
         vm.put(B_KEY, BANANA);

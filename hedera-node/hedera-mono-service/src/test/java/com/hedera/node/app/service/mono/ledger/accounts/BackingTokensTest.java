@@ -43,7 +43,7 @@ class BackingTokensTest {
     private BackingTokens subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         map = new MerkleMap<>();
 
         map.put(aKey, aValue);

@@ -93,7 +93,7 @@ class EvmFnResultTest {
     private EvmFnResult subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new EvmFnResult(
                 contractId,
                 result,

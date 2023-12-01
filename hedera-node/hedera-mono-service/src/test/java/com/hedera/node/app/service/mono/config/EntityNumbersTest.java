@@ -36,7 +36,7 @@ class EntityNumbersTest {
     EntityNumbers subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         fileNumbers = new MockFileNumbers();
         hederaNumbers = new MockHederaNumbers();
         accountNumbers = new MockAccountNumbers();

@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 public class SwirldStateManagerUtilsTests {
 
     @BeforeEach
-    void setup() {}
+    void setUp() {}
 
     @Test
     void testFastCopyIsMutable() {

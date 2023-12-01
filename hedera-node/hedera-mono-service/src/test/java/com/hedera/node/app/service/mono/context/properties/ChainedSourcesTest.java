@@ -41,7 +41,7 @@ class ChainedSourcesTest {
     ChainedSources subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         first = mock(PropertySource.class);
         given(first.containsProperty(firstName)).willReturn(true);
         given(first.getProperty(firstName)).willReturn(firstValue);

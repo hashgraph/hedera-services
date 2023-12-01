@@ -47,7 +47,7 @@ class ReplayingEventsStatusLogicTests {
     private ReplayingEventsStatusLogic logic;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         logic = new ReplayingEventsStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));

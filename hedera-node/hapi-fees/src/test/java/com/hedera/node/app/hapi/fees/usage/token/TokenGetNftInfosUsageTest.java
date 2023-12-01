@@ -37,7 +37,7 @@ class TokenGetNftInfosUsageTest {
     private List<ByteString> metadata;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         metadata = List.of(ByteString.copyFromUtf8("some metadata"));
         id = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(1).build();
         subject = TokenGetNftInfosUsage.newEstimate(tokenNftInfosQuery());

@@ -76,7 +76,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
     private AutoCreationLogic autoCreationLogic;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         commonSetup();
         setupWithMockLedger();
     }

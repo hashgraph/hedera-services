@@ -41,7 +41,7 @@ class CatastrophicFailureStatusLogicTests {
     private CatastrophicFailureStatusLogic logic;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         time = new FakeTime();
         logic = new CatastrophicFailureStatusLogic();
     }

@@ -220,7 +220,7 @@ class OrphanBufferTests {
     }
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         random = getRandomPrintSeed();
 
         final ArrayList<EventDescriptor> parentCandidates = new ArrayList<>();

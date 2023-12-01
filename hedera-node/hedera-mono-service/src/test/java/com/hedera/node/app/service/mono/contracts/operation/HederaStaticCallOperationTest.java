@@ -93,7 +93,7 @@ class HederaStaticCallOperationTest {
     private HederaStaticCallOperation subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaStaticCallOperation(calc, addressValidator, precompiledContractMap);
     }
 

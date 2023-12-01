@@ -45,7 +45,7 @@ class EvmLogTest {
     private EvmLog subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new EvmLog(aLoggerId, bloom, aTopics, data);
     }
 

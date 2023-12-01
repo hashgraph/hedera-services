@@ -148,7 +148,7 @@ class GetAccountInfoAnswerTest {
     private GetAccountInfoAnswer subject;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
         final var firstRel = new MerkleTokenRelStatus(firstBalance, true, true, true);

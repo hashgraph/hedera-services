@@ -63,7 +63,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
     private SetApprovalForAllCall subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         final Tuple tuple =
                 new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, Boolean.TRUE);
         final byte[] inputBytes = Bytes.wrapByteBuffer(

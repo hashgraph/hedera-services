@@ -74,7 +74,7 @@ class AssociateLogicTest {
     private AssociateLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
     }
 

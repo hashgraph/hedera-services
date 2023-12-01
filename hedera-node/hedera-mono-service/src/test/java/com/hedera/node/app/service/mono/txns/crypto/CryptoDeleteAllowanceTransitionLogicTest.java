@@ -78,7 +78,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
     CryptoDeleteAllowanceTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new CryptoDeleteAllowanceTransitionLogic(
                 txnCtx, accountStore, deleteAllowanceChecks, view, deleteAllowanceLogic);
     }

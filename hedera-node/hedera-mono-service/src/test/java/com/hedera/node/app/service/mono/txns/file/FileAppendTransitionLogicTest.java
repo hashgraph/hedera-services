@@ -99,7 +99,7 @@ class FileAppendTransitionLogicTest {
     HederaFileNumbers numbers = new MockFileNumbers();
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
         attr = new HFileMeta(false, wacl, 2_000_000L);
         deletedAttr = new HFileMeta(true, wacl, 2_000_000L);

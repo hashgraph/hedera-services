@@ -64,7 +64,7 @@ class EventDeduplicatorTests {
     private static final long TEST_EVENT_COUNT = 1000;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         random = getRandomPrintSeed();
     }
 

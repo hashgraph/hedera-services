@@ -58,7 +58,7 @@ class MerkleDbDataSourceMetricsTest {
     private Metrics metrics;
 
     @BeforeAll
-    static void setup() throws Exception {
+    static void setUp() throws Exception {
         testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceMetricsTest");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }

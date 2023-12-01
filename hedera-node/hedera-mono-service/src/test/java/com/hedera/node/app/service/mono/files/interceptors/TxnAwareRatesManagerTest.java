@@ -82,7 +82,7 @@ class TxnAwareRatesManagerTest {
     TxnAwareRatesManager subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         attr = new HFileMeta(false, new JContractIDKey(1, 2, 3), Instant.now().getEpochSecond());
 
         final PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);

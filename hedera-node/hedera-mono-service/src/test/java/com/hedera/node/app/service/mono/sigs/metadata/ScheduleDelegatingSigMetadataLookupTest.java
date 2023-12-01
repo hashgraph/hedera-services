@@ -48,7 +48,7 @@ class ScheduleDelegatingSigMetadataLookupTest {
     Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         schedule = ScheduleVirtualValue.from(
                 scheduleCreateTxnWith(
                                 TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),

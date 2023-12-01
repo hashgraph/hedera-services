@@ -154,7 +154,7 @@ class TokenFreezeAccountHandlerTest {
         private ExpiryValidator expiryValidator;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
             given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
             given(context.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);

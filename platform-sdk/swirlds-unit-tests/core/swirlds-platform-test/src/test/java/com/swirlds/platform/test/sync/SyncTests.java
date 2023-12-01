@@ -215,7 +215,7 @@ public class SyncTests {
     }
 
     @BeforeAll
-    public static void setup() throws FileNotFoundException, ConstructableRegistryException {
+    public static void setUp() throws FileNotFoundException, ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");

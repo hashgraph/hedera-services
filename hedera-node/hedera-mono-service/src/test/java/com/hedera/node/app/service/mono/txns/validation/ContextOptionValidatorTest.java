@@ -150,7 +150,7 @@ class ContextOptionValidatorTest {
     private final FileID target = asFile("0.0.123");
 
     @BeforeEach
-    void setup() throws Exception {
+    void setUp() throws Exception {
         txnCtx = mock(TransactionContext.class);
         given(txnCtx.consensusTime()).willReturn(now);
         accounts = mock(AccountStorageAdapter.class);

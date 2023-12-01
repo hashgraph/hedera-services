@@ -39,7 +39,7 @@ public class TransactionTest {
     private static final int MAX_ADDRESSBOOK_SIZE = 2048;
 
     @BeforeAll
-    public static void setup() throws ConstructableRegistryException {
+    public static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common.system");
     }

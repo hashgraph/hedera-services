@@ -61,7 +61,7 @@ class SwirldTransactionSubmitterTest {
     }
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         random = RandomUtils.getRandom();
         platformStatus = PlatformStatus.ACTIVE;
         final Configuration configuration = new TestConfigBuilder()

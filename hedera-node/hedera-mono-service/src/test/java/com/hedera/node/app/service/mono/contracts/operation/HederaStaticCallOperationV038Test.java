@@ -68,7 +68,7 @@ class HederaStaticCallOperationV038Test {
     private HederaStaticCallOperationV038 subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaStaticCallOperationV038(calc, addressValidator, systemAccountDetector);
     }
 

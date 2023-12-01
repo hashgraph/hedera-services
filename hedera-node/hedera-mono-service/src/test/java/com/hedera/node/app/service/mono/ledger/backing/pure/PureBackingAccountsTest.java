@@ -50,7 +50,7 @@ class PureBackingAccountsTest {
     private PureBackingAccounts subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         map = mock(MerkleMap.class);
 
         subject = new PureBackingAccounts(() -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(map)));

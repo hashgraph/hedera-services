@@ -57,7 +57,7 @@ class StandardizedPropertySourcesTest {
     private StandardizedPropertySources subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new StandardizedPropertySources(bootstrapProps, dynamicGlobalProps, nodeProps);
     }
 

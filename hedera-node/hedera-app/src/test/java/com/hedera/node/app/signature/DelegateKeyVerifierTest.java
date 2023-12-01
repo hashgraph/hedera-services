@@ -62,7 +62,7 @@ class DelegateKeyVerifierTest {
     }
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new DelegateKeyVerifier(parentCallback);
     }
 

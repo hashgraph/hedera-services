@@ -42,7 +42,7 @@ class EntityNumVirtualKeyTest {
     private EntityNumVirtualKey subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new EntityNumVirtualKey(longKey);
     }
 

@@ -30,7 +30,7 @@ class OwnershipTrackerTest {
     private final Id token = new Id(0, 0, 1);
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         // setup the getter/setter test
         subject = new OwnershipTracker();
     }

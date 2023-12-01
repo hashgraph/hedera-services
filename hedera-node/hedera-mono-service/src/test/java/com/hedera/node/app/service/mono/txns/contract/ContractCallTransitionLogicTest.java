@@ -162,7 +162,7 @@ class ContractCallTransitionLogicTest {
     ContractCallTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ContractCallTransitionLogic(
                 txnCtx,
                 accountStore,

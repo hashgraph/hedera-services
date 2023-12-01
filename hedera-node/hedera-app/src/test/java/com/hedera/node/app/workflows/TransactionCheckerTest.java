@@ -156,7 +156,7 @@ final class TransactionCheckerTest extends AppTestBase {
      * sure it does so correctly!
      */
     @BeforeEach
-    void setup() {
+    void setUp() {
         txBody = bodyBuilder(txIdBuilder()).build();
         signatureMap = sigMapBuilder().build();
         signedTx = signedTxBuilder(txBody, signatureMap).build();

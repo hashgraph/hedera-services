@@ -51,7 +51,7 @@ class MerkleMapEntryKeyTests {
     Path testDirectory;
 
     @BeforeAll
-    static void setup() throws ConstructableRegistryException {
+    static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("*");
     }
 

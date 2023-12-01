@@ -86,7 +86,7 @@ class GetMerkleTopicInfoAnswerTest {
     NetworkInfo networkInfo;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setUp() throws Exception {
         adminKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
         submitKey = MISC_ACCOUNT_KT.asKey();
         topics = mock(MerkleMapLike.class);

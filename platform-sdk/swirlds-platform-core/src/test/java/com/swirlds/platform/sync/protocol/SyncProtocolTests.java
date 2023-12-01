@@ -63,7 +63,7 @@ class SyncProtocolTests {
     private PlatformContext platformContext;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         peerId = new NodeId(1);
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);

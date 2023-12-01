@@ -97,7 +97,7 @@ class HederaCallCodeOperationTest {
     private HederaCallCodeOperation subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
         commonSetup(evmMsgFrame, worldUpdater, acc);
     }

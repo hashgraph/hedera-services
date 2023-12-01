@@ -82,7 +82,7 @@ class GetContractInfoResourceUsageTest {
     private GetContractInfoResourceUsage subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         expected = mock(FeeData.class);
         aliasManager = mock(AliasManager.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);

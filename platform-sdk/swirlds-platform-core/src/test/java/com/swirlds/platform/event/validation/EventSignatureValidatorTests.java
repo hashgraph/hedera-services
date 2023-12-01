@@ -121,7 +121,7 @@ class EventSignatureValidatorTests {
     }
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         random = getRandomPrintSeed();
         platformContext = TestPlatformContextBuilder.create().build();
         time = new FakeTime();

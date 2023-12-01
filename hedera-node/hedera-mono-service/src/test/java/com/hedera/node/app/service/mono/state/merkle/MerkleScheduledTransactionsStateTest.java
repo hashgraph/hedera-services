@@ -33,7 +33,7 @@ class MerkleScheduledTransactionsStateTest {
     private MerkleScheduledTransactionsState subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new MerkleScheduledTransactionsState(currentMinSecond);
     }
 

@@ -98,7 +98,7 @@ class EmergencyReconnectTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
     @BeforeEach
-    public void setup() throws ExecutionException, InterruptedException, ConstructableRegistryException {
+    public void setUp() throws ExecutionException, InterruptedException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
 
         when(trueFuture.get()).thenReturn(true);

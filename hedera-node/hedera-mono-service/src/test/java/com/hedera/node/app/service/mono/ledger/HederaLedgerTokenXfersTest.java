@@ -33,7 +33,7 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class HederaLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
     @BeforeEach
-    void setup() {
+    void setUp() {
         commonSetup();
         setupWithMockLedger();
     }

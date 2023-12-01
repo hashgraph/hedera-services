@@ -51,7 +51,7 @@ class ScreenedNodeFilePropsTest {
             entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         log = mock(Logger.class);
         ScreenedNodeFileProps.log = log;
         ScreenedNodeFileProps.nodePropsLoc = STD_NODE_PROPS_LOC;

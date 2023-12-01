@@ -78,7 +78,7 @@ class GetAccountRecordsResourceUsageTest {
     private GetAccountRecordsResourceUsage subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         aValue = MerkleAccountFactory.newAccount().get();
         aValue.records().offer(recordOne());
         aValue.records().offer(recordTwo());

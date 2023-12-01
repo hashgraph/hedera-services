@@ -40,7 +40,7 @@ class DataFileReaderCloseTest {
     private static final DataItemSerializer<long[]> serializer = new TwoLongSerializer();
 
     @BeforeAll
-    static void setup() throws IOException {
+    static void setUp() throws IOException {
         final Path dir = TemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
         collection = new DataFileCollection<>(dir, "store", serializer, null);
     }

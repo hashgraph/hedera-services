@@ -80,7 +80,7 @@ class TokenUpdateTransitionLogicTest {
     private TokenUpdateTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         validator = mock(OptionValidator.class);
         store = mock(TokenStore.class);
         ledger = mock(HederaLedger.class);

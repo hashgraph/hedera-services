@@ -50,7 +50,7 @@ class MerkleUniqueTokenTest {
     private static long timestampL = 1_234_567L;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         owner = new EntityId(0, 0, 3);
         otherOwner = new EntityId(0, 0, 4);
         spender = new EntityId(0, 0, 5);

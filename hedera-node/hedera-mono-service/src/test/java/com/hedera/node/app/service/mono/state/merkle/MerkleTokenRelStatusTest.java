@@ -51,7 +51,7 @@ class MerkleTokenRelStatusTest {
     private MerkleTokenRelStatus subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
         subject.setNext(nextTokenNum);
         subject.setPrev(prevTokenNum);

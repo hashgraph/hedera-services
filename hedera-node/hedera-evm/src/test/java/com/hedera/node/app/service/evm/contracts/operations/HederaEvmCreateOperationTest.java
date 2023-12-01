@@ -55,7 +55,7 @@ class HederaEvmCreateOperationTest {
     private CreateOperationExternalizer externalizer;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaEvmCreateOperation(gasCalculator, externalizer);
     }
 

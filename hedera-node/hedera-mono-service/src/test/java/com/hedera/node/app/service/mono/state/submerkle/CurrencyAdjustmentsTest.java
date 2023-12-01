@@ -62,7 +62,7 @@ class CurrencyAdjustmentsTest {
     private CurrencyAdjustments subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new CurrencyAdjustments();
         subject.accountNums = new long[] {a.getAccountNum(), b.getAccountNum(), c.getAccountNum()};
         subject.hbars = new long[] {aAmount, bAmount, cAmount};

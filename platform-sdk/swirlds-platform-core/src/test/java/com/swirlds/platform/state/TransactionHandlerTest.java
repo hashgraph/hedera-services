@@ -57,7 +57,7 @@ class TransactionHandlerTest {
     private TransactionHandler handler;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         when(state.getSwirldDualState()).thenReturn(dualState);
 
         handler = new TransactionHandler(selfId, mock(SwirldStateMetrics.class));

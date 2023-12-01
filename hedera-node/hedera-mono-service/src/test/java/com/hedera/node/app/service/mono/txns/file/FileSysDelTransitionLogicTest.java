@@ -102,7 +102,7 @@ class FileSysDelTransitionLogicTest {
     FileSysDelTransitionLogic subject;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
         attr = new HFileMeta(false, wacl, oldExpiry);
         deletedAttr = new HFileMeta(true, wacl, oldExpiry);

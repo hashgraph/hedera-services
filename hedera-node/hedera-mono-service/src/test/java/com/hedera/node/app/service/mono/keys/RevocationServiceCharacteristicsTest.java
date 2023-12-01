@@ -29,7 +29,7 @@ class RevocationServiceCharacteristicsTest {
     private JThresholdKey t;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setUp() throws Exception {
         l = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey().getKeyList();
         t = TxnHandlingScenario.LONG_THRESHOLD_KT.asJKey().getThresholdKey();
     }

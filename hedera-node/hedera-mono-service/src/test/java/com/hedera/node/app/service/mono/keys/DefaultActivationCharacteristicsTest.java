@@ -32,7 +32,7 @@ class DefaultActivationCharacteristicsTest {
     KeyActivationCharacteristics subject = DEFAULT_ACTIVATION_CHARACTERISTICS;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setUp() throws Exception {
         l = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey().getKeyList();
         t = TxnHandlingScenario.LONG_THRESHOLD_KT.asJKey().getThresholdKey();
     }

@@ -78,7 +78,7 @@ class BackedSystemAccountsCreatorTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup() throws InvalidKeyException, NegativeAccountBalanceException, IllegalArgumentException {
+    void setUp() throws InvalidKeyException, NegativeAccountBalanceException, IllegalArgumentException {
         genesisKey = JKey.mapKey(Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
                 .build());

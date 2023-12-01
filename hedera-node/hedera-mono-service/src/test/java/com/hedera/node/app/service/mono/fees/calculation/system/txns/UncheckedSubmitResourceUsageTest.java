@@ -33,7 +33,7 @@ class UncheckedSubmitResourceUsageTest {
     private UncheckedSubmitResourceUsage subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new UncheckedSubmitResourceUsage();
     }
 

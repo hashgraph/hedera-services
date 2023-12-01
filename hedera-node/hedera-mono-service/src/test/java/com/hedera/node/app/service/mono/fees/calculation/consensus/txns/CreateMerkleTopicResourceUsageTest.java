@@ -38,7 +38,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     private CreateTopicResourceUsage subject;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         super.setup();
         subject = new CreateTopicResourceUsage();
     }

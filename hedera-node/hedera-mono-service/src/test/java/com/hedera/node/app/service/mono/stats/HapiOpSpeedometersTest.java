@@ -76,7 +76,7 @@ class HapiOpSpeedometersTest {
     private HapiOpSpeedometers subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo};
         final Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
 

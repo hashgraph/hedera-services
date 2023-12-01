@@ -69,7 +69,7 @@ class IterableContractValueTest {
     private IterableContractValue subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new IterableContractValue(bytesValue, explicitPrevKey, explicitNextKey);
     }
 

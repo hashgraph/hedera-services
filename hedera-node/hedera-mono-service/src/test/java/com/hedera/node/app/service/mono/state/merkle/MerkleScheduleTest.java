@@ -74,7 +74,7 @@ public class MerkleScheduleTest {
     private MerkleSchedule subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         signatories = new ArrayList<>();
         signatories.addAll(List.of(fpk, spk, tpk));
 

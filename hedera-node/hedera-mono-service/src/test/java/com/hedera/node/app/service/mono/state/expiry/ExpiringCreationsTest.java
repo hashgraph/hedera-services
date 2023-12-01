@@ -146,7 +146,7 @@ class ExpiringCreationsTest {
             List.of(new FcTokenAssociation(customFeeToken.num(), customFeeCollector.num()));
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> payerRecords);
         subject.setLedger(ledger);
 

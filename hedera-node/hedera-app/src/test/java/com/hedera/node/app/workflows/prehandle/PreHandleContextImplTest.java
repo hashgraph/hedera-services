@@ -92,7 +92,7 @@ class PreHandleContextImplTest implements Scenarios {
     private PreHandleContextImpl subject;
 
     @BeforeEach
-    void setup() throws PreCheckException {
+    void setUp() throws PreCheckException {
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
         given(account.key()).willReturn(payerKey);
@@ -131,7 +131,7 @@ class PreHandleContextImplTest implements Scenarios {
     final class KeyRequestTest {
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             given(accountStore.getAccountById(ERIN.accountID())).willReturn(ERIN.account());
         }
 

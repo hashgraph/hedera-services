@@ -75,7 +75,7 @@ class FileDeleteTransitionLogicTest {
     private FileDeleteTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         accessor = mock(SignedTxnAccessor.class);
         txnCtx = mock(TransactionContext.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);

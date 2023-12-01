@@ -40,7 +40,7 @@ class ScheduleEqualityVirtualKeyTest {
     private ScheduleEqualityVirtualKey subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ScheduleEqualityVirtualKey(longKey);
     }
 

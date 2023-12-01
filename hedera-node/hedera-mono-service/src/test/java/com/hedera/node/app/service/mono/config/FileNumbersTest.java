@@ -45,7 +45,7 @@ class FileNumbersTest {
     FileNumbers subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         properties = mock(PropertySource.class);
         hederaNumbers = mock(HederaNumbers.class);
 

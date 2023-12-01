@@ -46,7 +46,7 @@ class TopicStoreTest {
     private TopicStore subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new TopicStore(() -> MerkleMapLike.from(topics), transactionRecordService);
     }
 

@@ -41,7 +41,7 @@ class MerkleDbBuilderTest {
     private static Path testDirectory;
 
     @BeforeAll
-    static void setup() throws IOException {
+    static void setUp() throws IOException {
         testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbBuilderTest");
     }
 

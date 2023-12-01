@@ -44,7 +44,7 @@ class EventUtilsTests {
     private final EventImpl gen7 = mock(EventImpl.class);
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         when(gen1.getGeneration()).thenReturn(1L);
         when(gen2.getGeneration()).thenReturn(2L);
         when(gen3.getGeneration()).thenReturn(3L);

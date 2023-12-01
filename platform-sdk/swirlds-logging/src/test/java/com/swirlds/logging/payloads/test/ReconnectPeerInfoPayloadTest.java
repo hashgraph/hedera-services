@@ -38,7 +38,7 @@ class ReconnectPeerInfoPayloadTest {
     private ReconnectPeerInfoPayload payload;
 
     @BeforeEach
-    public void setup() {
+    public void setUp() {
         payload = new ReconnectPeerInfoPayload();
     }
 

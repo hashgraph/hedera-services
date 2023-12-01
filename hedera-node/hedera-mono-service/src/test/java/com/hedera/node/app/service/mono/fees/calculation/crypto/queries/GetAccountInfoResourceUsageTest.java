@@ -94,7 +94,7 @@ class GetAccountInfoResourceUsageTest {
     private GetAccountInfoResourceUsage subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties, rewardCalculator);
     }
 

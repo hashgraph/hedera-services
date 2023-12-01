@@ -49,7 +49,7 @@ public class EmergencySignedStateValidatorTests {
     private EmergencySignedStateValidator validator;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         addressBook = new RandomAddressBookGenerator()
                 .setSize(NUM_NODES)
                 .setAverageWeight(WEIGHT_PER_NODE)

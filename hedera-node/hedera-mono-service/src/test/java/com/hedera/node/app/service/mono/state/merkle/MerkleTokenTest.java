@@ -108,7 +108,7 @@ class MerkleTokenTest {
     private MerkleToken subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new MerkleToken(
                 expiry,
                 totalSupply,

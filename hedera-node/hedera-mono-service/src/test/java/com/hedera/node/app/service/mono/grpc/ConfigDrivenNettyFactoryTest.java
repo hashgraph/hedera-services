@@ -50,7 +50,7 @@ class ConfigDrivenNettyFactoryTest {
     ConfigDrivenNettyFactory subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ConfigDrivenNettyFactory(nodeLocalProperties);
     }
 

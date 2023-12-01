@@ -199,7 +199,7 @@ class HederaTokenStoreTest {
     private HederaTokenStore subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         token = mock(MerkleToken.class);
         given(token.expiry()).willReturn(expiry);
         given(token.symbol()).willReturn(symbol);

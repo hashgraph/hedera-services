@@ -68,7 +68,7 @@ class GetFileContentsAnswerTest {
     GetFileContentsAnswer subject;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         info = FileGetInfoResponse.FileInfo.newBuilder()
                 .setDeleted(false)
                 .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))

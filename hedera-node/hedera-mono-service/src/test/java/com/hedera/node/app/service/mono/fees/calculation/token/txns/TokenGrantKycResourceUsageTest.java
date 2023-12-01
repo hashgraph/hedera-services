@@ -51,7 +51,7 @@ class TokenGrantKycResourceUsageTest {
     TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
 

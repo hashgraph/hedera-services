@@ -57,7 +57,7 @@ class HashHandshakeTests {
     }
 
     @BeforeEach
-    void setup() throws ConstructableRegistryException, IOException {
+    void setUp() throws ConstructableRegistryException, IOException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         registry.registerConstructable(new ClassConstructorPair(SerializableLong.class, SerializableLong::new));

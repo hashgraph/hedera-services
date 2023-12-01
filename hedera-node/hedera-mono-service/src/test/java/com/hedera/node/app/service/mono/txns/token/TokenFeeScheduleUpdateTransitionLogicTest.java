@@ -87,7 +87,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
     private TokenFeeScheduleUpdateTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new TokenFeeScheduleUpdateTransitionLogic(
                 tokenStore, txnCtx, accountStore, sigImpactHistorian, dynamicProperties);
     }

@@ -110,7 +110,7 @@ class ServicesStatsManagerTest {
     ServicesStatsManager subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         ServicesStatsManager.loopFactory = threads;
         ServicesStatsManager.pause = pause;
 

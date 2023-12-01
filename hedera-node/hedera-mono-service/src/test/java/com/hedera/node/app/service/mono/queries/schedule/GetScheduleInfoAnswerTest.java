@@ -75,7 +75,7 @@ class GetScheduleInfoAnswerTest {
     GetScheduleInfoAnswer subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         info = ScheduleInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setScheduleID(scheduleID)

@@ -38,7 +38,7 @@ class ConsensusStatusCountsTest {
     ConsensusStatusCounts subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ConsensusStatusCounts(new ObjectMapper());
     }
 

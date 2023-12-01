@@ -75,7 +75,7 @@ class GenesisRecordsConsensusHookTest {
     private GenesisRecordsConsensusHook subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
         given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))

@@ -86,7 +86,7 @@ class TokenBurnTransitionLogicTest {
     private TokenBurnTransitionLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         burnLogic = new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
         subject = new TokenBurnTransitionLogic(txnCtx, burnLogic);
     }

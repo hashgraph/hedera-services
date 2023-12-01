@@ -44,7 +44,7 @@ class TokenRelListCalculatorTest {
     private TokenRelListCalculator subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new TokenRelListCalculator(localTokenRelsStore());
     }
 

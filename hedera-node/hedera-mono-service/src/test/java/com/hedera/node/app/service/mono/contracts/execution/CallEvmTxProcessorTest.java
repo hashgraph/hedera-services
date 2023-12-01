@@ -153,7 +153,7 @@ class CallEvmTxProcessorTest {
     private String ccpVersion;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         CommonProcessorSetup.setup(gasCalculator);
         var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);

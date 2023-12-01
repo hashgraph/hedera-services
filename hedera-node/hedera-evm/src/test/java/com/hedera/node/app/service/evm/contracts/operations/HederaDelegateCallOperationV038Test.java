@@ -65,7 +65,7 @@ class HederaDelegateCallOperationV038Test {
     private HederaDelegateCallOperationV038 subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> false);
         given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(acc);

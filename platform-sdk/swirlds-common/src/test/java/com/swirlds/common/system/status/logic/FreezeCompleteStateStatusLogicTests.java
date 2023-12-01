@@ -41,7 +41,7 @@ class FreezeCompleteStateStatusLogicTests {
     private FreezeCompleteStatusLogic logic;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         time = new FakeTime();
         logic = new FreezeCompleteStatusLogic();
     }

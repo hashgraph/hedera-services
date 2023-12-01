@@ -55,7 +55,7 @@ class ExpiryStatsTest {
     private ExpiryStats subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ExpiryStats(halfLife);
     }
 

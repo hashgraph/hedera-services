@@ -57,7 +57,7 @@ class MiscRunningAvgsTest {
     private MiscRunningAvgs subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new MiscRunningAvgs(halfLife);
     }
 

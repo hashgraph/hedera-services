@@ -36,7 +36,7 @@ class FcTokenAllowanceIdTest {
     private FcTokenAllowanceId subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = FcTokenAllowanceId.from(tokenNum, spenderNum);
     }
 

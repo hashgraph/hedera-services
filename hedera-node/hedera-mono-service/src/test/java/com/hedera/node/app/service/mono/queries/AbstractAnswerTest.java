@@ -56,7 +56,7 @@ class AbstractAnswerTest {
     AbstractAnswer subject;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         query = mock(Query.class);
         view = mock(StateView.class);
         response = mock(Response.class);

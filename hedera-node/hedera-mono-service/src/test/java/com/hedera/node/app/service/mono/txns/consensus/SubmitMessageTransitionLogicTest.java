@@ -68,7 +68,7 @@ class SubmitMessageTransitionLogicTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         consensusTime = Instant.ofEpochSecond(EPOCH_SECOND);
 
         transactionContext = mock(TransactionContext.class);

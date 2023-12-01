@@ -127,7 +127,7 @@ class MerkleAccountStateTest {
     private MerkleAccountState subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         cryptoAllowances.put(spenderNum1, cryptoAllowance);
         approveForAllNfts.add(tokenAllowanceKey2);
         fungibleTokenAllowances.put(tokenAllowanceKey1, tokenAllowanceVal);

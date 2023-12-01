@@ -40,7 +40,7 @@ class PriorityQueueExpiriesTest {
     };
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new PriorityQueueExpiries<>(testCmp);
     }
 

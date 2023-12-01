@@ -181,7 +181,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
     }
 
@@ -522,7 +522,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -599,7 +599,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -624,7 +624,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -656,7 +656,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
@@ -679,7 +679,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     final class RecordBuilderTest {
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())
@@ -768,7 +768,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private SavepointStackImpl stack;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, new HashMap<>(BASE_DATA));
             final var writableStates =
                     MapWritableStates.builder().state(baseKVState).build();
@@ -1167,7 +1167,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HandleContext context;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             when(stack.createWritableStates(TokenService.NAME))
                     .thenReturn(MapWritableStates.builder()
                             .state(MapWritableKVState.builder("ACCOUNTS").build())

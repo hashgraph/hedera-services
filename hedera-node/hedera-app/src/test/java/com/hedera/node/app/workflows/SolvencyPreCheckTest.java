@@ -84,7 +84,7 @@ class SolvencyPreCheckTest extends AppTestBase {
     private SolvencyPreCheck subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         when(authorizer.hasPrivilegedAuthorization(any(), any(), any())).thenReturn(SystemPrivilege.UNNECESSARY);
 
         subject = new SolvencyPreCheck(exchangeRateManager, feeManager, expiryValidation, authorizer);
@@ -110,7 +110,7 @@ class SolvencyPreCheckTest extends AppTestBase {
         private ReadableStoreFactory storeFactory;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             setupStandardStates();
             storeFactory = new ReadableStoreFactory(state);
         }

@@ -52,7 +52,7 @@ class ScheduleSecondVirtualValueTest {
             new RichInstant(300L, 400), LongLists.immutable.of(800L));
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ScheduleSecondVirtualValue(ids, new SecondSinceEpocVirtualKey(3L));
     }
 

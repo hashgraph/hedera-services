@@ -88,7 +88,7 @@ class ShadowGraphTest {
     }
 
     @BeforeEach
-    public void setup() {
+    public void setUp() {
         ancestorsMap = new HashMap<>();
         generatedEvents = new ArrayList<>();
         genToShadows = new HashMap<>();

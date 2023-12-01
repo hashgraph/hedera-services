@@ -77,7 +77,7 @@ class HederaCallCodeOperationV038Test {
     private HederaCallCodeOperationV038 subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaCallCodeOperationV038(sigsVerifier, calc, addressValidator, systemAccountDetector);
         commonSetup(evmMsgFrame, worldUpdater, acc);
     }

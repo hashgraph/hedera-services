@@ -31,7 +31,7 @@ class MonotonicFullQueueExpiriesTest {
     MonotonicFullQueueExpiries<String> subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new MonotonicFullQueueExpiries<>();
     }
 

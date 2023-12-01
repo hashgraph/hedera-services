@@ -62,7 +62,7 @@ class ConsensusQueueTests {
     }
 
     @BeforeEach
-    public void setup() {
+    public void setUp() {
         queueThread = new QueueThreadConfiguration<ConsensusRound>(getStaticThreadManager())
                 .setQueue(newQueue())
                 .setNodeId(SELF_ID)

@@ -94,7 +94,7 @@ class RootProxyWorldUpdaterTest {
     private RootProxyWorldUpdater subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         enhancement =
                 new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
         givenSubjectWith(HederaTestConfigBuilder.create().getOrCreateConfig(), enhancement);

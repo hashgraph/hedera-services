@@ -43,7 +43,7 @@ class SwirldStateManagerTests {
     private State initialState;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
         final AddressBook addressBook = new RandomAddressBookGenerator().build();
         when(platform.getAddressBook()).thenReturn(addressBook);

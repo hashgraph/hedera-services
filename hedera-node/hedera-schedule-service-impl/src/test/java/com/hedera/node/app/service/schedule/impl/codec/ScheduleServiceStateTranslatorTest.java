@@ -55,7 +55,7 @@ class ScheduleServiceStateTranslatorTest extends ScheduleTestBase {
     private ScheduleVirtualValue subject;
 
     @BeforeEach
-    void setup() throws PreCheckException, InvalidKeyException {
+    void setUp() throws PreCheckException, InvalidKeyException {
         setUpBase();
         protoKey = new EntityNumVirtualKey(scheduleInState.scheduleId().scheduleNum());
         protoBodyBytes = getBodyBytes(scheduleInState);

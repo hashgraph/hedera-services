@@ -53,7 +53,7 @@ class ContractNonceInfoTest {
     private ContractNonceInfo subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new ContractNonceInfo(contractId, nonce);
     }
 

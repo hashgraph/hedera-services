@@ -39,7 +39,7 @@ class FileCreateResourceUsageTest {
     private TransactionBody fileCreateTxn;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         fileCreateTxn = mock(TransactionBody.class);
         given(fileCreateTxn.hasFileCreate()).willReturn(true);
 

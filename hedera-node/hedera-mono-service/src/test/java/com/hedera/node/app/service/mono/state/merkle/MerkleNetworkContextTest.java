@@ -119,7 +119,7 @@ class MerkleNetworkContextTest {
     private MerkleNetworkContext subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         congestionStarts =
                 new Instant[] {Instant.ofEpochSecond(1_234_567L, 54321L), Instant.ofEpochSecond(1_234_789L, 12345L)};
         evmCongestionStarts =

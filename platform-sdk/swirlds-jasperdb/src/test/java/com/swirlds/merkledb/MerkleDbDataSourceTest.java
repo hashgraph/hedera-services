@@ -68,7 +68,7 @@ class MerkleDbDataSourceTest {
     private static Path testDirectory;
 
     @BeforeAll
-    static void setup() throws Exception {
+    static void setUp() throws Exception {
         testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }

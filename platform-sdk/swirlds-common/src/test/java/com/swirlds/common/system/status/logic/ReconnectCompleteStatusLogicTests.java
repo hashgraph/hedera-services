@@ -48,7 +48,7 @@ class ReconnectCompleteStatusLogicTests {
     private ReconnectCompleteStatusLogic logic;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         logic = new ReconnectCompleteStatusLogic(

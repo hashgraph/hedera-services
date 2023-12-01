@@ -48,7 +48,7 @@ class ObservingStatusLogicTests {
     private ObservingStatusLogic logic;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("platformStatus.observingStatusDelay", "5s")

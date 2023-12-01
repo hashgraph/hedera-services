@@ -69,7 +69,7 @@ class MerkleDbSnapshotTest {
     private static final Random RANDOM = new Random(123);
 
     @BeforeAll
-    static void setup() throws Exception {
+    static void setUp() throws Exception {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.virtualmap");

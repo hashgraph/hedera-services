@@ -48,7 +48,7 @@ class TxnIdRecentHistoryTest {
     private TxnIdRecentHistory subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new TxnIdRecentHistory();
     }
 

@@ -88,7 +88,7 @@ class ScheduleSignTransitionLogicTest {
     private ScheduleProcessing scheduleProcessing;
 
     @BeforeEach
-    void setup() throws InvalidProtocolBufferException {
+    void setUp() throws InvalidProtocolBufferException {
         store = mock(ScheduleStore.class);
         accessor = mock(SignedTxnAccessor.class);
         executor = mock(ScheduleExecutor.class);

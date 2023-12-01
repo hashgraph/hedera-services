@@ -60,7 +60,7 @@ class VersionHandshakeTests {
     }
 
     @BeforeEach
-    void setup() throws ConstructableRegistryException, IOException {
+    void setUp() throws ConstructableRegistryException, IOException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
         registry.registerConstructable(new ClassConstructorPair(SerializableLong.class, SerializableLong::new));

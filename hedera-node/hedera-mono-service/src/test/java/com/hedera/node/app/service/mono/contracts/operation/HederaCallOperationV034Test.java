@@ -88,7 +88,7 @@ class HederaCallOperationV034Test {
     private HederaCallOperationV034 subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaCallOperationV034(
                 sigsVerifier, calc, addressValidator, precompiledContractMap, globalDynamicProperties);
     }

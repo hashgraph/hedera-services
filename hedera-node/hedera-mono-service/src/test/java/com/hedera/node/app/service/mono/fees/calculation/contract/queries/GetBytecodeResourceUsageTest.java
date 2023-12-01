@@ -50,7 +50,7 @@ class GetBytecodeResourceUsageTest {
     private GetBytecodeResourceUsage subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         aliasManager = mock(AliasManager.class);
         usageEstimator = mock(SmartContractFeeBuilder.class);
         view = mock(StateView.class);

@@ -105,7 +105,7 @@ final class SubmissionManagerTest extends AppTestBase {
         private TransactionBody txBody;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             bytes = randomBytes(25);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
             submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
@@ -198,7 +198,7 @@ final class SubmissionManagerTest extends AppTestBase {
         private byte[] uncheckedBytes;
 
         @BeforeEach
-        void setup() {
+        void setUp() {
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.TEST.toString())

@@ -107,7 +107,7 @@ class ContractUpdateTransitionLogicTest {
     private NodeInfo nodeInfo;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         consensusTime = Instant.now();
 
         ledger = mock(HederaLedger.class);

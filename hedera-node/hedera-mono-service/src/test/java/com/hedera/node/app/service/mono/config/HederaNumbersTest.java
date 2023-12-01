@@ -32,7 +32,7 @@ class HederaNumbersTest {
     HederaNumbers subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         properties = mock(PropertySource.class);
         given(properties.getLongProperty(HEDERA_SHARD)).willReturn(1L);
         given(properties.getLongProperty(HEDERA_REALM)).willReturn(2L);

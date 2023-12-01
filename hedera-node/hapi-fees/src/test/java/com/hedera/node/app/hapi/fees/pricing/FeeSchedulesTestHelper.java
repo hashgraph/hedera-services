@@ -41,7 +41,7 @@ class FeeSchedulesTestHelper {
     protected static Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalTotalPricesInUsd = null;
 
     @BeforeAll
-    static void setup() throws IOException {
+    static void setUp() throws IOException {
         canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
     }
 

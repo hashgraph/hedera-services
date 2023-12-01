@@ -74,7 +74,7 @@ class TokenAssociateTransitionLogicTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         associateLogic = new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
         subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
     }

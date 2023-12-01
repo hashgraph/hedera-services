@@ -56,7 +56,7 @@ class TokenDissociateUsageTest {
     private TokenDissociateUsage subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         base = mock(TxnUsageEstimator.class);
         given(base.get()).willReturn(A_USAGES_MATRIX);
 

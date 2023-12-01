@@ -65,7 +65,7 @@ class PlatformSigOpsTest {
     private TxnScopedPlatformSigFactory sigFactory;
 
     @BeforeEach
-    void setup() throws Throwable {
+    void setUp() throws Throwable {
         pubKeys.clear();
         sigBytes = mock(PubKeyToSigBytes.class);
         sigFactory = mock(TxnScopedPlatformSigFactory.class);

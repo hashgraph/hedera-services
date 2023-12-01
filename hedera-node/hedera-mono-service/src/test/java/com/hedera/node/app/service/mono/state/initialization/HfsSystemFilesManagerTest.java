@@ -155,7 +155,7 @@ class HfsSystemFilesManagerTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup() throws InvalidKeyException {
+    void setUp() throws InvalidKeyException {
         final var keyBytes = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes();
         masterKey = new JEd25519Key(keyBytes);
         expectedInfo = new HFileMeta(

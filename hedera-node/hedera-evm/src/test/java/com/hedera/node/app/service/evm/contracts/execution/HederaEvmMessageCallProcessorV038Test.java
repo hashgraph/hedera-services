@@ -99,7 +99,7 @@ class HederaEvmMessageCallProcessorV038Test {
     private AbstractLedgerEvmWorldUpdater updater;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new HederaEvmMessageCallProcessorV038(
                 evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile), address -> false);
 

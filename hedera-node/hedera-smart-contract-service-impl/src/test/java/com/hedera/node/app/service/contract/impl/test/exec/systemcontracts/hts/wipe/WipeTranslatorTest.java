@@ -39,7 +39,7 @@ public class WipeTranslatorTest {
     private WipeTranslator subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new WipeTranslator(decoder);
     }
 

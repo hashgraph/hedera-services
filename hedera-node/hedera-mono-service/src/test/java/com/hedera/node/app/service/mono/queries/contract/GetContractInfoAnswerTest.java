@@ -103,7 +103,7 @@ class GetContractInfoAnswerTest {
     GetContractInfoAnswer subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         info = ContractGetInfoResponse.ContractInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setContractID(asContract(target))

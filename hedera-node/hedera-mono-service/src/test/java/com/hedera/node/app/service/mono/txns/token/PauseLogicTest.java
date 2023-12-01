@@ -41,7 +41,7 @@ class PauseLogicTest {
     private PauseLogic subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new PauseLogic(store);
     }
 

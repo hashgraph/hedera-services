@@ -48,7 +48,7 @@ class BasedLedgerValidatorTest {
     BasedLedgerValidator subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         hederaNums = mock(HederaNumbers.class);
         given(hederaNums.realm()).willReturn(realm);
         given(hederaNums.shard()).willReturn(shard);

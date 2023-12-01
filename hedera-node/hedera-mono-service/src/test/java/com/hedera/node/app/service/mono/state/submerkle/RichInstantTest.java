@@ -40,7 +40,7 @@ class RichInstantTest {
     private RichInstant subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         subject = new RichInstant(seconds, nanos);
     }
 

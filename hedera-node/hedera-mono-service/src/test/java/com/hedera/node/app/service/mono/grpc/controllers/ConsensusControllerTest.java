@@ -47,7 +47,7 @@ class ConsensusControllerTest {
     ConsensusController subject;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         txnObserver = mock(StreamObserver.class);
         queryObserver = mock(StreamObserver.class);
 
