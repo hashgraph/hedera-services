@@ -51,13 +51,6 @@ public interface ModelVertex extends Comparable<ModelVertex> {
     boolean isInsertionIsBlocking();
 
     /**
-     * Add an outgoing edge to this vertex.
-     *
-     * @param edge the edge to connect to
-     */
-    void connectToEdge(@NonNull final ModelEdge edge); // TODO redundant?
-
-    /**
      * Get the outgoing edges of this vertex.
      *
      * @return the outgoing edges of this vertex

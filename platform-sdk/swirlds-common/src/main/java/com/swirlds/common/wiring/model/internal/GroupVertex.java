@@ -88,12 +88,6 @@ public class GroupVertex implements ModelVertex {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void connectToEdge(@NonNull final ModelEdge edge) {}
-
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public Set<ModelEdge> getOutgoingEdges() {

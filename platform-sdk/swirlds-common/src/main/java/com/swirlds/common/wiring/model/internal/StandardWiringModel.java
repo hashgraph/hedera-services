@@ -229,7 +229,7 @@ public class StandardWiringModel implements WiringModel {
         final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
 
         final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
-        origin.connectToEdge(edge);
+        origin.getOutgoingEdges().add(edge);
 
         final boolean unique = edges.add(edge);
         if (!unique) {

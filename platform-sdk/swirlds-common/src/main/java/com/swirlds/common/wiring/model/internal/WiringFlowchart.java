@@ -106,7 +106,7 @@ public class WiringFlowchart {
                 final ModelEdge edgeCopy =
                         new ModelEdge(source, destination, edge.getLabel(), edge.isInsertionIsBlocking());
 
-                source.connectToEdge(edgeCopy);
+                source.getOutgoingEdges().add(edgeCopy);
             }
         }
 

@@ -112,14 +112,6 @@ public class StandardVertex implements ModelVertex {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void connectToEdge(@NonNull final ModelEdge edge) { // TODO is this redundant?
-        outgoingEdges.add(Objects.requireNonNull(edge));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public Set<ModelEdge> getOutgoingEdges() {
