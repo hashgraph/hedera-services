@@ -24,6 +24,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
@@ -45,6 +46,7 @@ public final class DiagramCommand extends AbstractCommand {
 
     private List<String> groupStrings = List.of();
     private Set<String> collapsedGroups = Set.of();
+    private List<String> substitutionStrings = List.of();
 
     private DiagramCommand() {}
 
@@ -62,6 +64,14 @@ public final class DiagramCommand extends AbstractCommand {
         this.collapsedGroups = collapsedGroups;
     }
 
+    @CommandLine.Option(
+            names = {"-s", "--substitute"},
+            description = "Substitute a type of edge with a symbol. Useful for spammy edges. "
+                    + "Format: SOURCE_COMPONENT:EDGE_DESCRIPTION:SYMBOL")
+    private void setCollapsedGroups(@NonNull final List<String> substitutionStrings) {
+        this.substitutionStrings = substitutionStrings;
+    }
+
     /**
      * Entry point.
      */
@@ -73,7 +83,8 @@ public final class DiagramCommand extends AbstractCommand {
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
 
-        final String diagramString = platformWiring.getModel().generateWiringDiagram(parseGroups());
+        final String diagramString =
+                platformWiring.getModel().generateWiringDiagram(parseGroups(), parseSubstitutions());
         final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
 
         final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";
@@ -104,5 +115,27 @@ public final class DiagramCommand extends AbstractCommand {
         }
 
         return groups;
+    }
+
+    /**
+     * Parse substitutions from the command line arguments.
+     *
+     * @return a list of zero or more substitutions
+     */
+    @NonNull
+    private List<ModelEdgeSubstitution> parseSubstitutions() {
+        final List<ModelEdgeSubstitution> substitutions = new ArrayList<>();
+        for (final String substitutionString : substitutionStrings) {
+            final String[] parts = substitutionString.split(":");
+            if (parts.length != 3) {
+                throw new IllegalArgumentException("Invalid substitution string: " + substitutionString);
+            }
+            final String sourceComponent = parts[0];
+            final String edgeDescription = parts[1];
+            final String symbol = parts[2];
+            substitutions.add(new ModelEdgeSubstitution(sourceComponent, edgeDescription, symbol));
+        }
+
+        return substitutions;
     }
 }

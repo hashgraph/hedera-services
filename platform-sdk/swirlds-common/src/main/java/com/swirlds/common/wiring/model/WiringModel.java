@@ -116,11 +116,13 @@ public interface WiringModel extends Startable, Stoppable {
     /**
      * Generate a mermaid style wiring diagram.
      *
-     * @param groups optional groupings of vertices
+     * @param groups        optional groupings of vertices
+     * @param substitutions edges to substitute
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    String generateWiringDiagram(@NonNull final List<ModelGroup> groups);
+    String generateWiringDiagram(
+            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

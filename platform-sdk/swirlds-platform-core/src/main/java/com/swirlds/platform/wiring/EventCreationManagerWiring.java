@@ -61,7 +61,7 @@ public class EventCreationManagerWiring {
         newEventOutput = taskScheduler.getOutputWire();
 
         // TODO frequency needs to be configurable
-        heartbeatBindable = taskScheduler.buildHeartbeatInputWire("attempt event creation", 100);
+        heartbeatBindable = taskScheduler.buildHeartbeatInputWire("heartbeat", 100);
     }
 
     /**

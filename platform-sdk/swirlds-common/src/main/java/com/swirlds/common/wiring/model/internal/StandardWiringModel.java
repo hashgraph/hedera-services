@@ -170,15 +170,9 @@ public class StandardWiringModel implements WiringModel {
      */
     @NonNull
     @Override
-    public String generateWiringDiagram(@NonNull final List<ModelGroup> groups) {
-
-        final List<ModelEdgeSubstitution> edgeSubstitutions = new ArrayList<>();
-
-        // TODO this should be a CLI argument
-        edgeSubstitutions.add(
-                new ModelEdgeSubstitution("getMinimumGenerationNonAncient", "minimum generation non ancient", "*"));
-
-        final WiringFlowchart flowchart = new WiringFlowchart(vertices, edgeSubstitutions, groups);
+    public String generateWiringDiagram(
+            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions) {
+        final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups);
         return flowchart.render();
     }
 

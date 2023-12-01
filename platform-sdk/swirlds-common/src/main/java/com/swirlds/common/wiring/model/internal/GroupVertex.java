@@ -21,7 +21,6 @@ import static com.swirlds.common.wiring.model.internal.WiringFlowchart.TEXT_COLO
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -40,7 +39,7 @@ public class GroupVertex implements ModelVertex {
     /**
      * The outgoing edges of this vertex.
      */
-    private final List<ModelEdge> outgoingEdges = new ArrayList<>();
+    private final Set<ModelEdge> outgoingEdges = new HashSet<>();
 
     /**
      * Vertices that are contained within this group.
@@ -97,7 +96,7 @@ public class GroupVertex implements ModelVertex {
      */
     @NonNull
     @Override
-    public List<ModelEdge> getOutgoingEdges() {
+    public Set<ModelEdge> getOutgoingEdges() {
         return outgoingEdges;
     }
 

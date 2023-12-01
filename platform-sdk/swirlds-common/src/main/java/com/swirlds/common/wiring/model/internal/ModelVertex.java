@@ -18,7 +18,6 @@ package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -64,7 +63,7 @@ public interface ModelVertex extends Comparable<ModelVertex> {
      * @return the outgoing edges of this vertex
      */
     @NonNull
-    List<ModelEdge> getOutgoingEdges();
+    Set<ModelEdge> getOutgoingEdges();
 
     /**
      * Get substituted inputs for this vertex.

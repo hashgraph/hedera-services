@@ -232,7 +232,10 @@ public class WiringFlowchart {
             }
 
             if (collapsedDestination) {
+                // Add and remove from set to avoid possible duplicates.
+                edge.getSource().getOutgoingEdges().remove(edge);
                 edge.setDestination(newVertex);
+                edge.getSource().getOutgoingEdges().add(edge);
             }
         }
 

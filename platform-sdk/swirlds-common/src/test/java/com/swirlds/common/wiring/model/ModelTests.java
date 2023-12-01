@@ -29,7 +29,6 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -58,10 +57,8 @@ class ModelTests {
         final boolean illegalDirectSchedulerUseDetected = model.checkForIllegalDirectSchedulerUsage();
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
-        final List<ModelGroup> groups = new ArrayList<>();
-
         // Should not throw.
-        final String diagram = model.generateWiringDiagram(groups);
+        final String diagram = model.generateWiringDiagram(List.of(), List.of());
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }
