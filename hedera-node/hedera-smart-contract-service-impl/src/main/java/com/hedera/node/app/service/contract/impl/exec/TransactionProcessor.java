@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -38,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -206,36 +206,33 @@ public class TransactionProcessor {
         final InvolvedParties parties;
         if (transaction.isCreate()) {
             final Address to;
-
-            final ReadableAccountStore accountStore = updater.enhancement().nativeOperations().readableAccountStore();
-            final Account sponsor = requireNonNull(accountStore.getAccountById(transaction.senderId()));
-
-            var createBody = requireNonNull(transaction.hapiCreation());
-            final var modifiedBodyBuilder = createBody.copyBuilder();
-
-            if (sponsor.memo() != null) {
-                modifiedBodyBuilder.memo(sponsor.memo());
-            }
-
-            if (sponsor.autoRenewAccountId() != null) {
-                modifiedBodyBuilder.autoRenewAccountId(sponsor.autoRenewAccountId());
-            }
-
-            if (sponsor.stakedAccountId() != null) {
-                modifiedBodyBuilder.stakedAccountId(sponsor.stakedAccountId());
-            }
-
-            modifiedBodyBuilder.autoRenewPeriod(Duration.newBuilder().seconds(sponsor.autoRenewSeconds()).build());
-            modifiedBodyBuilder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations());
-            modifiedBodyBuilder.declineReward(sponsor.declineReward());
-
-            final var modifiedBody = modifiedBodyBuilder.build();
-
             if (transaction.isEthereumTransaction()) {
+                final ReadableAccountStore accountStore =
+                        updater.enhancement().nativeOperations().readableAccountStore();
+                var createBody = requireNonNull(transaction.hapiCreation());
+                final var modifiedBodyBuilder = createBody.copyBuilder();
+
+                final Account sponsor = requireNonNull(accountStore.getAccountById(transaction.senderId()));
+                if (sponsor.memo() != null) {
+                    modifiedBodyBuilder.memo(sponsor.memo());
+                }
+                if (sponsor.autoRenewAccountId() != null) {
+                    modifiedBodyBuilder.autoRenewAccountId(sponsor.autoRenewAccountId());
+                }
+                if (sponsor.stakedAccountId() != null) {
+                    modifiedBodyBuilder.stakedAccountId(sponsor.stakedAccountId());
+                }
+                modifiedBodyBuilder.autoRenewPeriod(Duration.newBuilder()
+                        .seconds(sponsor.autoRenewSeconds())
+                        .build());
+                modifiedBodyBuilder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations());
+                modifiedBodyBuilder.declineReward(sponsor.declineReward());
+
+                final var modifiedBody = modifiedBodyBuilder.build();
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
                 updater.setupAliasedTopLevelCreate(modifiedBody, to);
             } else {
-                to = updater.setupTopLevelCreate(modifiedBody);
+                to = updater.setupTopLevelCreate(transaction.hapiCreation());
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {

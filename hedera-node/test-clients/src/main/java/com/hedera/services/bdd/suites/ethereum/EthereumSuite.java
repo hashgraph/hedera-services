@@ -295,6 +295,66 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest1() {
+        return feePaymentMatrix().get(0);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest2() {
+        return feePaymentMatrix().get(1);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest3() {
+        return feePaymentMatrix().get(2);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest4() {
+        return feePaymentMatrix().get(3);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest5() {
+        return feePaymentMatrix().get(4);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest6() {
+        return feePaymentMatrix().get(5);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest7() {
+        return feePaymentMatrix().get(6);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest8() {
+        return feePaymentMatrix().get(7);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest9() {
+        return feePaymentMatrix().get(8);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest10() {
+        return feePaymentMatrix().get(9);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest11() {
+        return feePaymentMatrix().get(10);
+    }
+
+    @HapiTest
+    HapiSpec matrixedPayerRelayerTest12() {
+        return feePaymentMatrix().get(11);
+    }
+
     @BddTestNameDoesNotMatchMethodName
     HapiSpec matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {

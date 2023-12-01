@@ -43,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -135,7 +136,7 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleCachesTheSignaturesIfDataCanBeHydrated() {
+    void preHandleCachesTheSignaturesIfDataCanBeHydrated() throws PreCheckException {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
                 .build();
@@ -151,7 +152,7 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleIgnoresFailureToHydrate() {
+    void preHandleIgnoresFailureToHydrate() throws PreCheckException {
         final var ethTxn =
                 EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
         final var body =

@@ -1081,4 +1081,9 @@ public class SingleTransactionRecordBuilderImpl
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
     }
+
+    public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
+        transactionRecordBuilder.transactionFee(transactionFee + amount);
+        return this;
+    }
 }
