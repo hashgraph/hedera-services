@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
@@ -40,9 +41,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -95,7 +95,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         }
 
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);
+                .dispatch(syntheticCreate, verificationStrategy, spenderId, TokenCreateRecordBuilder.class);
         final var customFees =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).customFees();
         final var tokenType =
@@ -110,19 +110,27 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             if (isFungible && customFees.size() == 0) {
                 encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+                        .encodeElements(
+                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                headlongAddressOf(recordBuilder.tokenID()));
             } else if (isFungible && customFees.size() > 0) {
                 encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+                        .encodeElements(
+                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                headlongAddressOf(recordBuilder.tokenID()));
             } else if (customFees.size() == 0) {
                 encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+                        .encodeElements(
+                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                headlongAddressOf(recordBuilder.tokenID()));
             } else {
                 encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
+                        .encodeElements(
+                                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
+                                headlongAddressOf(recordBuilder.tokenID()));
             }
             return gasOnly(successResult(encodedOutput, gasRequirement), status, false);
         }

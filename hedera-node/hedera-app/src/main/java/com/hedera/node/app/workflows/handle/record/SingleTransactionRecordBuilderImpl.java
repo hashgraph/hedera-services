@@ -852,6 +852,8 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    private TokenID tokenID;
+
     /**
      * Sets the receipt tokenID.
      *
@@ -862,8 +864,13 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
+        this.tokenID = tokenID;
         transactionReceiptBuilder.tokenID(tokenID);
         return this;
+    }
+
+    public TokenID tokenID() {
+        return tokenID;
     }
 
     /**
