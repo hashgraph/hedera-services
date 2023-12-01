@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 public class FreezeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
-    private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
+    private static final String UPLOAD_PATH_PREFIX = "src/main/resources/testfiles/updateFeature/";
     private static final String UPDATE_NEW_FILE = UPLOAD_PATH_PREFIX + "addNewFile/newFile.zip";
 
     private static String uploadPath = "updateSettings";

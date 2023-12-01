@@ -1495,8 +1495,8 @@ jobs:
       - run:
           name: Modify Payer account for Mainnet start from saved state test
           command: |
-            sed -i 's/default.payer=0.0.2/default.payer=0.0.950/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo -n "$KEY_950" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.950/g' /repo/test-clients/src/main/resources/spec-default.properties;
+            echo -n "$KEY_950" > /repo/test-clients/src/main/resources/StartUpAccount.txt;
       - persist_to_workspace:
           root: /
           paths:

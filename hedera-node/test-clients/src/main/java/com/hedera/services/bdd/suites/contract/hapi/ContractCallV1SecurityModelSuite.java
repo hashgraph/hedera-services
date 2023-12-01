@@ -304,7 +304,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
     private HapiSpec lpFarmSimulation() {
         final var adminKey = "adminKey";
         final var gasToOffer = 4_000_000;
-        final var farmInitcodeLoc = "src/main/resource/contract/bytecodes/farmInitcode.bin";
+        final var farmInitcodeLoc = "src/main/resources/contract/bytecodes/farmInitcode.bin";
         final var consAbi = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_devaddr\", \"type\":"
                 + " \"address\" }, { \"internalType\": \"address\", \"name\": \"_rentPayer\","
                 + " \"type\": \"address\" },     { \"internalType\": \"uint256\", \"name\":"

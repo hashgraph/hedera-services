@@ -91,7 +91,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     private static final String ACCT_NAME_PREFIX = "acct-";
     private static final String TOKEN_NAME_PREFIX = "token-";
 
-    private static final String ACCOUNT_FILE_EXPORT_DIR = "src/main/resource/accountBalancesClient.pb";
+    private static final String ACCOUNT_FILE_EXPORT_DIR = "src/main/resources/accountBalancesClient.pb";
 
     private int totalTestTokens = TOTAL_TEST_TOKENS;
     private int totalAccounts = TOTAL_ACCOUNT;

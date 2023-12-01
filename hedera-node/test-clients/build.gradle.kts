@@ -42,12 +42,6 @@ eetModuleInfo {
     requires("org.testcontainers.junit.jupiter")
 }
 
-sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-}
-
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
 tasks.withType<JavaExec> {
     // Do not yet run things on the '--module-path'

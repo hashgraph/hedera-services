@@ -81,7 +81,7 @@ public class TargetNetworkPrep extends HapiSuite {
         final var civilian = "civilian";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
         try {
-            final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
+            final var defaultPermissionsLoc = "src/main/resources/api-permission.properties";
             final var stylized121 =
                     Files.readString(relocatedIfNotPresentInWorkingDir(Paths.get(defaultPermissionsLoc)));
             final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);

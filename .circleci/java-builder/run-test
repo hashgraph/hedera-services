@@ -65,9 +65,9 @@ function tf_destroy {
 }
 
 function replace_application_properties {
-  rm -f ${CLIENT_DIR}/src/main/resource/application.properties \
+  rm -f ${CLIENT_DIR}/src/main/resources/application.properties \
   && cp ${TF_DIR}/nets/${TF_WORKSPACE}/client.application.properties \
-        ${CLIENT_DIR}/src/main/resource/application.properties \
+        ${CLIENT_DIR}/src/main/resources/application.properties \
   ;
 }
 
