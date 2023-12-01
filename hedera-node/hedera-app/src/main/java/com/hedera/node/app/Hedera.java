@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
@@ -437,11 +438,18 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
-        // Now that the migrations have happened, we need to give the node a chance to publish any records that need to
-        // be created as a result of the migration. We'll do this by unsetting the `migrationRecordsStreamed` flag.
-        // Then, when the handle workflow has its first consensus timestamp, it will handle publishing these records (if
-        // needed), and re-set this flag to prevent duplicate publishing.
-        unmarkMigrationRecordsStreamed(state);
+        final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
+        if (isUpgrade) {
+            // When we upgrade to a higher version, after migrations are complete, we need to update
+            // migrationRecordsStreamed flag to false
+            // Now that the migrations have happened, we need to give the node a chance to publish any records that need
+            // to
+            // be created as a result of the migration. We'll do this by unsetting the `migrationRecordsStreamed` flag.
+            // Then, when the handle workflow has its first consensus timestamp, it will handle publishing these records
+            // (if
+            // needed), and re-set this flag to prevent duplicate publishing.
+            unmarkMigrationRecordsStreamed(state);
+        }
 
         logger.info("Migration complete");
     }
@@ -457,6 +465,10 @@ public final class Hedera implements SwirldMain {
         final var nextBlockInfo =
                 currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
         blockInfoState.put(nextBlockInfo);
+        logger.info(
+                "Unmarked migration records streamed with block info {} with hash {}",
+                nextBlockInfo,
+                blockInfoState.hashCode());
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 
