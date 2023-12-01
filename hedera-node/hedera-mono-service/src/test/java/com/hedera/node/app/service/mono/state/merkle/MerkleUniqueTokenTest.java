@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -28,10 +29,11 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
-import java.time.Instant;
-import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.Arrays;
 
 class MerkleUniqueTokenTest {
     private MerkleUniqueToken subject;
@@ -179,7 +181,7 @@ class MerkleUniqueTokenTest {
 
     @Test
     void getsMetadata() {
-        assertEquals(metadata, subject.getMetadata());
+        assertArrayEquals(metadata, subject.getMetadata());
     }
 
     @Test
