@@ -172,7 +172,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .copyBuilder()
                 .key(STANDIN_CONTRACT_KEY)
                 .smartContract(true)
-                .ethereumNonce(initialNonce)
                 .build();
         accountStore.put(accountAsContract);
     }
