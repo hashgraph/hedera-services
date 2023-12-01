@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
@@ -72,12 +73,26 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(syntheticPayerId);
         requireNonNull(recordBuilderClass);
 
+        return context.dispatchChildTransaction(
+                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull <T> T dispatchRemovable(
+            @NonNull final TransactionBody syntheticBody,
+            @NonNull final VerificationStrategy strategy,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final Class<T> recordBuilderClass) {
+        requireNonNull(syntheticBody);
+        requireNonNull(strategy);
+        requireNonNull(syntheticPayerId);
+        requireNonNull(recordBuilderClass);
+
         return context.dispatchRemovableChildTransaction(
-                syntheticBody,
-                recordBuilderClass,
-                activeSignatureTestWith(strategy),
-                syntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     @Override
