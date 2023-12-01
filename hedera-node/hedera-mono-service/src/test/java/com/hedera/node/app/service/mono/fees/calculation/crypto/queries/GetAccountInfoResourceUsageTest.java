@@ -95,12 +95,11 @@ class GetAccountInfoResourceUsageTest {
 
     @BeforeEach
     void setup() {
-        subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties, rewardCalculator);
+        subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, rewardCalculator);
     }
 
     @Test
     void usesEstimator() {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
         final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
                 .setLedgerId(ledgerId)
@@ -114,8 +113,7 @@ class GetAccountInfoResourceUsageTest {
                 .setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
                 .build();
         final var query = accountInfoQuery(a, ANSWER_ONLY);
-        given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo, rewardCalculator))
-                .willReturn(Optional.of(info));
+        given(view.infoForAccount(queryTarget, aliasManager, rewardCalculator)).willReturn(Optional.of(info));
         given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
         final var usage = subject.usageGiven(query, view);
@@ -137,9 +135,7 @@ class GetAccountInfoResourceUsageTest {
 
     @Test
     void returnsDefaultIfNoSuchAccount() {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
-        given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo, rewardCalculator))
-                .willReturn(Optional.empty());
+        given(view.infoForAccount(queryTarget, aliasManager, rewardCalculator)).willReturn(Optional.empty());
 
         final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 

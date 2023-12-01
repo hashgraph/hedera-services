@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.queries.AnswerService;
@@ -44,24 +43,23 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Implements the {@link HederaFunctionality#ContractGetInfo} query handler.
+ * The token relationships field is deprecated and is no more returned by this query.
+ */
 @Singleton
 public class GetContractInfoAnswer implements AnswerService {
     public static final String CONTRACT_INFO_CTX_KEY = GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
 
     private final AliasManager aliasManager;
     private final OptionValidator validator;
-    private final GlobalDynamicProperties dynamicProperties;
     private final RewardCalculator rewardCalculator;
 
     @Inject
     public GetContractInfoAnswer(
-            final AliasManager aliasManager,
-            final OptionValidator validator,
-            final GlobalDynamicProperties dynamicProperties,
-            final RewardCalculator rewardCalculator) {
+            final AliasManager aliasManager, final OptionValidator validator, final RewardCalculator rewardCalculator) {
         this.aliasManager = aliasManager;
         this.validator = validator;
-        this.dynamicProperties = dynamicProperties;
         this.rewardCalculator = rewardCalculator;
     }
 
@@ -155,8 +153,7 @@ public class GetContractInfoAnswer implements AnswerService {
                 response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
             }
         } else {
-            final var info = view.infoForContract(
-                    op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
+            final var info = view.infoForContract(op.getContractID(), aliasManager, rewardCalculator);
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
             } else {

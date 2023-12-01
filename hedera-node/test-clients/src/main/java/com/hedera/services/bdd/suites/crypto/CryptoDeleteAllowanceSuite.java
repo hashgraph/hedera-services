@@ -41,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -280,8 +279,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_ALLOWANCE_OWNER_ID))
                 .then(getAccountDetails(owner)
                         .payingWith(GENESIS)
-                        .hasCostAnswerPrecheck(ACCOUNT_DELETED)
-                        .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        .has(accountDetailsWith().deleted(true)));
     }
 
     @HapiTest

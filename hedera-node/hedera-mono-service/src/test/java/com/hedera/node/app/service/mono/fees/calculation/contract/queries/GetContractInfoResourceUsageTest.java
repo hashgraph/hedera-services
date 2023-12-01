@@ -90,8 +90,7 @@ class GetContractInfoResourceUsageTest {
 
         view = mock(StateView.class);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerContractInfo);
-        given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator))
-                .willReturn(Optional.of(info));
+        given(view.infoForContract(target, aliasManager, rewardCalculator)).willReturn(Optional.of(info));
 
         estimator = mock(ContractGetInfoUsage.class);
         mockedStatic = mockStatic(ContractGetInfoUsage.class);
@@ -143,8 +142,7 @@ class GetContractInfoResourceUsageTest {
     @Test
     void onlySetsContractInfoInQueryCxtIfFound() {
         final var queryCtx = new HashMap<String, Object>();
-        given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator))
-                .willReturn(Optional.empty());
+        given(view.infoForContract(target, aliasManager, rewardCalculator)).willReturn(Optional.empty());
 
         final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 

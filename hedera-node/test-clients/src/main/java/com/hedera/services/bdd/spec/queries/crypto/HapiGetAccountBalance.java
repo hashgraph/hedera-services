@@ -27,7 +27,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -58,6 +60,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * Get the balance of an account.
+ * NOTE: Since we don't return token balances from getAccountBalance query, we are using getAccountDetails query
+ * if there are any assertions about token balances to get token balances for internal testing.
+ */
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
 
@@ -123,6 +130,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
     public HapiGetAccountBalance hasTinyBars(Function<HapiSpec, Function<Long, Optional<String>>> condition) {
         expectedCondition = Optional.of(condition);
+        return this;
+    }
+
+    public HapiGetAccountBalance hasNoTokenBalancesReturned() {
+        expectedTokenBalances = new ArrayList<>();
         return this;
     }
 
@@ -217,11 +229,22 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             assertEquals(expected.get().longValue(), actual, "Wrong balance!");
         }
 
-        Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
-                response.getCryptogetAccountBalance().getTokenBalancesList().stream()
-                        .collect(Collectors.toMap(
-                                TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
-        if (expectedTokenBalances.size() > 0) {
+        // Since we don't support token balances from getAccountBalance query, for internal testing
+        // we are using getAccountDetails query to get token balances.
+        if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
+            final var detailsLookup = QueryVerbs.getAccountDetails(
+                    "0.0." + balanceResponse.getAccountID().getAccountNum());
+            CustomSpecAssert.allRunFor(spec, detailsLookup);
+            final var response = detailsLookup.getResponse();
+            Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
+                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList().stream()
+                            .map(tr -> TokenBalance.newBuilder()
+                                    .setTokenId(tr.getTokenId())
+                                    .setBalance(tr.getBalance())
+                                    .setDecimals(tr.getDecimals())
+                                    .build())
+                            .collect(Collectors.toMap(
+                                    TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
             Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
             for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
                 var tokenId = asTokenId(tokenBalance.getKey(), spec);
@@ -239,15 +262,15 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                             String.format("Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
                 }
             }
-        }
-
-        if (tokenBalanceObservers.isPresent()) {
-            var observers = tokenBalanceObservers.get();
-            for (var entry : observers.entrySet()) {
-                var id = TxnUtils.asTokenId(entry.getKey(), spec);
-                var obs = entry.getValue();
-                obs.accept(
-                        actualTokenBalances.getOrDefault(id, Pair.of(-1L, -1)).getLeft());
+            if (tokenBalanceObservers.isPresent()) {
+                var observers = tokenBalanceObservers.get();
+                for (var entry : observers.entrySet()) {
+                    var id = TxnUtils.asTokenId(entry.getKey(), spec);
+                    var obs = entry.getValue();
+                    obs.accept(actualTokenBalances
+                            .getOrDefault(id, Pair.of(-1L, -1))
+                            .getLeft());
+                }
             }
         }
 

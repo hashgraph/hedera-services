@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -150,7 +150,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
-        assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), ACCOUNT_DELETED);
+        assertDoesNotThrow(() -> networkGetAccountDetailsHandler.validate(context));
     }
 
     @Test
@@ -257,7 +257,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .decimals(1000)
                 .symbol(tokenSymbol)
                 .kycStatus(TokenKycStatus.KYC_NOT_APPLICABLE)
-                .freezeStatus(TokenFreezeStatus.UNFROZEN)
+                .freezeStatus(TokenFreezeStatus.FREEZE_NOT_APPLICABLE)
                 .automaticAssociation(true)
                 .build();
         tokenRelationships.add(tokenRelation);

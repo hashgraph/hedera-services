@@ -349,13 +349,13 @@ class GetAccountDetailsAnswerTest {
         final Query query = validQuery(COST_ANSWER, fee, target);
 
         given(optionValidator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(payerId)), any()))
-                .willReturn(ACCOUNT_DELETED);
+                .willReturn(INVALID_ACCOUNT_ID);
 
         // when:
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
 
         // then:
-        assertEquals(ACCOUNT_DELETED, validity);
+        assertEquals(INVALID_ACCOUNT_ID, validity);
     }
 
     @Test

@@ -74,6 +74,7 @@ public class TokenBalanceValidation extends HapiSuite {
      * Set up validator. Public constructor for use from <code>TokenReconciliationValidator</code>>
      * Assumes that the tokens have already been created, and validation is only to check that
      * <code>expectedTokenBalances</code> match values returned by <code>hasTokenBalance</code>
+     * NOTE: Since token balances are no more returned from query, this validator's validation should be changed
      *
      * @param expectedTokenBalances Map of (accountNum, tokenNum) -> token balance.
      * @param accountClassifier whether the accounts are contracts

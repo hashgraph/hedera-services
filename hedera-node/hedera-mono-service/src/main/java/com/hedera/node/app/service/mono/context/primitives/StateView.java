@@ -392,10 +392,7 @@ public class StateView {
     }
 
     public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
-            final AccountID id,
-            final AliasManager aliasManager,
-            final int maxTokensForAccountInfo,
-            final RewardCalculator rewardCalculator) {
+            final AccountID id, final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
         final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
@@ -420,10 +417,6 @@ public class StateView {
         Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(info::setProxyAccountID);
         if (!isOfEvmAddressSize(account.getAlias())) {
             info.setAlias(account.getAlias());
-        }
-        final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            info.addAllTokenRelationships(tokenRels);
         }
         info.setStakingInfo(stakingInfo(account, rewardCalculator));
 
@@ -546,10 +539,7 @@ public class StateView {
     }
 
     public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
-            final ContractID id,
-            final AliasManager aliasManager,
-            final int maxTokensForAccountInfo,
-            final RewardCalculator rewardCalculator) {
+            final ContractID id, final AliasManager aliasManager, final RewardCalculator rewardCalculator) {
         final var contractId = EntityIdUtils.unaliased(id, aliasManager);
         final var contract = contracts().get(contractId);
         if (contract == null) {
@@ -578,11 +568,6 @@ public class StateView {
         } else {
             info.setContractAccountID(asHexedEvmAddress(mirrorId));
         }
-        final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
-        if (!tokenRels.isEmpty()) {
-            info.addAllTokenRelationships(tokenRels);
-        }
-
         info.setStakingInfo(stakingInfo(contract, rewardCalculator));
 
         try {
