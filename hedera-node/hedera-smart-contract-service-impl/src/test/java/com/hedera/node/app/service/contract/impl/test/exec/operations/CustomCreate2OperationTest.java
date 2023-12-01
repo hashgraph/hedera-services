@@ -34,7 +34,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.collections.undo.UndoSet;
 import org.hyperledger.besu.collections.undo.UndoTable;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.TxValues;
@@ -66,9 +65,6 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
 
     @Mock
     private UndoSet<Address> warmedUpAddresses;
-
-    @Mock
-    private MutableAccount mutableAccount;
 
     private CustomCreate2Operation subject;
 
@@ -131,9 +127,6 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
-        given(worldUpdater.getAccount(EIP_1014_ADDRESS)).willReturn(mutableAccount);
-        given(worldUpdater.getAccount(EIP_1014_ADDRESS).getNonce()).willReturn(NONCE);
-
         verify(worldUpdater).setupInternalAliasedCreate(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
 
         verify(messageFrameStack).addFirst(frameCaptor.capture());
@@ -141,6 +134,6 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
         verify(frame).pushStackItem(Words.fromAddress(EIP_1014_ADDRESS));
-        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS, NONCE);
+        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 }

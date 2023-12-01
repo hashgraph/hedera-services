@@ -35,7 +35,6 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -283,10 +282,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias, final long contractNonce) {
-        AccountID hollowAccountId = evmFrameState.finalizeHollowAccount(alias, contractNonce);
+    public void finalizeHollowAccount(@NonNull final Address alias) {
+        evmFrameState.finalizeHollowAccount(alias);
         // add child record on merge
-        var contractId = ConversionUtils.asNumericContractId(hollowAccountId);
+        var contractId = getHederaContractId(alias);
         var evmAddress = aliasFrom(alias);
         enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
     }

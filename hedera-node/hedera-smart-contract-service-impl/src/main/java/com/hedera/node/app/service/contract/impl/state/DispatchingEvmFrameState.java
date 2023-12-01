@@ -36,7 +36,6 @@ import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -318,8 +317,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public AccountID finalizeHollowAccount(@NonNull final Address address, final long contractNonce) {
-        return nativeOperations.finalizeHollowAccountAsContract(tuweniToPbjBytes(address), contractNonce);
+    public void finalizeHollowAccount(@NonNull final Address address) {
+        nativeOperations.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
     @Override

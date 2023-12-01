@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -106,11 +105,10 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
      * Refuses to finalize a hollow account as a contract.
      *
      * @param evmAddress the EVM address of the hollow account to finalize as a contract
-     * @param contractNonce the contract nonce value to set it to the resulting account after merging with hollow account
      * @throws UnsupportedOperationException always
      */
     @Override
-    public AccountID finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress, final long contractNonce) {
+    public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
         throw new UnsupportedOperationException("Cannot finalize hollow account as contract in query context");
     }
 

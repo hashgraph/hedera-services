@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -101,10 +100,8 @@ public interface EvmFrameState {
      * Given an address that is a "hollow account", finalizes the account as a contract.
      *
      * @param address the address of the hollow account to finalize
-     * @param contractNonce the contract nonce value to set it to the resulting account after merging with hollow account
-     * @return id of the hollow account
      */
-    AccountID finalizeHollowAccount(@NonNull Address address, long contractNonce);
+    void finalizeHollowAccount(@NonNull Address address);
 
     /**
      * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional

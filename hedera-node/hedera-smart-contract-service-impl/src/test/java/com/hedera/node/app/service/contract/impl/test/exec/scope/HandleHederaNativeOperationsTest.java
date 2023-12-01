@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -28,7 +29,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
@@ -182,9 +182,9 @@ class HandleHederaNativeOperationsTest {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountIDByAlias(CANONICAL_ALIAS)).willReturn(A_NEW_ACCOUNT_ID);
 
-        subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS, NONCE);
+        subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
-        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID, NONCE);
+        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID, INITIAL_CONTRACT_NONCE);
         verify(context).newEntityNum();
     }
 
