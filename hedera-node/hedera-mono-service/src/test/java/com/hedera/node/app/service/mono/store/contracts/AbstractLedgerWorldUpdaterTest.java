@@ -336,6 +336,29 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
+    void getOrCreateReturnsExistingAccount() {
+        final var trackingAccounts = ledgers.accounts();
+        trackingAccounts.create(aAccount);
+        trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+
+        given(worldState.get(aAddress))
+                .willReturn(new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+        final var account = subject.getOrCreate(aAddress);
+        assertNotNull(account);
+        assertEquals(aAddress, account.getAddress());
+    }
+
+    @Test
+    void getOrCreateReturnsGhostAccount() {
+        final byte[] alias = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+        final var aliasAddress = Address.wrap(Bytes.wrap(alias));
+        given(aliases.resolveForEvm(aliasAddress)).willReturn(aliasAddress);
+        final var account = subject.getOrCreate(aliasAddress);
+        assertNotNull(account);
+        assertEquals(aliasAddress, account.getAddress());
+    }
+
+    @Test
     void recognizesNonNullTokenLedgers() {
         assertNotNull(subject.trackingTokens());
     }
