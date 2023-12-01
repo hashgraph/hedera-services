@@ -58,7 +58,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     /**
      * The version of the software discovered during deserialization that needs to be preserved in serialization.
      * <p>
-     * DEPRECATED: Remove after 0.45 is delivered to mainnet.
+     * DEPRECATED: Remove after 0.46.0 is delivered to mainnet.
      */
     private int serializedVersion = ClassVersion.BIRTH_ROUND;
 
