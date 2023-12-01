@@ -38,6 +38,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -128,8 +129,8 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         final var result = subject.execute(frame).fullResult().result();
 
         // Then
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT), result.getOutput());
+        assertEquals(State.COMPLETED_SUCCESS, result.getState());
+        verifyResultStatus(result, ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     private static void verifyResultStatus(

@@ -22,7 +22,9 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
@@ -77,11 +79,26 @@ public class EmergencyRecoveryManager {
      *
      * @return the emergency recovery files, or null if none
      */
-    public EmergencyRecoveryFile getEmergencyRecoveryFile() {
+    public @Nullable EmergencyRecoveryFile getEmergencyRecoveryFile() {
         return emergencyRecoveryFile;
     }
 
-    private EmergencyRecoveryFile readEmergencyRecoveryFile(final Path dir) {
+    /**
+     * Returns whether the given state is the emergency state, if there even is one.
+     *
+     * @param state the state to check
+     * @return {@code true} if there is an emergency state and the state supplied is the emergency state, {@code false}
+     * otherwise
+     */
+    public boolean isEmergencyState(@NonNull final SignedState state) {
+        if (emergencyRecoveryFile == null) {
+            return false;
+        }
+        return state.getState().getHash().equals(emergencyRecoveryFile.hash())
+                && state.getRound() == emergencyRecoveryFile.round();
+    }
+
+    private @Nullable EmergencyRecoveryFile readEmergencyRecoveryFile(final Path dir) {
         try {
             return EmergencyRecoveryFile.read(stateConfig, dir);
         } catch (final IOException e) {
