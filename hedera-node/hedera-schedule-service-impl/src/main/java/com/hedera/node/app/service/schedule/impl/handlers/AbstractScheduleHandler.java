@@ -78,7 +78,7 @@ abstract class AbstractScheduleHandler {
     protected ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
         final AccountID originalPayer =
-                        scheduleInState.originalCreateTransaction().transactionID().accountID();
+                scheduleInState.originalCreateTransaction().transactionID().accountID();
         // note, payerAccount should never be null, but we're playing it safe here.
         final AccountID payer = scheduleInState.payerAccountIdOrElse(originalPayer);
         final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);

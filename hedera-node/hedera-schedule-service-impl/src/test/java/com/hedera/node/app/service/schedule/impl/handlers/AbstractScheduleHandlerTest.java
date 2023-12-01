@@ -170,9 +170,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         // given...return fails because it calls the real method before it can be replaced.
         BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(any(), any());
         final Set<Key> keysObtained = testHandler.allKeysForTransaction(scheduleInState, spiedContext);
-        assertThat(keysObtained)
-                .isNotEmpty()
-                .containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
+        assertThat(keysObtained).isNotEmpty().containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
     }
 
     @Test
