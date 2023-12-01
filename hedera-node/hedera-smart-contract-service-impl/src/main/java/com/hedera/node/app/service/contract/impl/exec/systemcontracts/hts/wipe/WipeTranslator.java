@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.FailureCustomizer.NOOP_CUSTOMIZER;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -71,7 +73,8 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
                 attempt,
                 body,
                 SingleTransactionRecordBuilder.class,
-                isFungibleWipe ? WipeTranslator::fungibleWipeGasRequirement : WipeTranslator::nftWipeGasRequirement);
+                isFungibleWipe ? WipeTranslator::fungibleWipeGasRequirement : WipeTranslator::nftWipeGasRequirement,
+                NOOP_CUSTOMIZER);
     }
 
     public static long fungibleWipeGasRequirement(
