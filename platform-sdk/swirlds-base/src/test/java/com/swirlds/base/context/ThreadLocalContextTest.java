@@ -16,16 +16,12 @@
 
 package com.swirlds.base.context;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.swirlds.base.context.internal.ThreadLocalContext;
 import com.swirlds.base.test.fixtures.context.WithContext;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 @WithContext
@@ -37,14 +33,14 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // then
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, "value"));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1L));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1.0D));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, 1.0F));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, true));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose("foo", null));
-        assertThrows(NullPointerException.class, () -> context.addWithRemovalOnClose(null, null));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, "value"));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1L));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1.0D));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, 1.0F));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, true));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add("foo", null));
+        Assertions.assertThrows(NullPointerException.class, () -> context.add(null, null));
     }
 
     @Test
@@ -53,22 +49,22 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // when
-        context.addWithRemovalOnClose("key-string", "value");
-        context.addWithRemovalOnClose("key-int", 1);
-        context.addWithRemovalOnClose("key-long", 1L);
-        context.addWithRemovalOnClose("key-double", 1.0D);
-        context.addWithRemovalOnClose("key-float", 1.0F);
-        context.addWithRemovalOnClose("key-boolean", true);
+        context.add("key-string", "value");
+        context.add("key-int", 1);
+        context.add("key-long", 1L);
+        context.add("key-double", 1.0D);
+        context.add("key-float", 1.0F);
+        context.add("key-boolean", true);
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
-        assertEquals(6, contextMap.size());
-        assertEquals("value", contextMap.get("key-string"));
-        assertEquals("1", contextMap.get("key-int"));
-        assertEquals("1", contextMap.get("key-long"));
-        assertEquals("1.0", contextMap.get("key-double"));
-        assertEquals("1.0", contextMap.get("key-float"));
-        assertEquals("true", contextMap.get("key-boolean"));
+        Assertions.assertEquals(6, contextMap.size());
+        Assertions.assertEquals("value", contextMap.get("key-string"));
+        Assertions.assertEquals("1", contextMap.get("key-int"));
+        Assertions.assertEquals("1", contextMap.get("key-long"));
+        Assertions.assertEquals("1.0", contextMap.get("key-double"));
+        Assertions.assertEquals("1.0", contextMap.get("key-float"));
+        Assertions.assertEquals("true", contextMap.get("key-boolean"));
     }
 
     @Test
@@ -77,14 +73,14 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // when
-        context.addWithRemovalOnClose("key", "a");
-        context.addWithRemovalOnClose("key", "b");
-        context.addWithRemovalOnClose("key", "c");
+        context.add("key", "a");
+        context.add("key", "b");
+        context.add("key", "c");
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
-        assertEquals(1, contextMap.size());
-        assertEquals("c", contextMap.get("key"));
+        Assertions.assertEquals(1, contextMap.size());
+        Assertions.assertEquals("c", contextMap.get("key"));
     }
 
     @Test
@@ -93,12 +89,12 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // when
-        context.addWithRemovalOnClose("key", "a");
+        context.add("key", "a");
         context.remove("key");
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
-        assertEquals(0, contextMap.size());
+        Assertions.assertEquals(0, contextMap.size());
     }
 
     @Test
@@ -107,36 +103,36 @@ public class ThreadLocalContextTest {
         ThreadLocalContext context = ThreadLocalContext.getInstance();
 
         // then
-        assertThrows(NullPointerException.class, () -> context.remove(null));
+        Assertions.assertThrows(NullPointerException.class, () -> context.remove(null));
     }
 
     @Test
     void testClear() {
         // given
         ThreadLocalContext context = ThreadLocalContext.getInstance();
-        context.addWithRemovalOnClose("key", "a");
-        context.addWithRemovalOnClose("key-2", "a");
+        context.add("key", "a");
+        context.add("key-2", "a");
 
         // when
         context.clear();
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
-        assertEquals(0, contextMap.size());
+        Assertions.assertEquals(0, contextMap.size());
     }
 
     @Test
     void testAutocloseable() {
         // given
         ThreadLocalContext context = ThreadLocalContext.getInstance();
-        AutoCloseable closeable = context.addWithRemovalOnClose("key", "a");
+        AutoCloseable closeable = context.add("key", "a");
 
         // when
-        assertDoesNotThrow(() -> closeable.close());
+        Assertions.assertDoesNotThrow(() -> closeable.close());
 
         // then
         final Map<String, String> contextMap = context.getContextMap();
-        assertEquals(0, contextMap.size());
+        Assertions.assertEquals(0, contextMap.size());
     }
 
     @Test
@@ -150,14 +146,14 @@ public class ThreadLocalContextTest {
         // when
         final Map<String, String> mapFromExecutor1 = executor1
                 .submit(() -> {
-                    context.addWithRemovalOnClose("key", "a1");
+                    context.add("key", "a1");
                     return context.getContextMap();
                 })
                 .get();
 
         final Map<String, String> mapFromExecutor2 = executor2
                 .submit(() -> {
-                    context.addWithRemovalOnClose("key", "a2");
+                    context.add("key", "a2");
                     return context.getContextMap();
                 })
                 .get();
@@ -168,15 +164,15 @@ public class ThreadLocalContextTest {
                 .get();
 
         // then
-        assertNotNull(mapFromExecutor1);
-        assertEquals(1, mapFromExecutor1.size());
-        assertEquals("a1", mapFromExecutor1.get("key"));
+        Assertions.assertNotNull(mapFromExecutor1);
+        Assertions.assertEquals(1, mapFromExecutor1.size());
+        Assertions.assertEquals("a1", mapFromExecutor1.get("key"));
 
-        assertNotNull(mapFromExecutor2);
-        assertEquals(1, mapFromExecutor2.size());
-        assertEquals("a2", mapFromExecutor2.get("key"));
+        Assertions.assertNotNull(mapFromExecutor2);
+        Assertions.assertEquals(1, mapFromExecutor2.size());
+        Assertions.assertEquals("a2", mapFromExecutor2.get("key"));
 
-        assertNotNull(mapFromExecutor3);
-        assertEquals(0, mapFromExecutor3.size());
+        Assertions.assertNotNull(mapFromExecutor3);
+        Assertions.assertEquals(0, mapFromExecutor3.size());
     }
 }
