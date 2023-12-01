@@ -17,6 +17,8 @@
 package com.hedera.node.app.fees;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -28,10 +30,13 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
@@ -93,21 +98,24 @@ class ChildFeeContextImplTest {
     @Test
     void delegatesFeeCalculatorCreation() {
         given(context.consensusNow()).willReturn(NOW);
+        given(context.savepointStack()).willReturn(new SavepointStackImpl(new FakeHederaState()));
         given(feeManager.createFeeCalculator(
-                        SAMPLE_BODY,
-                        Key.DEFAULT,
-                        HederaFunctionality.CRYPTO_TRANSFER,
-                        0,
-                        0,
-                        NOW,
-                        SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-                        true))
+                        eq(SAMPLE_BODY),
+                        eq(Key.DEFAULT),
+                        eq(HederaFunctionality.CRYPTO_TRANSFER),
+                        eq(0),
+                        eq(0),
+                        eq(NOW),
+                        eq(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
+                        eq(true),
+                        any(ReadableStoreFactory.class)))
                 .willReturn(feeCalculator);
         assertSame(feeCalculator, subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }
 
     @Test
     void propagatesInvalidBodyAsIllegalStateException() {
+        given(context.savepointStack()).willReturn(new SavepointStackImpl(new FakeHederaState()));
         subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, PAYER_ID);
         assertThrows(
                 IllegalStateException.class,
