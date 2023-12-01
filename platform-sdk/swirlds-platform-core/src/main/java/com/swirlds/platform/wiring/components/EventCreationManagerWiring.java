@@ -64,11 +64,10 @@ public class EventCreationManagerWiring {
         pauseInput = taskScheduler.buildInputWire("pause");
         newEventOutput = taskScheduler.getOutputWire();
 
-        // TODO frequency needs to be configurable
+        // TODO frequency needs to be configurable (default 100)
         heartbeatBindable = taskScheduler.buildHeartbeatInputWire("heartbeat", 100);
     }
 
-    // TODO make sure this throws if not bound
     /**
      * Bind an event creation manager to this wiring.
      *

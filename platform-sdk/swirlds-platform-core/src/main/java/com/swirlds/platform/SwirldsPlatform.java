@@ -750,7 +750,6 @@ public class SwirldsPlatform implements Platform {
                     selfId,
                     appVersion,
                     transactionPool,
-                    eventObserverDispatcher,
                     platformStatusManager::getCurrentStatus,
                     latestReconnectRound::get);
 

@@ -140,7 +140,6 @@ public final class EventCreationManagerFactory {
      * @param selfId                    the ID of this node
      * @param appVersion                the current application version
      * @param transactionPool           provides transactions to be added to new events
-     * @param eventObserverDispatcher   wires together event intake logic
      * @param platformStatusSupplier    provides the current platform status
      * @param latestReconnectRound      provides the latest reconnect round
      * @return a new event creation manager
@@ -154,7 +153,6 @@ public final class EventCreationManagerFactory {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final TransactionPool transactionPool,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Supplier<Long> latestReconnectRound) {
 
@@ -165,7 +163,6 @@ public final class EventCreationManagerFactory {
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(appVersion);
         Objects.requireNonNull(transactionPool);
-        Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(latestReconnectRound);
 
@@ -185,20 +182,6 @@ public final class EventCreationManagerFactory {
                 new MaximumRateRule(platformContext, time),
                 new PlatformStatusRule(platformStatusSupplier, transactionPool));
 
-        final EventCreationManager manager =
-                new EventCreationManager(platformContext, time, eventCreator, eventCreationRules);
-
-        eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
-                manager::registerEvent,
-                event,
-                "Interrupted while attempting to register event with tipset event creator"));
-
-        eventObserverDispatcher.addObserver((ConsensusRoundObserver) round -> abortAndThrowIfInterrupted(
-                manager::setMinimumGenerationNonAncient,
-                round.getGenerations().getMinGenerationNonAncient(),
-                "Interrupted while attempting to register minimum generation "
-                        + "non-ancient with tipset event creator"));
-
-        return manager;
+        return new EventCreationManager(platformContext, time, eventCreator, eventCreationRules);
     }
 }
