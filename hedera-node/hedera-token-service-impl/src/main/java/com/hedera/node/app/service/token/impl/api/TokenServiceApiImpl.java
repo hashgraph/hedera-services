@@ -161,7 +161,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccountAsContract(@NonNull final AccountID hollowAccountId, final long initialNonce) {
+    public void finalizeHollowAccountAsContract(@NonNull final AccountID hollowAccountId) {
         requireNonNull(hollowAccountId);
         final var hollowAccount = requireNonNull(accountStore.get(hollowAccountId));
         if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
