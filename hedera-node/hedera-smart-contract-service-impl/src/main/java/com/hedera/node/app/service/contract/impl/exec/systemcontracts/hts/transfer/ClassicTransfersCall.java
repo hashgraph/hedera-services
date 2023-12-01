@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -138,7 +137,6 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         }
         return completionWith(gasRequirement, recordBuilder, encodedRc(recordBuilder.status()));
     }
-
 
     /**
      * Simulates the mono-service gas calculation for a classic transfer, which is significantly complicated by our

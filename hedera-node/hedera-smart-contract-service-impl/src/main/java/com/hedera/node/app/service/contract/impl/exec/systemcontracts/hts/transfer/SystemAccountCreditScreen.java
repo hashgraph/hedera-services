@@ -17,15 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.NUM_SYSTEM_ACCOUNTS;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.NftTransfer;
-import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Small helper to screen whether a {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} tries
@@ -47,6 +44,7 @@ public class SystemAccountCreditScreen {
             return isSystemAccountNumber(nftTransfer.receiverAccountIDOrThrow().accountNumOrElse(0L));
         }
     };
+
     private SystemAccountCreditScreen() {
         // Singleton
     }

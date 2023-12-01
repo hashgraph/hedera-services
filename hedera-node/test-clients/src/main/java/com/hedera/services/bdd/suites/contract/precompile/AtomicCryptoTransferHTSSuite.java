@@ -1039,7 +1039,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, OWNER, RECEIVER, 2L))));
     }
 
-    // Expected INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE but was INVALID_ACCOUNT_ID
+    @HapiTest
     private HapiSpec cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 

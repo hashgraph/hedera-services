@@ -59,6 +59,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
     @Mock
     private VerificationStrategy verificationStrategy;
+
     @Mock
     private CallStatusStandardizer callStatusStandardizer;
 
@@ -218,7 +219,8 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 approvalSwitchHelper,
-                callStatusStandardizer, verificationStrategy,
+                callStatusStandardizer,
+                verificationStrategy,
                 systemAccountCreditScreen);
     }
 
