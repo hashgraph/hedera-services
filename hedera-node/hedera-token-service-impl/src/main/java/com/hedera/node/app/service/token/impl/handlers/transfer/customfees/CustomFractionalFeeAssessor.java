@@ -231,9 +231,13 @@ public class CustomFractionalFeeAssessor {
         for (final var entry : credits.entrySet()) {
             final var account = entry.getKey();
             final var creditAmount = entry.getValue();
-            final var toReclaimHere = safeFractionMultiply(creditAmount, availableToReclaim, amount);
-            credits.put(account, creditAmount - toReclaimHere);
-            amountReclaimed += toReclaimHere;
+            try {
+                final var toReclaimHere = safeFractionMultiply(creditAmount, availableToReclaim, amount);
+                credits.put(account, creditAmount - toReclaimHere);
+                amountReclaimed += toReclaimHere;
+            } catch (final ArithmeticException e) {
+                throw new HandleException(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
+            }
         }
 
         if (amountReclaimed < amount) {
