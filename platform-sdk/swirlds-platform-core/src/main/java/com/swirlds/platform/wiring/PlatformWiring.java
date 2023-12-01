@@ -79,7 +79,8 @@ public class PlatformWiring implements Startable, Stoppable {
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
-        eventCreationManagerWiring = EventCreationManagerWiring.create(schedulers.eventCreationManagerScheduler());
+        eventCreationManagerWiring =
+                EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
 
         wire();
     }

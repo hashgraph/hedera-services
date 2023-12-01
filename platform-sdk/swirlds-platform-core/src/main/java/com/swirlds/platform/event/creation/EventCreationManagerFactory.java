@@ -176,8 +176,6 @@ public final class EventCreationManagerFactory {
                 appVersion,
                 transactionPool);
 
-        // new BackpressureRule(platformContext, eventIntakeQueue::size) TODO
-
         final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
                 new MaximumRateRule(platformContext, time),
                 new PlatformStatusRule(platformStatusSupplier, transactionPool));

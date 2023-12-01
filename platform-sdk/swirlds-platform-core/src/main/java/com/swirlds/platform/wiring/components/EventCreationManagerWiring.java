@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,20 +45,25 @@ public class EventCreationManagerWiring {
     /**
      * Create a new instance of this wiring.
      *
-     * @param taskScheduler the task scheduler for the event creation manager
+     * @param platformContext the platform context
+     * @param taskScheduler   the task scheduler for the event creation manager
      * @return the new wiring instance
      */
     @NonNull
-    public static EventCreationManagerWiring create(@NonNull final TaskScheduler<GossipEvent> taskScheduler) {
-        return new EventCreationManagerWiring(taskScheduler);
+    public static EventCreationManagerWiring create(
+            @NonNull final PlatformContext platformContext, @NonNull final TaskScheduler<GossipEvent> taskScheduler) {
+        return new EventCreationManagerWiring(platformContext, taskScheduler);
     }
 
     /**
      * Constructor.
      *
-     * @param taskScheduler the task scheduler for the event creation manager
+     * @param platformContext the platform context
+     * @param taskScheduler   the task scheduler for the event creation manager
      */
-    private EventCreationManagerWiring(@NonNull final TaskScheduler<GossipEvent> taskScheduler) {
+    private EventCreationManagerWiring(
+            @NonNull final PlatformContext platformContext, @NonNull final TaskScheduler<GossipEvent> taskScheduler) {
+
         this.taskScheduler = taskScheduler;
 
         eventInput = taskScheduler.buildInputWire("possible parents");
@@ -64,8 +71,11 @@ public class EventCreationManagerWiring {
         pauseInput = taskScheduler.buildInputWire("pause");
         newEventOutput = taskScheduler.getOutputWire();
 
-        // TODO frequency needs to be configurable (default 100)
-        heartbeatBindable = taskScheduler.buildHeartbeatInputWire("heartbeat", 100);
+        final double frequency = platformContext
+                .getConfiguration()
+                .getConfigData(EventCreationConfig.class)
+                .creationAttemptRate();
+        heartbeatBindable = taskScheduler.buildHeartbeatInputWire("heartbeat", frequency);
     }
 
     /**
