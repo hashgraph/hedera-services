@@ -18,10 +18,15 @@ package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SUBSTITUTION;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_STATELESS;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,7 +147,7 @@ public class WiringFlowchart {
                     continue;
                 }
 
-                edge.getDestination().addSubstitutedInput(substitution.substitution());
+                edge.getDestination().getSubstitutedInputs().add(substitution.substitution());
                 edge.setDestination(substitutedVertex);
                 uniqueEdges.add(edge);
             }
@@ -156,7 +161,7 @@ public class WiringFlowchart {
      * Handle groups in the order provided.
      */
     private void handleGroups(@NonNull final List<ModelGroup> groups) {
-        for (final ModelGroup group : groups) { // TODO groups are not sorted when included with collapsed groups!
+        for (final ModelGroup group : groups) {
             final GroupVertex groupVertex = createGroup(group);
             if (group.collapse()) {
                 collapseGroup(groupVertex);
@@ -197,8 +202,116 @@ public class WiringFlowchart {
         return groupVertex;
     }
 
+    /**
+     * Collapse a group of vertices into a single vertex.
+     *
+     * @param group the group to collapse
+     */
     private void collapseGroup(@NonNull final GroupVertex group) {
-        // TODO
+        final List<ModelEdge> edges = collectEdges();
+        final List<ModelVertex> groupVertices = collectGroupVertices(group);
+
+        final TaskSchedulerType schedulerType = getSchedulerTypeOfCollapsedGroup(groupVertices);
+
+        final StandardVertex newVertex = new StandardVertex(group.getName(), schedulerType, SCHEDULER, true);
+
+        // Assign all vertices with a source that is collapsed to the new vertex.
+        // Redirect all vertices with a destination that is collapsed to the new vertex.
+        for (final ModelEdge edge : edges) {
+            final boolean collapsedSource = groupVertices.contains(edge.getSource());
+            final boolean collapsedDestination = groupVertices.contains(edge.getDestination());
+
+            if (collapsedSource && collapsedDestination) {
+                // If the source and or destination are collapsed, then the edge is removed.
+                continue;
+            }
+
+            if (collapsedSource) {
+                edge.setSource(newVertex);
+                newVertex.getOutgoingEdges().add(edge);
+            }
+
+            if (collapsedDestination) {
+                edge.setDestination(newVertex);
+            }
+        }
+
+        // Extract substitutions from collapsed vertices.
+        for (final ModelVertex vertex : groupVertices) {
+            for (final String input : vertex.getSubstitutedInputs()) {
+                newVertex.getSubstitutedInputs().add(input);
+            }
+        }
+
+        // Remove old vertices from the vertex map.
+        for (final ModelVertex vertex : groupVertices) {
+            vertexMap.remove(vertex.getName());
+        }
+
+        // Finally, add the new vertex to the vertex map.
+        vertexMap.put(newVertex.getName(), newVertex);
+    }
+
+    /**
+     * When collapsing a group, determine the type of task scheduler type that should be displayed.
+     */
+    @NonNull
+    private TaskSchedulerType getSchedulerTypeOfCollapsedGroup(@NonNull final List<ModelVertex> groupVertices) {
+
+        boolean hasSequential = false;
+        boolean hasState = false;
+
+        for (final ModelVertex vertex : groupVertices) {
+            if (vertex.getType() == CONCURRENT) {
+                return CONCURRENT;
+            }
+
+            if (vertex.getType() == SEQUENTIAL || vertex.getType() == SEQUENTIAL_THREAD) {
+                if (hasSequential) {
+                    // We've detected more than one sequential scheduler type, so there is more than one logical
+                    // thread of execution within this group.
+                    return CONCURRENT;
+                }
+                hasSequential = true;
+            }
+
+            if (vertex.getType() == DIRECT) {
+                hasState = true;
+            }
+        }
+
+        if (hasSequential) {
+            return SEQUENTIAL;
+        } else {
+            if (hasState) {
+                return DIRECT;
+            }
+            return DIRECT_STATELESS;
+        }
+    }
+
+    /**
+     * Get all edges in the flowchart.
+     *
+     * @return all edges in the flowchart, sorted
+     */
+    private List<ModelVertex> collectGroupVertices(@NonNull final GroupVertex group) {
+        final List<ModelVertex> vertices = new ArrayList<>();
+        final LinkedList<ModelVertex> stack = new LinkedList<>();
+        stack.addLast(group);
+
+        while (!stack.isEmpty()) {
+            final ModelVertex vertex = stack.removeLast();
+            vertices.add(vertex);
+            if (vertex instanceof final GroupVertex groupVertex) {
+                for (final ModelVertex subVertex : groupVertex.getSubVertices()) {
+                    stack.addLast(subVertex);
+                }
+            }
+        }
+
+        Collections.sort(vertices);
+        return vertices;
     }
 
     /**

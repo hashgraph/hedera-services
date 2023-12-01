@@ -44,7 +44,7 @@ import picocli.CommandLine;
 public final class DiagramCommand extends AbstractCommand {
 
     private List<String> groupStrings = List.of();
-    private List<String> collapsedGroupStrings = List.of();
+    private Set<String> collapsedGroups = Set.of();
 
     private DiagramCommand() {}
 
@@ -56,10 +56,10 @@ public final class DiagramCommand extends AbstractCommand {
     }
 
     @CommandLine.Option(
-            names = {"-c", "--collapsed-group"},
-            description = "Specify a collapsed grouping. Format is 'GROUP_NAME:COMPONENT_NAME[,COMPONENT_NAME]*'.")
-    private void setCollapsedGroupStrings(@NonNull final List<String> collapsedGroupStrings) {
-        this.collapsedGroupStrings = collapsedGroupStrings;
+            names = {"-c", "--collapse"},
+            description = "Specify the name of a group that should be collapsed.")
+    private void setCollapsedGroups(@NonNull final Set<String> collapsedGroups) {
+        this.collapsedGroups = collapsedGroups;
     }
 
     /**
@@ -100,17 +100,7 @@ public final class DiagramCommand extends AbstractCommand {
             }
             final String groupName = parts[0];
             final String[] elements = parts[1].split(",");
-            groups.add(new ModelGroup(groupName, Set.of(elements), false));
-        }
-
-        for (final String group : collapsedGroupStrings) {
-            final String[] parts = group.split(":");
-            if (parts.length != 2) {
-                throw new IllegalArgumentException("Invalid group string: " + group);
-            }
-            final String groupName = parts[0];
-            final String[] elements = parts[1].split(",");
-            groups.add(new ModelGroup(groupName, Set.of(elements), true));
+            groups.add(new ModelGroup(groupName, Set.of(elements), collapsedGroups.contains(groupName)));
         }
 
         return groups;

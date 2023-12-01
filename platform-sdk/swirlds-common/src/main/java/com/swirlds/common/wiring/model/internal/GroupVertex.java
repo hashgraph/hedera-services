@@ -22,8 +22,10 @@ import static com.swirlds.common.wiring.model.internal.WiringFlowchart.TEXT_COLO
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A vertex that represents a nexted group of vertices.
@@ -46,6 +48,7 @@ public class GroupVertex implements ModelVertex {
     private final List<ModelVertex> subVertices;
 
     private int depth;
+    private final Set<String> substitutedInputs = new HashSet<>();
 
     public GroupVertex(@NonNull final String name, @NonNull final List<ModelVertex> subVertices) {
 
@@ -101,9 +104,10 @@ public class GroupVertex implements ModelVertex {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public void addSubstitutedInput(@NonNull final String input) {
-        throw new IllegalStateException("Un-collapsed groups never have inputs");
+    public Set<String> getSubstitutedInputs() {
+        return substitutedInputs;
     }
 
     /**

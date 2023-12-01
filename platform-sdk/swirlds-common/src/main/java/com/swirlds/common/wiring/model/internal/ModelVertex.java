@@ -19,6 +19,7 @@ package com.swirlds.common.wiring.model.internal;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A vertex in a wiring model.
@@ -66,11 +67,10 @@ public interface ModelVertex extends Comparable<ModelVertex> {
     List<ModelEdge> getOutgoingEdges();
 
     /**
-     * Add an input that has been substituted during diagram generation.
-     *
-     * @param input the input that has been substituted
+     * Get substituted inputs for this vertex.
      */
-    void addSubstitutedInput(@NonNull final String input);
+    @NonNull
+    Set<String> getSubstitutedInputs();
 
     /**
      * Render this vertex in mermaid format. Used when generating a wiring diagram.

@@ -131,9 +131,10 @@ public class StandardVertex implements ModelVertex {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public void addSubstitutedInput(@NonNull final String input) {
-        substitutedInputs.add(Objects.requireNonNull(input));
+    public Set<String> getSubstitutedInputs() {
+        return substitutedInputs;
     }
 
     /**

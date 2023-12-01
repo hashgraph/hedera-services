@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public class ModelEdge implements Comparable<ModelEdge> {
 
-    private final ModelVertex source;
+    private ModelVertex source;
     private ModelVertex destination;
     private final String label;
     private final boolean insertionIsBlocking;
@@ -60,6 +60,15 @@ public class ModelEdge implements Comparable<ModelEdge> {
     @NonNull
     public ModelVertex getSource() {
         return source;
+    }
+
+    /**
+     * Set the source vertex.
+     *
+     * @param source the source vertex
+     */
+    public void setSource(@NonNull final StandardVertex source) {
+        this.source = Objects.requireNonNull(source);
     }
 
     /**
