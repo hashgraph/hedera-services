@@ -30,7 +30,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public class AdjustmentUtils {
-    public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY = ignore -> new LinkedHashMap<>();
+    public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY =
+            ignore -> new LinkedHashMap<>();
 
     private AdjustmentUtils() {
         throw new UnsupportedOperationException("Utility Class");
