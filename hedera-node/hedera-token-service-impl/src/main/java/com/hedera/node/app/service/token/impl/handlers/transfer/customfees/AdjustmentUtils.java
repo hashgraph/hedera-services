@@ -27,8 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AdjustmentUtils {
+    private static final Logger log = LogManager.getLogger(AdjustmentUtils.class);
     public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY = ignore -> new HashMap<>();
 
     private AdjustmentUtils() {
@@ -133,6 +136,7 @@ public class AdjustmentUtils {
         final var denominatingTokenMap = htsAdjustments.computeIfAbsent(denominatingToken, ADJUSTMENTS_MAP_FACTORY);
         denominatingTokenMap.merge(sender, -amount, Long::sum);
         denominatingTokenMap.merge(collector, amount, Long::sum);
+        log.info("Putting {} for {} in htsAdjustments", denominatingTokenMap, denominatingToken);
         htsAdjustments.put(denominatingToken, denominatingTokenMap);
     }
 

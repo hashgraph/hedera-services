@@ -1536,6 +1536,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
         return defaultHapiSpec("smartContractFailFirst")
