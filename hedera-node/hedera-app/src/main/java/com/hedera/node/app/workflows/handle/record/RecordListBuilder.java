@@ -343,7 +343,9 @@ public final class RecordListBuilder {
                         precedingTxnRecordBuilders.set(i, null);
                     }
                 }
-                precedingTxnRecordBuilders.removeIf(Objects::isNull);
+                if (precedingTxnRecordBuilders.removeIf(Objects::isNull)) {
+                    ensureSequentialConsensusTimes(-1, recordBuilder.consensusNow(), precedingTxnRecordBuilders);
+                }
             }
         } else {
             // Traverse from end to start, since we are most likely going to be reverting the most recent child,
@@ -359,12 +361,14 @@ public final class RecordListBuilder {
         // list for our data structure. So we will shift elements as necessary as we walk through the list.
         final var count = childRecordBuilders.size();
         int into = index; // The position in the array into which we should put the next remaining child
+        var removedRecord = false; // Whether we have done any removals yet
         for (int i = index; i < count; i++) {
             final var child = childRecordBuilders.get(i);
             if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
                 childRecordBuilders.set(i, null);
+                removedRecord = true;
             } else {
                 if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
                     child.status(ResponseCodeEnum.REVERTED_SUCCESS);
@@ -382,6 +386,21 @@ public final class RecordListBuilder {
         //noinspection ListRemoveInLoop
         for (int i = count - 1; i >= into; i--) {
             childRecordBuilders.remove(i);
+        }
+
+        // A dirty hack to match mono-service behavior of always assigning sequential consensus times
+        // to contract service child transactions; no real reason this is necessary
+        if (removedRecord) {
+            ensureSequentialConsensusTimes(+1, recordBuilder.consensusNow(), childRecordBuilders);
+        }
+    }
+
+    private void ensureSequentialConsensusTimes(
+            final int sigNum,
+            @NonNull final Instant parentConsensusTimestamp,
+            @NonNull final List<SingleTransactionRecordBuilderImpl> recordBuilders) {
+        for (int i = 0, n = recordBuilders.size(); i < n; i++) {
+            recordBuilders.get(i).consensusTimestamp(parentConsensusTimestamp.plusNanos((i + 1L) * sigNum));
         }
     }
 

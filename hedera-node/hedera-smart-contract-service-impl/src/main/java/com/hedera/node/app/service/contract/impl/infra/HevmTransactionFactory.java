@@ -302,8 +302,16 @@ public class HevmTransactionFactory {
             validateFalse(initcode.deleted(), FILE_DELETED);
             validateTrue(initcode.contents().length() > 0, CONTRACT_FILE_EMPTY);
             try {
-                return Bytes.fromHex(new String(initcode.contents().toByteArray())
-                        + body.constructorParameters().toHex());
+                final var initcodeBytes = initcode.contents().toByteArray();
+                // Bytes.fromHex() doesn't appreciate a leading '0x' but we supported it in mono-service
+                final String hexedInitcode;
+                if (initcodeBytes[0] == (byte) '0' && initcodeBytes[1] == (byte) 'x') {
+                    hexedInitcode = new String(initcodeBytes, 2, initcodeBytes.length - 2);
+                } else {
+                    hexedInitcode = new String(initcodeBytes);
+                }
+                return Bytes.fromHex(
+                        hexedInitcode + body.constructorParameters().toHex());
             } catch (IllegalArgumentException | NullPointerException ignore) {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
