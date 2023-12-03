@@ -14,10 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.handlers;
+package com.swirlds.platform.state.nexus;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import com.swirlds.common.system.status.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-@ExtendWith(MockitoExtension.class)
-class ContractGetInfoHandlerTest {}
+/**
+ * A thread-safe container that also manages reservations for the emergency state.
+ */
+public class EmergencyStateNexus extends SignedStateNexus {
+    /**
+     * Clears the current state when the platform becomes active.
+     *
+     * @param status the new platform status
+     */
+    public void platformStatusChanged(@NonNull final PlatformStatus status) {
+        if (status == PlatformStatus.ACTIVE) {
+            clear();
+        }
+    }
+}
