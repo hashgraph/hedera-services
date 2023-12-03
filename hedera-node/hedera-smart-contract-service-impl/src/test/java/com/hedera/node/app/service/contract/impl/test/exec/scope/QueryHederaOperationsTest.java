@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -138,6 +139,11 @@ class QueryHederaOperationsTest {
     @Test
     void getOriginalSlotsUsedNotSupported() {
         assertThrows(UnsupportedOperationException.class, () -> subject.getOriginalSlotsUsed(1234L));
+    }
+
+    @Test
+    void acceptsValidShardAndRealm() {
+        assertSame(CALLED_CONTRACT_ID, subject.shardAndRealmValidated(CALLED_CONTRACT_ID));
     }
 
     @Test

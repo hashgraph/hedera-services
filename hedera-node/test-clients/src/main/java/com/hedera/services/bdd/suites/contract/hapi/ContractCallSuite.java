@@ -632,6 +632,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
         final var creationTxn = "creationTxn";
         final var ASSOCIATOR = "Associator";
@@ -820,6 +821,7 @@ public class ContractCallSuite extends HapiSuite {
      * @return a spec characterizing this behavior
      */
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently() {
         final var contractAlternatives = "ErcAndHtsAlternatives";
         final AtomicReference<Address> nftAddr = new AtomicReference<>();
@@ -2315,6 +2317,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L));
     }
 
+    @HapiTest
     private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {
         final var contract = "ConsTimeRepro";
         final var failingCall = "FailingCall";

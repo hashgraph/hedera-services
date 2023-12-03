@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.ac
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setMessageCallHaltedForMissingReceiverSigReq;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
@@ -150,7 +149,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final OperationTracer tracer) {
         final var gasRequirement = precompile.gasRequirement(frame.getInputData());
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
+            doHalt(frame, ExceptionalHaltReason.INSUFFICIENT_GAS);
         } else {
             frame.decrementRemainingGas(gasRequirement);
             final var result = precompile.computePrecompile(frame.getInputData(), frame);
@@ -179,7 +178,8 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         final var gasRequirement = fullResult.gasRequirement();
         tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
+            doHalt(frame, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            fullResult.recordInsufficientGas();
         } else {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
