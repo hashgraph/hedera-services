@@ -1699,6 +1699,7 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(2_000L));
     }
 
+    @HapiTest
     private HapiSpec contractTransferToSigReqAccountWithoutKeyFails() {
         return defaultHapiSpec("ContractTransferToSigReqAccountWithoutKeyFails")
                 .given(
