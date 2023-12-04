@@ -18,7 +18,11 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
@@ -26,6 +30,7 @@ import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -49,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * A fully mutable {@link HederaOperations} implementation based on a {@link HandleContext}.
@@ -57,6 +63,9 @@ import javax.inject.Inject;
 public class HandleHederaOperations implements HederaOperations {
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
+            CryptoUpdateTransactionBody.newBuilder()
+                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
     private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
@@ -150,9 +159,35 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public long lazyCreationCostInGas() {
-        // TODO - implement correctly
-        return 1L;
+    public long lazyCreationCostInGas(@NonNull final Address recipient) {
+        // TransactionBody for lazy create with alias
+        final var creatBuilder = CryptoCreateTransactionBody.newBuilder()
+                .initialBalance(0)
+                .maxAutomaticTokenAssociations(0)
+                .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS))
+                .key(IMMUTABILITY_SENTINEL_KEY)
+                .alias(tuweniToPbjBytes(recipient))
+                .memo(LAZY_MEMO);
+        final var payerId = context.payer();
+        final var createBody = TransactionBody.newBuilder().cryptoCreateAccount(creatBuilder.build());
+        final var createFee = autoCreationFeeFor(createBody, payerId);
+        final var updateFee =
+                autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER), payerId);
+        return createFee + updateFee;
+    }
+
+    /**
+     * Get fees for auto creation.
+     * @param syntheticTransaction transaction body for auto creation
+     * @param syntheticPayerId payerId for the transaction
+     * @return fee for auto creation
+     */
+    private long autoCreationFeeFor(
+            @NonNull final TransactionBody.Builder syntheticTransaction, @NonNull AccountID syntheticPayerId) {
+        requireNonNull(syntheticTransaction);
+        requireNonNull(syntheticPayerId);
+        final var fees = context.dispatchComputeFees(syntheticTransaction.build(), syntheticPayerId);
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**

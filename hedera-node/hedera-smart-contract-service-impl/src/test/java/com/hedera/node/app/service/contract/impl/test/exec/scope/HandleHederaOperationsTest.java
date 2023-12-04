@@ -46,6 +46,7 @@ import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -167,7 +168,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void lazyCreationCostInGasHardcoded() {
-        assertEquals(1L, subject.lazyCreationCostInGas());
+        given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.dispatchComputeFees(any(), any())).willReturn(new Fees(1, 2, 3));
+        assertEquals(12L, subject.lazyCreationCostInGas(NON_SYSTEM_LONG_ZERO_ADDRESS));
     }
 
     @Test
