@@ -68,7 +68,7 @@ public final class PreconsensusEventUtilities {
             return originalFile;
         }
 
-        // Important: do now decrease the maximum generation below the value of the previous file's maximum generation.
+        // Important: do not decrease the maximum generation below the value of the previous file's maximum generation.
         maxGeneration = Math.max(maxGeneration, previousMaximumGeneration);
 
         if (maxGeneration == originalFile.getMaximumGeneration()) {
