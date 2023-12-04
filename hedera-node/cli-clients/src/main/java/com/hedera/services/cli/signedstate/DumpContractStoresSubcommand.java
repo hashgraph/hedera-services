@@ -225,6 +225,7 @@ public class DumpContractStoresSubcommand {
         return didRunToCompletion;
     }
 
+    /** Iterate through a _migrated_ contract store that is in modular-service's representation */
     boolean iterateThroughMigratedContractStorage(BiConsumer<ContractKeyLocal, UInt256> visitor) {
         final var contractStorageStore = getMigratedContractStore();
 
