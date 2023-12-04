@@ -43,7 +43,6 @@ import static org.mockito.Mockito.doAnswer;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
-import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
@@ -59,7 +58,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -239,9 +237,7 @@ class FrameRunnerTest {
     }
 
     private void givenBaseScenarioWithDetails(
-            @NonNull final Address receiver,
-            final boolean success,
-            final boolean receiverSigCheckFailure) {
+            @NonNull final Address receiver, final boolean success, final boolean receiverSigCheckFailure) {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         messageFrameStack.addFirst(frame);
         given(frame.getType()).willReturn(MessageFrame.Type.CONTRACT_CREATION);
@@ -269,8 +265,10 @@ class FrameRunnerTest {
                 .withValue("contracts.maxRefundPercentOfGasLimit", HEDERA_MAX_REFUND_PERCENTAGE)
                 .getOrCreateConfig();
         given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
-        given(frame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE)).willReturn(receiverSigCheckFailed);
-        given(childFrame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE)).willReturn(receiverSigCheckFailed);
+        given(frame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE))
+                .willReturn(receiverSigCheckFailed);
+        given(childFrame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE))
+                .willReturn(receiverSigCheckFailed);
         given(frame.getGasPrice()).willReturn(Wei.of(NETWORK_GAS_PRICE));
         if (success) {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
