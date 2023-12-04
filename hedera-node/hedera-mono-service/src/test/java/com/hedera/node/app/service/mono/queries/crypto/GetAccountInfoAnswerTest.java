@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.queries.crypto;
 
-import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -35,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -57,7 +55,6 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
-import com.hedera.node.app.service.mono.state.submerkle.RawTokenRelationship;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -76,7 +73,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.List;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -213,7 +210,7 @@ class GetAccountInfoAnswerTest {
 
         view = new StateView(scheduleStore, children, networkInfo);
 
-        subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties, rewardCalculator);
+        subject = new GetAccountInfoAnswer(optionValidator, aliasManager, rewardCalculator);
     }
 
     @Test
@@ -248,12 +245,11 @@ class GetAccountInfoAnswerTest {
 
     @Test
     void identifiesFailInvalid() throws Throwable {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final Query query = validQuery(ANSWER_ONLY, fee, target);
         // and:
         final StateView view = mock(StateView.class);
 
-        given(view.infoForAccount(any(), any(), anyInt(), any())).willReturn(Optional.empty());
+        given(view.infoForAccount(any(), any(), any())).willReturn(Optional.empty());
 
         // when:
         final Response response = subject.responseGiven(query, view, OK, fee);
@@ -267,35 +263,12 @@ class GetAccountInfoAnswerTest {
     @Test
     @SuppressWarnings("unchecked")
     void getsTheAccountInfo() throws Throwable {
-        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+
         final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
         children.setTokens(MerkleMapLike.from(tokens));
-
-        given(token.hasKycKey()).willReturn(true);
-        given(token.hasFreezeKey()).willReturn(true);
-        given(token.decimals())
-                .willReturn(1)
-                .willReturn(2)
-                .willReturn(3)
-                .willReturn(1)
-                .willReturn(2)
-                .willReturn(3);
-        given(deletedToken.decimals()).willReturn(4);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(firstToken), REMOVED_TOKEN))
-                .willReturn(token);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(secondToken), REMOVED_TOKEN))
-                .willReturn(token);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN))
-                .willReturn(token);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN))
-                .willReturn(deletedToken);
-        given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN))
-                .willReturn(REMOVED_TOKEN);
         payerAccount.setKey(EntityNum.fromAccountId(payerId));
         payerAccount.setHeadTokenId(firstToken.getTokenNum());
 
-        given(token.symbol()).willReturn("HEYMA");
-        given(deletedToken.symbol()).willReturn("THEWAY");
         given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         given(rewardCalculator.epochSecondAtStartOfPeriod(12345678L)).willReturn(12345678L);
@@ -332,20 +305,8 @@ class GetAccountInfoAnswerTest {
         assertEquals(12345678L, info.getStakingInfo().getStakePeriodStart().getSeconds());
         assertEquals(0L, info.getStakingInfo().getStakedToMe());
 
-        // and:
-        assertEquals(
-                List.of(
-                        new RawTokenRelationship(firstBalance, 0, 0, firstToken.getTokenNum(), true, true, true)
-                                .asGrpcFor(token),
-                        new RawTokenRelationship(secondBalance, 0, 0, secondToken.getTokenNum(), false, false, true)
-                                .asGrpcFor(token),
-                        new RawTokenRelationship(thirdBalance, 0, 0, thirdToken.getTokenNum(), true, true, false)
-                                .asGrpcFor(token),
-                        new RawTokenRelationship(fourthBalance, 0, 0, fourthToken.getTokenNum(), false, false, true)
-                                .asGrpcFor(deletedToken),
-                        new RawTokenRelationship(missingBalance, 0, 0, missingToken.getTokenNum(), false, false, false)
-                                .asGrpcFor(REMOVED_TOKEN)),
-                info.getTokenRelationshipsList());
+        // We no more return token association details in the response
+        assertEquals(Collections.emptyList(), info.getTokenRelationshipsList());
     }
 
     @Test
