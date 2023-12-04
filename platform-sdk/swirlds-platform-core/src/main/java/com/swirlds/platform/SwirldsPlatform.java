@@ -503,6 +503,7 @@ public class SwirldsPlatform implements Platform {
         components.add(model);
 
         platformWiring = new PlatformWiring(platformContext, time);
+        components.add(platformWiring);
         platformWiring.wireExternalComponents(
                 preconsensusEventWriter, platformStatusManager, appCommunicationComponent);
 

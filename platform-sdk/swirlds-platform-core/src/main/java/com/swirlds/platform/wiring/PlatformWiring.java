@@ -71,14 +71,26 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
-        internalEventValidatorWiring =
-                InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
-        eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
-        eventSignatureValidatorWiring =
-                EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
-        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
-        inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-        linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+        // the new intake pipeline components must only be constructed if they are enabled
+        // this ensures that no exception will arise for unbound wires
+        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            internalEventValidatorWiring =
+                    InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
+            eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
+            eventSignatureValidatorWiring =
+                    EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
+            orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+            inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
+            linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+        } else {
+            internalEventValidatorWiring = null;
+            eventDeduplicatorWiring = null;
+            eventSignatureValidatorWiring = null;
+            orphanBufferWiring = null;
+            inOrderLinkerWiring = null;
+            linkedEventIntakeWiring = null;
+        }
+
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
 
@@ -113,13 +125,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
-        internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
-        eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
-        eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
-        inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
+            eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
+            eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+            orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+            inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
 
-        solderMinimumGenerationNonAncient();
+            solderMinimumGenerationNonAncient();
+        }
 
         // FUTURE WORK: solder all the things!
     }
