@@ -96,7 +96,7 @@ public final class StartupStateUtils {
                 initialStateRound);
 
         final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
-                platformContext.getConfiguration().getConfigData(StateConfig.class))
+                        platformContext.getConfiguration().getConfigData(StateConfig.class))
                 .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
             if (stateInfo.metadata().round() > initialStateRound) {
@@ -203,7 +203,7 @@ public final class StartupStateUtils {
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
         final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
-                platformContext.getConfiguration().getConfigData(StateConfig.class))
+                        platformContext.getConfiguration().getConfigData(StateConfig.class))
                 .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         logStatesFound(savedStateFiles);
 

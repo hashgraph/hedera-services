@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.StateToDiskReason.UNKNOWN;
 
 import com.swirlds.base.time.Time;
@@ -75,6 +74,7 @@ public class SignedStateFileManager {
      * Provides system time
      */
     private final Time time;
+
     private final SignedStateFilePath signedStateFilePath;
 
     /**
@@ -161,7 +161,8 @@ public class SignedStateFileManager {
             // states requested to be written out-of-band are always written to disk
             saveStateTask(
                     reservedSignedState.get(),
-                    signedStateFilePath.getSignedStatesBaseDirectory()
+                    signedStateFilePath
+                            .getSignedStatesBaseDirectory()
                             .resolve(getReason(signedState).getDescription())
                             .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())));
         }
@@ -225,7 +226,8 @@ public class SignedStateFileManager {
      * @return the minimum generation non-ancient of the oldest state that was not deleted
      */
     private long deleteOldStates() {
-        final List<SavedStateInfo> savedStates = signedStateFilePath.getSavedStateFiles(mainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStates =
+                signedStateFilePath.getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
         int index = savedStates.size() - 1;

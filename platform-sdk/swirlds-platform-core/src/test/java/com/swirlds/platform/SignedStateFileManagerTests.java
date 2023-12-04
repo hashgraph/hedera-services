@@ -128,8 +128,8 @@ class SignedStateFileManagerTests {
      */
     private void validateSavingOfState(final SignedState originalState) throws IOException {
 
-        final Path stateDirectory =
-                signedStateFilePath.getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, originalState.getRound());
+        final Path stateDirectory = signedStateFilePath.getSignedStateDirectory(
+                MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, originalState.getRound());
 
         validateSavingOfState(originalState, stateDirectory);
     }
@@ -179,8 +179,8 @@ class SignedStateFileManagerTests {
 
         if (!successExpected) {
             // To make the save fail, create a file with the name of the directory the state will try to be saved to
-            final Path savedDir =
-                    signedStateFilePath.getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, signedState.getRound());
+            final Path savedDir = signedStateFilePath.getSignedStateDirectory(
+                    MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, signedState.getRound());
             Files.createDirectories(savedDir.getParent());
             Files.createFile(savedDir);
         }
@@ -392,8 +392,10 @@ class SignedStateFileManagerTests {
 
         // Simulate the saving of an ISS state
         final int issRound = 666;
-        final Path issDirectory =
-                signedStateFilePath.getSignedStatesBaseDirectory().resolve("iss").resolve("node" + SELF_ID + "_round" + issRound);
+        final Path issDirectory = signedStateFilePath
+                .getSignedStatesBaseDirectory()
+                .resolve("iss")
+                .resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
         issState.markAsStateToSave(ISS);
@@ -402,8 +404,10 @@ class SignedStateFileManagerTests {
 
         // Simulate the saving of a fatal state
         final int fatalRound = 667;
-        final Path fatalDirectory =
-                signedStateFilePath.getSignedStatesBaseDirectory().resolve("fatal").resolve("node" + SELF_ID + "_round" + fatalRound);
+        final Path fatalDirectory = signedStateFilePath
+                .getSignedStatesBaseDirectory()
+                .resolve("fatal")
+                .resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
         fatalState.markAsStateToSave(FATAL_ERROR);
@@ -429,8 +433,9 @@ class SignedStateFileManagerTests {
             }
 
             // Verify that old states are properly deleted
-            assertEquals(Math.min(statesOnDisk, round), (int)
-                    Files.list(statesDirectory).count(),
+            assertEquals(
+                    Math.min(statesOnDisk, round),
+                    (int) Files.list(statesDirectory).count(),
                     "unexpected number of states on disk after saving round " + round);
 
             // ISS/fatal state should still be in place

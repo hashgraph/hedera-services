@@ -55,8 +55,7 @@ public final class SignedStateFileReader {
     public static List<SavedStateInfo> getSavedStateFiles(
             final String mainClassName, final NodeId platformId, final String swirldName) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(
-                ConfigurationHolder.getConfigData(StateConfig.class))
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
                 .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 

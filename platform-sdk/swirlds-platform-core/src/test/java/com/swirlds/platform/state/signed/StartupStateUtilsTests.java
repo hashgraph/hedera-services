@@ -89,12 +89,10 @@ class StartupStateUtilsTests {
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
-        signedStateFilePath = new SignedStateFilePath(
-                new TestConfigBuilder()
-                        .withValue("state.savedStateDirectory", testDirectory.toString())
-                        .getOrCreateConfig()
-                        .getConfigData(StateConfig.class)
-        );
+        signedStateFilePath = new SignedStateFilePath(new TestConfigBuilder()
+                .withValue("state.savedStateDirectory", testDirectory.toString())
+                .getOrCreateConfig()
+                .getConfigData(StateConfig.class));
     }
 
     @AfterEach
@@ -140,7 +138,8 @@ class StartupStateUtilsTests {
                 .setEpoch(epoch)
                 .build();
 
-        final Path savedStateDirectory = signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
+        final Path savedStateDirectory =
+                signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
 
         writeSignedStateToDisk(
                 platformContext, selfId, savedStateDirectory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
@@ -286,7 +285,8 @@ class StartupStateUtilsTests {
             assertNull(loadedState);
         }
 
-        final Path savedStateDirectory = signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path savedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
@@ -710,7 +710,8 @@ class StartupStateUtilsTests {
             assertNull(loadedState);
         }
 
-        final Path savedStateDirectory = signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path savedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
@@ -760,7 +761,8 @@ class StartupStateUtilsTests {
 
         doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, null, latestRound);
 
-        final Path signedStateDirectory = signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path signedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(0, recycleCount.get());
@@ -817,7 +819,8 @@ class StartupStateUtilsTests {
 
         doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, latestRound);
 
-        final Path signedStateDirectory = signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path signedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(0, recycleCount.get());
@@ -887,7 +890,8 @@ class StartupStateUtilsTests {
 
         assertEquals(epoch, scratchpad.get(RecoveryScratchpad.EPOCH_HASH));
 
-        final Path signedStateDirectory = signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
+        final Path signedStateDirectory = signedStateFilePath
+                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
         assertEquals(statesToDelete, recycleCount.get());

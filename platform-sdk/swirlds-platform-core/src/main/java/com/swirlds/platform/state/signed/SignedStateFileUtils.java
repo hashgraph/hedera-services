@@ -62,8 +62,8 @@ public final class SignedStateFileUtils {
     @Deprecated(forRemoval = true)
     public static Path getSignedStatesBaseDirectory() {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(
-                ConfigurationHolder.getConfigData(StateConfig.class)).getSignedStatesBaseDirectory();
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesBaseDirectory();
     }
 
     /**
@@ -76,8 +76,8 @@ public final class SignedStateFileUtils {
     @Deprecated(forRemoval = true)
     public static Path getSignedStatesDirectoryForApp(final String mainClassName) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(
-                ConfigurationHolder.getConfigData(StateConfig.class)).getSignedStatesDirectoryForApp(mainClassName);
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesDirectoryForApp(mainClassName);
     }
 
     /**
@@ -90,9 +90,8 @@ public final class SignedStateFileUtils {
     @Deprecated(forRemoval = true)
     public static Path getSignedStatesDirectoryForNode(final String mainClassName, final NodeId selfId) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(
-                ConfigurationHolder.getConfigData(StateConfig.class)).getSignedStatesDirectoryForNode(mainClassName,
-                selfId);
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
+                .getSignedStatesDirectoryForNode(mainClassName, selfId);
     }
 
     /**
@@ -106,8 +105,7 @@ public final class SignedStateFileUtils {
     public static Path getSignedStatesDirectoryForSwirld(
             final String mainClassName, final NodeId selfId, final String swirldName) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(
-                ConfigurationHolder.getConfigData(StateConfig.class))
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
                 .getSignedStatesDirectoryForSwirld(mainClassName, selfId, swirldName);
     }
 
@@ -122,8 +120,7 @@ public final class SignedStateFileUtils {
     public static Path getSignedStateDirectory(
             final String mainClassName, final NodeId selfId, final String swirldName, final long round) {
         // new instance on every call in case the config changes in the holder
-        return new SignedStateFilePath(
-                ConfigurationHolder.getConfigData(StateConfig.class))
+        return new SignedStateFilePath(ConfigurationHolder.getConfigData(StateConfig.class))
                 .getSignedStateDirectory(mainClassName, selfId, swirldName, round);
     }
 }
