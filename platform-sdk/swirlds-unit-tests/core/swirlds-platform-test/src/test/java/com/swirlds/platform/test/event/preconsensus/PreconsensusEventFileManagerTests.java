@@ -43,6 +43,7 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
@@ -95,10 +96,12 @@ class PreconsensusEventFileManagerTests {
 
     private PlatformContext buildContext(final boolean permitGaps) {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory.resolve("data"))
-                .withValue("event.preconsensus.recycleBinDirectory", testDirectory.resolve("recycle"))
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .withValue("event.preconsensus.permitGaps", permitGaps)
+                .withValue(PreconsensusEventStreamConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
+                .withValue(
+                        "event.preconsensus.recycleBinDirectory",
+                        testDirectory.resolve("recycle")) // FUTURE: No property defined for value
+                .withValue(PreconsensusEventStreamConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+                .withValue(PreconsensusEventStreamConfig_.PERMIT_GAPS, permitGaps)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();

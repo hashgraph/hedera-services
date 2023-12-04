@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.io.config.RecycleBinConfig;
+import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -57,7 +59,7 @@ class RecycleBinTests {
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .getOrCreateConfig();
     }
 
@@ -213,8 +215,8 @@ class RecycleBinTests {
         final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
 
         final Configuration customConfiguration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .withValue("recycleBin.collectionPeriod", "1ns")
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(RecycleBinConfig_.COLLECTION_PERIOD, "1ns")
                 .getOrCreateConfig();
 
         final Duration maximumFileAge =
@@ -279,8 +281,8 @@ class RecycleBinTests {
         final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
 
         final Configuration customConfiguration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .withValue("recycleBin.collectionPeriod", "1ns")
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(RecycleBinConfig_.COLLECTION_PERIOD, "1ns")
                 .getOrCreateConfig();
 
         final RecycleBinImpl recycleBin = new RecycleBinImpl(

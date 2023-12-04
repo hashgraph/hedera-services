@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.TransactionConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.status.PlatformStatus;
@@ -65,7 +66,7 @@ class SwirldTransactionSubmitterTest {
         random = RandomUtils.getRandom();
         platformStatus = PlatformStatus.ACTIVE;
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("transaction.transactionMaxBytes", 6144)
+                .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, 6144)
                 .getOrCreateConfig();
         transactionConfig = configuration.getConfigData(TransactionConfig.class);
 

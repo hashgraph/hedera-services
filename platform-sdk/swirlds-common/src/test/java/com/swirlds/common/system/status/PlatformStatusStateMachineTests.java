@@ -50,8 +50,8 @@ class PlatformStatusStateMachineTests {
     void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("platformStatus.observingStatusDelay", "5s")
-                .withValue("platformStatus.activeStatusDelay", "10s")
+                .withValue(PlatformStatusConfig_.OBSERVING_STATUS_DELAY, "5s")
+                .withValue(PlatformStatusConfig_.ACTIVE_STATUS_DELAY, "10s")
                 .getOrCreateConfig();
 
         stateMachine = new PlatformStatusStateMachine(

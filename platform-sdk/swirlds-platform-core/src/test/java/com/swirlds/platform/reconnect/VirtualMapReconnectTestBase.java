@@ -28,6 +28,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
@@ -119,10 +120,10 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
 
         new TestConfigBuilder()
-                .withValue("reconnect.active", "true")
+                .withValue(ReconnectConfig_.ACTIVE, "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue("reconnect.asyncStreamTimeout", "5000ms")
-                .withValue("reconnect.maxAckDelay", "1000ms")
+                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
+                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
                 .getOrCreateConfig();
     }
 

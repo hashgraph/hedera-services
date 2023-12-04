@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
@@ -49,9 +50,9 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Async Stream Test")
 class AsyncStreamTest {
     private final Configuration configuration = new TestConfigBuilder()
-            .withValue("reconnect.asyncOutputStream", 10000)
-            .withValue("reconnect.asyncStreamBufferSize", 100)
-            .withValue("reconnect.asyncOutputStreamFlush", "50ms")
+            .withValue("reconnect.asyncOutputStream", 10000) // FUTURE: Looks like that property is not defined
+            .withValue(ReconnectConfig_.ASYNC_STREAM_BUFFER_SIZE, 100)
+            .withValue(ReconnectConfig_.ASYNC_OUTPUT_STREAM_FLUSH, "50ms")
             .getOrCreateConfig();
     private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 

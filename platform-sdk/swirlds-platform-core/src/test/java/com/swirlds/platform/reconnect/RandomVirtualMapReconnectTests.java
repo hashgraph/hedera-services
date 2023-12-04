@@ -34,6 +34,7 @@ import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig_;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
@@ -67,9 +68,9 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     @BeforeAll
     static void beforeAll() {
         new TestConfigBuilder()
-                .withValue("merkleDb.keySetBloomFilterSizeInBytes", 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
-                .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
-                .withValue("merkleDb.keySetHalfDiskHashMapBuffer", "1000")
+                .withValue(MerkleDbConfig_.KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES, 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
+                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_SIZE, "10000")
+                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_BUFFER, "1000")
                 .getOrCreateConfig();
     }
 

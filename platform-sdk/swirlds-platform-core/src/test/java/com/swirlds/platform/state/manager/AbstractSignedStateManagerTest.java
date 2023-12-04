@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -66,9 +67,9 @@ public class AbstractSignedStateManagerTest {
 
     protected StateConfig buildStateConfig() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
-                .withValue("state.maxAgeOfFutureStateSignatures", futureStateSignatureRounds)
-                .withValue("state.roundsToKeepAfterSigning", roundsToKeepAfterSigning)
+                .withValue(StateConfig_.ROUNDS_TO_KEEP_FOR_SIGNING, roundsToKeepForSigning)
+                .withValue(StateConfig_.MAX_AGE_OF_FUTURE_STATE_SIGNATURES, futureStateSignatureRounds)
+                .withValue(StateConfig_.ROUNDS_TO_KEEP_AFTER_SIGNING, roundsToKeepAfterSigning)
                 .getOrCreateConfig();
 
         return configuration.getConfigData(StateConfig.class);

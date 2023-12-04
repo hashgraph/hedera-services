@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.utility.MerkleUtils;
 import com.swirlds.common.test.merkle.dummy.DummyCustomReconnectRoot;
@@ -66,9 +67,9 @@ public class MerkleSynchronizationTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
 
         new TestConfigBuilder()
-                .withValue("reconnect.active", "true")
+                .withValue(ReconnectConfig_.ACTIVE, "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue("reconnect.asyncStreamTimeout", "500ms")
+                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "500ms")
                 .getOrCreateConfig();
     }
 

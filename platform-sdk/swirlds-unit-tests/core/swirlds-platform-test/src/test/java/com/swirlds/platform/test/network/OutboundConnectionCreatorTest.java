@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.config.SocketConfig_;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -283,8 +284,8 @@ class OutboundConnectionCreatorTest {
     @NonNull
     private static Configuration getConfig() {
         return new TestConfigBuilder()
-                .withValue("socket.bufferSize", "100")
-                .withValue("socket.gzipCompression", false)
+                .withValue(SocketConfig_.BUFFER_SIZE, "100")
+                .withValue(SocketConfig_.GZIP_COMPRESSION, false)
                 .getOrCreateConfig();
     }
 }

@@ -138,6 +138,8 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
     protected void log(@NonNull final String message) {
         Objects.requireNonNull(message, "message must not be null");
 
-        processingEnv.getMessager().printMessage(Kind.NOTE, message);
+        processingEnv
+                .getMessager()
+                .printMessage(Kind.OTHER, ConfigDataAnnotationProcessor.class.getSimpleName() + ": " + message);
     }
 }

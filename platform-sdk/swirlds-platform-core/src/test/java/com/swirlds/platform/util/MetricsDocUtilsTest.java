@@ -27,6 +27,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.metrics.platform.DefaultCounter;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.config.api.Configuration;
@@ -51,7 +52,7 @@ class MetricsDocUtilsTest {
         // setup
         // Unable to mock BasicConfig.class because it is a final class, so using the test builder instead of mocking.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metrics.metricsDocFileName", METRIC_DOC_FILE_NAME)
+                .withValue(MetricsConfig_.METRICS_DOC_FILE_NAME, METRIC_DOC_FILE_NAME)
                 .getOrCreateConfig();
         final String docFilePath = FileUtils.getUserDir() + File.separator + METRIC_DOC_FILE_NAME;
         final File oldFile = new File(docFilePath);

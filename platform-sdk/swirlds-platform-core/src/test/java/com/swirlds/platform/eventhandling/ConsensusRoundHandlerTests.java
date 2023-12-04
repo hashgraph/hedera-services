@@ -27,6 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.EventConfig_;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -204,7 +205,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         when(platformState.getPlatformData()).thenReturn(platformData);
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("event.maxEventQueueForCons", 500)
+                .withValue(EventConfig_.MAX_EVENT_QUEUE_FOR_CONS, 500)
                 .getOrCreateConfig();
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)

@@ -37,6 +37,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.config.AddressBookConfig_;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -500,9 +501,9 @@ class AddressBookInitializerTest {
     private PlatformContext getPlatformContext(boolean forceUseOfConfigAddressBook) {
         return TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder()
-                        .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
-                        .withValue("addressBook.addressBookDirectory", testDirectory.toString())
-                        .withValue("addressBook.maxRecordedAddressBookFiles", 50)
+                        .withValue(AddressBookConfig_.FORCE_USE_OF_CONFIG_ADDRESS_BOOK, forceUseOfConfigAddressBook)
+                        .withValue(AddressBookConfig_.ADDRESS_BOOK_DIRECTORY, testDirectory.toString())
+                        .withValue(AddressBookConfig_.MAX_RECORDED_ADDRESS_BOOK_FILES, 50)
                         .getOrCreateConfig())
                 .build();
     }
