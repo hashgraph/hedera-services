@@ -30,6 +30,10 @@ on:
         description: "The branch name to use when generating a slack channel name automatically:"
         required: false
         type: string
+      base-branch-name:
+        description: "The base branch of the pull request (if applicable):"
+        required: false
+        type: string
       regression-repo:
         description: ""
         required: false
@@ -183,10 +187,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
         run: |
-          BRANCH_EXISTS="$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/swirlds/swirlds-platform-regression/branches/${{ inputs.branch-name }})"
+          FEAT_BRANCH_EXISTS="$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/swirlds/swirlds-platform-regression/branches/${{ inputs.branch-name }})"
 
           BRANCH_NAME=""
-          [[ "${BRANCH_EXISTS}" -eq 200 ]] && BRANCH_NAME="${{ inputs.branch-name }}"
+          [[ "${FEAT_BRANCH_EXISTS}" -eq 200 ]] && BRANCH_NAME="${{ inputs.branch-name }}"
+
+          if [[ -z "${BRANCH_NAME}" ]]; then
+            BASE_BRANCH_EXISTS="$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/swirlds/swirlds-platform-regression/branches/${{ inputs.base-branch-name }})"
+            [[ "${BASE_BRANCH_EXISTS}" -eq 200 ]] && BRANCH_NAME="${{ inputs.base-branch-name }}"
+          fi
+
           echo "branch-name=${BRANCH_NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout Regression Code

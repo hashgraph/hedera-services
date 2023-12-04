@@ -285,6 +285,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public void finalizeHollowAccount(@NonNull final Address alias) {
         evmFrameState.finalizeHollowAccount(alias);
         // add child record on merge
+        pendingCreation = null;
         var contractId = getHederaContractId(alias);
         var evmAddress = aliasFrom(alias);
         enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
