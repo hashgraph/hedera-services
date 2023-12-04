@@ -81,7 +81,7 @@ class CongestionMultipliersTest {
         Instant[] congestionStarts = {Instant.now(), Instant.now().plusSeconds(10)};
         when(entityUtilizationMultiplier.congestionLevelStarts()).thenReturn(congestionStarts);
 
-        Instant[] starts = congestionMultipliers.genericCongestionStarts();
+        Instant[] starts = congestionMultipliers.entityUtilizationCongestionStarts();
 
         assertEquals(congestionStarts, starts);
     }
