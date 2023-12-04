@@ -104,6 +104,7 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("signedStateFileManager")
                         .withType(config.getSignedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());
     }
