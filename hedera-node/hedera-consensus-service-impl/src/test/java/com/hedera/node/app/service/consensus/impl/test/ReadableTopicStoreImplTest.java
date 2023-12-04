@@ -106,4 +106,10 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
     void nullArgsFail() {
         assertThrows(NullPointerException.class, () -> new ReadableTopicStoreImpl(null));
     }
+
+    @Test
+    void getSizeOfState() {
+        final var store = new ReadableTopicStoreImpl(readableStates);
+        assertEquals(readableStates.get(TOPICS_KEY).size(), store.sizeOfState());
+    }
 }

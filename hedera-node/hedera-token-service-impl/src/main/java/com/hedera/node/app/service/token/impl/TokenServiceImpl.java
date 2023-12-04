@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.schemas.GenesisSchema;
+import com.hedera.node.app.service.token.impl.schemas.TokenSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -36,6 +36,6 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new GenesisSchema());
+        registry.register(new TokenSchema());
     }
 }

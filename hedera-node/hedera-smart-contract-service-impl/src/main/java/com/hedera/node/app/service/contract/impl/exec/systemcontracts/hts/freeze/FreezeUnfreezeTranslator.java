@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.FailureCustomizer.NOOP_CUSTOMIZER;
+
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -66,7 +68,8 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
                 SingleTransactionRecordBuilder.class,
                 Arrays.equals(attempt.selector(), FREEZE.selector())
                         ? FreezeUnfreezeTranslator::freezeGasRequirement
-                        : FreezeUnfreezeTranslator::unfreezeGasRequirement);
+                        : FreezeUnfreezeTranslator::unfreezeGasRequirement,
+                NOOP_CUSTOMIZER);
     }
 
     public static long freezeGasRequirement(

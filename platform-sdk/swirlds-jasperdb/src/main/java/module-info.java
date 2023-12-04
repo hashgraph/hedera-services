@@ -33,6 +33,7 @@ open module com.swirlds.merkledb {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.virtualmap;
     requires com.swirlds.base;
+    requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires java.management;
     requires jdk.management;
