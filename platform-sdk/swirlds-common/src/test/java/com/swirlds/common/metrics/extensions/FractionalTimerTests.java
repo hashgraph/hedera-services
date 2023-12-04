@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.extensions;
+package com.swirlds.common.metrics.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.metrics.extensions.FractionalTimer;
-import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
-import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

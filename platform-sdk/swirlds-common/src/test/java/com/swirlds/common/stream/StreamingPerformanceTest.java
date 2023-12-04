@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.util.Iterator;

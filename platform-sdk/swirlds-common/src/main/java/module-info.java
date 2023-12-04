@@ -92,6 +92,7 @@ module com.swirlds.common {
             com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform.core,
+            com.swirlds.common.test.fixtures,
             com.swirlds.common.testing;
     exports com.swirlds.common.notification.internal to
             com.swirlds.common.testing;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.stream;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.stream.HashCalculatorForStream;
-import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.QueueThreadObjectStream;
-import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
-import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.test.fixtures.stream.CountDownLatchStream;
+import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
+import com.swirlds.common.test.fixtures.stream.ObjectForTestStreamGenerator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
