@@ -156,6 +156,7 @@ val copyNodeData =
         into(buildDir)
         exclude("config", "keys") // Exclude config directory
         shouldRunAfter(tasks.named("copyApp"))
+        shouldRunAfter(tasks.named("copyLib"))
     }
 
 //// Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
