@@ -80,13 +80,13 @@ public final class CycleFinder {
 
             final ModelVertex parent = stack.removeLast();
 
-            for (final ModelEdge childEdge : parent) {
-                if (!childEdge.insertionIsBlocking()) {
+            for (final ModelEdge childEdge : parent.getOutgoingEdges()) {
+                if (!childEdge.isInsertionIsBlocking()) {
                     // Ignore non-blocking edges.
                     continue;
                 }
 
-                final ModelVertex child = childEdge.destination();
+                final ModelVertex child = childEdge.getDestination();
 
                 if (child.equals(start)) {
                     // We've found a cycle!
