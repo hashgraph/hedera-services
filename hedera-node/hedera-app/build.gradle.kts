@@ -141,23 +141,52 @@ tasks.jar {
     }
 }
 
+// Define build directory
+val buildDir = layout.projectDirectory.dir("./build/node")
+
+// Copy everything from hedera-node/data
+val copyNodeData =
+    tasks.register<Sync>("copyNodeData") {
+        from(layout.projectDirectory.dir("../data/keys")) {
+            into("data/keys")
+        }
+        from(layout.projectDirectory.dir("../data"))
+        into(buildDir)
+        exclude("config", "keys") // Exclude config directory
+    }
+
+//// Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
+val copyConfig =
+    tasks.register<Copy>("copyConfig") {
+        from(layout.projectDirectory.dir("../configuration/dev")) {
+            into("data/config")
+        }
+        from(layout.projectDirectory.file("../config.txt"))
+        from(layout.projectDirectory.file("../log4j2.xml"))
+        into(buildDir)
+        shouldRunAfter(tasks.named("copyNodeData"))
+    }
+
 // Copy dependencies into `data/lib`
 val copyLib =
     tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
-        into(layout.projectDirectory.dir("../data/lib"))
+        into(buildDir.dir("./lib"))
+        shouldRunAfter(tasks.named("copyNodeData"))
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp =
     tasks.register<Sync>("copyApp") {
         from(tasks.jar)
-        into(layout.projectDirectory.dir("../data/apps"))
+        into(buildDir.dir("./apps"))
         rename { "HederaNode.jar" }
         shouldRunAfter(tasks.named("copyLib"))
     }
 
 tasks.assemble {
+    dependsOn(copyNodeData)
+    dependsOn(copyConfig)
     dependsOn(copyLib)
     dependsOn(copyApp)
 }
@@ -166,16 +195,16 @@ tasks.assemble {
 tasks.register<JavaExec>("run") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("..").asFile
-    jvmArgs = listOf("-cp", "data/lib/*")
+    workingDir = layout.projectDirectory.dir("./build/node").asFile
+    jvmArgs = listOf("-cp", "lib/*")
     mainClass.set("com.swirlds.platform.Browser")
 }
 
 tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = layout.projectDirectory.dir("..").asFile
-    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
+    workingDir = layout.projectDirectory.dir("./build/node").asFile
+    jvmArgs = listOf("-cp", "lib/*:apps/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }
 
