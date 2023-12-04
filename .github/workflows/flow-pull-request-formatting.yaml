@@ -16,11 +16,13 @@
 
 name: "PR Formatting"
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
       - edited
+      - ready_for_review
+      - review_requested
       - synchronize
 
 defaults:
@@ -29,10 +31,6 @@ defaults:
 
 permissions:
   statuses: write
-
-concurrency:
-  group: pr-formatting-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
 
 jobs:
   title-check:
