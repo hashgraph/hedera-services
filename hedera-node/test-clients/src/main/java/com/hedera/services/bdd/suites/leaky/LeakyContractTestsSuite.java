@@ -340,6 +340,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenFromContractWithApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
@@ -1307,6 +1308,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
+    @HapiTest
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
@@ -1321,6 +1323,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
+    @HapiTest
     private HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck")
                 .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -1620,6 +1623,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
+    @HapiTest
     private HapiSpec deletedContractsCannotBeUpdated() {
         final var contract = "SelfDestructCallable";
         final var beneficiary = "beneficiary";
@@ -1970,6 +1974,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(lazyCreationProperty, contractsEvmVersionProperty, maxPrecedingRecords));
     }
 
+    @HapiTest
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
@@ -2031,6 +2036,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"));
     }
 
+    @HapiTest
     private HapiSpec whitelistPositiveCase() {
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();

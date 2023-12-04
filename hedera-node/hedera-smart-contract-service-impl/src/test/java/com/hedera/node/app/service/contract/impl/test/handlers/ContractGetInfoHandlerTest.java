@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 

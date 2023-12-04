@@ -18,8 +18,6 @@ package com.hedera.node.app;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
-import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
-import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -27,6 +25,8 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;

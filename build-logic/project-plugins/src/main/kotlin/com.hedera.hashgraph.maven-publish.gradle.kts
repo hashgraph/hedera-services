@@ -18,7 +18,6 @@ plugins {
     id("java")
     id("maven-publish")
     id("signing")
-    id("com.google.cloud.artifactregistry.gradle-plugin")
 }
 
 java {
@@ -26,54 +25,65 @@ java {
     withSourcesJar()
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components.getByName("java"))
-            versionMapping {
-                usage("java-api") { fromResolutionResult() }
-                usage("java-runtime") { fromResolutionResult() }
-            }
+val javaComponent = components["java"] as AdhocComponentWithVariants
 
-            pom {
-                packaging = findProperty("maven.project.packaging")?.toString() ?: "jar"
-                name.set(project.name)
-                url.set("https://www.swirlds.com/")
-                inceptionYear.set("2016")
-
-                description.set(provider(project::getDescription))
-
-                organization {
-                    name.set("Hedera Hashgraph, LLC")
-                    url.set("https://www.hedera.com")
-                }
-
-                licenses {
-                    license {
-                        name.set("Apache License, Version 2.0")
-                        url.set(
-                            "https://raw.githubusercontent.com/hashgraph/hedera-services/main/LICENSE"
-                        )
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/hashgraph/hedera-services.git")
-                    developerConnection.set(
-                        "scm:git:ssh://github.com:hashgraph/hedera-services.git"
-                    )
-                    url.set("https://github.com/hashgraph/hedera-services")
-                }
-            }
-        }
+plugins.withId("java-test-fixtures") {
+    // Disable publishing of test fixture if 'java-test-fixtures' plugin is used
+    // https://docs.gradle.org/current/userguide/java_testing.html#ex-disable-publishing-of-test-fixtures-variants
+    javaComponent.withVariantsFromConfiguration(configurations["testFixturesApiElements"]) {
+        skip()
+    }
+    javaComponent.withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) {
+        skip()
     }
 }
 
-signing {
-    useGpgCmd()
-    sign(publishing.publications.getByName("maven"))
-}
+val maven =
+    publishing.publications.create<MavenPublication>("maven") {
+        from(javaComponent)
+        versionMapping {
+            // Everything published takes the versions from the resolution result.
+            // These are the versions we define in 'hedera-dependency-versions'
+            // and use consistently in all modules.
+            allVariants { fromResolutionResult() }
+        }
 
-tasks.withType<Sign>().configureEach {
-    onlyIf { providers.gradleProperty("publishSigningEnabled").getOrElse("false").toBoolean() }
+        pom {
+            packaging = findProperty("maven.project.packaging")?.toString() ?: "jar"
+            name.set(project.name)
+            url.set("https://www.swirlds.com/")
+            inceptionYear.set("2016")
+
+            description.set(provider(project::getDescription))
+
+            organization {
+                name.set("Hedera Hashgraph, LLC")
+                url.set("https://www.hedera.com")
+            }
+
+            licenses {
+                license {
+                    name.set("Apache License, Version 2.0")
+                    url.set(
+                        "https://raw.githubusercontent.com/hashgraph/hedera-services/main/LICENSE"
+                    )
+                }
+            }
+
+            scm {
+                connection.set("scm:git:git://github.com/hashgraph/hedera-services.git")
+                developerConnection.set("scm:git:ssh://github.com:hashgraph/hedera-services.git")
+                url.set("https://github.com/hashgraph/hedera-services")
+            }
+        }
+    }
+
+val publishSigningEnabled =
+    providers.gradleProperty("publishSigningEnabled").getOrElse("false").toBoolean()
+
+if (publishSigningEnabled) {
+    signing {
+        sign(maven)
+        useGpgCmd()
+    }
 }

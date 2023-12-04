@@ -21,6 +21,10 @@ package com.hedera.services.bdd.spec.utilops.records;
  */
 public enum SnapshotMatchMode {
     /**
+     * Allows for gas calculations to differ from the snapshot.
+     */
+    ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+    /**
      * Allows for non-deterministic contract call results.
      */
     NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
@@ -46,4 +50,16 @@ public enum SnapshotMatchMode {
      * receipt's status would be rejected in pre-check by mono-service.
      */
     EXPECT_STREAMLINED_INGEST_RECORDS,
+    /**
+     * When a transaction involving custom fees transfer fails, the fee charged for a transaction is not deterministic, because
+     * of the way mono-service charges fees.This mode allows for fuzzy-matching of records that have different fees.
+     */
+    HIGHLY_NON_DETERMINISTIC_FEES,
+    /**
+     * In mono-service when a CryptoTransfer with auto-creation fails, we are re-claiming pendingAliases but not reclaiming ids.
+     * So when we compare the snapshot records, we will have different ids in the transaction receipt. This mode allows for
+     * fuzzy-matching of records that have different ids. Also, when auto-creation fails the charged fee to payer is not re-claimed
+     * in mono-service. So the  transaction fee differs a lot.
+     */
+    ALLOW_SKIPPED_ENTITY_IDS
 }

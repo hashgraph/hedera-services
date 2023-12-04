@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -100,8 +101,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class ERCPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
@@ -488,6 +491,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 asHeadlongAddress(accountAddr.get()))));
     }
 
+    @HapiTest
     private HapiSpec transferErc20Token() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
@@ -619,6 +623,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         childRecordsCheck(TRANSFER_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenReceiverContract() {
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
@@ -1248,7 +1253,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)));
     }
 
-    @HapiTest
+    // Expects revert
     private HapiSpec getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 
@@ -1314,6 +1319,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec directCallsWorkForErc20() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
@@ -1460,6 +1466,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
@@ -1764,6 +1771,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec someErc20ApproveAllowanceScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
@@ -2650,6 +2658,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withIsApprovedForAll(true)))))));
     }
 
+    @HapiTest
     private HapiSpec someErc721SetApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
@@ -3104,6 +3113,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
+    @HapiTest
     private HapiSpec erc721TransferFromWithApproval() {
         return defaultHapiSpec("erc721TransferFromWithApproval")
                 .given(

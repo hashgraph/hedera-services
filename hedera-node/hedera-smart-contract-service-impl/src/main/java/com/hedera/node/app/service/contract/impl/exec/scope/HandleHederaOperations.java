@@ -160,7 +160,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        return tinybarValues.topLevelTinybarGasPrice();
+        var multiplier = context.feeCalculator(SubType.DEFAULT).getCongestionMultiplier();
+        return tinybarValues.topLevelTinybarGasPrice() * multiplier;
     }
 
     /**
@@ -320,7 +321,7 @@ public class HandleHederaOperations implements HederaOperations {
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
                 ContractCreateRecordBuilder.class,
-                key -> true,
+                null,
                 context.payer(),
                 (bodyToExternalize == null)
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER

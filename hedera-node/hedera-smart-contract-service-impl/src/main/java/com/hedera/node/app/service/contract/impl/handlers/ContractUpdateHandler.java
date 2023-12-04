@@ -38,6 +38,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.key.KeyUtils;
@@ -109,6 +110,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
+        context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(target);
     }
 
     private void validateSemantics(
@@ -117,6 +119,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             ContractUpdateTransactionBody op,
             ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
+        validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey() && processAdminKey(op)) {
             throw new HandleException(INVALID_ADMIN_KEY);
@@ -140,12 +143,11 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
-            final long newMax = op.maxAutomaticTokenAssociations();
+            final long newMax = op.maxAutomaticTokenAssociationsOrThrow();
 
             validateFalse(
                     newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
             validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
@@ -218,7 +220,17 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var builder = contract.copyBuilder();
         if (op.hasAdminKey()) {
             if (EMPTY_KEY_LIST.equals(op.adminKey())) {
-                builder.key(contract.key());
+                try {
+                    var contractID = ContractID.newBuilder()
+                            .shardNum(contract.accountIdOrThrow().shardNum())
+                            .realmNum(contract.accountIdOrThrow().realmNum())
+                            .contractNum(contract.accountIdOrThrow().accountNumOrThrow())
+                            .build();
+                    var key = Key.newBuilder().contractID(contractID).build();
+                    builder.key(key);
+                } catch (NullPointerException e) {
+                    builder.key(contract.key());
+                }
             } else {
                 builder.key(op.adminKey());
             }

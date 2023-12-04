@@ -98,7 +98,7 @@ public class StakingRewardsDistributor {
                 }
             }
 
-            if (!beneficiary.declineReward() && reward >= 0) {
+            if (!beneficiary.declineReward() && reward > 0) {
                 // even if reward is zero it will be added to rewardsPaid
                 applyReward(reward, beneficiary, writableStore);
                 rewardsPaid.merge(receiverId, reward, Long::sum);

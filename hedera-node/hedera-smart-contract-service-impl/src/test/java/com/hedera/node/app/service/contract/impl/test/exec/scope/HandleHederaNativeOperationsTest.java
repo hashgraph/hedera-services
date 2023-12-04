@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_FUNGIBLE_RELATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
@@ -36,13 +35,13 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PARANOI
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -153,7 +152,7 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchChildTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID), eq(CHILD)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
@@ -169,7 +168,7 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchChildTransaction(
-                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID), eq(CHILD)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
@@ -184,7 +183,7 @@ class HandleHederaNativeOperationsTest {
 
         subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
-        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID, INITIAL_CONTRACT_NONCE);
+        verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID);
         verify(context).newEntityNum();
     }
 

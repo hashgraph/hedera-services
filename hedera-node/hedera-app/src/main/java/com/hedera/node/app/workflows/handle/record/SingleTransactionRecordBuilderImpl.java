@@ -50,6 +50,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -59,6 +60,7 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
@@ -116,6 +118,7 @@ public class SingleTransactionRecordBuilderImpl
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
+                ContractUpdateRecordBuilder,
                 EthereumTransactionRecordBuilder,
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
@@ -124,7 +127,8 @@ public class SingleTransactionRecordBuilderImpl
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
                 GasFeeRecordBuilder,
-                TokenAccountWipeRecordBuilder {
+                TokenAccountWipeRecordBuilder,
+                CryptoUpdateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -364,6 +368,7 @@ public class SingleTransactionRecordBuilderImpl
 
     /**
      * When we update nonce on the record, we need to update the body as well with the same transactionID.
+     *
      * @return the builder
      */
     @NonNull
@@ -378,13 +383,7 @@ public class SingleTransactionRecordBuilderImpl
                     .copyBuilder()
                     .transactionID(newTransactionID)
                     .build();
-            final var newBodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-            final var newSignedTransaction =
-                    SignedTransaction.newBuilder().bodyBytes(newBodyBytes).build();
-            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(newSignedTransaction);
-            this.transaction = Transaction.newBuilder()
-                    .signedTransactionBytes(signedTransactionBytes)
-                    .build();
+            this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
             return this;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -509,6 +508,11 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
         return this;
+    }
+
+    @Override
+    public List<TokenTransferList> tokenTransferLists() {
+        return tokenTransferLists;
     }
 
     /**
@@ -919,6 +923,11 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(serialNumbers, "serialNumbers must not be null");
         this.serialNumbers = serialNumbers;
         return this;
+    }
+
+    @Override
+    public List<Long> serialNumbers() {
+        return serialNumbers;
     }
 
     /**

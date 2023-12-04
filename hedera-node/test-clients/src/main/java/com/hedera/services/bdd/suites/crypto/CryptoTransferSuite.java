@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -92,6 +93,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -149,8 +151,10 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
@@ -1882,7 +1886,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("hapiTransferFromForNFTWithCustomFeesWithAllowance", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("hapiTransferFromForNFTWithCustomFeesWithAllowance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -2032,8 +2036,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
         return defaultHapiSpec(
-                        "hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance",
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        "hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),

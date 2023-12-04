@@ -23,6 +23,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -199,9 +202,12 @@ public final class RecordListBuilder {
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws HandleException if no more child slots are available
      */
-    public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addChild(
+            @NonNull final Configuration configuration,
+            @NonNull final HandleContext.TransactionCategory childCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return doAddChild(
+                configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, childCategory);
     }
 
     /**
@@ -209,7 +215,7 @@ public final class RecordListBuilder {
      * <p>
      * If a parent transaction of this child transaction is rolled back, the record builder is removed entirely. This is
      * only needed in a very few special cases. Under normal circumstances,
-     * {@link #addChild(Configuration)} should be used.
+     * {@link #addChild(Configuration, HandleContext.TransactionCategory)} should be used.
      *
      * @param configuration the current configuration
      * @return the record builder for the child transaction
@@ -218,7 +224,11 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, ReversingBehavior.REMOVABLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return doAddChild(
+                configuration,
+                ReversingBehavior.REMOVABLE,
+                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                HandleContext.TransactionCategory.CHILD);
     }
 
     /**
@@ -238,13 +248,15 @@ public final class RecordListBuilder {
             @NonNull final Configuration configuration, @NonNull final ExternalizedRecordCustomizer customizer) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         requireNonNull(customizer, "customizer must not be null");
-        return doAddChild(configuration, ReversingBehavior.REMOVABLE, customizer);
+        return doAddChild(
+                configuration, ReversingBehavior.REMOVABLE, customizer, HandleContext.TransactionCategory.CHILD);
     }
 
     private SingleTransactionRecordBuilderImpl doAddChild(
             @NonNull final Configuration configuration,
             final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final HandleContext.TransactionCategory childCategory) {
         // FUTURE: We should reuse the RecordListBuilder between handle calls, and we should reuse these lists, in
         // which case we will no longer have to create them lazily.
         if (childRecordBuilders == null) {
@@ -252,21 +264,33 @@ public final class RecordListBuilder {
         }
 
         // Make sure we have not created so many that we have run out of slots.
-        final var childCount = childRecordBuilders.size();
-        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+        final int childCount = childRecordBuilders.size();
+        final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         if (childCount >= consensusConfig.handleMaxFollowingRecords()) {
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
 
-        // The consensus timestamp of the first item in the child list is T+1, where T is the time of the user tx
-        final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
-        final var prevConsensusNow = childRecordBuilders.isEmpty()
-                ? userTxnRecordBuilder.consensusNow()
+        final Instant parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
+        final Instant prevConsensusNow = childRecordBuilders.isEmpty()
+                ? parentConsensusTimestamp
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
-        final var consensusNow = prevConsensusNow.plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer)
-                .parentConsensus(parentConsensusTimestamp)
-                .exchangeRate(userTxnRecordBuilder.exchangeRate());
+        // The consensus timestamp of a SCHEDULED transaction in the child list is T+K (in nanoseconds),
+        // where T is the time of the parent or preceding child tx and K is the maximum number of "preceding" records
+        // defined for the current configuration.  This permits a SCHEDULED child to trigger additional preceding
+        // transactions (e.g. auto create on CryptoTransfer) if necessary without creating records with the same
+        // timestamp nanosecond value.
+        // All other child transactions just offset by +1.
+        final long nextRecordOffset =
+                childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
+        final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
+        // Note we do not repeat exchange rates for child transactions
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        // Only set parent consensus timestamp for child records if one is not provided
+        if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
+            recordBuilder.parentConsensus(parentConsensusTimestamp);
+        } else {
+            recordBuilder.exchangeRate(userTxnRecordBuilder.exchangeRate());
+        }
         if (!customizer.shouldSuppressRecord()) {
             childRecordBuilders.add(recordBuilder);
         }
@@ -280,7 +304,7 @@ public final class RecordListBuilder {
      * happens, because there are no children after the last one.
      *
      * <p>If the given builder is the next to last of these 10, then if the last one was added by
-     * {@link #addChild(Configuration)} it will still be in the list, but will have a status of
+     * {@link #addChild(Configuration, HandleContext.TransactionCategory)} it will still be in the list, but will have a status of
      * {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already), otherwise it will
      * actually be removed from the list.
      *
@@ -376,25 +400,26 @@ public final class RecordListBuilder {
         // a nonce of N, where N is the number of preceding transactions.
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
-            final var recordBuilder = precedingTxnRecordBuilders.get(i);
+            final SingleTransactionRecordBuilderImpl recordBuilder = precedingTxnRecordBuilders.get(i);
             records.add(recordBuilder
                     .transactionID(idBuilder.nonce(i + 1).build())
                     .syncBodyIdFromRecordId()
                     .build());
         }
-
         records.add(userTxnRecord);
 
         int nextNonce = count + 1; // Initialize to be 1 more than the number of preceding items
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
         for (int i = 0; i < count; i++) {
-            final var recordBuilder = childRecordBuilders.get(i);
-            records.add(recordBuilder
-                    .transactionID(idBuilder.nonce(nextNonce++).build())
-                    .syncBodyIdFromRecordId()
-                    .build());
+            final SingleTransactionRecordBuilderImpl recordBuilder = childRecordBuilders.get(i);
+            // Only create a new transaction ID for child records if one is not provided
+            if (recordBuilder.transactionID() == null || TransactionID.DEFAULT.equals(recordBuilder.transactionID())) {
+                recordBuilder
+                        .transactionID(idBuilder.nonce(nextNonce++).build())
+                        .syncBodyIdFromRecordId();
+            }
+            records.add(recordBuilder.build());
         }
-
         return new Result(userTxnRecord, unmodifiableList(records));
     }
 

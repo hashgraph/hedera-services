@@ -28,6 +28,7 @@ import static contract.AssociationsXTestConstants.D_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.D_TOKEN_ID;
 import static contract.AssociationsXTestConstants.E_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -214,6 +215,7 @@ public class AssociationsXTest extends AbstractContractXTest {
                 Account.newBuilder()
                         .accountId(OWNER_ID)
                         .alias(OWNER_ADDRESS)
+                        .key(AN_ED25519_KEY)
                         .tinybarBalance(100_000_000L)
                         .build());
         return accounts;

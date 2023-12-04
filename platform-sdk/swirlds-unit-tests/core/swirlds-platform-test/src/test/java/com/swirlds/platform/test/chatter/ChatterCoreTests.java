@@ -28,6 +28,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig_;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.GossipEventBuilder;
@@ -49,7 +50,7 @@ public class ChatterCoreTests {
     @Test
     void loadFromSignedStateTest() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("chatter.futureGenerationLimit", "100")
+                .withValue(ChatterConfig_.FUTURE_GENERATION_LIMIT, "100")
                 .getOrCreateConfig();
         final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
