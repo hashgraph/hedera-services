@@ -395,6 +395,27 @@ public final class RecordListBuilder {
         }
     }
 
+    public void revertLastChildOnly() {
+        if (childRecordBuilders == null) {
+            childRecordBuilders = new ArrayList<>();
+        }
+        if (precedingTxnRecordBuilders == null) {
+            precedingTxnRecordBuilders = new ArrayList<>();
+        }
+
+        final var count = childRecordBuilders.size();
+        final var lastRecordIndex = count - 1;
+        if (count > 0) {
+            final var child = childRecordBuilders.get(lastRecordIndex);
+            if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+            } else if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                childRecordBuilders.remove(lastRecordIndex);
+            }
+        }
+    }
+
+
     /**
      * Builds a list of all records. Assigns transactions IDs as needed.
      *

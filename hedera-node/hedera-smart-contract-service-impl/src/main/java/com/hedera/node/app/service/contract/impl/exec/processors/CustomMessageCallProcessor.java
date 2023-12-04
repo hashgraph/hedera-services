@@ -278,6 +278,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
     }
 
+    @Override
     protected void revert(final MessageFrame frame) {
         super.revert(frame);
         // clear child records form any succeeded operations when revert

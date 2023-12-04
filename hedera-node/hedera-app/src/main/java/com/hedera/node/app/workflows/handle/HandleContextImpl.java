@@ -849,7 +849,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public void revertChildRecords() {
-        recordListBuilder.revertChildrenOf(recordBuilder);
+        recordListBuilder.revertLastChildOnly();
     }
 
     public enum PrecedingTransactionCategory {
