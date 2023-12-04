@@ -74,7 +74,7 @@ public class SignedStateFileManager {
      * Provides system time
      */
     private final Time time;
-
+    /** Used to determine the path of a signed state */
     private final SignedStateFilePath signedStateFilePath;
 
     /**

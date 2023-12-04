@@ -28,6 +28,11 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * A SignedStateManager that is used for unit testing. Since the SignedStateManager is in the process of being broken up
+ * into smaller components, this class is a temporary solution to allow unit tests function. In the future, these unit
+ * tests should become small integration tests that test multiple components.
+ */
 public class SignedStateManagerTester extends SignedStateManager {
     private final LatestCompleteStateNexus latestSignedState;
 
