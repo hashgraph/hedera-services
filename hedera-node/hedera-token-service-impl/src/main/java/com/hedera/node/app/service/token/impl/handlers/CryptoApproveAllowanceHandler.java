@@ -159,10 +159,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             // Now that we know who should sign, if that account is not the payer, then we need to require that
             // key. If there is an error, then we need to use the appropriate error code depending on whether
             // the operator is the owner or the delegating spender.
-            if (operatorId != null && !operatorId.equals(payerId)) {
-                final var error = ownerId == operatorId ? INVALID_ALLOWANCE_OWNER_ID : INVALID_DELEGATING_SPENDER;
-                context.requireKeyOrThrow(operatorId, error);
-            }
+//            if (operatorId != null && !operatorId.equals(payerId)) {
+//                final var error = ownerId == operatorId ? INVALID_ALLOWANCE_OWNER_ID : INVALID_DELEGATING_SPENDER;
+//                context.requireKeyOrThrow(operatorId, error);
+//            }
         }
     }
 

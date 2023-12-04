@@ -20,7 +20,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
+import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
+import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -60,22 +62,33 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     }
 
     public TransactionBody callGrantApproval() {
-        return TransactionBody.newBuilder()
-                .cryptoApproveAllowance(approve(token, spender, amount, tokenType))
+        if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE) {
+            var ownerId = enhancement.nativeOperations().getNft(token.tokenNum(), amount.longValue()).ownerId();
+            return (spender.accountNum() == 0)
+                    ? buildCryptoDeleteAllowance(remove(ownerId)).build()
+                    : buildCryptoApproveAllowance(approve(ownerId)).build();
+        } else {
+            return buildCryptoApproveAllowance(approve(senderId)).build();
+        }
+    }
+
+    private CryptoDeleteAllowanceTransactionBody remove(AccountID ownerId) {
+        return CryptoDeleteAllowanceTransactionBody.newBuilder()
+                .nftAllowances(NftRemoveAllowance.newBuilder()
+                        .tokenId(token)
+                        .owner(ownerId)
+                        .serialNumbers(amount.longValue())
+                        .build())
                 .build();
     }
 
-    private CryptoApproveAllowanceTransactionBody approve(
-            @NonNull final TokenID token,
-            @NonNull final AccountID spender,
-            @NonNull final BigInteger amount,
-            @NonNull final TokenType tokenType) {
+    private CryptoApproveAllowanceTransactionBody approve(AccountID ownerId) {
         return tokenType.equals(TokenType.FUNGIBLE_COMMON)
                 ? CryptoApproveAllowanceTransactionBody.newBuilder()
                         .tokenAllowances(TokenAllowance.newBuilder()
                                 .tokenId(token)
                                 .spender(spender)
-                                .owner(senderId)
+                                .owner(ownerId)
                                 .amount(amount.longValue())
                                 .build())
                         .build()
@@ -83,9 +96,17 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                         .nftAllowances(NftAllowance.newBuilder()
                                 .tokenId(token)
                                 .spender(spender)
-                                .owner(senderId)
+                                .owner(ownerId)
                                 .serialNumbers(amount.longValue())
                                 .build())
                         .build();
+    }
+
+    private TransactionBody.Builder buildCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody body) {
+        return TransactionBody.newBuilder().cryptoDeleteAllowance(body);
+    }
+
+    private TransactionBody.Builder buildCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody body) {
+        return TransactionBody.newBuilder().cryptoApproveAllowance(body);
     }
 }
