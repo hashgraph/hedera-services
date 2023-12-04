@@ -35,6 +35,7 @@ import java.util.List;
  * @param orphanBufferScheduler            the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler           the scheduler for the in-order linker
  * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
+ * @param eventCreationManagerScheduler    the scheduler for the event creation manager
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,

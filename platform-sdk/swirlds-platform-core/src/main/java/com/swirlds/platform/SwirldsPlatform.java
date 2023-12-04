@@ -844,7 +844,7 @@ public class SwirldsPlatform implements Platform {
             loadStateIntoConsensus(initialState);
             loadStateIntoEventCreator(initialState);
 
-            if (platformWiring == null) {
+            if (eventConfig.useLegacyIntake()) {
                 eventLinker.loadFromSignedState(initialState);
             } else {
                 platformWiring.updateMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
@@ -1110,7 +1110,9 @@ public class SwirldsPlatform implements Platform {
             // from the ones we had before the reconnect
             intakeQueue.pause();
             try {
-                if (platformWiring == null) {
+                final EventConfig eventConfig =
+                        platformContext.getConfiguration().getConfigData(EventConfig.class);
+                if (eventConfig.useLegacyIntake()) {
                     eventValidators.replaceValidator(
                             SignatureValidator.VALIDATOR_NAME,
                             new SignatureValidator(

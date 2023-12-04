@@ -32,8 +32,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
-// TODO this needs unit tests
-
 /**
  * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
  * based on external rules or based on paused status. Forwards created events to a consumer, and retries forwarding if
@@ -87,6 +85,8 @@ public class EventCreationManager {
 
     /**
      * Attempt to create an event. If successful, attempt to pass that event to the event consumer.
+     *
+     * @return the created event, or null if no event was created
      */
     @Nullable
     public GossipEvent maybeCreateEvent() {
