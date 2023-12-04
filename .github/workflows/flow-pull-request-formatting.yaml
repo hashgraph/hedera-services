@@ -32,10 +32,6 @@ defaults:
 permissions:
   statuses: write
 
-concurrency:
-  group: pr-formatting-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   title-check:
     name: Title Check
