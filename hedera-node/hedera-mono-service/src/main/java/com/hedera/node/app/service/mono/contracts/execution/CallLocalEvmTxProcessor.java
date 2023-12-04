@@ -86,9 +86,12 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, final long value) {
         var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 
+        // disable calls to non-existing addresses for
+        // older evm versions or disabled FF or grandfather contract
         if (!dynamicProperties.allowCallsToNonContractAccounts()
                 || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
-                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)) {
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
+                || dynamicProperties.grandfatherContracts().contains(to)) {
             /* It's possible we are racing the handleTransaction() thread, and the target contract's
              * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
              * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
