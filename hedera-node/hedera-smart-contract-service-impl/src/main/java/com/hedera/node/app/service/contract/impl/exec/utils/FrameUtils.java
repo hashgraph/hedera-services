@@ -71,14 +71,33 @@ public class FrameUtils {
         return initialFrameOf(frame).getContextVariable(TRACKER_CONTEXT_VARIABLE);
     }
 
+    /**
+     * Returns whether the transaction executing the given frame just experienced a message call
+     * fail due to a missing receiver signature requirement.
+     *
+     * @param frame a frame in the transaction of interest
+     * @return true if the transaction just hit a missing receiver signature requirement
+     */
     public static boolean messageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
         return receiverSigReqFailureContextVariableFor(frame).get();
     }
 
+    /**
+     * Sets a context variable that indicates the transaction executing the given frame just experienced
+     * a message call fail due to a missing receiver signature requirement.
+     *
+     * @param frame a frame in the transaction of interest
+     */
     public static void setMessageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
         receiverSigReqFailureContextVariableFor(frame).set(true);
     }
 
+    /**
+     * Clears a context variable that indicates the transaction executing the given frame just experienced
+     * a message call fail due to a missing receiver signature requirement.
+     *
+     * @param frame a frame in the transaction of interest
+     */
     public static void clearMessageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
         receiverSigReqFailureContextVariableFor(frame).set(false);
     }
