@@ -26,6 +26,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
+/**
+ * A nexus that holds the latest complete signed state.
+ */
 public class LatestCompleteStateNexus extends SignedStateNexus {
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
             PLATFORM_CATEGORY, "roundSup")
@@ -34,10 +37,21 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
 
     private final StateConfig stateConfig;
 
+    /**
+     * Create a new nexus that holds the latest complete signed state with no metrics.
+     *
+     * @param stateConfig the state configuration
+     */
     public LatestCompleteStateNexus(@NonNull final StateConfig stateConfig) {
         this(stateConfig, null);
     }
 
+    /**
+     * Create a new nexus that holds the latest complete signed state.
+     *
+     * @param stateConfig the state configuration
+     * @param metrics     the metrics object to update, or null if no metrics should be updated
+     */
     public LatestCompleteStateNexus(@NonNull final StateConfig stateConfig, @Nullable final Metrics metrics) {
         this.stateConfig = Objects.requireNonNull(stateConfig);
         if (metrics != null) {
@@ -47,6 +61,13 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
         }
     }
 
+    /**
+     * Notify the nexus that a new signed state has been created. This is useful for the nexus to know when it should
+     * clear the latest complete state. This is used so that we don't hold the latest complete state forever in case we
+     * have trouble gathering signatures.
+     *
+     * @param newState a new signed state that is not yet complete
+     */
     public void newIncompleteState(@NonNull final ReservedSignedState newState) {
         try (newState) {
             // NOTE: This logic is duplicated in SignedStateManager, but will be removed from the signed state manager
