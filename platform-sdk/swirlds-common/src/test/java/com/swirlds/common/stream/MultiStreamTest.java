@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.stream;
 
+import static com.swirlds.common.stream.HashCalculatorTest.PAY_LOAD_SIZE_4;
 import static com.swirlds.common.stream.MultiStream.NEXT_STREAM_NULL;
 import static com.swirlds.common.stream.MultiStream.NOT_ENOUGH_NEXT_STREAMS;
-import static com.swirlds.common.test.stream.HashCalculatorTest.PAY_LOAD_SIZE_4;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.stream.HashCalculatorForStream;
-import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;

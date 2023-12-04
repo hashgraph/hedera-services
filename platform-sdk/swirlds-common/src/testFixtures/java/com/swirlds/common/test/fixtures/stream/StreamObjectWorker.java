@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.test.fixtures.stream;
 
-import static com.swirlds.common.test.stream.TestStreamType.TEST_STREAM;
+import static com.swirlds.common.test.fixtures.stream.TestStreamType.TEST_STREAM;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.crypto.Cryptography;
@@ -117,7 +117,7 @@ public class StreamObjectWorker {
         addedObjects = new LinkedList<>();
     }
 
-    void work() {
+    public void work() {
         while (remainNum > 0 && iterator.hasNext()) {
             ObjectForTestStream object = iterator.next();
 
@@ -135,7 +135,7 @@ public class StreamObjectWorker {
         }
     }
 
-    Deque<SelfSerializable> getAddedObjects() {
+    public Deque<SelfSerializable> getAddedObjects() {
         return addedObjects;
     }
 }

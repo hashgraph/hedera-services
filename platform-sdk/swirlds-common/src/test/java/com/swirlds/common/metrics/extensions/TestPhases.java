@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.extensions;
-
-import com.swirlds.common.metrics.extensions.PhaseTimer;
+package com.swirlds.common.metrics.extensions;
 
 /**
  * Phases for testing the {@link PhaseTimer} class.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.stream;
+package com.swirlds.common.stream;
 
-import static com.swirlds.common.test.stream.HashCalculatorTest.PAY_LOAD_SIZE_4;
+import static com.swirlds.common.stream.HashCalculatorTest.PAY_LOAD_SIZE_4;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,7 +26,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.stream.RunningHashCalculatorForStream;
+import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import org.junit.jupiter.api.Test;
 
 class RunningHashCalculatorTest {
