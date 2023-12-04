@@ -75,7 +75,8 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      *                      reservation bugs easier.
      * @param reservationId a unique id to track reserving and releasing of signed states
      */
-    private ReservedSignedState(@NonNull final SignedState signedState, @NonNull final String reason, final long reservationId) {
+    private ReservedSignedState(
+            @NonNull final SignedState signedState, @NonNull final String reason, final long reservationId) {
         this.signedState = Objects.requireNonNull(signedState);
         this.reason = Objects.requireNonNull(reason);
         this.reservationId = reservationId;
@@ -91,7 +92,8 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      */
     static @NonNull ReservedSignedState createAndReserve(
             @NonNull final SignedState signedState, @NonNull final String reason) {
-        final ReservedSignedState reservedSignedState = new ReservedSignedState(signedState, reason, nextReservationId.getAndIncrement());
+        final ReservedSignedState reservedSignedState =
+                new ReservedSignedState(signedState, reason, nextReservationId.getAndIncrement());
         signedState.incrementReservationCount(reason, reservedSignedState.getReservationId());
         return reservedSignedState;
     }

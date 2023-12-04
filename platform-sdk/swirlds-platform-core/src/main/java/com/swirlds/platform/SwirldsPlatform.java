@@ -16,7 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
@@ -46,7 +45,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
@@ -521,7 +519,8 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
         signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
 
-        final LatestCompleteStateNexus latestCompleteState = new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
+        final LatestCompleteStateNexus latestCompleteState =
+                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
         final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
