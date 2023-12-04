@@ -541,6 +541,7 @@ public final class CryptoStatic {
      * 		the current configuration
      * @return a map of KeysAndCerts objects, one for each node
      */
+    @SuppressWarnings("java:S2142")
     public static Map<NodeId, KeysAndCerts> initNodeSecurity(
             @NonNull final AddressBook addressBook, @NonNull final Configuration configuration) {
         Objects.requireNonNull(addressBook, "addressBook must not be null");

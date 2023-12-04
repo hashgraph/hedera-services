@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * An implementation of {@link HapiTestNode} that will shell-out to a sub-process for running the node. The advantage
@@ -284,15 +285,20 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         }
 
         final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
+        Stream<Path> paths = null;
         try {
             if (Files.exists(saved)) {
-                Files.walk(saved)
-                        .sorted(Comparator.reverseOrder())
+                paths = Files.walk(saved);
+                paths.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
             }
         } catch (IOException e) {
             throw new RuntimeException("Could not delete saved state " + saved, e);
+        }
+        finally {
+            if(paths != null)
+                paths.close();
         }
     }
 
@@ -332,6 +338,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 .collect(Collectors.joining(":"));
     }
 
+    @SuppressWarnings("java:S2142")
     private String getPlatformStatus() {
         Map<String, String> statusMap = new HashMap();
         String statusKey = "";

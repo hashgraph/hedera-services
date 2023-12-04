@@ -390,6 +390,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
         final var baseSize = baseSizeOf(op, keySize);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
+
+        @SuppressWarnings("java:S2259") //account cannot be null after the condition
         final var accountMemoSize = account == null ? 0L : account.memo().getBytes(StandardCharsets.UTF_8).length;
         final long newVariableBytes = (newMemoSize != 0L
                 ? newMemoSize
