@@ -1645,55 +1645,57 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(1_000_000)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         getTokenNftInfo(NF_TOKEN, 5L).logged(),
-//                        childRecordsCheck(
-//                                MISSING_TO,
-//                                CONTRACT_REVERT_EXECUTED,
-//                                recordWith()
-//                                        .status(INVALID_ALLOWANCE_SPENDER_ID)
-//                                        .contractCallResult(resultWith()
-//                                                .contractCallResult(htsPrecompileResult()
-//                                                        .withStatus(INVALID_ALLOWANCE_SPENDER_ID)))),
+                        //                        childRecordsCheck(
+                        //                                MISSING_TO,
+                        //                                CONTRACT_REVERT_EXECUTED,
+                        //                                recordWith()
+                        //                                        .status(INVALID_ALLOWANCE_SPENDER_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //                                                .contractCallResult(htsPrecompileResult()
+                        //
+                        // .withStatus(INVALID_ALLOWANCE_SPENDER_ID)))),
                         // * Can't approve if msg.sender != owner and not an operator
                         cryptoTransfer(movingUnique(NF_TOKEN, 1L, 2L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
                         cryptoTransfer(movingUnique(NF_TOKEN, 3L, 4L).between(SOME_ERC_721_SCENARIOS, B_CIVILIAN)),
                         getTokenNftInfo(NF_TOKEN, 1L).hasAccountID(A_CIVILIAN),
                         getTokenNftInfo(NF_TOKEN, 2L).hasAccountID(A_CIVILIAN),
-                        //FIX THIS
-//                        sourcing(() -> contractCall(
-//                                        SOME_ERC_721_SCENARIOS,
-//                                        DO_SPECIFIC_APPROVAL,
-//                                        asHeadlongAddress(tokenMirrorAddr.get()),
-//                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-//                                        BigInteger.valueOf(3))
-//                                .via("NOT_AN_OPERATOR")
-//                                .gas(1_000_000)
-//                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                        // FIX THIS
+                        //                        sourcing(() -> contractCall(
+                        //                                        SOME_ERC_721_SCENARIOS,
+                        //                                        DO_SPECIFIC_APPROVAL,
+                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                        //                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
+                        //                                        BigInteger.valueOf(3))
+                        //                                .via("NOT_AN_OPERATOR")
+                        //                                .gas(1_000_000)
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                         // FIX NEEDED
                         // * Can't revoke if not owner or approvedForAll
-//                        sourcing(() -> contractCall(
-//                                        SOME_ERC_721_SCENARIOS,
-//                                        REVOKE_SPECIFIC_APPROVAL,
-//                                        asHeadlongAddress(tokenMirrorAddr.get()),
-//                                        BigInteger.ONE)
-//                                .via("MISSING_REVOKE")
-//                                .gas(1_000_000)
-//                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-//                        cryptoApproveAllowance()
-//                                .payingWith(B_CIVILIAN)
-//                                .addNftAllowance(B_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS, false, List.of(3L))
-//                                .signedBy(DEFAULT_PAYER, B_CIVILIAN)
-//                                .fee(ONE_HBAR)
+                        //                        sourcing(() -> contractCall(
+                        //                                        SOME_ERC_721_SCENARIOS,
+                        //                                        REVOKE_SPECIFIC_APPROVAL,
+                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                        //                                        BigInteger.ONE)
+                        //                                .via("MISSING_REVOKE")
+                        //                                .gas(1_000_000)
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                        //                        cryptoApproveAllowance()
+                        //                                .payingWith(B_CIVILIAN)
+                        //                                .addNftAllowance(B_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS,
+                        // false, List.of(3L))
+                        //                                .signedBy(DEFAULT_PAYER, B_CIVILIAN)
+                        //                                .fee(ONE_HBAR)
                         // * Still can't approve if msg.sender != owner and not an operator
                         // FIX NEEDED
-//                        sourcing(() -> contractCall(
-//                                        SOME_ERC_721_SCENARIOS,
-//                                        DO_SPECIFIC_APPROVAL,
-//                                        asHeadlongAddress(tokenMirrorAddr.get()),
-//                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-//                                        BigInteger.valueOf(3))
-//                                .via("E")
-//                                .gas(1_000_000)
-//                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        //                        sourcing(() -> contractCall(
+                        //                                        SOME_ERC_721_SCENARIOS,
+                        //                                        DO_SPECIFIC_APPROVAL,
+                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                        //                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
+                        //                                        BigInteger.valueOf(3))
+                        //                                .via("E")
+                        //                                .gas(1_000_000)
+                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // --- Positive cases for approve ---
                         // * owner == msg.sender can approve
                         sourcing(() -> contractCall(

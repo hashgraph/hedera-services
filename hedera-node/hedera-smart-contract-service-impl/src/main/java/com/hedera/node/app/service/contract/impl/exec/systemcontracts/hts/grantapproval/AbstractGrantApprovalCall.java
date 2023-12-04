@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     protected final VerificationStrategy verificationStrategy;
@@ -63,13 +64,19 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
 
     public TransactionBody callGrantApproval() {
         if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE) {
-            var ownerId = enhancement.nativeOperations().getNft(token.tokenNum(), amount.longValue()).ownerId();
+            var ownerId = getOwnerId();
             return (spender.accountNum() == 0)
                     ? buildCryptoDeleteAllowance(remove(ownerId)).build()
                     : buildCryptoApproveAllowance(approve(ownerId)).build();
         } else {
             return buildCryptoApproveAllowance(approve(senderId)).build();
         }
+    }
+    private AccountID getOwnerId() {
+        return enhancement
+                .nativeOperations()
+                .getNft(token.tokenNum(), amount.longValue())
+                .ownerId();
     }
 
     private CryptoDeleteAllowanceTransactionBody remove(AccountID ownerId) {

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -159,10 +158,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             // Now that we know who should sign, if that account is not the payer, then we need to require that
             // key. If there is an error, then we need to use the appropriate error code depending on whether
             // the operator is the owner or the delegating spender.
-//            if (operatorId != null && !operatorId.equals(payerId)) {
-//                final var error = ownerId == operatorId ? INVALID_ALLOWANCE_OWNER_ID : INVALID_DELEGATING_SPENDER;
-//                context.requireKeyOrThrow(operatorId, error);
-//            }
+            //            if (operatorId != null && !operatorId.equals(payerId)) {
+            //                final var error = ownerId == operatorId ? INVALID_ALLOWANCE_OWNER_ID :
+            // INVALID_DELEGATING_SPENDER;
+            //                context.requireKeyOrThrow(operatorId, error);
+            //            }
         }
     }
 
