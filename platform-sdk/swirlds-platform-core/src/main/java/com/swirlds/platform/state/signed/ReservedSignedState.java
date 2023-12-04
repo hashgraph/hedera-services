@@ -63,7 +63,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     private ReservedSignedState() {
         this.signedState = null;
         this.reason = "";
-        this.reservationId = Long.MIN_VALUE;
+        this.reservationId = nextReservationId.getAndIncrement();
     }
 
     /**
