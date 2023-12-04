@@ -95,6 +95,8 @@ import java.time.Duration;
  *                                                        snapshot directories every time we take a state snapshot. The
  *                                                        files copied are guaranteed to contain all non-ancient events
  *                                                        w.r.t. the state snapshot.
+ * @param compactLastFileOnStartup                        if true, then compact the last file's generational span on
+ *                                                        startup.
  */
 @ConfigData("event.preconsensus")
 public record PreconsensusEventStreamConfig(
@@ -112,4 +114,5 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "true") boolean enableReplay,
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
-        @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots) {}
+        @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots,
+        @ConfigProperty(defaultValue = "true") boolean compactLastFileOnStartup) {}

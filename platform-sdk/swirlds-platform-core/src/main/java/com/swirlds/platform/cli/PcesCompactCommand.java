@@ -18,26 +18,32 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.startup.CommandLineArgs;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Browser;
-import java.io.IOException;
-import java.util.Set;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventUtilities;
+import com.swirlds.platform.util.BootstrapUtils;
+import java.nio.file.Path;
 import picocli.CommandLine;
 
 @CommandLine.Command(
-        name = "recover",
+        name = "compact",
         mixinStandardHelpOptions = true,
-        description = "Start the platform in PCES recovery mode. The platform will replay events from disk, "
-                + "save a state, then shut down.")
+        description = "Compact the generational span of all PCES files in a given directory tree.")
 @SubcommandOf(PcesCommand.class)
-public class PcesRecoveryCommand extends AbstractCommand {
-    @CommandLine.Parameters(description = "The node ID to run in recovery mode", index = "0")
-    private long nodeId;
+public class PcesCompactCommand extends AbstractCommand {
 
+    private Path rootDirectory;
+
+    @CommandLine.Parameters(description = "The root directory of the PCES files to compact.")
+    private void setRootDirectory(final Path rootDirectory) {
+        this.rootDirectory = pathMustExist(rootDirectory);
+    }
+
+    /**
+     * Entry point for program.
+     */
     @Override
-    public Integer call() throws IOException, InterruptedException {
-        Browser.launch(new CommandLineArgs(Set.of(new NodeId(nodeId))), true);
-        return null;
+    public Integer call() {
+        BootstrapUtils.setupConstructableRegistry();
+        PreconsensusEventUtilities.compactPreconsensusEventFiles(rootDirectory);
+        return 0;
     }
 }
