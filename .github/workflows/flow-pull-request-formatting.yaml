@@ -21,6 +21,8 @@ on:
       - opened
       - reopened
       - edited
+      - ready_for_review
+      - review_requested
       - synchronize
 
 defaults:
