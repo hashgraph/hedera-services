@@ -94,6 +94,14 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         return null;
     }
 
+    /**
+     * Calling a non-existing account makes transferValue() with zero amount
+     * which executes getOrCreate(). To handle this besu specific behavior,
+     * returning null prevents hedera from continuing with the lazy-create flow.
+     *
+     * @param address the address of interest
+     * @return null
+     */
     @Override
     public MutableAccount getOrCreate(final Address address) {
         return null;

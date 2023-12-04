@@ -128,10 +128,15 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return createGhostAccount(address);
     }
 
-    // todo edit this
-    // Only called for temporary accounts that will not be persisted
-    // We don't want to allocate a Hedera entity num for the new account
-    // We don't need a customizer for the new account
+    /**
+     * Only should be called for temporary accounts (i.e. calling non-existing addresses)
+     * that will not be persisted to the ledger. Differences with the standard flow are:
+     * - hedera entity num will not be allocated for that account
+     * - customizer will not be attached for that account
+     *
+     * @param Address addressOrAlias
+     * @return MutableAccount
+     */
     private MutableAccount createGhostAccount(final Address addressOrAlias) {
         final var curAliases = aliases();
         final var address = curAliases.resolveForEvm(addressOrAlias);

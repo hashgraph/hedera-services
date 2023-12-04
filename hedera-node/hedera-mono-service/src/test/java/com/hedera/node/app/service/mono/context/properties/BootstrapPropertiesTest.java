@@ -381,9 +381,7 @@ class BootstrapPropertiesTest {
             entry(
                     CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                     Set.of(Address.fromHexString("0x164e64"), Address.fromHexString("0x103783"))),
-            entry(
-                    CONTRACTS_GRANDFATHER_CONTRACTS,
-                    Set.of(Address.fromHexString("0xde0b6b3a763fff7"), Address.fromHexString("0xde0b6b3a763ffff"))),
+            entry(CONTRACTS_GRANDFATHER_CONTRACTS, Set.of()),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, LegacyContractIdActivations.from("1058134by[1062784]")),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
             entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),

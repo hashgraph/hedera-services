@@ -62,6 +62,8 @@ public interface HederaEvmOperationsUtilV038 {
             if (systemAccountDetector.test(address)) {
                 return systemAccountExecutionSupplier.get();
             }
+            // skip target entity existing check when
+            // evm >= 0.45 or FF is enabled or the target is grandfather contract
             if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
                     || !evmProperties.allowCallsToNonContractAccounts()
                     || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {

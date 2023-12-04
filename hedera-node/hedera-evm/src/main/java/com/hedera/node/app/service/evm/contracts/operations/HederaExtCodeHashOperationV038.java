@@ -64,8 +64,11 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
             }
+            // skip target entity existing check when
+            // evm >= 0.45 or FF is enabled or the target is grandfather contract
             if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
-                    || !evmProperties.allowCallsToNonContractAccounts()) {
+                    || !evmProperties.allowCallsToNonContractAccounts()
+                    || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
                 if (!addressValidator.test(address, frame)) {
                     return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
                 }
