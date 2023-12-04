@@ -521,15 +521,7 @@ public class SwirldsPlatform implements Platform {
         signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
         signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
 
-        final LatestCompleteStateNexus latestCompleteState = new LatestCompleteStateNexus(stateConfig);
-        final RunningAverageMetric.Config avgRoundSupermajorityConfig = new RunningAverageMetric.Config(
-                        PLATFORM_CATEGORY, "roundSup")
-                .withDescription("latest round with state signed by a supermajority")
-                .withUnit("round");
-        final RunningAverageMetric avgRoundSupermajority =
-                platformContext.getMetrics().getOrCreate(avgRoundSupermajorityConfig);
-        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(latestCompleteState.getRound()));
-
+        final LatestCompleteStateNexus latestCompleteState = new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
         final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
