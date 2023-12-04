@@ -160,7 +160,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long lazyCreationCostInGas(@NonNull final Address recipient) {
-        // TransactionBody for lazy create with alias
+        // Calculate fee for a lazy create TransactionBody with an alias address
         final var creatBuilder = CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(0)
                 .maxAutomaticTokenAssociations(0)
@@ -168,9 +168,11 @@ public class HandleHederaOperations implements HederaOperations {
                 .key(IMMUTABILITY_SENTINEL_KEY)
                 .alias(tuweniToPbjBytes(recipient))
                 .memo(LAZY_MEMO);
-        final var payerId = context.payer();
         final var createBody = TransactionBody.newBuilder().cryptoCreateAccount(creatBuilder.build());
-        final var createFee = autoCreationFeeFor(createBody, payerId);
+        final var payerId = context.payer();
+        final var createFee = autoCreationFeeFor(createBody, requireNonNull(payerId));
+
+        // Calculate fee for an update TransactionBody
         final var updateFee =
                 autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER), payerId);
         return createFee + updateFee;

@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Hash;
@@ -163,6 +164,29 @@ class FrameBuilderTest {
         assertSame(CONTRACT_CODE, frame.getCode());
         assertNull(accessTrackerFor(frame));
         assertSame(tinybarValues, tinybarValuesFor(frame));
+    }
+
+    @Test
+    void callFailsWhenContractNotFound() {
+        final var transaction = wellKnownHapiCall();
+        given(worldUpdater.updater()).willReturn(stackedUpdater);
+        given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
+        given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
+        given(worldUpdater.contractMustBePresent()).willReturn(true);
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+
+        assertThrows(
+                HandleException.class,
+                () -> subject.buildInitialFrameWith(
+                        transaction,
+                        worldUpdater,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        config,
+                        featureFlags,
+                        EIP_1014_ADDRESS,
+                        NON_SYSTEM_LONG_ZERO_ADDRESS,
+                        INTRINSIC_GAS));
     }
 
     @Test
