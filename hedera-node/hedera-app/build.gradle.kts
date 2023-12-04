@@ -147,12 +147,15 @@ val buildDir = layout.projectDirectory.dir("./build/node")
 // Copy everything from hedera-node/data
 val copyNodeData =
     tasks.register<Sync>("copyNodeData") {
+        dependsOn(copyLib)
+        dependsOn(copyApp)
         from(layout.projectDirectory.dir("../data/keys")) {
             into("data/keys")
         }
         from(layout.projectDirectory.dir("../data"))
         into(buildDir)
         exclude("config", "keys") // Exclude config directory
+        shouldRunAfter(tasks.named("copyApp"))
     }
 
 //// Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
@@ -171,24 +174,23 @@ val copyConfig =
 val copyLib =
     tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
-        into(buildDir.dir("./lib"))
-        shouldRunAfter(tasks.named("copyNodeData"))
+        into(layout.projectDirectory.dir("../data/lib"))
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp =
     tasks.register<Sync>("copyApp") {
         from(tasks.jar)
-        into(buildDir.dir("./apps"))
+        into(layout.projectDirectory.dir("../data/apps"))
         rename { "HederaNode.jar" }
         shouldRunAfter(tasks.named("copyLib"))
     }
 
 tasks.assemble {
-    dependsOn(copyNodeData)
-    dependsOn(copyConfig)
     dependsOn(copyLib)
     dependsOn(copyApp)
+    dependsOn(copyNodeData)
+    dependsOn(copyConfig)
 }
 
 // Create the "run" task for running a Hedera consensus node
