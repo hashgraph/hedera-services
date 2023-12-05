@@ -42,19 +42,8 @@ import java.util.List;
  */
 public interface StateManagementComponent
         extends PlatformComponent,
-                SignedStateFinder,
                 SignedStateToLoadConsumer,
                 NewSignedStateFromTransactionsConsumer {
-
-    /**
-     * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required
-     * signatures. State is returned with a reservation.
-     *
-     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
-     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return a reserved signed state, may contain null if none currently in memory are complete
-     */
-    ReservedSignedState getLatestImmutableState(@NonNull final String reason);
 
     /**
      * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array

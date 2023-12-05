@@ -157,15 +157,6 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Get the round of the latest immutable signed state.
-     *
-     * @return the round of the latest immutable signed state.
-     */
-    public long getLastImmutableStateRound() {
-        return lastState.getRound();
-    }
-
-    /**
      * <p>
      * Get the latest signed states stored by this manager.
      * </p>

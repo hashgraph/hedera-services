@@ -248,7 +248,8 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateFileManager signedStateFileManager;
 
     /**
-     * Holds the latest state that is immutable.
+     * Holds the latest state that is immutable. May be unhashed (in the future), may or may not have all required
+     * signatures. State is returned with a reservation.
      * <p>
      * NOTE: This is currently set when a state has finished hashing. In the future, this will be set at the moment a
      * new state is created, before it is hashed.

@@ -213,10 +213,6 @@ class StateManagementComponentTests {
                 systemTransactionConsumer.getNumSubmitted(),
                 1,
                 "The transaction could should be 1 for processing a valid state.");
-        assertEquals(
-                component.getLatestImmutableState("test").get(),
-                signedStateRound2,
-                "The last state should be the same as the signed state for round 2.");
 
         // Transaction fails to be signed due to lower round.
         component.newSignedStateFromTransactions(signedStateRound1.reserve("test"));
@@ -227,10 +223,6 @@ class StateManagementComponentTests {
                 systemTransactionConsumer.getNumSubmitted(),
                 1,
                 "The states with older rounds will not have hash signatures transmitted.");
-        assertEquals(
-                component.getLatestImmutableState("test").get(),
-                signedStateRound2,
-                "The states with older rounds will not be saved as the latest state.");
 
         // Transaction proceeds, state is hashed, signature of hash sent, and state is set as last state.
         component.newSignedStateFromTransactions(signedStateRound3.reserve("test"));
@@ -241,10 +233,6 @@ class StateManagementComponentTests {
                 systemTransactionConsumer.getNumSubmitted(),
                 2,
                 "The signed hash for processed states will be transmitted.");
-        assertEquals(
-                component.getLatestImmutableState("test").get(),
-                signedStateRound3,
-                "The processed state should be set as the latest state in teh signed state manager.");
 
         component.stop();
     }

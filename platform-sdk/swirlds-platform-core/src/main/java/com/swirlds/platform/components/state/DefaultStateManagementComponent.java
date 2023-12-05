@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -46,20 +44,13 @@ import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.system.status.PlatformStatusGetter;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link StateManagementComponent}.
  */
 public class DefaultStateManagementComponent implements StateManagementComponent {
-
-    private static final Logger logger = LogManager.getLogger(DefaultStateManagementComponent.class);
 
     /**
      * An object responsible for signing states with this node's key.
@@ -184,37 +175,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         }
     }
 
-    /**
-     * Checks if the signed state's round is older than the round of the latest state in the signed state manager.
-     *
-     * @param signedState the signed state whose round needs to be compared to the latest state in the signed state
-     *                    manager.
-     * @return true if the signed state's round is < the round of the latest state in the signed state manager,
-     * otherwise false.
-     */
-    private boolean stateRoundIsTooOld(final SignedState signedState) {
-        final long roundOfLatestState = signedStateManager.getLastImmutableStateRound();
-        if (signedState.getRound() < roundOfLatestState) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "State received from transactions is in an incorrect order. "
-                            + "Latest state is from round {}, provided state is from round {}",
-                    roundOfLatestState,
-                    signedState.getRound());
-            return true;
-        }
-        return false;
-    }
-
     @Override
     public void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState) {
         //TODO set latest immutable
         try (signedState) {
             signedState.get().setGarbageCollector(signedStateGarbageCollector);
-
-            if (stateRoundIsTooOld(signedState.get())) {
-                return; // do not process older states.
-            }
             signedStateHasher.hashState(signedState.get());
 
             newSignedStateBeingTracked(signedState.get(), SourceOfSignedState.TRANSACTIONS);
@@ -227,14 +192,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             signedStateManager.addState(signedState.get());
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
-        return signedStateManager.getLatestImmutableState(reason);
     }
 
     /**
@@ -272,15 +229,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void stop() {
         signedStateSentinel.stop();
         signedStateGarbageCollector.stop();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ReservedSignedState find(final @NonNull Predicate<SignedState> criteria, @NonNull final String reason) {
-        return signedStateManager.find(criteria, reason);
     }
 
     /**
