@@ -48,66 +48,66 @@ import java.time.temporal.ChronoUnit;
  */
 public class SyncMetrics {
     private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "syncPermitsAvailable")
+                    PLATFORM_CATEGORY, "syncPermitsAvailable")
             .withDescription("number of sync permits available")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric permitsAvailable;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "bytes/sec_sync")
+                    PLATFORM_CATEGORY, "bytes/sec_sync")
             .withDescription("average number of bytes per second transferred during a sync")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgBytesPerSecSync;
 
     private static final CountPerSecond.Config CALL_SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "sync/secC")
+                    PLATFORM_CATEGORY, "sync/secC")
             .withDescription("(call syncs) syncs completed per second initiated by this member")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond callSyncsPerSecond;
 
     private static final CountPerSecond.Config REC_SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "sync/secR")
+                    PLATFORM_CATEGORY, "sync/secR")
             .withDescription("(receive syncs) syncs completed per second initiated by other member")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond recSyncsPerSecond;
 
     private static final RunningAverageMetric.Config TIPS_PER_SYNC_CONFIG = new RunningAverageMetric.Config(
-            INTERNAL_CATEGORY, PlatformStatNames.TIPS_PER_SYNC)
+                    INTERNAL_CATEGORY, PlatformStatNames.TIPS_PER_SYNC)
             .withDescription("the average number of tips per sync at the start of each sync")
             .withFormat(FORMAT_15_3);
 
     private static final CountPerSecond.Config INCOMING_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "incomingSyncRequests/sec")
+                    PLATFORM_CATEGORY, "incomingSyncRequests/sec")
             .withDescription("Incoming sync requests received per second")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond incomingSyncRequestsPerSec;
 
     private static final CountPerSecond.Config ACCEPTED_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
+                    PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
             .withDescription("Incoming sync requests accepted per second")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond acceptedSyncRequestsPerSec;
 
     private static final CountPerSecond.Config OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
+                    PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
             .withDescription("Opportunities to initiate an outgoing sync per second")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond opportunitiesToInitiateSyncPerSec;
 
     private static final CountPerSecond.Config OUTGOING_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
+                    PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
             .withDescription("Outgoing sync requests sent per second")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond outgoingSyncRequestsPerSec;
 
     private static final CountPerSecond.Config SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
-            PLATFORM_CATEGORY, "syncs/sec")
+                    PLATFORM_CATEGORY, "syncs/sec")
             .withDescription("Total number of syncs completed per second")
             .withFormat(FORMAT_14_7);
     private final CountPerSecond syncsPerSec;
 
     private static final RunningAverageMetric.Config SYNC_FILTER_TIME_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "syncFilterTime")
+                    PLATFORM_CATEGORY, "syncFilterTime")
             .withDescription("the average time spent filtering events during a sync")
             .withUnit("nanoseconds");
 
@@ -271,8 +271,8 @@ public class SyncMetrics {
         avgSyncDuration.update(timing.getTimePoint(0), timing.getTimePoint(5));
         final double syncDurationSec = timing.getPointDiff(5, 0) * UnitConstants.NANOSECONDS_TO_SECONDS;
         final double speed = Math.max(
-                conn.getDis().getSyncByteCounter().getCount(),
-                conn.getDos().getSyncByteCounter().getCount())
+                        conn.getDis().getSyncByteCounter().getCount(),
+                        conn.getDos().getSyncByteCounter().getCount())
                 / syncDurationSec;
 
         // set the bytes/sec speed of the sync currently measured

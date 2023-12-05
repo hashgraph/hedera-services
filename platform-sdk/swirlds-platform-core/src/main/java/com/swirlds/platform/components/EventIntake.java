@@ -190,6 +190,8 @@ public class EventIntake {
             phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
             final List<ConsensusRound> consRounds = consensus().addEvent(event);
 
+            shadowGraph.setMinimumGenerationNonAncient(consensus().getMinGenerationNonAncient());
+
             phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
             dispatcher.eventAdded(event);
 

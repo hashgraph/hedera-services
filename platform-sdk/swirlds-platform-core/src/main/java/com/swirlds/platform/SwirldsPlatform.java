@@ -419,7 +419,7 @@ public class SwirldsPlatform implements Platform {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook.getSize());
+        this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook, selfId);
 
         this.keysAndCerts = keysAndCerts;
 
