@@ -289,16 +289,12 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         try {
             if (Files.exists(saved)) {
                 paths = Files.walk(saved);
-                paths.sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
             }
         } catch (IOException e) {
             throw new RuntimeException("Could not delete saved state " + saved, e);
-        }
-        finally {
-            if(paths != null)
-                paths.close();
+        } finally {
+            if (paths != null) paths.close();
         }
     }
 
