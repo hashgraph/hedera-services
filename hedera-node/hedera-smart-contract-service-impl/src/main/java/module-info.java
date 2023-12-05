@@ -32,6 +32,7 @@ module com.hedera.node.app.service.contract.impl {
     exports com.hedera.node.app.service.contract.impl.handlers;
     exports com.hedera.node.app.service.contract.impl.hevm;
     exports com.hedera.node.app.service.contract.impl.state to
+            com.hedera.node.services.cli,
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app;
 

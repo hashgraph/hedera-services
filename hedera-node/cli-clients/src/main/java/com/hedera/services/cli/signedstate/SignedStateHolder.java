@@ -346,7 +346,10 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     /** register all applicable classes on classpath before deserializing signed state */
     private void registerConstructables() {
         try {
-            ConstructableRegistry.getInstance().registerConstructables("*");
+            final var registry = ConstructableRegistry.getInstance();
+            registry.registerConstructables("com.hedera.node.app.service.mono");
+            registry.registerConstructables("com.hedera.node.app.service.mono.*");
+            registry.registerConstructables("com.swirlds.*");
         } catch (final ConstructableRegistryException ex) {
             throw new UncheckedConstructableRegistryException(ex);
         }
