@@ -242,6 +242,7 @@ class AsyncPreconsensusEventWriterTests {
                 .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
                 .withValue("transaction.transactionMaxBytes", Integer.MAX_VALUE)
                 .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
+                .withValue("event.preconsensus.compactLastFileOnStartup", false)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
