@@ -217,8 +217,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             moveWritingBuffer(byteOffset);
         }
         try {
-            ProtoUtils.writeBytes(
-                    writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(protoData));
+            ProtoUtils.writeBytes(writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(protoData));
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
