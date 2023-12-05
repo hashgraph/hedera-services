@@ -377,8 +377,8 @@ class StateManagementComponentTests {
                 newLatestCompleteStateConsumer::consume,
                 (msg, t, code) -> {},
                 platformStatusGetter,
-                controller,
-                r -> {});
+                controller
+        );
 
         dispatchBuilder.start();
 

@@ -68,14 +68,6 @@ public interface StateManagementComponent
     List<SignedStateInfo> getSignedStateInfo();
 
     /**
-     * Dump the latest immutable state if it is available.
-     *
-     * @param reason   the reason why the state is being dumped
-     * @param blocking if true then block until the state dump is complete
-     */
-    void dumpLatestImmutableState(@NonNull StateToDiskReason reason, boolean blocking);
-
-    /**
      * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
      * total consensus time that this node has been operating for.
      *
