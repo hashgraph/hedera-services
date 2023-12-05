@@ -79,6 +79,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -119,17 +120,15 @@ public class ThrottleAccumulator implements HandleThrottleParser {
      * Updates the throttle requirements for the given transaction and returns whether the transaction should be throttled.
      *
      * @param txnInfo the transaction to update the throttle requirements for
-     * @param consensusTime the consensus time of the transaction
+     * @param now the instant of time the transaction throttling should be checked for
      * @param state the current state of the node
      * @return whether the transaction should be throttled
      */
     public boolean shouldThrottle(
-            @NonNull final TransactionInfo txnInfo,
-            @NonNull final Instant consensusTime,
-            @NonNull final HederaState state) {
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final HederaState state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
-        if (shouldThrottleTxn(false, txnInfo, consensusTime, state)) {
+        if (shouldThrottleTxn(false, txnInfo, now, state)) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -178,6 +177,41 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return true;
         }
         return false;
+    }
+
+    /*
+     * Updates the throttle requirements for given number of transactions of same functionality and returns whether they should be throttled.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     * @param consensusTime the consensus time of the transaction
+     * @return whether the transaction should be throttled
+     */
+    public boolean shouldThrottleNOfUnscaled(
+            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
+        resetLastAllowedUse();
+        final var manager = functionReqs.get(function);
+        if (manager == null) {
+            return true;
+        }
+
+        if (!manager.allReqsMetAt(consensusTime, n, ONE_TO_ONE)) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+
+        return false;
+    }
+
+    /*
+     * Undoes the claimed capacity for a number of transactions of the same functionality.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     */
+    public void leakCapacityForNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        final var manager = Objects.requireNonNull(functionReqs.get(function));
+        manager.undoClaimedReqsFor(n);
     }
 
     /*
@@ -273,8 +307,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return false;
         }
 
-        final long txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
-        if (isGasExhausted(function, now, txGasLimit, configuration)) {
+        if (isGasExhausted(txnInfo, now, configuration)) {
             lastTxnWasGasThrottled = true;
             return true;
         }
@@ -487,15 +520,16 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     private boolean isGasExhausted(
-            @NonNull final HederaFunctionality function,
+            @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant now,
-            final long txGasLimit,
             @NonNull final Configuration configuration) {
         final boolean shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
         return shouldThrottleByGas
-                && isGasThrottled(function)
-                && (gasThrottle == null || !gasThrottle.allow(now, txGasLimit));
+                && isGasThrottled(txnInfo.functionality())
+                && (gasThrottle == null
+                        || !gasThrottle.allow(
+                                now, getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality())));
     }
 
     private boolean shouldThrottleMint(
@@ -555,7 +589,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                 return UNKNOWN_NUM_IMPLICIT_CREATIONS;
             }
 
-            final boolean doesNotExist = accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
+            final boolean doesNotExist = !accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
             if (doesNotExist && ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
                 implicitCreationsCount++;
             }
@@ -735,7 +769,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         final var configuration = configProvider.getConfiguration();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
         if (contractsConfig.throttleThrottleByGas() && contractsConfig.maxGasPerSec() == 0) {
-            log.warn("Consensus gas throttling enabled, but limited to 0 gas/sec");
+            log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
             return;
         }
 

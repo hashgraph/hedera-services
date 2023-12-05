@@ -19,6 +19,8 @@ plugins {
     id("com.hedera.hashgraph.platform-maven-publish")
 }
 
+mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
+
 testModuleInfo {
     requires("com.swirlds.base")
     requires("com.swirlds.config.extensions")

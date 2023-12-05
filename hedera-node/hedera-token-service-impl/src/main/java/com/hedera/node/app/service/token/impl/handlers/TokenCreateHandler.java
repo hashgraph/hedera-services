@@ -157,7 +157,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var treasuryRel = requireNonNull(tokenRelationStore.get(op.treasuryOrThrow(), newTokenId));
         if (op.initialSupply() > 0) {
             // This keeps modified token with minted balance into modifications in token store
-            mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
+            mintFungible(newToken, treasuryRel, op.initialSupply(), accountStore, tokenStore, tokenRelationStore);
         }
         // Increment treasury's title count
         final var treasuryAccount = requireNonNull(accountStore.getForModify(treasuryRel.accountIdOrThrow()));

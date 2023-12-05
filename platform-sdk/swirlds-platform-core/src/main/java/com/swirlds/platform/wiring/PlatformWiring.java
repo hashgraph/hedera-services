@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
@@ -35,12 +36,14 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
 public class PlatformWiring implements Startable, Stoppable, Clearable {
+    private final PlatformContext platformContext;
     private final WiringModel model;
 
     private final InternalEventValidatorWiring internalEventValidatorWiring;
@@ -57,6 +60,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+        this.platformContext = Objects.requireNonNull(platformContext);
         model = WiringModel.create(platformContext, time);
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
@@ -214,14 +218,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @Override
     public void clear() {
-        // pause the orphan buffer to break the cycle, and flush the pause through
-        orphanBufferWiring.pauseInput().inject(true);
-        orphanBufferWiring.flushRunnable().run();
+        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            // pause the orphan buffer to break the cycle, and flush the pause through
+            orphanBufferWiring.pauseInput().inject(true);
+            orphanBufferWiring.flushRunnable().run();
 
-        // now that no cycles exist, flush all the wiring objects
-        flushAll();
+            // now that no cycles exist, flush all the wiring objects
+            flushAll();
 
-        // once everything has been flushed through the system, it's safe to unpause the orphan buffer
-        orphanBufferWiring.pauseInput().inject(false);
+            // once everything has been flushed through the system, it's safe to unpause the orphan buffer
+            orphanBufferWiring.pauseInput().inject(false);
+        }
     }
 }

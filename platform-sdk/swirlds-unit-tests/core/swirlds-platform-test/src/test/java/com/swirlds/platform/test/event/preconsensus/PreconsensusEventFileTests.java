@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
@@ -300,7 +301,7 @@ class PreconsensusEventFileTests {
         final Path actualRecycleDirectory = recycleDirectory.resolve(selfId.toString());
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("recycleBin.recycleBinPath", recycleDirectory.toString())
+                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleDirectory.toString())
                 .getOrCreateConfig();
 
         final RecycleBin recycleBin = new RecycleBinImpl(

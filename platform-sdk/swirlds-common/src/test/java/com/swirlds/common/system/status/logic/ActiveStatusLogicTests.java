@@ -23,6 +23,7 @@ import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.trigge
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
+import com.swirlds.common.system.status.PlatformStatusConfig_;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
@@ -51,7 +52,7 @@ class ActiveStatusLogicTests {
     void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("platformStatus.activeStatusDelay", "5s")
+                .withValue(PlatformStatusConfig_.ACTIVE_STATUS_DELAY, "5s")
                 .getOrCreateConfig();
         logic = new ActiveStatusLogic(time.now(), configuration.getConfigData(PlatformStatusConfig.class));
     }

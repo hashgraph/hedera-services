@@ -35,6 +35,7 @@ import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationConfig_;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
@@ -216,7 +217,7 @@ class EventCreationRulesTests {
         final Duration period = Duration.ofSeconds(1).dividedBy(maxRate);
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("event.creation.maxCreationRate", maxRate)
+                .withValue(EventCreationConfig_.MAX_CREATION_RATE, maxRate)
                 .getOrCreateConfig();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()

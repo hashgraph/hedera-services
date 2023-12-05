@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -259,7 +260,7 @@ class SignedStateFileReadWriteTest {
 
     private Configuration changeConfigAndConfigHolder(String directory) {
         return new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", directory)
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, directory)
                 .getOrCreateConfig();
     }
 }
