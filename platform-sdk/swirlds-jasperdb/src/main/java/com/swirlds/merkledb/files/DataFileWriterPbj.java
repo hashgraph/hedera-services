@@ -52,7 +52,7 @@ import java.time.Instant;
 public class DataFileWriterPbj<D> implements DataFileWriter<D> {
 
     /** Mapped buffer size */
-    private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
+    private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 64;
 
     /**
      * The current mapped byte buffer used for writing. When overflowed, it is released, and another
@@ -212,28 +212,16 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         // capture the current write position for beginning of data item
         final long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
-        // capture the current read position in the data item data buffer
-        final long currentProtoPos = protoData.position();
-        final long currentProtoLimit = protoData.limit();
-        final long size = protoData.remaining();
+        final int size = Math.toIntExact(protoData.remaining());
+        if (writingPbjData.remaining() < ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size)) {
+            moveWritingBuffer(byteOffset);
+        }
         try {
             ProtoUtils.writeBytes(
-                    writingPbjData, FIELD_DATAFILE_ITEMS, Math.toIntExact(size), o -> o.writeBytes(protoData));
+                    writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(protoData));
         } catch (final BufferOverflowException e) {
-            // Buffer overflow indicates the current writing mapped byte buffer needs to be
-            // mapped to a new location
-            moveWritingBuffer(byteOffset);
-            // Reset dataItemData buffer position and retry
-            protoData.position(currentProtoPos);
-            protoData.limit(currentProtoLimit);
-            try {
-                ProtoUtils.writeBytes(
-                        writingPbjData, FIELD_DATAFILE_ITEMS, Math.toIntExact(size), o -> o.writeBytes(protoData));
-            } catch (final BufferOverflowException t) {
-                // If still a buffer overflow, it means the mapped buffer is smaller than even a single
-                // data item
-                throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
-            }
+            // Buffer overflow here means the mapped buffer is smaller than even a single data item
+            throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
         }
         dataItemCount++;
         // return the offset where we wrote the data
@@ -254,6 +242,9 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // write serialized data
         final int dataItemSize = dataItemSerializer.getSerializedSize(dataItem);
+        if (writingPbjData.remaining() < ProtoUtils.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize)) {
+            moveWritingBuffer(byteOffset);
+        }
         try {
             ProtoUtils.writeBytes(
                     writingPbjData,
@@ -261,19 +252,8 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
                     dataItemSize,
                     out -> dataItemSerializer.serialize(dataItem, out));
         } catch (final BufferOverflowException e) {
-            // Buffer overflow indicates the current writing mapped byte buffer needs to be
-            // mapped to a new location and retry
-            moveWritingBuffer(byteOffset);
-            try {
-                ProtoUtils.writeBytes(
-                        writingPbjData,
-                        FIELD_DATAFILE_ITEMS,
-                        dataItemSize,
-                        out -> dataItemSerializer.serialize(dataItem, out));
-            } catch (final BufferOverflowException t) {
-                // If still a buffer overflow, it means the mapped buffer is smaller than even a single data item
-                throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
-            }
+            // Buffer overflow here means the mapped buffer is smaller than even a single data item
+            throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
         }
         // increment data item counter
         dataItemCount++;

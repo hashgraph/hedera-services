@@ -114,7 +114,6 @@ public class ProtoUtils {
     public static <T extends WritableSequentialData> void writeBytes(
             final T out, final FieldDefinition field, final int size, final Consumer<T> writer) {
         writeTag(out, field);
-        //        out.writeVarInt(field.number() << ProtoParserTools.TAG_FIELD_OFFSET | WIRE_TYPE_DELIMITED, false);
         out.writeVarInt(size, false);
         writer.accept(out);
     }
