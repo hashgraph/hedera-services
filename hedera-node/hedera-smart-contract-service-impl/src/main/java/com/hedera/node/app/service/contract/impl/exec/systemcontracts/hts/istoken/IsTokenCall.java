@@ -46,11 +46,7 @@ public class IsTokenCall extends AbstractNonRevertibleTokenViewCall {
      */
     @Override
     protected @NonNull FullResult resultOfViewingToken(final Token token) {
-        if (token == null) {
-            return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), false);
-        } else {
-            return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), true);
-        }
+        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token != null);
     }
 
     @Override
