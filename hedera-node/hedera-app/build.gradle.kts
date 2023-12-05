@@ -149,9 +149,7 @@ val copyNodeData =
     tasks.register<Sync>("copyNodeData") {
         dependsOn(copyLib)
         dependsOn(copyApp)
-        from(layout.projectDirectory.dir("../data/keys")) {
-            into("data/keys")
-        }
+        from(layout.projectDirectory.dir("../data/keys")) { into("data/keys") }
         from(layout.projectDirectory.dir("../data"))
         into(buildDir)
         exclude("config", "keys") // Exclude config directory
@@ -162,9 +160,7 @@ val copyNodeData =
 //// Copy hedera-node/configuration/dev as hedera-node/hedera-app/build/node/data/config  }
 val copyConfig =
     tasks.register<Copy>("copyConfig") {
-        from(layout.projectDirectory.dir("../configuration/dev")) {
-            into("data/config")
-        }
+        from(layout.projectDirectory.dir("../configuration/dev")) { into("data/config") }
         from(layout.projectDirectory.file("../config.txt"))
         from(layout.projectDirectory.file("../log4j2.xml"))
         into(buildDir)
