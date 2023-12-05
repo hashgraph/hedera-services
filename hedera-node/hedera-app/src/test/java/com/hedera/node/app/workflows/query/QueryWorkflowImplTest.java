@@ -167,7 +167,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(configuration);
 
-        when(feeManager.createFeeCalculator(eq(FILE_GET_INFO), any())).thenReturn(feeCalculator);
+        when(feeManager.createFeeCalculator(eq(FILE_GET_INFO), any(), any())).thenReturn(feeCalculator);
 
         final var transactionID =
                 TransactionID.newBuilder().accountID(ALICE.accountID()).build();
@@ -494,9 +494,11 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
+        workflow.handleQuery(requestBuffer, responseBuffer);
+        final var response = parseResponse(responseBuffer);
+        final var precheckCode =
+                response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
+        assertThat(precheckCode).isEqualTo(NOT_SUPPORTED);
         verify(opCounters, never()).countReceived(any());
         verify(opCounters, never()).countAnswered(any());
     }

@@ -165,18 +165,19 @@ class FileCreateTest extends FileTestBase {
     }
 
     @Test
-    @DisplayName("no expatriation time is added")
+    @DisplayName("no expiration time is added")
     void createAddsDifferentSubmitKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
         final var keys = anotherKeys;
 
         // when:
-        final var context = new FakePreHandleContext(accountStore, newCreateTxn(keys, 0));
+        final var txn = newCreateTxn(keys, 0);
+        final var context = new FakePreHandleContext(accountStore, txn);
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_EXPIRATION_TIME);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_EXPIRATION_TIME);
     }
 
     @Test
@@ -204,7 +205,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
@@ -235,7 +236,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
@@ -265,7 +266,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
         final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -282,7 +283,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))

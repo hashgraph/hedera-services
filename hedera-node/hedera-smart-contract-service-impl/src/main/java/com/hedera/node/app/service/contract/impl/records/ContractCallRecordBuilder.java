@@ -18,14 +18,16 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * Exposes the record customizations needed for a HAPI contract call transaction.
  */
-public interface ContractCallRecordBuilder {
+public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract call.
@@ -35,6 +37,14 @@ public interface ContractCallRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder status(@NonNull ResponseCodeEnum status);
+
+    /**
+     * Returns final status of this contract call's record.
+     *
+     * @return the final status of this contract call
+     */
+    @NonNull
+    ResponseCodeEnum status();
 
     /**
      * Tracks the contract id called.
@@ -53,4 +63,27 @@ public interface ContractCallRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+
+    /**
+     * Tracks the transaction contained in child records resulting from the contract call.
+     *
+     * @param txn the transaction
+     * @return this builder
+     */
+    @NonNull
+    ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
+
+    /**
+     * Gets the newly minted serial numbers.
+     *
+     * @return the newly minted serial numbers
+     */
+    List<Long> serialNumbers();
+
+    /**
+     * Gets the new total supply of a token, e.g. after minting or burning.
+     *
+     * @return new total supply of a token
+     */
+    long getNewTotalSupply();
 }

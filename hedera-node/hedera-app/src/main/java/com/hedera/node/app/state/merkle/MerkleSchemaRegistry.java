@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -71,7 +72,7 @@ import org.apache.logging.log4j.Logger;
  * a {@link SemanticVersion}.
  *
  * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
- * SemanticVersion, Configuration, NetworkInfo)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * SemanticVersion, Configuration, NetworkInfo, HandleThrottleParser, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -154,7 +155,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final HandleThrottleParser handleThrottling) {
+            @NonNull final HandleThrottleParser handleThrottling,
+            @Nullable final WritableEntityIdStore entityIdStore) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
@@ -215,20 +217,32 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
-            final var writeableStates = hederaState.createWritableStates(serviceName);
+            final var writableStates = hederaState.createWritableStates(serviceName);
             final var statesToRemove = schema.statesToRemove();
-            final var remainingStates = new HashSet<>(writeableStates.stateKeys());
+            final var remainingStates = new HashSet<>(writableStates.stateKeys());
             remainingStates.removeAll(statesToRemove);
-            final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
+            final var newStates = new FilteredWritableStates(writableStates, remainingStates);
 
+            // For any changes to state that depend on other services outside the current service, we need a reference
+            // to the overall state that we can pass into the context. This reference to overall state will be strictly
+            // controlled via the MigrationContext API so that only changes explicitly specified in the interface can be
+            // made (instead of allowing any arbitrary change to overall state). As above, we won't commit anything
+            // until after this service's migration
             final var migrationContext = new MigrationContextImpl(
-                    previousStates, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
+                    previousStates,
+                    newStates,
+                    config,
+                    networkInfo,
+                    genesisRecordsBuilder,
+                    handleThrottling,
+                    entityIdStore);
             if (updateInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
                 schema.migrate(migrationContext);
             }
-            if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+            // Now commit all the service-specific changes made during this service's update or migration
+            if (writableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }
 
@@ -254,7 +268,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     @NonNull
     private List<Schema> computeApplicableSchemas(
             @Nullable final SemanticVersion previousVersion, @NonNull final SemanticVersion currentVersion) {
-
         // The previous version MUST be strictly less than or equal to the current version
         if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
             throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
@@ -270,7 +283,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 applicableSchemas.add(schema);
             }
         }
-
         return applicableSchemas;
     }
 
@@ -282,7 +294,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param b The second arg
      * @return true if both are null, or if both have the same version number
      */
-    private boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
+    public static boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
         return (a == null && b == null) || (a != null && b != null && SEMANTIC_VERSION_COMPARATOR.compare(a, b) == 0);
     }
 
@@ -302,7 +314,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @return True if, and only if, {@code maybeBefore} is a lower version number than {@code
      *     maybeAfter}.
      */
-    private boolean isSoOrdered(
+    public static boolean isSoOrdered(
             @Nullable final SemanticVersion maybeBefore, @NonNull final SemanticVersion maybeAfter) {
 
         // If they are the same version, then we must fail.
@@ -320,7 +332,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // If the comparison yields the first argument as being before
         // or matching the second argument, then we return true because
         // the condition we're testing for holds.
-        return SEMANTIC_VERSION_COMPARATOR.compare(maybeBefore, maybeAfter) <= 0;
+        return SEMANTIC_VERSION_COMPARATOR.compare(maybeBefore, maybeAfter) < 0;
     }
 
     /**

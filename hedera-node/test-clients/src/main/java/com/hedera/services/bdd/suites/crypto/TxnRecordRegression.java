@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -40,9 +41,15 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
-/* ! WARNING - Requires a RecordCache TTL of 3s to pass ! */
+/**
+ * ! WARNING - Requires a RecordCache TTL of 3s to pass !
+ *
+ * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
+ * */
 @HapiTestSuite
+@Tag(CRYPTO)
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 
@@ -67,6 +74,7 @@ public class TxnRecordRegression extends HapiSuite {
         });
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec recordAvailableInPayerState() {
         return defaultHapiSpec("RecordAvailableInPayerState")
                 .given(
@@ -80,6 +88,7 @@ public class TxnRecordRegression extends HapiSuite {
                         getTxnRecord("recordTxn").hasPriority(recordWith().status(SUCCESS)));
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
@@ -121,6 +130,7 @@ public class TxnRecordRegression extends HapiSuite {
                         getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))

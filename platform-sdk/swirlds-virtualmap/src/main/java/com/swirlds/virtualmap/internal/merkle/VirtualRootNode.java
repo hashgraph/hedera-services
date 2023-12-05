@@ -495,12 +495,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                                 VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
                                 assert leafRecord != null : "Leaf record should not be null";
                                 try {
-                                    final boolean success =
-                                            rehashIterator.supply(leafRecord, Integer.MAX_VALUE, SECONDS);
-                                    if (!success) {
-                                        throw new MerkleSynchronizationException(
-                                                "Timed out waiting to supply a new leaf to the hashing iterator buffer");
-                                    }
+                                    rehashIterator.supply(leafRecord);
                                 } catch (final MerkleSynchronizationException e) {
                                     throw e;
                                 } catch (final InterruptedException e) {
@@ -699,6 +694,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     protected void destroyNode() {
         if (pipeline != null) {
             pipeline.destroyCopy(this);
+        } else {
+            logger.info(
+                    VIRTUAL_MERKLE_STATS.getMarker(),
+                    "Destroying virtual root node at route {}, but its pipeline is null. It may happen during failed reconnect",
+                    getRoute());
+            closeDataSource();
         }
     }
 
@@ -953,15 +954,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void onShutdown(final boolean immediately) {
-
         if (immediately) {
             // If immediate shutdown is required then let the hasher know it is being stopped. If shutdown
             // is not immediate, the hasher will eventually stop once it finishes all of its work.
             hasher.shutdown();
         }
+        closeDataSource();
+    }
 
-        // We can now try to shut down the data source. If this doesn't shut things down, then there
-        // isn't much we can do aside from logging the fact. The node may well die before too long.
+    private void closeDataSource() {
+        // Shut down the data source. If this doesn't shut things down, then there isn't
+        // much we can do aside from logging the fact. The node may well die before too long
         if (dataSource != null) {
             try {
                 dataSource.close();
@@ -1427,11 +1430,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public void handleReconnectLeaf(final VirtualLeafRecord<K, V> leafRecord) {
         try {
-            final boolean success = reconnectIterator.supply(leafRecord, MAX_RECONNECT_HASHING_BUFFER_TIMEOUT, SECONDS);
-            if (!success) {
-                throw new MerkleSynchronizationException(
-                        "Timed out waiting to supply a new leaf to the hashing iterator buffer");
-            }
+            reconnectIterator.supply(leafRecord);
         } catch (final MerkleSynchronizationException e) {
             throw e;
         } catch (final InterruptedException e) {

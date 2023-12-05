@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.chatter;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
@@ -28,12 +29,14 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Exchanges non-expired events with the peer and ensures all future events will be sent through {@link
- * ChatterProtocol}
+ * Exchanges non-expired events with the peer and ensures all future events will be sent through
+ * {@link ChatterProtocol}
  */
 public class ChatterSyncProtocol implements Protocol {
     private final NodeId peerId;
@@ -41,23 +44,24 @@ public class ChatterSyncProtocol implements Protocol {
     private final MessageProvider messageProvider;
     private final ShadowGraphSynchronizer synchronizer;
     private final FallenBehindManager fallenBehindManager;
+    private final PlatformContext platformContext;
 
     /**
-     * @param state
-     * 		the state that tracks the peer
-     * @param messageProvider
-     * 		keeps messages that need to be sent to the chatter peer
-     * @param synchronizer
-     * 		does a sync and enables chatter
-     * @param fallenBehindManager
-     * 		maintains this node's behind status and the peers that have informed this node that it is behind
+     * @param platformContext     the platform context
+     * @param state               the state that tracks the peer
+     * @param messageProvider     keeps messages that need to be sent to the chatter peer
+     * @param synchronizer        does a sync and enables chatter
+     * @param fallenBehindManager maintains this node's behind status and the peers that have informed this node that it
+     *                            is behind
      */
     public ChatterSyncProtocol(
+            @NonNull final PlatformContext platformContext,
             final NodeId peerId,
             final CommunicationState state,
             final MessageProvider messageProvider,
             final ShadowGraphSynchronizer synchronizer,
             final FallenBehindManager fallenBehindManager) {
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.peerId = peerId;
         this.state = state;
         this.messageProvider = messageProvider;
@@ -78,8 +82,8 @@ public class ChatterSyncProtocol implements Protocol {
     }
 
     /**
-     * Checks our fallen behind status and decides if we should sync with this neighbor.
-     * If someone told us we have fallen behind, we should not sync with them again until we have:
+     * Checks our fallen behind status and decides if we should sync with this neighbor. If someone told us we have
+     * fallen behind, we should not sync with them again until we have:
      * <ul>
      * <li>
      * decided that we have fallen behind and then reconnect
@@ -106,7 +110,7 @@ public class ChatterSyncProtocol implements Protocol {
             throws NetworkProtocolException, IOException, InterruptedException {
         state.chatterSyncStarted();
         try {
-            if (synchronizer.synchronize(connection)) {
+            if (synchronizer.synchronize(platformContext, connection)) {
                 state.chatterSyncSucceeded();
             } else {
                 state.chatterSyncFailed();

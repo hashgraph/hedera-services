@@ -29,8 +29,8 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -43,12 +43,14 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,7 +69,7 @@ public final class GossipFactory {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the wall clock time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -87,13 +89,14 @@ public final class GossipFactory {
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
+     * @param emergencyStateSupplier        returns the emergency state if available
      * @return the gossip engine
      */
     public static Gossip buildGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -112,12 +115,13 @@ public final class GossipFactory {
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
         Objects.requireNonNull(time);
-        Objects.requireNonNull(crypto);
+        Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(notificationEngine);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
@@ -145,7 +149,7 @@ public final class GossipFactory {
                     platformContext,
                     threadManager,
                     time,
-                    crypto,
+                    keysAndCerts,
                     notificationEngine,
                     addressBook,
                     selfId,
@@ -163,7 +167,8 @@ public final class GossipFactory {
                     eventLinker,
                     platformStatusManager,
                     loadReconnectState,
-                    clearAllPipelinesForReconnect);
+                    clearAllPipelinesForReconnect,
+                    emergencyStateSupplier);
         } else {
             if (addressBook.getSize() == 1) {
                 logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
@@ -171,7 +176,7 @@ public final class GossipFactory {
                         platformContext,
                         threadManager,
                         time,
-                        crypto,
+                        keysAndCerts,
                         addressBook,
                         selfId,
                         appVersion,
@@ -179,7 +184,6 @@ public final class GossipFactory {
                         intakeQueue,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventObserverDispatcher,
                         syncMetrics,
                         platformStatusManager,
                         loadReconnectState,
@@ -190,7 +194,7 @@ public final class GossipFactory {
                         platformContext,
                         threadManager,
                         time,
-                        crypto,
+                        keysAndCerts,
                         notificationEngine,
                         addressBook,
                         selfId,
@@ -202,13 +206,13 @@ public final class GossipFactory {
                         intakeQueue,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventObserverDispatcher,
                         syncMetrics,
                         eventLinker,
                         platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect,
-                        intakeEventCounter);
+                        intakeEventCounter,
+                        emergencyStateSupplier);
             }
         }
     }

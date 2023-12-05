@@ -70,7 +70,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -79,6 +79,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
@@ -99,6 +100,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -130,6 +132,9 @@ public class TestHelpers {
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
 
+    public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.permittedContractCallers", Set.of(1062787L))
+            .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
@@ -142,6 +147,13 @@ public class TestHelpers {
     public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key ANOTHER_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0202020202020202020202020202020202020202020202020202020202020202"))
+            .build();
+
+    public static final Key YET_ANOTHER_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("3232323232323232323232323232323232323232323232323232323232323232"))
             .build();
     public static final long REQUIRED_GAS = 123L;
     public static final long NONCE = 678;
@@ -213,6 +225,12 @@ public class TestHelpers {
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
 
+    public static final Token EXPLICITLY_IMMUTABLE_FUNGIBLE_TOKEN = FUNGIBLE_TOKEN
+            .copyBuilder()
+            .adminKey(KeyUtils.IMMUTABILITY_SENTINEL_KEY)
+            .build();
+    public static final Token MUTABLE_FUNGIBLE_TOKEN =
+            FUNGIBLE_TOKEN.copyBuilder().adminKey(AN_ED25519_KEY).build();
     public static final CustomFee FIXED_HBAR_FEES = CustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(2).build())
             .feeCollectorAccountId(SENDER_ID)
@@ -378,7 +396,8 @@ public class TestHelpers {
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
-
+    public static final Address PERMITTED_ADDRESS_CALLER =
+            Address.wrap((org.apache.tuweni.bytes.Bytes.wrap(asEvmAddress(1062787L))));
     public static final Account OPERATOR =
             Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
 
@@ -578,8 +597,7 @@ public class TestHelpers {
         assertEquals(expected.getGasCost(), actual.getGasCost());
     }
 
-    public static void assertSamePrecompileResult(
-            final HederaSystemContract.FullResult expected, final HederaSystemContract.FullResult actual) {
+    public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {
         assertEquals(expected.gasRequirement(), actual.gasRequirement());
         final var expectedResult = expected.result();
         final var actualResult = actual.result();

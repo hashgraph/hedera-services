@@ -314,6 +314,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     pathToDiskLocationInternalNodes,
                     statisticsUpdater::setHashesStoreCompactionTimeMs,
                     statisticsUpdater::setHashesStoreCompactionSavedSpaceMb,
+                    statisticsUpdater::setHashesStoreFileSizeByLevelMb,
                     updateTotalStatsFunction);
         } else {
             hashStoreDisk = null;
@@ -359,6 +360,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     objectKeyToPath.getBucketIndexToBucketLocation(),
                     statisticsUpdater::setLeafKeysStoreCompactionTimeMs,
                     statisticsUpdater::setLeafKeysStoreCompactionSavedSpaceMb,
+                    statisticsUpdater::setLeafKeysStoreFileSizeByLevelMb,
                     updateTotalStatsFunction);
             objectKeyToPath.printStats();
             // we do not need callback as HalfDiskHashMap loads its own data from disk
@@ -380,6 +382,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 pathToDiskLocationLeafNodes,
                 statisticsUpdater::setLeavesStoreCompactionTimeMs,
                 statisticsUpdater::setLeavesStoreCompactionSavedSpaceMb,
+                statisticsUpdater::setLeavesStoreFileSizeByLevelMb,
                 updateTotalStatsFunction);
 
         // Leaf records cache
@@ -755,19 +758,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             out.write(bytes, off, len);
         }
         return true;
-    }
-
-    /**
-     * Wait for any merges to finish and then close all data stores.
-     * <p>
-     * <b>After closing delete the database directory and all data!</b> For testing purpose only.
-     */
-    public void closeAndDelete() throws IOException {
-        try {
-            close();
-        } finally {
-            database.removeTable(tableId);
-        }
     }
 
     /** Wait for any merges to finish, then close all data stores and free all resources. */

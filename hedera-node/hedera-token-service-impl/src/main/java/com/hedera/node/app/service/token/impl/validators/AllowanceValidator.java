@@ -47,9 +47,7 @@ public class AllowanceValidator {
     }
 
     protected void validateTotalAllowancesPerTxn(final int totalAllowances, @NonNull final HederaConfig hederaConfig) {
-        validateFalse(
-                exceedsTxnLimit(totalAllowances, hederaConfig.allowancesMaxTransactionLimit()),
-                MAX_ALLOWANCES_EXCEEDED);
+        validateFalse(totalAllowances > hederaConfig.allowancesMaxTransactionLimit(), MAX_ALLOWANCES_EXCEEDED);
     }
 
     protected void validateSerialNums(
@@ -60,10 +58,6 @@ public class AllowanceValidator {
             final var nft = nftStore.get(tokenId, serial);
             validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         }
-    }
-
-    private boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
-        return totalAllowances > maxLimit;
     }
 
     /* ------------------------ Helper methods needed for allowances validation ------------------------ */

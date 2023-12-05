@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import com.github.jengelman.gradle.plugins.shadow.internal.DefaultDependencyFilter
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
@@ -26,11 +27,14 @@ tasks.withType<ShadowJar>().configureEach {
     from(sourceSets.main.get().output)
     mergeServiceFiles()
 
-    // Defer the resolution  of 'runtimeClasspath'. This is an issue in the shadow
-    // plugin that it automatically accesses the files in 'runtimeClasspath' while
-    // Gradle is building the task graph. The three lines below work around that.
+    // There is an issue in the shadow plugin that it automatically accesses the
+    // files in 'runtimeClasspath' while Gradle is building the task graph.
     // See: https://github.com/johnrengelman/shadow/issues/882
-    inputs.files(project.configurations.runtimeClasspath)
-    configurations = emptyList()
-    doFirst { configurations = listOf(project.configurations.runtimeClasspath.get()) }
+    dependencyFilter = NoResolveDependencyFilter()
+}
+
+class NoResolveDependencyFilter : DefaultDependencyFilter(project) {
+    override fun resolve(configuration: FileCollection): FileCollection {
+        return configuration
+    }
 }

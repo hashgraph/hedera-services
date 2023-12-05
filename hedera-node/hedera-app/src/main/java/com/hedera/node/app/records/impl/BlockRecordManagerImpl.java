@@ -59,7 +59,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private final int numBlockHashesToKeepBytes;
     /**
-     * The number of secibds of consensus time in a block period, from configuration. This is computed based on the
+     * The number of seconds of consensus time in a block period, from configuration. This is computed based on the
      * {@link BlockRecordStreamConfig#logPeriod()} setting. This setting is computed once at startup and used
      * throughout.
      */
@@ -82,6 +82,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * The consensus time of the first transaction in the current block. "provisional" because the block is not yet
      * complete.
      */
+    // TODO : Verify this is safe during reconnect
     private Instant provisionalCurrentBlockFirstTransactionTime = null;
     /** True when we have completed event recovery. This is not yet implemented properly. */
     private boolean eventRecoveryCompleted = false;
@@ -281,6 +282,32 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return BlockRecordInfoUtils.blockHashByBlockNumber(lastBlockInfo, blockNo);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+        final var builder = this.lastBlockInfo
+                .copyBuilder()
+                .consTimeOfLastHandledTxn(Timestamp.newBuilder()
+                        .seconds(consensusTime.getEpochSecond())
+                        .nanos(consensusTime.getNano()));
+        if (!this.lastBlockInfo.migrationRecordsStreamed()) {
+            // Any records created during migration should have been published already. Now we shut off the flag to
+            // disallow further publishing
+            builder.migrationRecordsStreamed(true);
+        }
+        final var newBlockInfo = builder.build();
+
+        // Update the latest block info in state
+        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        blockInfoState.put(newBlockInfo);
+        // Commit the changes. We don't ever want to roll back when advancing the consensus clock
+        ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
+
+        // Cache the updated block info
+        this.lastBlockInfo = newBlockInfo;
+    }
+
     // ========================================================================================================
     // Private Methods
 
@@ -325,6 +352,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return new BlockInfo(
                 newBlockNumber,
                 new Timestamp(blockFirstTransactionTime.getEpochSecond(), blockFirstTransactionTime.getNano()),
-                Bytes.wrap(newBlockHashesBytes));
+                Bytes.wrap(newBlockHashesBytes),
+                lastBlockInfo.consTimeOfLastHandledTxn(),
+                lastBlockInfo.migrationRecordsStreamed());
     }
 }

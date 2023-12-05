@@ -28,14 +28,13 @@ import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.reconnect.ReconnectTeacher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
+import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,39 +43,33 @@ import org.apache.logging.log4j.Logger;
  */
 public class EmergencyReconnectTeacher {
     private static final Logger logger = LogManager.getLogger(EmergencyReconnectTeacher.class);
-    private final SignedStateFinder stateFinder;
+    private final Supplier<ReservedSignedState> stateSupplier;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
     private final Configuration configuration;
     private final Time time;
 
-    @Nullable
-    private final BooleanSupplier requestToStopTeaching;
-
     /**
      * @param time                   provides wall clock time
      * @param threadManager          responsible for managing thread lifecycles
-     * @param stateFinder            finds an acceptable state for emergency reconnect
+     * @param stateSupplier          return the state for emergency reconnect
      * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
-     * @param requestToStopTeaching  to be checked periodically if teaching should be stopped
      * @param reconnectMetrics       tracks reconnect metrics
      * @param configuration          the configuration for the platform
      */
     public EmergencyReconnectTeacher(
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
-            @NonNull final SignedStateFinder stateFinder,
+            @NonNull final Supplier<ReservedSignedState> stateSupplier,
             @NonNull final Duration reconnectSocketTimeout,
-            @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final Configuration configuration) {
         this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
-        this.stateFinder = Objects.requireNonNull(stateFinder, "stateFinder must not be null");
+        this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier must not be null");
         this.reconnectSocketTimeout =
                 Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
-        this.requestToStopTeaching = requestToStopTeaching;
         this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
@@ -109,9 +102,10 @@ public class EmergencyReconnectTeacher {
         try {
             final long round = connection.getDis().readLong();
             final Hash hash = connection.getDis().readSerializable();
-            try (final ReservedSignedState reservedState =
-                    stateFinder.find(emergencyStateCriteria(round, hash), "EmergencyReconnectTeacher.execute() find")) {
-                if (reservedState.isNotNull()) {
+            try (final ReservedSignedState reservedState = stateSupplier.get()) {
+                if (reservedState != null
+                        && reservedState.get().getState().getHash().equals(hash)
+                        && reservedState.get().getRound() == round) {
                     writeHasState(connection, true);
                     logger.info(
                             RECONNECT.getMarker(),
@@ -126,7 +120,6 @@ public class EmergencyReconnectTeacher {
                                     connection.getSelfId(),
                                     connection.getOtherId(),
                                     reservedState.get().getRound(),
-                                    requestToStopTeaching,
                                     reconnectMetrics,
                                     configuration)
                             .execute(reservedState.get());
@@ -134,8 +127,19 @@ public class EmergencyReconnectTeacher {
                     writeHasState(connection, false);
                     logger.info(
                             RECONNECT.getMarker(),
-                            "Peer {} requested to perform an emergency reconnect but no compatible state was found.",
-                            connection.getOtherId());
+                            "Peer {} requested state ({},{}) to perform an emergency reconnect but no compatible state was found."
+                                    + "The emergency state we have is ({},{})",
+                            connection.getOtherId(),
+                            round,
+                            hash,
+                            Optional.ofNullable(reservedState)
+                                    .map(ReservedSignedState::get)
+                                    .map(SignedState::getRound)
+                                    .orElse(null),
+                            Optional.ofNullable(reservedState)
+                                    .map(ReservedSignedState::get)
+                                    .map(SignedState::getState)
+                                    .orElse(null));
                 }
             }
         } catch (final IOException e) {

@@ -99,6 +99,7 @@ public class CustomFractionalFeeAssessor {
             if (filteredCredits.isEmpty()) {
                 continue;
             }
+
             // calculate amount that should be paid for fractional custom fee
             var assessedAmount = amountOwed(unitsLeft, fractionalFee);
 
@@ -108,6 +109,12 @@ public class CustomFractionalFeeAssessor {
                         asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
                 fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
             } else {
+                boolean cont = false;
+                for (final var acc : effectivePayerAccounts) {
+                    if (isPayerExempt(feeMeta, fee, acc)) cont = true;
+                }
+                if (cont) continue;
+
                 // amount that should be deducted from the credits to token
                 // Inside this reclaim there will be debits to the input transaction
                 final long exemptAmount = reclaim(assessedAmount, filteredCredits);
@@ -224,9 +231,13 @@ public class CustomFractionalFeeAssessor {
         for (final var entry : credits.entrySet()) {
             final var account = entry.getKey();
             final var creditAmount = entry.getValue();
-            final var toReclaimHere = safeFractionMultiply(creditAmount, availableToReclaim, amount);
-            credits.put(account, creditAmount - toReclaimHere);
-            amountReclaimed += toReclaimHere;
+            try {
+                final var toReclaimHere = safeFractionMultiply(creditAmount, availableToReclaim, amount);
+                credits.put(account, creditAmount - toReclaimHere);
+                amountReclaimed += toReclaimHere;
+            } catch (final ArithmeticException e) {
+                throw new HandleException(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
+            }
         }
 
         if (amountReclaimed < amount) {

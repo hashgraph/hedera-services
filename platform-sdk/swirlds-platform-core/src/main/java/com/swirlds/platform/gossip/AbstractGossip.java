@@ -37,8 +37,6 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Crypto;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -58,7 +56,6 @@ import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
@@ -94,7 +91,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final AddressBook addressBook;
     protected final NodeId selfId;
     protected final NetworkTopology topology;
-    protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
     protected final ReconnectHelper reconnectHelper;
@@ -122,7 +118,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the time object used to get the current time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
@@ -130,7 +126,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state queue
      * @param syncMetrics                   metrics for sync
-     * @param eventObserverDispatcher       the object used to wire event intake
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -139,7 +134,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
@@ -147,7 +142,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
@@ -160,8 +154,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         Objects.requireNonNull(time);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-        criticalQuorum = buildCriticalQuorum();
-        eventObserverDispatcher.addObserver(criticalQuorum);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
@@ -170,7 +162,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
-        final SocketFactory socketFactory = socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
+        final SocketFactory socketFactory = socketFactory(keysAndCerts, cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
@@ -205,10 +197,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         syncManager = new SyncManagerImpl(
                 platformContext,
                 intakeQueue,
-                topology.getConnectionGraph(),
-                selfId,
-                criticalQuorum,
-                addressBook,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
 
@@ -271,12 +259,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * If true, use unidirectional connections between nodes.
      */
     protected abstract boolean unidirectionalConnectionsEnabled();
-
-    /**
-     * Build the critical quorum object.
-     */
-    @NonNull
-    protected abstract CriticalQuorum buildCriticalQuorum();
 
     /**
      * {@inheritDoc}

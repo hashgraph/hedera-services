@@ -32,6 +32,13 @@ import org.junit.platform.commons.annotation.Testable;
 @Documented
 @Testable
 public @interface HapiTestSuite {
-    /** If true, then a small cluster of 4 nodes is set up. Otherwise, a single node is set up. */
-    boolean cluster() default false;
+    /** If true, then a new cluster is created for this test suite */
+    boolean isolated() default false;
+
+    /**
+     * If true, we will set recordStream.autoSnapshotManagement property to true and enable fuzzy
+     * matching or every spec in the suite
+     * @return true if we want to enable fuzzy matching for every spec in the suite
+     */
+    boolean fuzzyMatch() default false;
 }

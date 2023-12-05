@@ -21,6 +21,7 @@ import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
+import static com.swirlds.platform.event.preconsensus.BestEffortPreconsensusEventFileCopy.copyPreconsensusEventStreamFilesRetryOnFailure;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
@@ -29,11 +30,11 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_F
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
@@ -135,27 +136,36 @@ public final class SignedStateFileWriter {
     /**
      * Write all files that belong in the signed state directory into a directory.
      *
-     * @param selfId        the id of the platform
-     * @param directory     the directory where all files should be placed
-     * @param signedState   the signed state being written to disk
-     * @param configuration the configuration used
+     * @param platformContext the platform context
+     * @param selfId          the id of the platform
+     * @param directory       the directory where all files should be placed
+     * @param signedState     the signed state being written to disk
      */
     public static void writeSignedStateFilesToDirectory(
-            @Nullable NodeId selfId,
+            @Nullable final PlatformContext platformContext,
+            @Nullable final NodeId selfId,
             @NonNull final Path directory,
-            @NonNull final SignedState signedState,
-            @NonNull final Configuration configuration)
+            @NonNull final SignedState signedState)
             throws IOException {
-        Objects.requireNonNull(directory, "directory must not be null");
-        Objects.requireNonNull(signedState, "signedState must not be null");
-        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(directory);
+        Objects.requireNonNull(signedState);
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
-        writeSettingsUsed(directory, configuration);
+        writeSettingsUsed(directory, platformContext.getConfiguration());
+
+        if (selfId != null) {
+            copyPreconsensusEventStreamFilesRetryOnFailure(
+                    platformContext,
+                    selfId,
+                    directory,
+                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient(),
+                    signedState.getRound());
+        }
     }
 
     /**
@@ -177,23 +187,23 @@ public final class SignedStateFileWriter {
      * Writes a SignedState to a file. Also writes auxiliary files such as "settingsUsed.txt". This is the top level
      * method called by the platform when it is ready to write a state.
      *
+     * @param platformContext     the platform context
      * @param selfId              the id of the platform
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
      * @param stateToDiskReason   the reason the state is being written to disk
-     * @param configuration       the configuration for the platform
      */
     public static void writeSignedStateToDisk(
+            @NonNull final PlatformContext platformContext,
             @Nullable final NodeId selfId,
             @NonNull final Path savedStateDirectory,
             @NonNull final SignedState signedState,
-            @Nullable final StateToDiskReason stateToDiskReason,
-            @NonNull final Configuration configuration)
+            @Nullable final StateToDiskReason stateToDiskReason)
             throws IOException {
 
+        Objects.requireNonNull(platformContext);
         Objects.requireNonNull(savedStateDirectory);
         Objects.requireNonNull(signedState);
-        Objects.requireNonNull(configuration);
 
         try {
             logger.info(
@@ -205,7 +215,7 @@ public final class SignedStateFileWriter {
 
             executeAndRename(
                     savedStateDirectory,
-                    directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState, configuration));
+                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState));
 
             logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
                             signedState.getRound(),

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -43,7 +43,7 @@ class FCQueueStatisticsTest {
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final MetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
+        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
         final Metrics metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
 
         // when

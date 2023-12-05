@@ -34,7 +34,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -51,11 +50,6 @@ public class OrphanBuffer {
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
     private static final Function<EventDescriptor, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
-
-    /**
-     * Non-ancient events are passed to this method in topological order.
-     */
-    private final Consumer<GossipEvent> eventConsumer;
 
     /**
      * The current minimum generation required for an event to be non-ancient.
@@ -87,19 +81,23 @@ public class OrphanBuffer {
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     /**
+     * Whether or not the orphan buffer is paused.
+     * <p>
+     * When the orphan buffer is paused, it will not process any updates to the minimum generation non-ancient. This
+     * guarantees that the orphan buffer cannot cyclically cause itself to receive additional input by emitting events
+     * that cause the minimum generation non-ancient to be updated, thus causing more events to be emitted.
+     */
+    private boolean paused;
+
+    /**
      * Constructor
      *
      * @param platformContext    the platform context
-     * @param eventConsumer      the consumer to which to emit the ordered stream of
-     *                           {@link com.swirlds.platform.event.GossipEvent GossipEvent}s
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public OrphanBuffer(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Consumer<GossipEvent> eventConsumer,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final PlatformContext platformContext, @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.currentOrphanCount = 0;
 
@@ -109,33 +107,39 @@ public class OrphanBuffer {
                                 PLATFORM_CATEGORY, "orphanBufferSize", Integer.class, this::getCurrentOrphanCount)
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
+
+        this.paused = false;
     }
 
     /**
      * Add a new event to the buffer if it is an orphan.
      * <p>
      * Events that are ancient are ignored, and events that don't have any missing parents are
-     * immediately passed to the {@link #eventConsumer}.
+     * immediately passed along down the pipeline.
      *
      * @param event the event to handle
+     * @return the list of events that are no longer orphans as a result of this event being handled
      */
-    public void handleEvent(@NonNull final GossipEvent event) {
+    @NonNull
+    public List<GossipEvent> handleEvent(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-            return;
+            return List.of();
         }
 
         currentOrphanCount++;
 
         final List<EventDescriptor> missingParents = getMissingParents(event);
         if (missingParents.isEmpty()) {
-            eventIsNotAnOrphan(event);
+            return eventIsNotAnOrphan(event);
         } else {
             final OrphanedEvent orphanedEvent = new OrphanedEvent(event, missingParents);
             for (final EventDescriptor missingParent : missingParents) {
                 this.missingParentMap.computeIfAbsent(missingParent, EMPTY_LIST).add(orphanedEvent);
             }
+
+            return List.of();
         }
     }
 
@@ -143,8 +147,15 @@ public class OrphanBuffer {
      * Set the minimum generation of non-ancient events to keep in the buffer.
      *
      * @param minimumGenerationNonAncient the minimum generation of non-ancient events to keep in the buffer
+     * @return the list of events that are no longer orphans as a result of this change
      */
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    @NonNull
+    public List<GossipEvent> setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        if (paused) {
+            // If the orphan buffer is paused, don't process any updates to the minimum generation non-ancient.
+            return List.of();
+        }
+
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
         eventsWithParents.shiftWindow(minimumGenerationNonAncient);
@@ -157,7 +168,23 @@ public class OrphanBuffer {
                 minimumGenerationNonAncient,
                 (parent, orphans) -> ancientParents.add(new ParentAndOrphans(parent, orphans)));
 
-        ancientParents.forEach(this::missingParentBecameAncient);
+        final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+        ancientParents.forEach(
+                parentAndOrphans -> unorphanedEvents.addAll(missingParentBecameAncient(parentAndOrphans)));
+
+        return unorphanedEvents;
+    }
+
+    /**
+     * Pause or unpause the orphan buffer.
+     * <p>
+     * The orphan buffer must be paused prior to being flushed, since its output can cyclically cause it to receive
+     * additional input, via an update to minimum generation non ancient.
+     *
+     * @param paused whether or not the orphan buffer should be paused
+     */
+    public void setPaused(final boolean paused) {
+        this.paused = paused;
     }
 
     /**
@@ -166,17 +193,23 @@ public class OrphanBuffer {
      * Accounts for events potentially becoming un-orphaned as a result of the parent becoming ancient.
      *
      * @param parentAndOrphans the parent that became ancient, along with its orphans
+     * @return the list of events that are no longer orphans as a result of this parent becoming ancient
      */
-    private void missingParentBecameAncient(@NonNull final ParentAndOrphans parentAndOrphans) {
+    @NonNull
+    private List<GossipEvent> missingParentBecameAncient(@NonNull final ParentAndOrphans parentAndOrphans) {
+        final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+
         final EventDescriptor parentDescriptor = parentAndOrphans.parent();
 
         for (final OrphanedEvent orphan : parentAndOrphans.orphans()) {
             orphan.missingParents().remove(parentDescriptor);
 
             if (orphan.missingParents().isEmpty()) {
-                eventIsNotAnOrphan(orphan.orphan());
+                unorphanedEvents.addAll(eventIsNotAnOrphan(orphan.orphan()));
             }
         }
+
+        return unorphanedEvents;
     }
 
     /**
@@ -206,8 +239,12 @@ public class OrphanBuffer {
      * Accounts for events potentially becoming un-orphaned as a result of this event not being an orphan.
      *
      * @param event the event that is not an orphan
+     * @return the list of events that are no longer orphans as a result of this event not being an orphan
      */
-    private void eventIsNotAnOrphan(@NonNull final GossipEvent event) {
+    @NonNull
+    private List<GossipEvent> eventIsNotAnOrphan(@NonNull final GossipEvent event) {
+        final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+
         final Deque<GossipEvent> nonOrphanStack = new LinkedList<>();
         nonOrphanStack.push(event);
 
@@ -226,7 +263,7 @@ public class OrphanBuffer {
                 continue;
             }
 
-            eventConsumer.accept(nonOrphan);
+            unorphanedEvents.add(nonOrphan);
             eventsWithParents.add(nonOrphanDescriptor);
 
             // since this event is no longer an orphan, we need to recheck all of its children to see if any might
@@ -243,6 +280,8 @@ public class OrphanBuffer {
                 }
             }
         }
+
+        return unorphanedEvents;
     }
 
     /**

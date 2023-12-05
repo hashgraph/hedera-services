@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
@@ -31,7 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -42,13 +43,16 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(CRYPTO)
 public class CryptoGetRecordsRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetRecordsRegression.class);
     private static final String LOW_THRESH_PAYER = "lowThreshPayer";
     private static final String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
     private static final String ACCOUNT_1 = "account1";
+    private static final String PAYER = "payer";
 
     public static void main(String... args) {
         new CryptoGetRecordsRegression().runSuiteSync();
@@ -62,13 +66,13 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            //						failsForDeletedAccount(),
-            //						failsForMissingAccount(),
-            //						failsForMissingPayment(),
-            //						failsForInsufficientPayment(),
-            //						failsForMalformedPayment(),
-            //						failsForUnfundablePayment(),
-            //						succeedsNormally(),
+            failsForDeletedAccount(),
+            failsForMissingAccount(),
+            failsForInvalidTrxBody(),
+            failsForInsufficientPayment(),
+            failsForMalformedPayment(),
+            failsForUnfundablePayment(),
+            succeedsNormally(),
             getAccountRecords_testForDuplicates()
         });
     }
@@ -122,18 +126,25 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                         .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
+    @HapiTest
     private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
-                .given()
+                .given(cryptoCreate(PAYER))
                 .when()
-                .then(getAccountRecords(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+                .then(getAccountRecords(GENESIS)
+                        .payingWith(PAYER)
+                        .nodePayment(1L)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
-    private HapiSpec failsForMissingPayment() {
-        return defaultHapiSpec("FailsForMissingPayment")
+    @HapiTest
+    private HapiSpec failsForInvalidTrxBody() {
+        return defaultHapiSpec("failsForInvalidTrxBody")
                 .given()
                 .when()
-                .then(getAccountRecords(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
+                .then(getAccountRecords(GENESIS)
+                        .useEmptyTxnAsAnswerPayment()
+                        .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_BODY));
     }
 
     @HapiTest

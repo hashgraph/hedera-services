@@ -145,7 +145,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public AccountInfoAsserts hasEmptyKey() {
-        registerProvider((spec, o) -> assertEquals(((AccountInfo) o).getKey(), EMPTY_KEY, "Has non-empty key!"));
+        registerProvider((spec, o) -> assertEquals(EMPTY_KEY, ((AccountInfo) o).getKey(), "Has non-empty key!"));
         return this;
     }
 
@@ -283,6 +283,17 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     public static Function<HapiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
             String snapshot, ToLongFunction<HapiSpec> expDeltaFn) {
         return approxChangeFromSnapshot(snapshot, expDeltaFn, 0L);
+    }
+
+    /**
+     * Returns a factory that creates a matcher that will return an appropriate error message when an account's
+     * balance has changed from the balance captured by the given snapshot.
+     *
+     * @param snapshot the name of the snapshot
+     * @return the factory
+     */
+    public static Function<HapiSpec, Function<Long, Optional<String>>> unchangedFromSnapshot(String snapshot) {
+        return approxChangeFromSnapshot(snapshot, 0L, 0L);
     }
 
     public static Function<HapiSpec, Function<Long, Optional<String>>> changeFromSnapshot(

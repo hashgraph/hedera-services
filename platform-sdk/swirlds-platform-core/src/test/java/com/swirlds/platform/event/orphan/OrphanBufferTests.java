@@ -19,7 +19,7 @@ package com.swirlds.platform.event.orphan;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -37,15 +37,14 @@ import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -86,6 +85,10 @@ class OrphanBufferTests {
      */
     private static final int MAX_GENERATION_STEP = 10;
 
+    private AtomicLong eventsExitedIntakePipeline;
+
+    private OrphanBuffer orphanBuffer;
+
     /**
      * Create a bootstrap event for a node. This is just a descriptor, and will never be received from intake.
      *
@@ -112,7 +115,7 @@ class OrphanBufferTests {
      * @param otherParent     the other parent of the event
      * @return the gossip event
      */
-    private GossipEvent createGossipEvent(
+    private static GossipEvent createGossipEvent(
             @NonNull final Hash eventHash,
             @NonNull final NodeId eventCreator,
             final long eventGeneration,
@@ -174,13 +177,38 @@ class OrphanBufferTests {
      * @param minimumGenerationNonAncient the minimum generation of non-ancient events
      * @return true if the event has been emitted or is ancient, false otherwise
      */
-    private boolean eventEmittedOrAncient(
+    private static boolean eventEmittedOrAncient(
             @NonNull final Hash eventHash,
             final long eventGeneration,
             final long minimumGenerationNonAncient,
-            @NonNull final Set<Hash> emittedEvents) {
+            @NonNull final Collection<Hash> emittedEvents) {
 
         return emittedEvents.contains(eventHash) || eventGeneration < minimumGenerationNonAncient;
+    }
+
+    /**
+     * Assert that an event should have been emitted by the orphan buffer, based on its parents being either emitted or
+     * ancient.
+     *
+     * @param event                       the event to check
+     * @param minimumGenerationNonAncient the minimum generation of non-ancient events
+     * @param emittedEvents               the events that have been emitted so far
+     */
+    private static void assertValidParents(
+            @NonNull final GossipEvent event,
+            final long minimumGenerationNonAncient,
+            @NonNull final Collection<Hash> emittedEvents) {
+
+        assertTrue(eventEmittedOrAncient(
+                        event.getHashedData().getSelfParentHash(),
+                        event.getHashedData().getSelfParentGen(),
+                        minimumGenerationNonAncient,
+                        emittedEvents)
+                && eventEmittedOrAncient(
+                        event.getHashedData().getOtherParentHash(),
+                        event.getHashedData().getOtherParentGen(),
+                        minimumGenerationNonAncient,
+                        emittedEvents));
     }
 
     /**
@@ -200,7 +228,7 @@ class OrphanBufferTests {
     void setup() {
         random = getRandomPrintSeed();
 
-        final ArrayList<EventDescriptor> parentCandidates = new ArrayList<>();
+        final List<EventDescriptor> parentCandidates = new ArrayList<>();
         final Map<NodeId, EventDescriptor> tips = new HashMap<>();
 
         intakeEvents = new ArrayList<>();
@@ -211,39 +239,10 @@ class OrphanBufferTests {
             parentCandidates.add(newEvent.getDescriptor());
             intakeEvents.add(newEvent);
         }
-    }
 
-    @Test
-    @DisplayName("Test standard orphan buffer operation")
-    void standardOperation() {
-        final AtomicLong minimumGenerationNonAncient = new AtomicLong(0);
+        Collections.shuffle(intakeEvents, random);
 
-        // events that have been emitted from the orphan buffer
-        final Set<Hash> emittedEvents = new HashSet<>();
-
-        final Consumer<GossipEvent> eventConsumer = event -> {
-            final BaseEventHashedData hashedData = event.getHashedData();
-            assertFalse(
-                    hashedData.getGeneration() < minimumGenerationNonAncient.get(),
-                    "Ancient events shouldn't be emitted");
-            assertTrue(
-                    eventEmittedOrAncient(
-                            hashedData.getSelfParentHash(),
-                            hashedData.getSelfParentGen(),
-                            minimumGenerationNonAncient.get(),
-                            emittedEvents),
-                    "Self parent was neither emitted nor ancient");
-            assertTrue(
-                    eventEmittedOrAncient(
-                            hashedData.getOtherParentHash(),
-                            hashedData.getOtherParentGen(),
-                            minimumGenerationNonAncient.get(),
-                            emittedEvents),
-                    "Other parent was neither emitted nor ancient");
-            assertTrue(emittedEvents.add(event.getDescriptor().getHash()), "Event was emitted twice");
-        };
-
-        final AtomicLong eventsExitedIntakePipeline = new AtomicLong(0);
+        eventsExitedIntakePipeline = new AtomicLong(0);
         final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
         doAnswer(invocation -> {
                     eventsExitedIntakePipeline.incrementAndGet();
@@ -252,28 +251,87 @@ class OrphanBufferTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final OrphanBuffer orphanBuffer =
-                new OrphanBuffer(TestPlatformContextBuilder.create().build(), eventConsumer, intakeEventCounter);
+        orphanBuffer = new OrphanBuffer(TestPlatformContextBuilder.create().build(), intakeEventCounter);
+    }
+
+    @Test
+    @DisplayName("Test standard orphan buffer operation")
+    void standardOperation() {
+        long minimumGenerationNonAncient = 0;
 
         // increase minimum generation non-ancient at the approximate rate that event generations are increasing
         // this means that roughly half of the events will be ancient before they are received from intake
         final float averageGenerationAdvancement = (float) maxGeneration / TEST_EVENT_COUNT;
 
-        Collections.shuffle(intakeEvents, random);
+        // events that have been emitted from the orphan buffer
+        final Collection<Hash> emittedEvents = new HashSet<>();
+
         for (final GossipEvent intakeEvent : intakeEvents) {
-            orphanBuffer.handleEvent(intakeEvent);
+            final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+
+            unorphanedEvents.addAll(orphanBuffer.handleEvent(intakeEvent));
 
             // add some randomness to step size, so minimumGenerationNonAncient doesn't always just increase by 1
             final int stepRandomness = Math.round(random.nextFloat() * MAX_GENERATION_STEP);
             if (random.nextFloat() < averageGenerationAdvancement / stepRandomness) {
-                minimumGenerationNonAncient.addAndGet(stepRandomness);
-                orphanBuffer.setMinimumGenerationNonAncient(minimumGenerationNonAncient.get());
+                minimumGenerationNonAncient += stepRandomness;
+                unorphanedEvents.addAll(orphanBuffer.setMinimumGenerationNonAncient(minimumGenerationNonAncient));
+            }
+
+            for (final GossipEvent unorphanedEvent : unorphanedEvents) {
+                assertValidParents(unorphanedEvent, minimumGenerationNonAncient, emittedEvents);
+                emittedEvents.add(unorphanedEvent.getHashedData().getHash());
             }
         }
 
         // either events exit the pipeline in the orphan buffer and are never emitted, or they are emitted and exit
         // the pipeline at a later stage
         assertEquals(TEST_EVENT_COUNT, eventsExitedIntakePipeline.get() + emittedEvents.size());
+        assertEquals(0, orphanBuffer.getCurrentOrphanCount());
+    }
+
+    @Test
+    @DisplayName("Test pausing orphan buffer")
+    void pause() {
+        // cause the bootstrap events to become ancient
+        orphanBuffer.setMinimumGenerationNonAncient(1);
+
+        // events that have been emitted from the orphan buffer
+        final Collection<Hash> emittedEvents = new HashSet<>();
+
+        // handle half of the events. this will result in many events being in the orphan buffer
+        final int halfEventCount = intakeEvents.size() / 2;
+        for (int i = 0; i < halfEventCount; i++) {
+            final GossipEvent intakeEvent = intakeEvents.get(i);
+
+            final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+
+            unorphanedEvents.addAll(orphanBuffer.handleEvent(intakeEvent));
+
+            for (final GossipEvent unorphanedEvent : unorphanedEvents) {
+                assertValidParents(unorphanedEvent, 1, emittedEvents);
+                emittedEvents.add(unorphanedEvent.getHashedData().getHash());
+            }
+        }
+
+        final long eventsExitedPipelineBeforePause = eventsExitedIntakePipeline.get();
+
+        orphanBuffer.setPaused(true);
+        final List<GossipEvent> noEvents = orphanBuffer.setMinimumGenerationNonAncient(maxGeneration);
+        assertEquals(0, noEvents.size(), "A paused orphan buffer shouldn't emit events upon generation change");
+        assertEquals(
+                eventsExitedPipelineBeforePause,
+                eventsExitedIntakePipeline.get(),
+                "A paused orphan buffer shouldn't cause any events to exit the intake pipeline upon generation change");
+        orphanBuffer.setPaused(false);
+
+        orphanBuffer.setMinimumGenerationNonAncient(maxGeneration + 1);
+        assertNotEquals(
+                eventsExitedPipelineBeforePause,
+                eventsExitedIntakePipeline.get(),
+                "An unpaused orphan buffer with large generation change should cause many events to exit the intake pipeline");
+
+        assertEquals(halfEventCount, eventsExitedIntakePipeline.get() + emittedEvents.size());
         assertEquals(0, orphanBuffer.getCurrentOrphanCount());
     }
 }

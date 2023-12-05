@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.test.fixtures;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,6 +32,7 @@ public class FakeCryptoCreateRecordBuilder {
             private AccountID accountID;
             private Bytes evmAddress;
             private long transactionFee;
+            private String memo;
 
             @NotNull
             @Override
@@ -45,6 +47,11 @@ public class FakeCryptoCreateRecordBuilder {
                 return this;
             }
 
+            @Override
+            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
+                return this;
+            }
+
             @NotNull
             @Override
             public CryptoCreateRecordBuilder evmAddress(@NotNull final Bytes evmAddress) {
@@ -56,6 +63,13 @@ public class FakeCryptoCreateRecordBuilder {
             @Override
             public CryptoCreateRecordBuilder transactionFee(@NotNull final long transactionFee) {
                 this.transactionFee = transactionFee;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public CryptoCreateRecordBuilder memo(@NotNull final String memo) {
+                this.memo = memo;
                 return this;
             }
         };

@@ -18,12 +18,14 @@ package com.hedera.node.app.service.file.impl.test.schemas;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.GenesisSchema;
+import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -58,7 +60,7 @@ final class GenesisSchemaTest {
     void emptyFilesCreatedForUpdateFiles() {
         // Given a file GenesisSchema, and a configuration setting for the range that is unique, so we can make
         // sure to verify that the code in question is using the config values, (and same for key and expiry)
-        final var schema = new GenesisSchema();
+        final var schema = new FileGenesisSchema();
         final var expiry = 1000;
         final var keyString = "0123456789012345678901234567890123456789012345678901234567890123";
         final var key = Key.newBuilder().ed25519(Bytes.wrap(unhex(keyString))).build();
@@ -70,7 +72,13 @@ final class GenesisSchemaTest {
 
         // When we migrate
         schema.migrate(new MigrationContextImpl(
-                prevStates, newStates, config, networkInfo, new GenesisRecordsConsensusHook(), handleThrottleParser));
+                prevStates,
+                newStates,
+                config,
+                networkInfo,
+                new GenesisRecordsConsensusHook(),
+                handleThrottleParser,
+                mock(WritableEntityIdStore.class)));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);

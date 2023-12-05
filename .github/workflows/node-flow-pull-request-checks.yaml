@@ -39,6 +39,8 @@ jobs:
       enable-spotless-check: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
   spotless:
     name: Spotless
@@ -48,11 +50,12 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-spotless-check: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
   unit-tests:
     name: Unit Tests
@@ -62,10 +65,11 @@ jobs:
       enable-unit-tests: true
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: false
       enable-sonar-analysis: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   eet-tests:
@@ -76,11 +80,12 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: true
       enable-integration-tests: false
-      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   integration-tests:
@@ -91,40 +96,115 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: true
-      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
-  hapi-tests:
-    name: HAPI Tests
+  hapi-tests-misc:
+    name: HAPI Tests (Misc)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       custom-job-label: Standard
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: true
+      enable-hapi-tests-misc: true
       enable-sonar-analysis: false
       enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  hapi-tests-crypto:
+    name: HAPI Tests (Crypto)
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: Standard
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-hapi-tests-crypto: true
+      enable-sonar-analysis: false
+      enable-network-log-capture: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  hapi-tests-token:
+    name: HAPI Tests (Token)
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: Standard
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-hapi-tests-token: true
+      enable-sonar-analysis: false
+      enable-network-log-capture: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  hapi-tests-smart-contract:
+    name: HAPI Tests (Smart Contract)
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: Standard
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-hapi-tests-smart-contract: true
+      enable-sonar-analysis: false
+      enable-network-log-capture: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  hapi-tests-time-consuming:
+    name: HAPI Tests (Time Consuming)
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: Standard
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-hapi-tests-time-consuming: true
+      enable-sonar-analysis: false
+      enable-network-log-capture: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   abbreviated-panel:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
+    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
       branch-name: ${{ github.head_ref || github.ref_name }}
+      base-branch-name: ${{ github.base_ref || '' }}
       slack-results-channel: "regression-test"
       slack-summary-channel: "regression-test"
       use-branch-for-slack-channel: false
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
       jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
@@ -139,9 +219,10 @@ jobs:
       enable-unit-tests: false
       enable-e2e-tests: false
       enable-integration-tests: false
-      enable-hapi-tests: false
       enable-sonar-analysis: false
       enable-snyk-scan: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       snyk-token: ${{ secrets.SNYK_TOKEN }}

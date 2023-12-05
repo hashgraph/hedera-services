@@ -11,9 +11,9 @@ open module com.swirlds.virtualmap {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
+    requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires java.management; // Test dependency
-    requires java.sql;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

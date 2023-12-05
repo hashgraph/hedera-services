@@ -87,6 +87,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(flattened(
@@ -100,6 +101,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(flattened(
@@ -117,6 +119,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int numAltruists = 3;
@@ -191,6 +194,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(flattened(

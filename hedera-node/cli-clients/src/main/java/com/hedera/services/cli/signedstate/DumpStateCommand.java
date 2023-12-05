@@ -66,6 +66,16 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum WithMigration {
+        NO,
+        YES
+    }
+
+    enum WithValidation {
+        NO,
+        YES
+    }
+
     enum OmitContents {
         NO,
         YES
@@ -93,6 +103,7 @@ public class DumpStateCommand extends AbstractCommand {
     void contractBytecodes(
             @Option(
                             names = {"-o", "--bytecode", "--contract-bytecode"},
+                            required = true,
                             arity = "1",
                             description = "Output file for contracts bytecode dump")
                     @NonNull
@@ -126,6 +137,7 @@ public class DumpStateCommand extends AbstractCommand {
     void contractStores(
             @Option(
                             names = {"-o", "--store"},
+                            required = true,
                             arity = "1",
                             description = "Output file for contracts store dump")
                     @NonNull
@@ -137,7 +149,16 @@ public class DumpStateCommand extends AbstractCommand {
             @Option(
                             names = {"-k", "--slots"},
                             description = "Emit the slot/value pairs for each contract's store")
-                    final boolean withSlots) {
+                    final boolean withSlots,
+            @Option(
+                            names = {"--migrate"},
+                            description =
+                                    "migrate from mono-service representation to modular-service representation (before dump)")
+                    final boolean withMigration,
+            @Option(
+                            names = {"--validate-migration"},
+                            description = "validate the migrated contract store")
+                    final boolean withValidationOfMigration) {
         Objects.requireNonNull(storePath);
         init();
         System.out.println("=== contract stores ===");
@@ -146,6 +167,8 @@ public class DumpStateCommand extends AbstractCommand {
                 storePath,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 withSlots ? WithSlots.YES : WithSlots.NO,
+                withMigration ? WithMigration.YES : WithMigration.NO,
+                withValidationOfMigration ? WithValidation.YES : WithValidation.NO,
                 parent.verbosity);
         finish();
     }
@@ -154,6 +177,7 @@ public class DumpStateCommand extends AbstractCommand {
     void accounts(
             @Option(
                             names = {"--account"},
+                            required = true,
                             arity = "1",
                             description = "Output file for accounts dump")
                     @NonNull
@@ -167,7 +191,7 @@ public class DumpStateCommand extends AbstractCommand {
                             names = {"--low"},
                             arity = "0..1",
                             defaultValue = "0",
-                            description = "Lowest acount number (inclusive) to dump")
+                            description = "Lowest account number (inclusive) to dump")
                     int lowLimit,
             @Option(
                             names = {"--high"},
@@ -202,6 +226,7 @@ public class DumpStateCommand extends AbstractCommand {
     void files(
             @Option(
                             names = {"--file"},
+                            required = true,
                             arity = "1",
                             description = "Output file for files dump")
                     @NonNull
@@ -217,7 +242,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean omitContents,
             @Option(
                             names = {"-s", "--summary"},
-                            description = "Emit a summary line")
+                            description = "Emit summary information")
                     final boolean emitSummary) {
         Objects.requireNonNull(filesPath);
         init();
@@ -236,6 +261,7 @@ public class DumpStateCommand extends AbstractCommand {
     void tokens(
             @Option(
                             names = {"--token"},
+                            required = true,
                             arity = "1",
                             description = "Output file for fungibles dump")
                     @NonNull
@@ -251,7 +277,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean doFeeSummary,
             @Option(
                             names = {"-s", "--summary"},
-                            description = "Emit a summary line")
+                            description = "Emit summary information")
                     final boolean emitSummary) {
         Objects.requireNonNull(tokensPath);
         init();
@@ -270,13 +296,14 @@ public class DumpStateCommand extends AbstractCommand {
     void uniques(
             @Option(
                             names = {"--unique"},
+                            required = true,
                             arity = "1",
                             description = "Output file for unique tokens dump")
                     @NonNull
                     final Path uniquesPath,
             @Option(
                             names = {"-s", "--summary"},
-                            description = "Emit a summary line")
+                            description = "Emit a summary information")
                     final boolean emitSummary) {
         Objects.requireNonNull(uniquesPath);
         init();
@@ -286,25 +313,46 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
+    @Command(name = "associations", description = "Dump token associations (tokenrels)")
+    void associations(
+            @Option(
+                            names = {"--associations"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for token associations dump")
+                    @NonNull
+                    final Path associationsPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(associationsPath);
+        init();
+        System.out.println("=== token associations ===");
+        DumpTokenAssociationsSubcommand.doit(
+                parent.signedState, associationsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
     /** Setup to run a dump subcommand: If _first_ subcommand being run then open signed state file */
     void init() {
-        if (thisSubcommandisNumber == null) {
-            thisSubcommandisNumber = 0;
+        if (thisSubcommandsNumber == null) {
+            thisSubcommandsNumber = 0;
             subcommandsToRun = getSubcommandsToRun();
             parent.openSignedState();
         } else {
-            thisSubcommandisNumber++;
+            thisSubcommandsNumber++;
         }
     }
 
     /** Cleanup after running a dump subcommand: If _last_ subcommand being run then close signed state file */
     void finish() {
-        if (thisSubcommandisNumber == subcommandsToRun.size() - 1) {
+        if (thisSubcommandsNumber == subcommandsToRun.size() - 1) {
             parent.closeSignedState();
         }
     }
 
-    Integer thisSubcommandisNumber;
+    Integer thisSubcommandsNumber;
     Set<String> subcommandsToRun;
 
     /** We need to find out how many subcommands we're going to run, so that we can manage the signed state file.

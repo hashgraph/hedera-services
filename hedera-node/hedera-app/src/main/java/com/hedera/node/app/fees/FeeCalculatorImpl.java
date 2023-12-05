@@ -21,22 +21,26 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEAD
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.HapiUtils.countOfCryptographicKeys;
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FeeData;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -60,6 +64,12 @@ public class FeeCalculatorImpl implements FeeCalculator {
     /** The basic info from parsing the transaction */
     private final SigUsage sigUsage;
 
+    private final CongestionMultipliers congestionMultipliers;
+
+    private final ReadableStoreFactory storeFactory;
+
+    private final TransactionInfo txInfo;
+
     /**
      * Create a new instance. One is created per transaction.
      *
@@ -76,6 +86,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
      * @param signatureMapSize The number of bytes in the signature map.
      * @param feeData          The fee data associated with this transaction and its subtype.
      * @param currentRate      The current HBAR-to-USD exchange rate.
+     * @param isInternalDispatch Whether this is an internal child dispatch transaction
      */
     public FeeCalculatorImpl(
             @NonNull TransactionBody txBody,
@@ -83,7 +94,10 @@ public class FeeCalculatorImpl implements FeeCalculator {
             final int numVerifications,
             final int signatureMapSize,
             @NonNull final FeeData feeData,
-            @NonNull final ExchangeRate currentRate) {
+            @NonNull final ExchangeRate currentRate,
+            final boolean isInternalDispatch,
+            final CongestionMultipliers congestionMultipliers,
+            final ReadableStoreFactory storeFactory) {
         //  Perform basic validations, and convert the PBJ objects to Google protobuf objects for `hapi-fees`.
         requireNonNull(txBody);
         requireNonNull(payerKey);
@@ -101,7 +115,10 @@ public class FeeCalculatorImpl implements FeeCalculator {
         // not something we really should know about here. But, since we're going to replace the fee system later
         // with a simpler model, for now, we'll go ahead and check the transaction body type here.
         final var baseMeta = new BaseTransactionMeta(
-                txBody.memo().getBytes(StandardCharsets.UTF_8).length, // Has to be a faster way...
+                // For some reason in mono-service while auto-creating we don't consider memo bytes for fees
+                isInternalDispatch
+                        ? 0
+                        : txBody.memo().getBytes(StandardCharsets.UTF_8).length, // Has to be a faster way...
                 txBody.data().kind() == TransactionBody.DataOneOfType.CRYPTO_TRANSFER
                         ? ((CryptoTransferTransactionBody) txBody.data().as())
                                 .transfersOrElse(TransferList.DEFAULT)
@@ -113,9 +130,23 @@ public class FeeCalculatorImpl implements FeeCalculator {
         // class to record usage (bpt, rbs, sbs, etc.) for the transaction.
         this.usage = UsageAccumulator.fromGrpc(this.feeData);
         usage.resetForTransaction(baseMeta, sigUsage);
+
+        this.congestionMultipliers = congestionMultipliers;
+        this.storeFactory = storeFactory;
+        try {
+            this.txInfo = new TransactionInfo(
+                    Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody));
+        } catch (UnknownHederaFunctionality e) {
+            throw new IllegalStateException("Invalid transaction body " + txBody, e);
+        }
     }
 
-    public FeeCalculatorImpl(@Nullable final FeeData feeData, @NonNull final ExchangeRate currentRate) {
+    public FeeCalculatorImpl(
+            @Nullable final FeeData feeData,
+            @NonNull final ExchangeRate currentRate,
+            final CongestionMultipliers congestionMultipliers,
+            final ReadableStoreFactory storeFactory,
+            final HederaFunctionality functionality) {
         if (feeData == null) {
             this.feeData = null;
             this.usage = null;
@@ -128,6 +159,21 @@ public class FeeCalculatorImpl implements FeeCalculator {
         }
         this.currentRate = fromPbj(currentRate);
         this.sigUsage = new SigUsage(0, 0, 0);
+
+        this.congestionMultipliers = congestionMultipliers;
+        this.storeFactory = storeFactory;
+
+        // used only for access query functionality (in congestionMultipliers)
+        this.txInfo = new TransactionInfo(
+                Transaction.DEFAULT,
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(AccountID.DEFAULT)
+                                .build())
+                        .build(),
+                SignatureMap.DEFAULT,
+                Bytes.EMPTY,
+                functionality);
     }
 
     @Override
@@ -197,8 +243,14 @@ public class FeeCalculatorImpl implements FeeCalculator {
         failIfLegacyOnly();
         // Use the "hapi-fees" module to calculate the fees, and convert to one of our "Fees" objects.
         final var overflowCalc = new OverflowCheckingCalc();
-        final var feeObject = overflowCalc.fees(usage, feeData, currentRate, 1);
+
+        final var feeObject = overflowCalc.fees(
+                usage, feeData, currentRate, congestionMultipliers.maxCurrentMultiplier(txInfo, storeFactory));
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
+    }
+
+    public long getCongestionMultiplier() {
+        return congestionMultipliers.maxCurrentMultiplier(txInfo, storeFactory);
     }
 
     private void failIfLegacyOnly() {

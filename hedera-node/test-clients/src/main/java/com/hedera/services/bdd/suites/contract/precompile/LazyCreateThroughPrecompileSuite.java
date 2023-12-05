@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -68,6 +69,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -87,8 +89,10 @@ import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
@@ -204,6 +208,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .toArray(HapiSpecOperation[]::new)));
     }
 
+    @HapiTest
     HapiSpec autoCreationFailsWithMirrorAddress() {
         final var nft = "nft";
         final var nftKey = "nftKeyHere";
@@ -242,6 +247,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY)));
     }
 
+    @HapiTest
     private HapiSpec erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
@@ -311,6 +317,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
+    // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
     private HapiSpec erc20TransferFromLazyCreate() {
         return defaultHapiSpec("erc20TransferFromLazyCreate")
                 .given(
@@ -413,6 +420,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec erc721TransferFromLazyCreate() {
         return defaultHapiSpec("erc721TransferFromLazyCreate")
                 .given(
@@ -495,6 +503,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
@@ -567,6 +576,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec htsTransferFromForNFTLazyCreate() {
         return defaultHapiSpec("htsTransferFromForNFTLazyCreate")
                 .given(

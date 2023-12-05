@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -30,12 +29,14 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
@@ -54,7 +55,6 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,7 +96,6 @@ public class VirtualMapReconnectTestBase {
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
-    protected BooleanSupplier requestTeacherToStop;
 
     VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
@@ -132,7 +131,6 @@ public class VirtualMapReconnectTestBase {
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
         teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
         learnerMap = new VirtualMap<>("Learner", learnerBuilder);
-        requestTeacherToStop = () -> false; // don't interrupt teaching by default
     }
 
     @BeforeAll
@@ -154,10 +152,10 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
 
         new TestConfigBuilder()
-                .withValue("reconnect.active", "true")
+                .withValue(ReconnectConfig_.ACTIVE, "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue("reconnect.asyncStreamTimeout", "5000ms")
-                .withValue("reconnect.maxAckDelay", "1000ms")
+                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
+                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
                 .getOrCreateConfig();
     }
 
@@ -221,10 +219,7 @@ public class VirtualMapReconnectTestBase {
 
                 try {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
-                            learnerTree,
-                            failureExpected ? brokenTeacherTree : teacherTree,
-                            requestTeacherToStop,
-                            reconnectConfig);
+                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree, reconnectConfig);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");
                     final VirtualRoot root = learnerMap.getRight();

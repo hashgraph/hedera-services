@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -41,7 +42,7 @@ import java.util.Map;
  * classes.
  */
 public class RecordFinalizerBase {
-    private static final AccountID ZERO_ACCOUNT_ID =
+    protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -81,7 +82,7 @@ public class RecordFinalizerBase {
      * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
-     * @param tokenStore
+     * @param tokenStore the {@link ReadableTokenStore} to get the token from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
@@ -91,9 +92,9 @@ public class RecordFinalizerBase {
             @NonNull final ReadableTokenStore tokenStore) {
         final var fungibleChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
-            final var relAcctId = modifiedRel.accountId();
-            final var relTokenId = modifiedRel.tokenId();
-            final var token = tokenStore.get(relTokenId);
+            final var relAcctId = modifiedRel.accountIdOrThrow();
+            final var relTokenId = modifiedRel.tokenIdOrThrow();
+            final var token = requireNonNull(tokenStore.get(relTokenId));
             // Add this to fungible token transfer list only if this token is a fungible token
             if (!token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
                 continue;
@@ -185,18 +186,24 @@ public class RecordFinalizerBase {
 
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
             // will be explicitly set as 0.0.0
+            AccountID receiverAccountId = null;
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
                 if (modifiedNft.hasOwnerId()) {
-                    builder.receiverAccountID(modifiedNft.ownerId());
+                    receiverAccountId = modifiedNft.ownerId();
                 } else {
-                    builder.receiverAccountID(token.treasuryAccountId());
+                    receiverAccountId = token.treasuryAccountId();
                 }
             } else {
-                builder.receiverAccountID(ZERO_ACCOUNT_ID);
+                receiverAccountId = ZERO_ACCOUNT_ID;
+            }
+            // If both sender and receiver are same it is not a transfer
+            if (receiverAccountId.equals(senderAccountId)) {
+                continue;
             }
             final var nftTransfer = builder.serialNumber(nftId.serialNumber())
                     .senderAccountID(senderAccountId)
+                    .receiverAccountID(receiverAccountId)
                     .build();
 
             if (!nftChanges.containsKey(nftId.tokenId())) {
