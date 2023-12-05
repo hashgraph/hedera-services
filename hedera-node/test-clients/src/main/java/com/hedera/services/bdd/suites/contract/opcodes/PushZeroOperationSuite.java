@@ -56,6 +56,7 @@ public class PushZeroOperationSuite extends HapiSuite {
 
     public static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION_0_38 = "v0.38";
+    public static final String EVM_VERSION_0_50 = "v0.50";
 
     public static void main(String... args) {
         new PushZeroOperationSuite().runSuiteSync();
@@ -71,7 +72,8 @@ public class PushZeroOperationSuite extends HapiSuite {
     }
 
     List<HapiSpec> positiveSpecs() {
-        return List.of(pushZeroHappyPathWorks(), pushZeroDisabledInV034());
+        return List.of(
+                pushZeroHappyPathWorks(), pushZeroHappyPathWorksv050(), pushZeroDisabledInV034());
     }
 
     @HapiTest
@@ -85,19 +87,67 @@ public class PushZeroOperationSuite extends HapiSuite {
                         cryptoCreate(BOB),
                         uploadInitCode(pushZeroContract),
                         contractCreate(pushZeroContract))
-                .when(sourcing(() -> contractCall(pushZeroContract, OP_PUSH_ZERO)
-                        .gas(GAS_TO_OFFER)
-                        .payingWith(BOB)
-                        .via(pushResult)
-                        .logged()))
-                .then(getTxnRecord(pushResult)
-                        .hasPriority(recordWith()
-                                .contractCallResult(resultWith()
-                                        .resultViaFunctionName(
-                                                OP_PUSH_ZERO,
-                                                pushZeroContract,
-                                                isLiteralResult((new Object[] {BigInteger.valueOf(0x5f)})))))
-                        .logged());
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(pushZeroContract, OP_PUSH_ZERO)
+                                                .gas(GAS_TO_OFFER)
+                                                .payingWith(BOB)
+                                                .via(pushResult)
+                                                .logged()))
+                .then(
+                        getTxnRecord(pushResult)
+                                .hasPriority(
+                                        recordWith()
+                                                .contractCallResult(
+                                                        resultWith()
+                                                                .resultViaFunctionName(
+                                                                        OP_PUSH_ZERO,
+                                                                        pushZeroContract,
+                                                                        isLiteralResult(
+                                                                                (new Object[] {
+                                                                                    BigInteger
+                                                                                            .valueOf(
+                                                                                                    0x5f)
+                                                                                })))))
+                                .logged());
+    }
+
+    @HapiTest
+    private HapiSpec pushZeroHappyPathWorksv050() {
+        final var pushZeroContract = CONTRACT;
+        final var pushResult = "pushResult";
+        return defaultHapiSpec("prngPrecompileHappyPathWorks")
+                .given(
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_50),
+                        cryptoCreate(BOB),
+                        uploadInitCode(pushZeroContract),
+                        contractCreate(pushZeroContract))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(pushZeroContract, OP_PUSH_ZERO)
+                                                .gas(GAS_TO_OFFER)
+                                                .payingWith(BOB)
+                                                .via(pushResult)
+                                                .logged()))
+                .then(
+                        getTxnRecord(pushResult)
+                                .hasPriority(
+                                        recordWith()
+                                                .contractCallResult(
+                                                        resultWith()
+                                                                .resultViaFunctionName(
+                                                                        OP_PUSH_ZERO,
+                                                                        pushZeroContract,
+                                                                        isLiteralResult(
+                                                                                (new Object[] {
+                                                                                    BigInteger
+                                                                                            .valueOf(
+                                                                                                    0x5f)
+                                                                                })))))
+                                .logged());
     }
 
     @HapiTest
@@ -112,12 +162,17 @@ public class PushZeroOperationSuite extends HapiSuite {
                         uploadInitCode(pushZeroContract),
                         contractCreate(pushZeroContract))
                 .when()
-                .then(sourcing(() -> contractCall(pushZeroContract, OP_PUSH_ZERO)
-                        .gas(GAS_TO_OFFER)
-                        .payingWith(BOB)
-                        .via(pushResult)
-                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION)
-                        .logged()));
+                .then(
+                        sourcing(
+                                () ->
+                                        contractCall(pushZeroContract, OP_PUSH_ZERO)
+                                                .gas(GAS_TO_OFFER)
+                                                .payingWith(BOB)
+                                                .via(pushResult)
+                                                .hasKnownStatus(
+                                                        ResponseCodeEnum
+                                                                .CONTRACT_EXECUTION_EXCEPTION)
+                                                .logged()));
     }
 
     @Override

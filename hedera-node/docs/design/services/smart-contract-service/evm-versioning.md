@@ -49,11 +49,12 @@ set.
 It is expected that there will be a new version for each major Ethereum Mainnet hard fork. A table will be kept here to
 document which major hardfork corresponds to each internal version.
 
-| Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                                                                                                                  |
-|---------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                                                                                                           |
-|        `v0.34` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses. Adds lazy creation (hollow account creation) capabilities in the EVM as per HIP-583. |
-|              ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                                                                                                                 |
+| Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                                                                                                                   |
+|---------------:|:------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                                                                                                            |
+|        `v0.34` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses. Adds lazy creation (hollow account creation) capabilities in the EVM as per HIP-583.  |
+|        `v0.38` | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Added PUSH0 operation, limits initcode/contract creation to 48k.                                                                                                           |
+|        `v0.50` | [Cancun](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/cancun.md)     | Adds TSTORE, TLOAD, and MCOPY operations. Stubs BLOBBASEFEE for compatability (returns zero). Adds KZG `0xa` precompile. ? Does not adopt EIP-6780 SELFDESTRUCT  changes ? |
 
 ## Open Questions
 
@@ -62,6 +63,7 @@ The exact timing of versions that correspond to Ethereum Mainnet forks is out of
 ## Acceptance Tests
 
 Acceptance tests use the Paris re-definition of `DIFFICULTY` as the test for activation
+
 * Test that when dynamic is set to false that changing the version has no effect
 * Test when dynamic is set to true the evm version can change at each transaction
 * verify 0.30 still returns zeros for difficulty

@@ -66,6 +66,9 @@ class HederaEvmTransactionProcessorTest {
     @Mock
     private TransactionProcessor v38processor;
 
+    @Mock
+    private TransactionProcessor v50processor;
+
     private HederaEvmTransactionProcessor subject;
 
     @BeforeEach
@@ -73,7 +76,8 @@ class HederaEvmTransactionProcessorTest {
         subject = new HederaEvmTransactionProcessor(Map.of(
                 VERSION_030, v30processor,
                 VERSION_034, v34processor,
-                VERSION_038, v38processor));
+                VERSION_038, v38processor,
+                VERSION_050, v50processor));
     }
 
     @Test
@@ -104,5 +108,15 @@ class HederaEvmTransactionProcessorTest {
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_038, tracer, config);
 
         verify(v38processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config);
+    }
+
+    @Test
+    void calls050AsExpected() {
+        final var transaction = wellKnownHapiCall();
+        final var context = wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator);
+
+        subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_050, tracer, config);
+
+        verify(v50processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config);
     }
 }
