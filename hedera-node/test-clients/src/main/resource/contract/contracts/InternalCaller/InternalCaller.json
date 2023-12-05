@@ -83,6 +83,19 @@
         "type": "address"
       }
     ],
+    "name": "selfdestruct",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_addr",
+        "type": "address"
+      }
+    ],
     "name": "sendTo",
     "outputs": [],
     "stateMutability": "nonpayable",
