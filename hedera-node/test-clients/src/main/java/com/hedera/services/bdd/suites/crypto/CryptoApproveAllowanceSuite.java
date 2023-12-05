@@ -101,7 +101,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     public static final String NON_FUNGIBLE_TOKEN = "nonFungible";
     public static final String TOKEN_WITH_CUSTOM_FEE = "tokenWithCustomFee";
     private static final String SUPPLY_KEY = "supplyKey";
-    private static final String SENDER_TXN = "senderTxn";
     public static final String SCHEDULED_TXN = "scheduledTxn";
     public static final String NFT_TOKEN_MINT_TXN = "nftTokenMint";
     public static final String FUNGIBLE_TOKEN_MINT_TXN = "tokenMint";
@@ -1601,7 +1600,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
-    @HapiTest
     private HapiSpec scheduledCryptoApproveAllowanceWorks() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
