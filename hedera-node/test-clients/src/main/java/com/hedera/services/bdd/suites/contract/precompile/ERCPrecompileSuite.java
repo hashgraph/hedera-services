@@ -220,7 +220,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 getErc721TokenURIFromErc20TokenFails(),
                 getErc721OwnerOfFromErc20TokenFails(),
                 directCallsWorkForErc721(),
-                someErc721ApproveAndRemoveScenariosPass()
+                someErc721ApproveAndRemoveScenariosPass(),
                 someErc721NegativeTransferFromScenariosPass(),
                 erc721TransferFromWithApproval(),
                 erc721TransferFromWithApproveForAll(),
@@ -229,8 +229,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 someErc721OwnerOfScenariosPass(),
                 someErc721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
-                someErc721SetApprovedForAllScenariosPass()
-                );
+                someErc721SetApprovedForAllScenariosPass());
     }
 
     @HapiTest
