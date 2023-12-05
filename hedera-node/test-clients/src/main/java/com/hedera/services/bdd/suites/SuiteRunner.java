@@ -91,7 +91,7 @@ import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.ValidateNewAddressBook;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
-import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
+import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTests;
 import com.hedera.services.bdd.suites.freeze.FreezeAbort;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
@@ -109,33 +109,33 @@ import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.MemoValidation;
 import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
 import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
-import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
-import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
+import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTests;
+import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTests;
 import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
 import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
-import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTest;
-import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
+import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTests;
+import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTests;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
 import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
-import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
-import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
+import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTests;
+import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTests;
 import com.hedera.services.bdd.suites.perf.crypto.*;
-import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
-import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest;
+import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTests;
+import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTests;
+import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTests;
 import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsMemoPerfSuite;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTest;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTest;
+import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTests;
+import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTests;
 import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
-import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
+import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTests;
 import com.hedera.services.bdd.suites.perf.token.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.perf.token.UniqueTokenStateSetup;
 import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
-import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTests;
 import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationValidationsAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
@@ -160,7 +160,7 @@ import com.hedera.services.bdd.suites.reconnect.ValidateTokensDeleteAfterReconne
 import com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
-import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
+import com.hedera.services.bdd.suites.records.DuplicateManagementTests;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
@@ -230,7 +230,7 @@ public class SuiteRunner {
             /* Convenience entries, uncomment locally to run CI jobs */
             //		put("CiConsensusAndCryptoJob", aof(
             //				SignedTransactionBytesRecordsSuite::new,
-            //				DuplicateManagementTest::new,
+            //				DuplicateManagementTests::new,
             //				TopicCreateSuite::new,
             //				TopicUpdateSuite::new,
             //				TopicDeleteSuite::new,
@@ -283,12 +283,12 @@ public class SuiteRunner {
             //				ExtCodeSizeOperationSuite::new,
             //				GlobalPropertiesSuite::new,
             //				StaticCallOperationSuite::new,
-            //				SStoreOperationLoadTest::new,
-            //				ContractCallLoadTest::new,
+            //				SStoreOperationLoadTests::new,
+            //				ContractCallLoadTests::new,
             //				ContractCallLocalPerfSuite::new,
             //				ContractCallPerfSuite::new,
             //				ContractPerformanceSuite::new,
-            //				MixedSmartContractOpsLoadTest::new));
+            //				MixedSmartContractOpsLoadTests::new));
             /* Adjust fee schedules */
             put("AdjustFeeSchedule", aof(AdjustFeeScheduleSuite::new));
             /* Umbrella Redux */
@@ -300,29 +300,29 @@ public class SuiteRunner {
             /* Load tests. */
             put("SimpleXfersAvoidingHotspot", aof(SimpleXfersAvoidingHotspot::new));
             put("NWayDistNoHotspots", aof(NWayDistNoHotspots::new));
-            put("QueryOnlyLoadTest", aof(QueryOnlyLoadTest::new));
-            put("TokenTransfersBasicLoadTest", aof(TokenTransferBasicLoadTest::new));
-            put("AccountBalancesLoadTest", aof(AccountBalancesClientSaveLoadTest::new));
+            put("QueryOnlyLoadTests", aof(QueryOnlyLoadTests::new));
+            put("TokenTransfersBasicLoadTest", aof(TokenTransferBasicLoadTests::new));
+            put("AccountBalancesLoadTest", aof(AccountBalancesClientSaveLoadTests::new));
             put("TokenTransfersLoad", aof(TokenTransfersLoadProvider::new));
             put("ReadyToRunScheduledXfersLoad", aof(ReadyToRunScheduledXfersLoad::new));
             put("TokenRelChangesLoad", aof(TokenRelStatusChanges::new));
-            put("FileUpdateLoadTest", aof(FileUpdateLoadTest::new));
-            put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
-            put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
-            put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
+            put("FileUpdateLoadTests", aof(FileUpdateLoadTests::new));
+            put("ContractCallLoadTests", aof(ContractCallLoadTests::new));
+            put("SubmitMessageLoadTests", aof(SubmitMessageLoadTests::new));
+            put("CryptoTransferLoadTests", aof(CryptoTransferLoadTests::new));
             put("CryptoTransferLoadTestWithStakedAccounts", aof(CryptoTransferLoadTestWithStakedAccounts::new));
             put("CryptoTransferLoadTestWithAutoAccounts", aof(CryptoTransferLoadTestWithAutoAccounts::new));
             put("CryptoTransferLoadTestWithInvalidAccounts", aof(CryptoTransferLoadTestWithInvalidAccounts::new));
-            put("MixedTransferAndSubmitLoadTest", aof(MixedTransferAndSubmitLoadTest::new));
-            put("MixedTransferCallAndSubmitLoadTest", aof(MixedTransferCallAndSubmitLoadTest::new));
+            put("MixedTransferAndSubmitLoadTests", aof(MixedTransferAndSubmitLoadTests::new));
+            put("MixedTransferCallAndSubmitLoadTests", aof(MixedTransferCallAndSubmitLoadTests::new));
             put("HCSChunkingRealisticPerfSuite", aof(HCSChunkingRealisticPerfSuite::new));
             put("CryptoCreatePerfSuite", aof(CryptoCreatePerfSuite::new));
             put("CreateTopicPerfSuite", aof(CreateTopicPerfSuite::new));
             put("MixedOpsMemoPerfSuite", aof(MixedOpsMemoPerfSuite::new));
             put("FileContractMemoPerfSuite", aof(FileContractMemoPerfSuite::new));
-            // put("MixedSmartContractOpsLoadTest",
-            // aof(MixedSmartContractOpsLoadTest::new));
-            put("MixedFileOpsLoadTest", aof(MixedFileOpsLoadTest::new));
+            // put("MixedSmartContractOpsLoadTests",
+            // aof(MixedSmartContractOpsLoadTests::new));
+            put("MixedFileOpsLoadTests", aof(MixedFileOpsLoadTests::new));
             put("UniqueTokenStateSetup", aof(UniqueTokenStateSetup::new));
             /* Functional tests - RECONNECT */
             put("CreateAccountsBeforeReconnect", aof(CreateAccountsBeforeReconnect::new));
@@ -419,12 +419,12 @@ public class SuiteRunner {
             put("ExtCodeSizeOperationSuite", aof(ExtCodeSizeOperationSuite::new));
             put("GlobalPropertiesSuite", aof(GlobalPropertiesSuite::new));
             put("StaticCallOperationSuite", aof(StaticCallOperationSuite::new));
-            put("SStoreOperationLoadTest", aof(SStoreOperationLoadTest::new));
-            // put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
+            put("SStoreOperationLoadTests", aof(SStoreOperationLoadTests::new));
+            // put("ContractCallLoadTests", aof(ContractCallLoadTests::new));
             put("ContractCallLocalPerfSuite", aof(ContractCallLocalPerfSuite::new));
             put("ContractCallPerfSuite", aof(ContractCallPerfSuite::new));
             put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
-            put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
+            put("MixedSmartContractOpsLoadTests", aof(MixedSmartContractOpsLoadTests::new));
             put("FibonacciPlusLoadProvider", aof(FibonacciPlusLoadProvider::new));
             put("AssociatePrecompileSuite", aof(AssociatePrecompileSuite::new));
             put("ContractBurnHTSSuite", aof(ContractBurnHTSSuite::new));
@@ -444,7 +444,7 @@ public class SuiteRunner {
             put("LogsSuite", aof(LogsSuite::new));
             put("RecordsSuite", aof(RecordsSuite::new));
             put("ProtectedFilesUpdateSuite", aof(ProtectedFilesUpdateSuite::new));
-            put("DuplicateManagementTest", aof(DuplicateManagementTest::new));
+            put("DuplicateManagementTests", aof(DuplicateManagementTests::new));
             /* Record validation. */
             put("RecordStreamValidation", aof(RecordStreamValidation::new));
             /* Fee characterization. */
@@ -466,14 +466,14 @@ public class SuiteRunner {
             put("UpdateServerFiles", aof(UpdateServerFiles::new));
             put("OneOfEveryTxn", aof(OneOfEveryTransaction::new));
             /* Zero Stake behaviour */
-            put("ZeroStakeTest", aof(ZeroStakeNodeTest::new));
+            put("ZeroStakeTest", aof(ZeroStakeNodeTests::new));
             /* Query payment validation */
             put("QueryPaymentSuite", aof(QueryPaymentSuite::new));
             put("SimpleFreezeOnly", aof(SimpleFreezeOnly::new));
             /* Transfer then freeze */
-            put("CryptoTransferThenFreezeTest", aof(CryptoTransferThenFreezeTest::new));
+            put("CryptoTransferThenFreezeTests", aof(CryptoTransferThenFreezeTests::new));
             put("MixedOpsTransactionsSuite", aof(MixedOpsTransactionsSuite::new));
-            put("MixedOpsLoadTest", aof(MixedOpsLoadTest::new));
+            put("MixedOpsLoadTests", aof(MixedOpsLoadTests::new));
             /* Validate new AddressBook */
             put("ValidateNewAddressBook", aof(ValidateNewAddressBook::new));
             put("CryptoTransferPerfSuiteWOpProvider", aof(CryptoTransferPerfSuiteWOpProvider::new));

@@ -26,7 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -47,7 +47,7 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
     private final String defaultNode;
 
     // Use more initialBalance for this account as it is used as payer for the performance tests
-    private static final long INITIAL_BALANCE = 5L * LoadTest.initialBalance.getAsLong();
+    private static final long INITIAL_BALANCE = 5L * LoadTests.initialBalance.getAsLong();
 
     public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
         this.nodes = nodes;

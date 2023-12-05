@@ -32,7 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Emergency State Finder")
-public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
+public class EmergencyStateFinderTests extends AbstractSignedStateManagerTests {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)

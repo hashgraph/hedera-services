@@ -310,10 +310,10 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> perf() {
         return List.of(
-                //				extractSpecsFromSuite(AccountBalancesClientSaveLoadTest::new),
+                //				extractSpecsFromSuite(AccountBalancesClientSaveLoadTests::new),
                 //				extractSpecsFromSuite(AdjustFeeScheduleSuite::new),
                 //				extractSpecsFromSuite(FileContractMemoPerfSuite::new),
-                //				extractSpecsFromSuite(QueryOnlyLoadTest::new)
+                //				extractSpecsFromSuite(QueryOnlyLoadTests::new)
                 );
     }
 
@@ -322,12 +322,12 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> perfContract() {
         return List.of(
-                //				extractSpecsFromSuite(ContractCallLoadTest::new),
+                //				extractSpecsFromSuite(ContractCallLoadTests::new),
                 //				extractSpecsFromSuite(ContractCallLocalPerfSuite::new),
                 //				extractSpecsFromSuite(ContractCallPerfSuite::new),
                 //				extractSpecsFromSuite(ContractPerformanceSuite::new),
                 //				extractSpecsFromSuite(FibonacciPlusLoadProvider::new),
-                //				extractSpecsFromSuite(MixedSmartContractOpsLoadTest::new)
+                //				extractSpecsFromSuite(MixedSmartContractOpsLoadTests::new)
                 );
     }
 
@@ -336,7 +336,7 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> perfContractOpcodes() {
         return List.of(
-                //				extractSpecsFromSuite(SStoreOperationLoadTest::new)
+                //				extractSpecsFromSuite(SStoreOperationLoadTests::new)
                 );
     }
 
@@ -347,7 +347,7 @@ class EndToEndTests extends E2ETestBase {
         return List.of(
                 //				extractSpecsFromSuite(CryptoAllowancePerfSuite::new),
                 //				extractSpecsFromSuite(CryptoCreatePerfSuite::new),
-                //				extractSpecsFromSuite(CryptoTransferLoadTest::new),
+                //				extractSpecsFromSuite(CryptoTransferLoadTests::new),
                 //				extractSpecsFromSuite(CryptoTransferLoadTestWithAutoAccounts::new),
                 //				extractSpecsFromSuite(CryptoTransferLoadTestWithInvalidAccounts::new),
                 //				extractSpecsFromSuite(CryptoTransferPerfSuite::new),
@@ -362,8 +362,8 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> perfFile() {
         return List.of(
                 //				extractSpecsFromSuite(FileExpansionLoadProvider::new),
-                //				extractSpecsFromSuite(FileUpdateLoadTest::new),
-                //				extractSpecsFromSuite(MixedFileOpsLoadTest::new)
+                //				extractSpecsFromSuite(FileUpdateLoadTests::new),
+                //				extractSpecsFromSuite(MixedFileOpsLoadTests::new)
                 );
     }
 
@@ -372,10 +372,10 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> perfMixedOps() {
         return List.of(
-                //				extractSpecsFromSuite(MixedFileOpsLoadTest::new),
+                //				extractSpecsFromSuite(MixedFileOpsLoadTests::new),
                 //				extractSpecsFromSuite(MixedOpsMemoPerfSuite::new),
-                //				extractSpecsFromSuite(MixedTransferAndSubmitLoadTest::new),
-                //				extractSpecsFromSuite(MixedTransferCallAndSubmitLoadTest::new)
+                //				extractSpecsFromSuite(MixedTransferAndSubmitLoadTests::new),
+                //				extractSpecsFromSuite(MixedTransferCallAndSubmitLoadTests::new)
                 );
     }
 
@@ -396,7 +396,7 @@ class EndToEndTests extends E2ETestBase {
         return List.of(
                 //				extractSpecsFromSuite(TokenCreatePerfSuite::new),
                 //				extractSpecsFromSuite(TokenRelStatusChanges::new),
-                //				extractSpecsFromSuite(TokenTransferBasicLoadTest::new),
+                //				extractSpecsFromSuite(TokenTransferBasicLoadTests::new),
                 //				extractSpecsFromSuite(TokenTransfersLoadProvider::new),
                 //				extractSpecsFromSuite(UniqueTokenStateSetup::new)
                 );
@@ -410,7 +410,7 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(createTopicLoadTest::new),
                 //				extractSpecsFromSuite(CreateTopicPerfSuite::new),
                 //				extractSpecsFromSuite(HCSChunkingRealisticPerfSuite::new),
-                //				extractSpecsFromSuite(SubmitMessageLoadTest::new),
+                //				extractSpecsFromSuite(SubmitMessageLoadTests::new),
                 //				extractSpecsFromSuite(SubmitMessagePerfSuite::new)
                 );
     }
@@ -423,7 +423,7 @@ class EndToEndTests extends E2ETestBase {
                 extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new)
-                //				extractSpecsFromSuite(DuplicateManagementTest::new),
+                //				extractSpecsFromSuite(DuplicateManagementTests::new),
                 // extractSpecsFromSuite(SignedTransactionBytesRecordsSuite::new)
                 );
     }

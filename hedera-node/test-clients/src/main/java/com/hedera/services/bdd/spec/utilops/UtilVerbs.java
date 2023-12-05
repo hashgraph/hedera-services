@@ -463,8 +463,8 @@ public class UtilVerbs {
         return new VerifyGetTokenNftInfosNotSupported();
     }
 
-    public static RunLoadTest runLoadTest(Supplier<HapiSpecOperation[]> opSource) {
-        return new RunLoadTest(opSource);
+    public static RunLoadTests runLoadTest(Supplier<HapiSpecOperation[]> opSource) {
+        return new RunLoadTests(opSource);
     }
 
     public static NoOp noOp() {

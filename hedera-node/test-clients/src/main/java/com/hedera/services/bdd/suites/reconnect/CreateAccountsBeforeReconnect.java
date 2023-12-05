@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
+import static com.hedera.services.bdd.spec.utilops.LoadTests.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;

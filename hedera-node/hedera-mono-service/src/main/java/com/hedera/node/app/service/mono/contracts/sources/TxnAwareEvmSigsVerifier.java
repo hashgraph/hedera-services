@@ -32,7 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.keys.ActivationTest;
+import com.hedera.node.app.service.mono.keys.ActivationTests;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTest;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTests;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -59,14 +59,14 @@ import org.hyperledger.besu.datatypes.Address;
 @Singleton
 public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     private static final Function<byte[], TransactionSignature> NO_TOP_LEVEL_SIGS = ignored -> INVALID_MISSING_SIG;
-    private final ActivationTest activationTest;
+    private final ActivationTests activationTest;
     private final TransactionContext txnCtx;
     private final GlobalDynamicProperties dynamicProperties;
     private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
 
     @Inject
     public TxnAwareEvmSigsVerifier(
-            final ActivationTest activationTest,
+            final ActivationTests activationTest,
             final TransactionContext txnCtx,
             final BiPredicate<JKey, TransactionSignature> cryptoValidity,
             final GlobalDynamicProperties dynamicProperties) {
@@ -92,7 +92,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             final Address account,
             final Address activeContract,
             final WorldLedgers worldLedgers,
-            final LegacyActivationTest legacyActivationTest,
+            final LegacyActivationTests legacyActivationTest,
             @NonNull final HederaFunctionality function) {
         final var legacyActivations = dynamicProperties.legacyContractIdActivations();
         // The contracts (if any) that retain legacy activation for this account's key
@@ -235,7 +235,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             @NonNull final Address accountAddress,
             @NonNull final Address activeContract,
             @NonNull final WorldLedgers worldLedgers,
-            @Nullable LegacyActivationTest legacyActivationTest,
+            @Nullable LegacyActivationTests legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts,
             @NonNull final HederaFunctionality function) {
         if (accountAddress.equals(activeContract)) {
@@ -269,7 +269,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             final boolean isDelegateCall,
             final Address activeContract,
             final ContractAliases aliases,
-            @Nullable final LegacyActivationTest legacyActivationTest,
+            @Nullable final LegacyActivationTests legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts,
             @NonNull final HederaFunctionality function) {
         if (key instanceof JKeyList keyList && keyList.isEmpty()) {
@@ -294,7 +294,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             final boolean isDelegateCall,
             final Address activeContract,
             final ContractAliases aliases,
-            @Nullable final LegacyActivationTest legacyActivationTest,
+            @Nullable final LegacyActivationTests legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts) {
         // Note that when this observer is used directly above in isActiveInFrame(), it will be
         // called with each primitive key in the top-level Hedera key of interest, along with
@@ -322,7 +322,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
     boolean hasLegacyActivation(
             final Address contract,
-            @Nullable final LegacyActivationTest legacyActivationTest,
+            @Nullable final LegacyActivationTests legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts) {
         if (legacyActivationTest == null || legacyActiveContracts == null) {
             return false;

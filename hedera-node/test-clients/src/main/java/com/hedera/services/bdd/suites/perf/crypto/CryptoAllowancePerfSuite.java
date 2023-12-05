@@ -23,12 +23,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoAllowancePerfSuite extends LoadTest {
+public class CryptoAllowancePerfSuite extends LoadTests {
 
     private static final Logger LOG = LogManager.getLogger(CryptoAllowancePerfSuite.class);
     private static final String OWNER = "owner";

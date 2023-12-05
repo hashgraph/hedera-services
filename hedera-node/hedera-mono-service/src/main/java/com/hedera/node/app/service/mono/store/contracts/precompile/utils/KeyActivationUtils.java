@@ -41,7 +41,7 @@ public final class KeyActivationUtils {
 
     /**
      * Checks if a key implicit in a target address is active in the current frame using a {@link
-     * KeyActivationTest}.
+     * KeyActivationTests}.
      *
      * <p>We massage the current frame a bit to ensure that a precompile being executed via delegate
      * call is tested as such. There are three cases.
@@ -73,7 +73,7 @@ public final class KeyActivationUtils {
     public static boolean validateKey(
             final MessageFrame frame,
             final Address target,
-            final KeyActivationTest activationTest,
+            final KeyActivationTests activationTest,
             final WorldLedgers ledgers,
             final ContractAliases aliases,
             @NonNull final HederaFunctionality function) {
@@ -83,7 +83,7 @@ public final class KeyActivationUtils {
     public static boolean validateLegacyKey(
             final MessageFrame frame,
             final Address target,
-            final LegacyKeyActivationTest legacyActivationTest,
+            final LegacyKeyActivationTests legacyActivationTest,
             final WorldLedgers ledgers,
             final ContractAliases aliases,
             @NonNull final HederaFunctionality function) {
@@ -93,8 +93,8 @@ public final class KeyActivationUtils {
     private static boolean internalValidateKey(
             final MessageFrame frame,
             final Address target,
-            @Nullable final KeyActivationTest activationTest,
-            @Nullable final LegacyKeyActivationTest legacyActivationTest,
+            @Nullable final KeyActivationTests activationTest,
+            @Nullable final LegacyKeyActivationTests legacyActivationTest,
             final WorldLedgers ledgers,
             final ContractAliases aliases,
             @NonNull final HederaFunctionality function) {
@@ -131,7 +131,7 @@ public final class KeyActivationUtils {
      * @param frame the current frame
      * @return a predicate that tests if an address appears as recipient below this frame
      */
-    static LegacyActivationTest legacyActivationTestFor(final MessageFrame frame) {
+    static LegacyActivationTests legacyActivationTestFor(final MessageFrame frame) {
         return address -> {
             final var iter = frame.getMessageFrameStack().iterator();
             // We skip the frame at the top of the stack (recall that a deque representing

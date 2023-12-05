@@ -40,7 +40,7 @@ package com.hedera.node.app.service.mono.contracts.sources;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTest;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTests;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -96,7 +96,7 @@ public interface EvmSigsVerifier {
             Address account,
             Address activeContract,
             WorldLedgers worldLedgers,
-            LegacyActivationTest legacyActivationTest,
+            LegacyActivationTests legacyActivationTest,
             HederaFunctionality function);
 
     /**

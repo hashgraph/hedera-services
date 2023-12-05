@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
@@ -53,7 +53,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MixedOpsMemoPerfSuite extends LoadTest {
+public class MixedOpsMemoPerfSuite extends LoadTests {
     private static final Logger log = LogManager.getLogger(MixedOpsMemoPerfSuite.class);
     private final String INITIAL_MEMO = "InitialMemo";
     private final String ACCOUNT_MEMO = INITIAL_MEMO + " for Account Entity";
