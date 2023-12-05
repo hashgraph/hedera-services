@@ -32,4 +32,8 @@ contract InternalCaller {
     function callWithValueTo(address _addr) external {
         _addr.call{value: 1}("");
     }
+
+    function selfdestruct(address _addr) external {
+        selfdestruct(_addr);
+    }
 }

@@ -90,6 +90,7 @@ public class Evm45ValidationSuite extends HapiSuite {
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
     private static final String SEND_TO_FUNCTION = "sendTo";
     private static final String CALL_WITH_VALUE_TO_FUNCTION = "callWithValueTo";
+    private static final String SELFDESTRUCT = "selfdestruct";
     private static final String INNER_TXN = "innerTx";
     private static final Long INTRINSIC_GAS_COST = 21000L;
     private static final Long GAS_LIMIT_FOR_CALL = 25000L;
@@ -110,6 +111,7 @@ public class Evm45ValidationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
+        //        return List.of(internalCallToNonExistingMirrorAddressResultsInNoopSuccess());
         return List.of(
                 // Top-level calls:
                 // EOA -calls-> NonExistingMirror, expect noop success
@@ -171,7 +173,18 @@ public class Evm45ValidationSuite extends HapiSuite {
                 // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror, expect success
                 internalCallWithValueToNonExistingNonMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -callWValue-> ExistingNonMirror, expect ?
-                internalCallWithValueToExistingNonMirrorAddressResultsInSuccess()
+                internalCallWithValueToExistingNonMirrorAddressResultsInSuccess(),
+
+                // Internal calls to selfdestruct:
+                // EOA -calls-> InternalCaller -selfdestruct-> NonExistingNonMirror, expect INVALID_SOLIDITY_ADDRESS
+                // todo should execute lazy create if gas is enough
+                selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress(),
+                // EOA -calls-> InternalCaller -selfdestruct-> NonExistingMirror, expect INVALID_SOLIDITY_ADDRESS
+                selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress(),
+                // EOA -calls-> InternalCaller -selfdestruct-> ExistingNonMirror, expect success
+                selfdestructToExistingNonMirrorAddressResultsInSuccess(),
+                // EOA -calls-> InternalCaller -selfdestruct-> ExistingMirror, expect success
+                selfdestructToExistingMirrorAddressResultsInSuccess()
 
                 // todo
                 // add grandfathered contract scenario
@@ -184,6 +197,100 @@ public class Evm45ValidationSuite extends HapiSuite {
                 // static calls
                 // hollow account creation on self destruct with non-existing beneficiary
                 );
+    }
+
+    private HapiSpec selfdestructToExistingMirrorAddressResultsInSuccess() {
+        AtomicReference<AccountID> receiverId = new AtomicReference<>();
+        return defaultHapiSpec("selfdestructToExistingMirrorAddressResultsInSuccess")
+                .given(
+                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> {
+                    allRunFor(
+                            spec,
+                            balanceSnapshot("selfdestructTargetAccount", asAccountString(receiverId.get())),
+                            contractCall(
+                                            INTERNAL_CALLER_CONTRACT,
+                                            SELFDESTRUCT,
+                                            mirrorAddrWith(receiverId.get().getAccountNum()))
+                                    .gas(GAS_LIMIT_FOR_CALL * 4)
+                                    .via(INNER_TXN));
+                }))
+                .then(getAccountBalance(RECEIVER)
+                        .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
+    }
+
+    private HapiSpec selfdestructToExistingNonMirrorAddressResultsInSuccess() {
+        return defaultHapiSpec("selfdestructToExistingNonMirrorAddressResultsInSuccess")
+                .given(
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    allRunFor(
+                            spec,
+                            balanceSnapshot("selfdestructTargetAccount", ECDSA_KEY)
+                                    .accountIsAlias(),
+                            contractCall(INTERNAL_CALLER_CONTRACT, SELFDESTRUCT, asHeadlongAddress(addressBytes))
+                                    .gas(GAS_LIMIT_FOR_CALL * 4)
+                                    .via(INNER_TXN));
+                }))
+                .then(getAccountBalance(ECDSA_KEY)
+                        .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
+    }
+
+    private HapiSpec selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
+        AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
+
+        return defaultHapiSpec("selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress")
+                .given(
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        withOpContext((spec, op) -> {
+                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
+                        }),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        SELFDESTRUCT,
+                                        asHeadlongAddress(nonExistingNonMirrorAddress
+                                                .get()
+                                                .toArray()))
+                                .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))))
+                .then(getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .status(INVALID_SOLIDITY_ADDRESS)
+                                .contractCallResult(resultWith().gasUsed(900000))));
+    }
+
+    private HapiSpec selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
+        return defaultHapiSpec("selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        contractCall(INTERNAL_CALLER_CONTRACT, SELFDESTRUCT, mirrorAddrWith(new Random().nextLong()))
+                                .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))))
+                .then(getTxnRecord(INNER_TXN)
+                        .hasPriority(recordWith()
+                                .status(INVALID_SOLIDITY_ADDRESS)
+                                .contractCallResult(resultWith().gasUsed(900000))));
     }
 
     private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
@@ -390,7 +497,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
-                                        resultWith().createdContractIdsCount(0).gasUsed(24684))));
+                                        resultWith().createdContractIdsCount(0).gasUsed(24662))));
     }
 
     private HapiSpec internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
@@ -413,7 +520,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .createdContractIdsCount(0)
                                         .contractCallResult(bigIntResult(1))
-                                        .gasUsed(47751))));
+                                        .gasUsed(47818))));
     }
 
     private HapiSpec internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess() {
@@ -432,7 +539,7 @@ public class Evm45ValidationSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(
-                                        resultWith().createdContractIdsCount(0).gasUsed(24684))));
+                                        resultWith().createdContractIdsCount(0).gasUsed(24662))));
     }
 
     private HapiSpec internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn() {
