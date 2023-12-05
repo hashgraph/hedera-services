@@ -23,13 +23,15 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
 public class AdjustmentUtils {
-    public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY = ignore -> new HashMap<>();
+    public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY =
+            ignore -> new LinkedHashMap<>();
 
     private AdjustmentUtils() {
         throw new UnsupportedOperationException("Utility Class");
