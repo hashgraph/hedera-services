@@ -75,7 +75,7 @@ public class SignedStateManagerTester extends SignedStateManager {
     @Override
     public synchronized void addState(@NonNull final SignedState signedState) {
         super.addState(signedState);
-        latestSignedState.newIncompleteState(signedState.reserve("LatestCompleteStateNexus.newIncompleteState"));
+        latestSignedState.newIncompleteState(signedState.getRound());
     }
 
     /**

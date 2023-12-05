@@ -55,21 +55,20 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
      * clear the latest complete state. This is used so that we don't hold the latest complete state forever in case we
      * have trouble gathering signatures.
      *
-     * @param newState a new signed state that is not yet complete
+     * @param newStateRound a new signed state round that is not yet complete
      */
-    public void newIncompleteState(@NonNull final ReservedSignedState newState) {
-        try (newState) {
-            // NOTE: This logic is duplicated in SignedStateManager, but will be removed from the signed state manager
-            // once its refactor is done
+    public void newIncompleteState(final long newStateRound) {
+        // NOTE: This logic is duplicated in SignedStateManager, but will be removed from the signed state manager
+        // once its refactor is done
 
-            // Any state older than this is unconditionally removed, even if it is the latest
-            final long earliestPermittedRound = newState.get().getRound() - stateConfig.roundsToKeepForSigning() + 1;
+        // Any state older than this is unconditionally removed, even if it is the latest
+        final long earliestPermittedRound = newStateRound - stateConfig.roundsToKeepForSigning() + 1;
 
-            // Is the latest complete round older than the earliest permitted round?
-            if (getRound() < earliestPermittedRound) {
-                // Yes, so remove it
-                clear();
-            }
+        // Is the latest complete round older than the earliest permitted round?
+        if (getRound() < earliestPermittedRound) {
+            // Yes, so remove it
+            clear();
         }
+
     }
 }
