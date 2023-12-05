@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.BasicConfig_;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -36,6 +37,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -61,10 +63,10 @@ class LegacyCsvWriterTest {
     @BeforeEach
     void setStandardSettings() {
         configuration = new TestConfigBuilder()
-                .withValue("metrics.csvOutputFolder", tempDir.toString())
-                .withValue("metrics.csvAppend", "false")
-                .withValue("showInternalStats", "false")
-                .withValue("verboseStatistics", "false")
+                .withValue(MetricsConfig_.CSV_OUTPUT_FOLDER, tempDir.toString())
+                .withValue(MetricsConfig_.CSV_APPEND, "false")
+                .withValue(BasicConfig_.SHOW_INTERNAL_STATS, "false")
+                .withValue(BasicConfig_.VERBOSE_STATISTICS, "false")
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
@@ -251,8 +253,8 @@ class LegacyCsvWriterTest {
     void testWriteWithAppendedModeAndExistingFile() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metrics.csvOutputFolder", tempDir.toString())
-                .withValue("metrics.csvAppend", "true")
+                .withValue(MetricsConfig_.CSV_OUTPUT_FOLDER, tempDir.toString())
+                .withValue(MetricsConfig_.CSV_APPEND, "true")
                 .getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
@@ -301,8 +303,8 @@ class LegacyCsvWriterTest {
     void testWriteWithAppendedModeAndNonExistingFile() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metrics.csvOutputFolder", tempDir.toString())
-                .withValue("metrics.csvAppend", "true")
+                .withValue(MetricsConfig_.CSV_OUTPUT_FOLDER, tempDir.toString())
+                .withValue(MetricsConfig_.CSV_APPEND, "true")
                 .getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
@@ -379,8 +381,9 @@ class LegacyCsvWriterTest {
 
     @Test
     void testWriteWithInternalNotIgnored() throws IOException {
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("showInternalStats", "true").getOrCreateConfig();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(BasicConfig_.SHOW_INTERNAL_STATS, "true")
+                .getOrCreateConfig();
         // given
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
@@ -476,8 +479,9 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteWithSecondaryValuesIncluded() throws IOException {
         // given
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(BasicConfig_.VERBOSE_STATISTICS, "true")
+                .getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithSecondaryValues();
@@ -643,8 +647,9 @@ class LegacyCsvWriterTest {
     @Test
     void testChangedEntriesWithComplexMetricsAndSecondaryValues() throws IOException {
         // given
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(BasicConfig_.VERBOSE_STATISTICS, "true")
+                .getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createComplexList();
