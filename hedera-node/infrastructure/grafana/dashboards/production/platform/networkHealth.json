@@ -331,7 +331,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.3.0-63137"
+      "version": "10.3.0-63588"
     },
     {
       "type": "datasource",
@@ -497,9 +497,10 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -679,9 +680,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -858,9 +860,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -1041,9 +1044,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -1257,9 +1261,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -1403,9 +1408,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -1623,9 +1629,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -1834,9 +1841,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "10.3.0-63137",
+      "pluginVersion": "10.3.0-63588",
       "targets": [
         {
           "datasource": {
@@ -1894,7 +1902,7 @@
       "type": "gauge"
     }
   ],
-  "refresh": false,
+  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -1953,7 +1961,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
