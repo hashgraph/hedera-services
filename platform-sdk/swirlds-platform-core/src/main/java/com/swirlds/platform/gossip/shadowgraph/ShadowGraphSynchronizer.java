@@ -408,8 +408,11 @@ public class ShadowGraphSynchronizer {
 
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
+            final long startFilterTime = time.nanoTime();
             sendList = filterLikelyDuplicates(
                     shadowGraph, selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
+            final long endFilterTime = time.nanoTime();
+            syncMetrics.recordSyncFilterTime(endFilterTime - startFilterTime);
         } else {
             sendList = eventsTheyMayNeed;
         }

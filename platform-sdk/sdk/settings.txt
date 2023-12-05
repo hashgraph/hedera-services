@@ -11,6 +11,7 @@
                                           #    Gossip / Networking    #
                                           #############################
 sync.syncProtocolPermitCount,             2
+sync.filterLikelyDuplicates,              true
 
                                           #############################
                                           #           State           #
