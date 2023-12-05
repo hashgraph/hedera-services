@@ -34,6 +34,8 @@ import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -70,6 +72,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
     private final ContractsConfig contractsConfig;
+    private final SystemContractGasCalculator gasCalculator;
     private final HandleContext context;
 
     @Inject
@@ -77,11 +80,13 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final HandleContext context,
-            @NonNull final TinybarValues tinybarValues) {
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator gasCalculator) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
         this.tinybarValues = requireNonNull(tinybarValues);
+        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     /**
@@ -160,7 +165,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long lazyCreationCostInGas(@NonNull final Address recipient) {
-        // Calculate fee for a lazy create TransactionBody with an alias address
+        // Calculate gas for a lazy create TransactionBody with an alias address
         final var creatBuilder = CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(0)
                 .maxAutomaticTokenAssociations(0)
@@ -170,11 +175,15 @@ public class HandleHederaOperations implements HederaOperations {
                 .memo(LAZY_MEMO);
         final var createBody = TransactionBody.newBuilder().cryptoCreateAccount(creatBuilder.build());
         final var payerId = context.payer();
-        final var createFee = autoCreationFeeFor(createBody, requireNonNull(payerId));
+        final var createFee = gasCalculator.gasRequirement(createBody.build(), DispatchType.CRYPTO_CREATE, payerId);
 
-        // Calculate fee for an update TransactionBody
-        final var updateFee =
-                autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER), payerId);
+        // Calculate gas for an update TransactionBody
+        final var updateFee = gasCalculator.gasRequirement(
+                TransactionBody.newBuilder()
+                        .cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER)
+                        .build(),
+                DispatchType.CRYPTO_UPDATE,
+                payerId);
         return createFee + updateFee;
     }
 
