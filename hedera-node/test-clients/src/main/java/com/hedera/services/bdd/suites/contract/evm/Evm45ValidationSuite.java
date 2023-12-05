@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -111,7 +112,6 @@ public class Evm45ValidationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        //        return List.of(internalCallToNonExistingMirrorAddressResultsInNoopSuccess());
         return List.of(
                 // Top-level calls:
                 // EOA -calls-> NonExistingMirror, expect noop success
@@ -184,7 +184,11 @@ public class Evm45ValidationSuite extends HapiSuite {
                 // EOA -calls-> InternalCaller -selfdestruct-> ExistingNonMirror, expect success
                 selfdestructToExistingNonMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -selfdestruct-> ExistingMirror, expect success
-                selfdestructToExistingMirrorAddressResultsInSuccess()
+                selfdestructToExistingMirrorAddressResultsInSuccess(),
+
+                // Calls to deleted contract
+                // EOA -calls-> deleted contract
+                callToDeletedContractResultsInSuccessfulNoop()
 
                 // todo
                 // add grandfathered contract scenario
@@ -197,6 +201,29 @@ public class Evm45ValidationSuite extends HapiSuite {
                 // static calls
                 // hollow account creation on self destruct with non-existing beneficiary
                 );
+    }
+
+    private HapiSpec callToDeletedContractResultsInSuccessfulNoop() {
+        AtomicReference<AccountID> receiverId = new AtomicReference<>();
+
+        return defaultHapiSpec("callToDeletedContractResultsInSuccessfulNoop")
+                .given(
+                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                        contractDelete(INTERNAL_CALLER_CONTRACT))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        CALL_WITH_VALUE_TO_FUNCTION,
+                                        mirrorAddrWith(receiverId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN))))
+                .then(
+                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     private HapiSpec selfdestructToExistingMirrorAddressResultsInSuccess() {

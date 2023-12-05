@@ -33,7 +33,7 @@ contract InternalCaller {
         _addr.call{value: 1}("");
     }
 
-    function selfdestruct(address _addr) external {
+    function selfdestruct(address payable _addr) external {
         selfdestruct(_addr);
     }
 }
