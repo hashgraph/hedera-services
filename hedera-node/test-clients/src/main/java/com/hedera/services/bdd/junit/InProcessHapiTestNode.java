@@ -269,16 +269,12 @@ public class InProcessHapiTestNode implements HapiTestNode {
         }
 
         final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
-        Stream<Path> paths = null;
         if (Files.exists(saved)) {
-            try {
-                paths = Files.walk(saved);
+            try (Stream<Path> paths = Files.walk(saved)) {
                 paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 
             } catch (IOException e) {
                 throw new RuntimeException("Could not delete saved state " + saved, e);
-            } finally {
-                if (paths != null) paths.close();
             }
         }
     }
