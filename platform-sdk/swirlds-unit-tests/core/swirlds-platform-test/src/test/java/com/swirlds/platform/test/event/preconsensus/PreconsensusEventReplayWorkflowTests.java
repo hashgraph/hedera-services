@@ -152,14 +152,12 @@ class PreconsensusEventReplayWorkflowTests {
                 .when(preconsensusEventWriter)
                 .beginStreamingNewEvents();
 
-        final StateManagementComponent stateManagementComponent = mock(StateManagementComponent.class);
         final ReservedSignedState latestImmutableState = mock(ReservedSignedState.class);
         when(latestImmutableState.isNull()).thenReturn(false);
         final SignedState signedState = mock(SignedState.class);
         when(signedState.getRound()).thenReturn(random.nextLong(1, 10000));
         when(signedState.getConsensusTimestamp()).thenReturn(randomInstant(random));
         when(latestImmutableState.get()).thenReturn(signedState);
-        when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -174,8 +172,8 @@ class PreconsensusEventReplayWorkflowTests {
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,
-                stateManagementComponent,
-                minimumGenerationNonAncient);
+                minimumGenerationNonAncient,
+                () -> latestImmutableState);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());
     }

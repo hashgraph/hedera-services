@@ -1344,8 +1344,8 @@ public class SwirldsPlatform implements Platform {
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,
-                    stateManagementComponent,
-                    initialMinimumGenerationNonAncient);
+                    initialMinimumGenerationNonAncient,
+                    ()->latestImmutableState.getState("PCES replay"));
         }
 
         consensusHashManager.signalEndOfPreconsensusReplay();

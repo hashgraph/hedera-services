@@ -68,24 +68,6 @@ public interface StateManagementComponent
     List<SignedStateInfo> getSignedStateInfo();
 
     /**
-     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
-     * total consensus time that this node has been operating for.
-     *
-     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
-     * have been ingested yet
-     */
-    @Nullable
-    Instant getFirstStateTimestamp();
-
-    /**
-     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
-     * elapsed rounds since startup.
-     *
-     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
-     */
-    long getFirstStateRound();
-
-    /**
      * Get the signed state manager.
      */
     @NonNull

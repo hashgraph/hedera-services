@@ -208,6 +208,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     @Override
     public void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState) {
+        //TODO set latest immutable
         try (signedState) {
             signedState.get().setGarbageCollector(signedStateGarbageCollector);
 
@@ -249,6 +250,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     @Override
     public void stateToLoad(final SignedState signedState, final SourceOfSignedState sourceOfSignedState) {
+        //TODO set latest immutable
         signedState.setGarbageCollector(signedStateGarbageCollector);
         newSignedStateBeingTracked(signedState, sourceOfSignedState);
         signedStateManager.addState(signedState);
@@ -279,23 +281,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public ReservedSignedState find(final @NonNull Predicate<SignedState> criteria, @NonNull final String reason) {
         return signedStateManager.find(criteria, reason);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Nullable
-    public Instant getFirstStateTimestamp() {
-        return signedStateManager.getFirstStateTimestamp();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getFirstStateRound() {
-        return signedStateManager.getFirstStateRound();
     }
 
     /**
