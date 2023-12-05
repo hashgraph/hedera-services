@@ -432,6 +432,35 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
+    void fromHapiCreationSkips0xPrefixFromInitcodeIfPresent() {
+        given(fileStore.getFileLeaf(INITCODE_FILE_ID))
+                .willReturn(File.newBuilder()
+                        .contents(Bytes.wrap("0x" + new String(INITCODE.toByteArray())))
+                        .build());
+        String hexedPayload = new String(INITCODE.toByteArray()) + CommonUtils.hex(CONSTRUCTOR_PARAMS.toByteArray());
+        final var expectedPayload = Bytes.wrap(CommonUtils.unhex(hexedPayload));
+        final var transaction = getManufacturedCreation(b -> b.memo(SOME_MEMO)
+                .fileID(INITCODE_FILE_ID)
+                .constructorParameters(CONSTRUCTOR_PARAMS)
+                .initialBalance(123L)
+                .adminKey(Key.newBuilder().keyList(KeyList.DEFAULT))
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
+                .proxyAccountID(AccountID.DEFAULT)
+                .autoRenewPeriod(SOME_DURATION));
+        assertEquals(SENDER_ID, transaction.senderId());
+        assertNull(transaction.contractId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(expectedPayload, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(123L, transaction.value());
+        assertEquals(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec(), transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNotNull(transaction.hapiCreation());
+    }
+
+    @Test
     void fromHapiTransactionThrowsOnNonContractOperation() {
         assertThrows(IllegalArgumentException.class, () -> subject.fromHapiTransaction(TransactionBody.DEFAULT));
     }

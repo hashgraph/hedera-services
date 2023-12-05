@@ -59,11 +59,11 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
         if (isErc20Transfer(attempt.selector())) {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return callFrom(null, call.get(0), call.get(1), attempt);
+            return callFrom(null, call.get(0), call.get(1), attempt, false);
         } else {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return callFrom(call.get(0), call.get(1), call.get(2), attempt);
+            return callFrom(call.get(0), call.get(1), call.get(2), attempt, true);
         }
     }
 
@@ -71,7 +71,8 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
             @Nullable final Address from,
             @NonNull final Address to,
             @NonNull final BigInteger amount,
-            @NonNull final HtsCallAttempt attempt) {
+            @NonNull final HtsCallAttempt attempt,
+            final boolean requiresApproval) {
         return new Erc20TransfersCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
@@ -81,7 +82,8 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
-                attempt.addressIdConverter());
+                attempt.addressIdConverter(),
+                requiresApproval);
     }
 
     private boolean selectorsInclude(@NonNull final byte[] selector) {

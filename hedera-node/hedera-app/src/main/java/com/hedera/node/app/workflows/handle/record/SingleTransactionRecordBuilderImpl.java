@@ -136,7 +136,9 @@ public class SingleTransactionRecordBuilderImpl
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
-    private final Instant consensusNow;
+    // Mutable because the provisional consensus timestamp assigned on dispatch could
+    // change when removable records appear "between" this record and the parent record
+    private Instant consensusNow;
     private Instant parentConsensus;
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
@@ -317,6 +319,11 @@ public class SingleTransactionRecordBuilderImpl
 
     public SingleTransactionRecordBuilderImpl parentConsensus(@NonNull final Instant parentConsensus) {
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
+        return this;
+    }
+
+    public SingleTransactionRecordBuilderImpl consensusTimestamp(@NonNull final Instant now) {
+        this.consensusNow = requireNonNull(now, "consensus time must not be null");
         return this;
     }
 

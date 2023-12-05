@@ -41,6 +41,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.CallStatusStandardizer;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
@@ -58,6 +59,9 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
     @Mock
     private VerificationStrategy verificationStrategy;
+
+    @Mock
+    private CallStatusStandardizer callStatusStandardizer;
 
     @Mock
     private Predicate<Key> signatureTest;
@@ -141,6 +145,9 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
         given(approvalSwitchHelper.switchToApprovalsAsNeededIn(
                         CryptoTransferTransactionBody.DEFAULT, signatureTest, nativeOperations))
                 .willReturn(CryptoTransferTransactionBody.DEFAULT);
+        given(callStatusStandardizer.codeForFailure(
+                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, frame, CryptoTransferTransactionBody.DEFAULT))
+                .willReturn(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
 
         givenRetryingSubject();
 
@@ -212,6 +219,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 approvalSwitchHelper,
+                callStatusStandardizer,
                 verificationStrategy,
                 systemAccountCreditScreen);
     }
@@ -228,6 +236,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 config,
                 null,
+                callStatusStandardizer,
                 verificationStrategy,
                 systemAccountCreditScreen);
     }
@@ -241,6 +250,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 PRETEND_TRANSFER,
                 DEFAULT_CONFIG,
                 null,
+                callStatusStandardizer,
                 verificationStrategy,
                 systemAccountCreditScreen);
     }

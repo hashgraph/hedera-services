@@ -40,6 +40,7 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -96,7 +97,8 @@ class HandleHederaOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context, tinybarValues);
+        subject = new HandleHederaOperations(
+                DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context, tinybarValues, DEFAULT_HEDERA_CONFIG);
     }
 
     @Test
@@ -104,6 +106,32 @@ class HandleHederaOperationsTest {
         given(context.writableStore(WritableContractStateStore.class)).willReturn(stateStore);
 
         assertSame(stateStore, subject.getStore());
+    }
+
+    @Test
+    void validatesShard() {
+        assertSame(
+                HederaOperations.MISSING_CONTRACT_ID,
+                subject.shardAndRealmValidated(
+                        ContractID.newBuilder().shardNum(1).contractNum(2L).build()));
+    }
+
+    @Test
+    void validatesRealm() {
+        assertSame(
+                HederaOperations.MISSING_CONTRACT_ID,
+                subject.shardAndRealmValidated(
+                        ContractID.newBuilder().realmNum(1).contractNum(2L).build()));
+    }
+
+    @Test
+    void returnsUnchangedWithMatchingShardRealm() {
+        final var plausibleId = ContractID.newBuilder()
+                .shardNum(0)
+                .realmNum(0)
+                .contractNum(3456L)
+                .build();
+        assertSame(plausibleId, subject.shardAndRealmValidated(plausibleId));
     }
 
     @Test

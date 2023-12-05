@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.NUM_SYSTEM_ACCOUNTS;
-import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -31,6 +31,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class SystemAccountCreditScreen {
     public static final SystemAccountCreditScreen SYSTEM_ACCOUNT_CREDIT_SCREEN = new SystemAccountCreditScreen();
 
+    private static final TransferAuditTest SYSTEM_ACCOUNT_CREDIT_TEST = new TransferAuditTest() {
+        @Override
+        public boolean flagsAdjustment(@NonNull final AccountAmount adjust) {
+            requireNonNull(adjust);
+            return creditsSystemAccount(adjust);
+        }
+
+        @Override
+        public boolean flagsNftTransfer(@NonNull final NftTransfer nftTransfer) {
+            requireNonNull(nftTransfer);
+            return isSystemAccountNumber(nftTransfer.receiverAccountIDOrThrow().accountNumOrElse(0L));
+        }
+    };
+
     private SystemAccountCreditScreen() {
         // Singleton
     }
@@ -39,41 +53,19 @@ public class SystemAccountCreditScreen {
      * Returns {@code true} if the given {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} tries
      * to credit a system account.
      *
-     * @param cryptoTranfers the {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} to screen
+     * @param op the {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} to screen
      * @return whether it credits a system account
      */
-    public boolean creditsToSystemAccount(@NonNull final CryptoTransferTransactionBody cryptoTranfers) {
-        final var hbarAdjusts =
-                cryptoTranfers.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
-        for (final var adjust : hbarAdjusts) {
-            if (creditsSystemAccount(adjust)) {
-                return true;
-            }
-        }
-        final var tokenTransferLists = cryptoTranfers.tokenTransfersOrElse(emptyList());
-        for (final var tokenTransferList : tokenTransferLists) {
-            final var tokenAdjusts = tokenTransferList.transfersOrElse(emptyList());
-            for (final var adjust : tokenAdjusts) {
-                if (creditsSystemAccount(adjust)) {
-                    return true;
-                }
-            }
-            final var nftTransfers = tokenTransferList.nftTransfersOrElse(emptyList());
-            for (final var nftTransfer : nftTransfers) {
-                if (isSystemAccountNumber(nftTransfer.receiverAccountIDOrThrow().accountNumOrElse(0L))) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public boolean creditsToSystemAccount(@NonNull final CryptoTransferTransactionBody op) {
+        return TransferAuditTest.isAuditFlagRaised(op, SYSTEM_ACCOUNT_CREDIT_TEST);
     }
 
-    private boolean creditsSystemAccount(@NonNull final AccountAmount adjust) {
+    private static boolean creditsSystemAccount(@NonNull final AccountAmount adjust) {
         return adjust.amount() > 0
                 && isSystemAccountNumber(adjust.accountIDOrThrow().accountNumOrElse(0L));
     }
 
-    private boolean isSystemAccountNumber(final long number) {
+    private static boolean isSystemAccountNumber(final long number) {
         return number > 0 && number <= NUM_SYSTEM_ACCOUNTS;
     }
 }

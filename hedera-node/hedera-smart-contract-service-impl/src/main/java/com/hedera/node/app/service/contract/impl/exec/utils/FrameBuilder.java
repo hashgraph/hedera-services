@@ -19,8 +19,9 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -34,6 +35,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -109,27 +111,21 @@ public class FrameBuilder {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> contextVariablesFrom(
             @NonNull final Configuration config, @NonNull final HederaEvmContext context) {
         final var contractsConfig = config.getConfigData(ContractsConfig.class);
         final var needsStorageTracker = contractsConfig.sidecars().contains(CONTRACT_STATE_CHANGE);
-        return needsStorageTracker
-                ? Map.of(
-                        CONFIG_CONTEXT_VARIABLE,
-                        config,
-                        TRACKER_CONTEXT_VARIABLE,
-                        new StorageAccessTracker(),
-                        TINYBAR_VALUES_VARIABLE,
-                        context.tinybarValues(),
-                        SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE,
-                        context.systemContractGasCalculator())
-                : Map.of(
-                        CONFIG_CONTEXT_VARIABLE,
-                        config,
-                        TINYBAR_VALUES_VARIABLE,
-                        context.tinybarValues(),
-                        SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE,
-                        context.systemContractGasCalculator());
+        final var contextEntries = new Map.Entry<?, ?>[needsStorageTracker ? 5 : 4];
+        contextEntries[0] = Map.entry(CONFIG_CONTEXT_VARIABLE, config);
+        contextEntries[1] = Map.entry(TINYBAR_VALUES_CONTEXT_VARIABLE, context.tinybarValues());
+        contextEntries[2] =
+                Map.entry(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE, context.systemContractGasCalculator());
+        contextEntries[3] = Map.entry(RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE, new AtomicBoolean());
+        if (needsStorageTracker) {
+            contextEntries[4] = Map.entry(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
+        }
+        return Map.ofEntries((Map.Entry<String, ?>[]) contextEntries);
     }
 
     private MessageFrame finishedAsCreate(

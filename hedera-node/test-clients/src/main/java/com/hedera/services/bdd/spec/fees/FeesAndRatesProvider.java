@@ -37,12 +37,15 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.FileGetContentsResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -68,6 +71,7 @@ public class FeesAndRatesProvider {
     private HapiSpecSetup setup;
     private HapiApiClients clients;
     private HapiSpecRegistry registry;
+    private static long gasPrice;
     private static FeeSchedule feeSchedule;
     private static ExchangeRateSet rateSet;
     private final ScheduleTypePatching typePatching = new ScheduleTypePatching();
@@ -99,6 +103,10 @@ public class FeesAndRatesProvider {
 
     public FeeSchedule currentSchedule() {
         return feeSchedule;
+    }
+
+    public long currentTinybarGasPrice() {
+        return toTbWithActiveRates(gasPrice / 1000L);
     }
 
     public ExchangeRate rates() {
@@ -143,7 +151,6 @@ public class FeesAndRatesProvider {
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         rateSet = ExchangeRateSet.parseFrom(bytes);
         String newSetAsString = rateSetAsString(rateSet);
-
         final String message = String.format("The exchange rates are :: %s", newSetAsString);
         log.info(message);
     }
@@ -152,7 +159,7 @@ public class FeesAndRatesProvider {
         File f = new File(setup.clientFeeSchedulePath());
         byte[] bytes = Files.readAllBytes(f.toPath());
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
-        feeSchedule = wrapper.getCurrentFeeSchedule();
+        setScheduleAndGasPriceFrom(wrapper.getCurrentFeeSchedule());
         final String message = String.format(
                 "The fee schedule from '%s' covers %s ops.",
                 f.getAbsolutePath(), feeSchedule.getTransactionFeeScheduleList().size());
@@ -164,7 +171,7 @@ public class FeesAndRatesProvider {
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.feeScheduleId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
-        feeSchedule = typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule());
+        setScheduleAndGasPriceFrom(typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule()));
         String message = String.format(
                 "The fee schedule covers %s ops.",
                 feeSchedule.getTransactionFeeScheduleList().size());
@@ -310,5 +317,16 @@ public class FeesAndRatesProvider {
                 + " expiry @ "
                 + set.getNextRate().getExpirationTime().getSeconds()
                 + "]";
+    }
+
+    private void setScheduleAndGasPriceFrom(@NonNull final FeeSchedule schedule) {
+        feeSchedule = schedule;
+        gasPrice = feeSchedule.getTransactionFeeScheduleList().stream()
+                .filter(tfs -> tfs.getHederaFunctionality() == HederaFunctionality.ContractCall)
+                .flatMap(tfs -> tfs.getFeesList().stream())
+                .filter(feeData -> feeData.getSubType() == SubType.DEFAULT)
+                .findFirst()
+                .map(feeData -> feeData.getServicedata().getGas())
+                .orElse(0L);
     }
 }
