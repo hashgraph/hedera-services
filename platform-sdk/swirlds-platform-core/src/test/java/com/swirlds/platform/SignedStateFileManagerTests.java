@@ -109,7 +109,9 @@ class SignedStateFileManagerTests {
     void beforeEach() throws IOException {
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toFile().toString());
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
         context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
