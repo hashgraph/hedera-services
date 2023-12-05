@@ -23,7 +23,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -38,26 +37,17 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
     private final StateConfig stateConfig;
 
     /**
-     * Create a new nexus that holds the latest complete signed state with no metrics.
-     *
-     * @param stateConfig the state configuration
-     */
-    public LatestCompleteStateNexus(@NonNull final StateConfig stateConfig) {
-        this(stateConfig, null);
-    }
-
-    /**
      * Create a new nexus that holds the latest complete signed state.
      *
      * @param stateConfig the state configuration
-     * @param metrics     the metrics object to update, or null if no metrics should be updated
+     * @param metrics     the metrics object to update
      */
-    public LatestCompleteStateNexus(@NonNull final StateConfig stateConfig, @Nullable final Metrics metrics) {
+    public LatestCompleteStateNexus(@NonNull final StateConfig stateConfig, @NonNull final Metrics metrics) {
         this.stateConfig = Objects.requireNonNull(stateConfig);
-        if (metrics != null) {
-            final RunningAverageMetric avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
-            metrics.addUpdater(() -> avgRoundSupermajority.update(getRound()));
-        }
+        Objects.requireNonNull(metrics);
+
+        final RunningAverageMetric avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
+        metrics.addUpdater(() -> avgRoundSupermajority.update(getRound()));
     }
 
     /**
