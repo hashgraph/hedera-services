@@ -68,11 +68,6 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
-        if (platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
-            // none of the clear logic is needed if the legacy intake is being used
-            return;
-        }
-
         // pause the orphan buffer to break the cycle that exists in intake, and flush the pause through
         orphanBufferWiring.pauseInput().inject(true);
         orphanBufferWiring.flushRunnable().run();
