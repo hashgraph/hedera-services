@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.fees.FeeManager.DEFAULT_FEE_DATA;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static java.util.Objects.requireNonNull;
 
@@ -221,9 +220,6 @@ public class SolvencyPreCheck {
     private long estimatedGasPriceInTinybars(
             @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
-        if (DEFAULT_FEE_DATA == feeData) {
-            throw new IllegalStateException("No fee data found for transaction type " + functionality);
-        }
         final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
         final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
         return Math.max(priceInTinyBars, 1L);
