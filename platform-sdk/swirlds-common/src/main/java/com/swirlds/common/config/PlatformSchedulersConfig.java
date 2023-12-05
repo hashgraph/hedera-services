@@ -19,6 +19,7 @@ package com.swirlds.common.config;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -35,6 +36,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param inOrderLinkerUnhandledCapacity           number of unhandled tasks allowed in the in-order linker scheduler
  * @param linkedEventIntakeSchedulerType           the linked event intake scheduler type
  * @param linkedEventIntakeUnhandledCapacity       number of unhandled tasks allowed in the linked event intake scheduler
+ * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
+ * @param signedStateFileManagerUnhandledCapacity  number of unhandled tasks allowed in the signed state file manager scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -49,7 +52,9 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") String inOrderLinkerSchedulerType,
         @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") String linkedEventIntakeSchedulerType,
-        @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity) {
+        @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String signedStateFileManagerSchedulerType,
+        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity) {
 
     /**
      * Get the internal event validator scheduler type
@@ -103,5 +108,15 @@ public record PlatformSchedulersConfig(
      */
     public TaskSchedulerType getLinkedEventIntakeSchedulerType() {
         return TaskSchedulerType.valueOf(linkedEventIntakeSchedulerType);
+    }
+
+    /**
+     * Get the signed state file manager scheduler type
+     *
+     * @return the signed state file manager scheduler type
+     */
+    @NonNull
+    public TaskSchedulerType getSignedStateFileManagerSchedulerType() {
+        return TaskSchedulerType.valueOf(signedStateFileManagerSchedulerType);
     }
 }

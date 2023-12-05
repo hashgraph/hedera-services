@@ -16,14 +16,11 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
@@ -33,24 +30,39 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * The wiring for the {@link SignedStateFileManager}
  *
- * @param saveStateToDisk the input wire for saving the state to disk
- * @param dumpStateToDisk the input wire for dumping the state to disk
- * @param outputWire      the output wire
+ * @param saveStateToDisk                         the input wire for saving the state to disk
+ * @param dumpStateToDisk                         the input wire for dumping the state to disk
+ * @param stateSavingResultOutputWire             the output wire for the state saving result
+ * @param oldestMinimumGenerationOnDiskOutputWire the output wire for the oldest minimum generation on disk
+ * @param stateWrittenToDiskOutputWire            the output wire for the state written to disk action
  */
 public record SignedStateFileManagerWiring(
         @NonNull InputWire<ReservedSignedState> saveStateToDisk,
         @NonNull InputWire<StateDumpRequest> dumpStateToDisk,
-        @NonNull OutputWire<StateSavingResult> outputWire) {
+        @NonNull OutputWire<StateSavingResult> stateSavingResultOutputWire,
+        @NonNull OutputWire<Long> oldestMinimumGenerationOnDiskOutputWire,
+        @NonNull OutputWire<StateWrittenToDiskAction> stateWrittenToDiskOutputWire) {
     /**
-     * Create a new instance of the wiring
+     * Create a new instance of this wiring
      *
-     * @param scheduler the task scheduler
+     * @param scheduler the task scheduler for this wiring
+     * @return the new wiring instance
      */
-    public SignedStateFileManagerWiring(@NonNull final TaskScheduler<StateSavingResult> scheduler) {
-        this(
+    public static SignedStateFileManagerWiring create(@NonNull final TaskScheduler<StateSavingResult> scheduler) {
+        return new SignedStateFileManagerWiring(
                 scheduler.buildInputWire("save state to disk"),
                 scheduler.buildInputWire("dump state to disk"),
-                scheduler.getOutputWire());
+                scheduler.getOutputWire(),
+                scheduler
+                        .getOutputWire()
+                        .buildTransformer(
+                                "extract oldestMinimumGenerationOnDisk",
+                                StateSavingResult::oldestMinimumGenerationOnDisk),
+                scheduler
+                        .getOutputWire()
+                        .buildTransformer(
+                                "to StateWrittenToDiskAction",
+                                ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState())));
     }
 
     /**
@@ -62,41 +74,5 @@ public record SignedStateFileManagerWiring(
         ((BindableInputWire<ReservedSignedState, StateSavingResult>) saveStateToDisk)
                 .bind(signedStateFileManager::saveStateTask);
         ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk).bind(signedStateFileManager::dumpStateTask);
-    }
-
-    /**
-     * Solder the {@link SignedStateFileManager} to the pre-consensus event writer
-     *
-     * @param preconsensusEventWriter the pre-consensus event writer
-     */
-    public void solderPces(@NonNull final PreconsensusEventWriter preconsensusEventWriter) {
-        outputWire
-                .buildTransformer(
-                        "extract oldestMinimumGenerationOnDisk", StateSavingResult::oldestMinimumGenerationOnDisk)
-                .solderTo(
-                        "PCES minimum generation to store",
-                        preconsensusEventWriter::setMinimumGenerationToStoreUninterruptably);
-    }
-
-    /**
-     * Solder the {@link SignedStateFileManager} to the platform status manager
-     *
-     * @param statusManager the platform status manager
-     */
-    public void solderStatusManager(@NonNull final PlatformStatusManager statusManager) {
-        outputWire
-                .buildTransformer(
-                        "to StateWrittenToDiskAction",
-                        ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState()))
-                .solderTo("status manager", statusManager::submitStatusAction);
-    }
-
-    /**
-     * Solder the {@link SignedStateFileManager} to the app communication component
-     *
-     * @param appCommunicationComponent the app communication component
-     */
-    public void solderAppCommunication(@NonNull final AppCommunicationComponent appCommunicationComponent) {
-        outputWire.solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
     }
 }
