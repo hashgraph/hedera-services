@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -126,7 +127,12 @@ public class HtsCallAttempt {
      */
     public @NonNull VerificationStrategy defaultVerificationStrategy() {
         return verificationStrategies.activatingOnlyContractKeysFor(
-                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
+                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations(), UseTopLevelSigs.NO);
+    }
+
+    public @NonNull VerificationStrategy defaultVerificationStrategyWithNoTopLevel() {
+        return verificationStrategies.activatingOnlyContractKeysFor(
+                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations(), UseTopLevelSigs.YES);
     }
 
     /**

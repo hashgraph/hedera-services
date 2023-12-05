@@ -52,12 +52,13 @@ public class VerificationStrategies {
     public VerificationStrategy activatingOnlyContractKeysFor(
             @NonNull final Address sender,
             final boolean requiresDelegatePermission,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final UseTopLevelSigs topLevelSigs) {
         final var contractNum = maybeMissingNumberOf(sender, nativeOperations);
         if (contractNum == MISSING_ENTITY_NUMBER) {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
         }
         return new ActiveContractVerificationStrategy(
-                contractNum, tuweniToPbjBytes(sender), requiresDelegatePermission, UseTopLevelSigs.NO);
+                contractNum, tuweniToPbjBytes(sender), requiresDelegatePermission, topLevelSigs);
     }
 }

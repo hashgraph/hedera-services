@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -27,7 +28,7 @@ import java.util.List;
 /**
  * Exposes the record customizations needed for a HAPI contract call transaction.
  */
-public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
+public interface ContractCallRecordBuilder extends SingleTransactionRecordBuilder, GasFeeRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract call.

@@ -23,6 +23,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -41,7 +43,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public record FullResult(
         @NonNull PrecompiledContract.PrecompileContractResult result,
         long gasRequirement,
-        @Nullable ContractCallRecordBuilder recordBuilder) {
+        @Nullable SingleTransactionRecordBuilder recordBuilder) {
     public FullResult {
         requireNonNull(result);
     }
@@ -70,6 +72,16 @@ public record FullResult(
 
     public static FullResult revertResult(
             @NonNull final ContractCallRecordBuilder recordBuilder, final long gasRequirement) {
+        requireNonNull(recordBuilder);
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.revert(
+                        ReturnTypes.tuweniEncodedRc(recordBuilder.status())),
+                gasRequirement,
+                recordBuilder);
+    }
+
+    public static FullResult revertResult(
+            @NonNull final CryptoCreateRecordBuilder recordBuilder, final long gasRequirement) {
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(

@@ -31,6 +31,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -93,11 +95,21 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             pricedResult = call.execute(frame);
             final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
             if (dispatchedRecordBuilder != null) {
-                dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(
-                        attempt.senderId(),
-                        HTS_CONTRACT_ID,
-                        ConversionUtils.tuweniToPbjBytes(input),
-                        frame.getRemainingGas()));
+                if (dispatchedRecordBuilder instanceof ContractCallRecordBuilder contractCallBuilder) {
+                    contractCallBuilder.contractCallResult(
+                            pricedResult.asResultOfCall(
+                                    attempt.senderId(),
+                                    HTS_CONTRACT_ID,
+                                    ConversionUtils.tuweniToPbjBytes(input),
+                                    frame.getRemainingGas()));
+                } else if (dispatchedRecordBuilder instanceof ContractCreateRecordBuilder contractCreateBuilder) {
+                    contractCreateBuilder.contractCreateResult(
+                            pricedResult.asResultOfCall(
+                                    attempt.senderId(),
+                                    HTS_CONTRACT_ID,
+                                    ConversionUtils.tuweniToPbjBytes(input),
+                                    frame.getRemainingGas()));
+                }
             }
             if (pricedResult.isViewCall()) {
                 final var proxyWorldUpdater = FrameUtils.proxyUpdaterFor(frame);

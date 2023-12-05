@@ -102,7 +102,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(status, MINIMUM_TINYBAR_PRICE), status, false);
+            return gasOnly(revertResult(recordBuilder, MINIMUM_TINYBAR_PRICE), status, false);
         } else {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
