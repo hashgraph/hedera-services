@@ -175,4 +175,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
             case UNSET -> null;
         };
     }
+
+    public long sizeOfAccountState() {
+        return accountState().size();
+    }
 }

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
@@ -35,6 +34,7 @@ import com.swirlds.common.system.status.actions.TimeElapsedAction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,12 +50,12 @@ class PlatformStatusStateMachineTests {
     void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("platformStatus.observingStatusDelay", "5s")
-                .withValue("platformStatus.activeStatusDelay", "10s")
+                .withValue(PlatformStatusConfig_.OBSERVING_STATUS_DELAY, "5s")
+                .withValue(PlatformStatusConfig_.ACTIVE_STATUS_DELAY, "10s")
                 .getOrCreateConfig();
 
         stateMachine = new PlatformStatusStateMachine(
-                time, configuration.getConfigData(PlatformStatusConfig.class), mock(NotificationEngine.class));
+                time, configuration.getConfigData(PlatformStatusConfig.class), mock(Consumer.class));
     }
 
     @Test

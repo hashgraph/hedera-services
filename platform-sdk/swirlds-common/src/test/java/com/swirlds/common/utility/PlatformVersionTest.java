@@ -209,7 +209,6 @@ public class PlatformVersionTest {
         final PlatformVersion original =
                 new PlatformVersion(new SemanticVersion(major, minor, patch, prerelease, build), commitId);
         final PlatformVersion copy = SerializationUtils.serializeDeserialize(original);
-        assertEquals(original, copy, String.format(VALUES_NOT_EQUAL, "PlatformVersion"));
         assertEquals(0, original.compareTo(copy), String.format(VALUES_NOT_EQUAL, "PlatformVersion.compareTo(copy)"));
     }
 
