@@ -3068,6 +3068,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withAllowance(0)))));
     }
 
+    @HapiTest
     private HapiSpec erc20TransferFromSelf() {
         return defaultHapiSpec("erc20TransferFromSelf")
                 .given(

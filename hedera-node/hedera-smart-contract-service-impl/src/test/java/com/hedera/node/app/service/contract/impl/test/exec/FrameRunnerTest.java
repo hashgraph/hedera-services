@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_MAX_REFUND_QUOTIENT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
@@ -56,6 +57,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -89,6 +91,8 @@ class FrameRunnerTest {
 
     @Mock
     private CustomGasCalculator gasCalculator;
+
+    private final AtomicBoolean receiverSigCheckFailed = new AtomicBoolean();
 
     private FrameRunner subject;
 
@@ -161,6 +165,26 @@ class FrameRunnerTest {
     }
 
     @Test
+    void failurePathWorksWithMissingReceiverSigHalt() {
+        final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        givenBaseReceiverSigCheckHaltWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SIGNATURE));
+
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+
+        inOrder.verify(tracer).traceOriginAction(frame);
+        inOrder.verify(contractCreationProcessor).process(frame, tracer);
+        inOrder.verify(messageCallProcessor).process(childFrame, tracer);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
+
+        assertFailureExpectationsWith(frame, result);
+        assertEquals(INVALID_SIGNATURE, result.haltReason());
+        assertNull(result.revertReason());
+    }
+
+    @Test
     void failurePathWorksWithHaltReason() {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
@@ -201,14 +225,19 @@ class FrameRunnerTest {
     }
 
     private void givenBaseSuccessWith(@NonNull final Address receiver) {
-        givenBaseScenarioWithDetails(receiver, true);
+        givenBaseScenarioWithDetails(receiver, true, false);
     }
 
     private void givenBaseFailureWith(@NonNull final Address receiver) {
-        givenBaseScenarioWithDetails(receiver, false);
+        givenBaseScenarioWithDetails(receiver, false, false);
     }
 
-    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean success) {
+    private void givenBaseReceiverSigCheckHaltWith(@NonNull final Address receiver) {
+        givenBaseScenarioWithDetails(receiver, false, true);
+    }
+
+    private void givenBaseScenarioWithDetails(
+            @NonNull final Address receiver, final boolean success, final boolean receiverSigCheckFailure) {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         messageFrameStack.addFirst(frame);
         given(frame.getType()).willReturn(MessageFrame.Type.CONTRACT_CREATION);
@@ -216,6 +245,7 @@ class FrameRunnerTest {
         doAnswer(invocation -> {
                     messageFrameStack.pop();
                     messageFrameStack.push(childFrame);
+                    receiverSigCheckFailed.set(true);
                     return null;
                 })
                 .when(contractCreationProcessor)
@@ -235,6 +265,10 @@ class FrameRunnerTest {
                 .withValue("contracts.maxRefundPercentOfGasLimit", HEDERA_MAX_REFUND_PERCENTAGE)
                 .getOrCreateConfig();
         given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
+        given(frame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE))
+                .willReturn(receiverSigCheckFailed);
+        given(childFrame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE))
+                .willReturn(receiverSigCheckFailed);
         given(frame.getGasPrice()).willReturn(Wei.of(NETWORK_GAS_PRICE));
         if (success) {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
@@ -245,6 +279,7 @@ class FrameRunnerTest {
         }
         given(frame.getRecipientAddress()).willReturn(receiver);
         given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(childFrame.getMessageFrameStack()).willReturn(messageFrameStack);
     }
 
     private long expectedGasUsed(@NonNull final MessageFrame frame) {
