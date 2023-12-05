@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -36,7 +37,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+@HapiTestSuite(isolated = true)
 public class UtilScalePricingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(UtilScalePricingCheck.class);
@@ -54,6 +55,7 @@ public class UtilScalePricingCheck extends HapiSuite {
     }
 
     // Can only be run against an isolated network since it assumes the state begins with 0 NFTs minted
+    @HapiTest
     private HapiSpec nftPriceScalesWithUtilization() {
         final var civilian = "civilian";
         final var maxAllowed = 100;
