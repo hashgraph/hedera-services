@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.config.MetricsConfig_;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Counter;
@@ -100,7 +101,7 @@ class DefaultMetricsTest {
     @BeforeEach
     void setupService() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metrics.metricsUpdatePeriodMillis", 10L)
+                .withValue(MetricsConfig_.METRICS_UPDATE_PERIOD_MILLIS, 10L)
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
@@ -577,7 +578,7 @@ class DefaultMetricsTest {
     void testDisabledUpdater(@Mock final Runnable updater) {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metrics.metricsUpdatePeriodMillis", 0L)
+                .withValue(MetricsConfig_.METRICS_UPDATE_PERIOD_MILLIS, 0L)
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final DefaultMetrics metrics = new DefaultMetrics(NODE_ID, registry, executor, factory, metricsConfig);

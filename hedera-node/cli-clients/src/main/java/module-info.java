@@ -8,10 +8,15 @@ module com.hedera.node.services.cli {
     requires transitive com.swirlds.platform.core;
     requires transitive info.picocli;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.contract.impl;
+    requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.app.spi;
+    requires com.hedera.node.app;
     requires com.hedera.node.hapi;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions;
