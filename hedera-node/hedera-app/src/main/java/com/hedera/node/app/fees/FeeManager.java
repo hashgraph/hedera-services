@@ -63,7 +63,7 @@ public final class FeeManager {
 
     private static final FeeComponents DEFAULT_FEE_COMPONENTS =
             FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
-    private static final FeeData DEFAULT_FEE_DATA = FeeData.newBuilder()
+    public static final FeeData DEFAULT_FEE_DATA = FeeData.newBuilder()
             .networkdata(DEFAULT_FEE_COMPONENTS)
             .nodedata(DEFAULT_FEE_COMPONENTS)
             .servicedata(DEFAULT_FEE_COMPONENTS)
@@ -179,6 +179,9 @@ public final class FeeManager {
         // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that
         // transaction! We will not be able to charge appropriately for it.
         final var feeData = getFeeData(functionality, consensusTime, subType);
+        if (DEFAULT_FEE_DATA == feeData) {
+            throw new IllegalStateException("No fee data found for transaction type " + functionality);
+        }
 
         // Create the fee calculator
         return new FeeCalculatorImpl(
