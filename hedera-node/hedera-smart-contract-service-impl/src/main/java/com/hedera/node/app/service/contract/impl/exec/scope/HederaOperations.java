@@ -66,7 +66,7 @@ public interface HederaOperations {
     void revert();
 
     /**
-     * Revert child records.
+     * Revert the last child record.
      */
     void revertLastChildRecord();
 

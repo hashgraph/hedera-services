@@ -675,7 +675,7 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * Revert all child records in RecordListBuilder.
+     * Revert the last child record in RecordListBuilder.
      */
     void revertLastChildRecord();
 
