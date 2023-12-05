@@ -15,4 +15,8 @@ contract InternalCallee {
     function revertWithoutRevertReason() public pure returns (bool) {
         revert();
     }
+
+    function selfdestruct(address payable _addr) external {
+        selfdestruct(_addr);
+    }
 }

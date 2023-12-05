@@ -104,7 +104,6 @@ public class AccountStore {
             loadContract(id);
             return true;
         } catch (InvalidTransactionException e) {
-            validateFalse(e.getResponseCode() == CONTRACT_DELETED, CONTRACT_DELETED);
             return false;
         }
     }
