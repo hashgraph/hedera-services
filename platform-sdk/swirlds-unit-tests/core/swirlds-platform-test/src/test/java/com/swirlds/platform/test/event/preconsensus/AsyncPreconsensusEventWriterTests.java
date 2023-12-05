@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.TransactionConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -50,6 +51,7 @@ import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
@@ -236,12 +238,12 @@ class AsyncPreconsensusEventWriterTests {
 
     private PlatformContext buildContext() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .withValue("transaction.maxTransactionBytesPerEvent", Integer.MAX_VALUE)
-                .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
-                .withValue("transaction.transactionMaxBytes", Integer.MAX_VALUE)
-                .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
+                .withValue(PreconsensusEventStreamConfig_.DATABASE_DIRECTORY, testDirectory)
+                .withValue(PreconsensusEventStreamConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+                .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, Integer.MAX_VALUE)
+                .withValue(TransactionConfig_.MAX_TRANSACTION_COUNT_PER_EVENT, Integer.MAX_VALUE)
+                .withValue(TransactionConfig_.TRANSACTION_MAX_BYTES, Integer.MAX_VALUE)
+                .withValue(TransactionConfig_.MAX_ADDRESS_SIZE_ALLOWED, Integer.MAX_VALUE)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();

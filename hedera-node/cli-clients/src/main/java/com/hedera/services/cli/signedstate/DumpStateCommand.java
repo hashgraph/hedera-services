@@ -66,6 +66,16 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum WithMigration {
+        NO,
+        YES
+    }
+
+    enum WithValidation {
+        NO,
+        YES
+    }
+
     enum OmitContents {
         NO,
         YES
@@ -139,7 +149,16 @@ public class DumpStateCommand extends AbstractCommand {
             @Option(
                             names = {"-k", "--slots"},
                             description = "Emit the slot/value pairs for each contract's store")
-                    final boolean withSlots) {
+                    final boolean withSlots,
+            @Option(
+                            names = {"--migrate"},
+                            description =
+                                    "migrate from mono-service representation to modular-service representation (before dump)")
+                    final boolean withMigration,
+            @Option(
+                            names = {"--validate-migration"},
+                            description = "validate the migrated contract store")
+                    final boolean withValidationOfMigration) {
         Objects.requireNonNull(storePath);
         init();
         System.out.println("=== contract stores ===");
@@ -148,6 +167,8 @@ public class DumpStateCommand extends AbstractCommand {
                 storePath,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 withSlots ? WithSlots.YES : WithSlots.NO,
+                withMigration ? WithMigration.YES : WithMigration.NO,
+                withValidationOfMigration ? WithValidation.YES : WithValidation.NO,
                 parent.verbosity);
         finish();
     }

@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -338,8 +339,8 @@ class StateManagementComponentTests {
     @NonNull
     private TestConfigBuilder defaultConfigBuilder() {
         return new TestConfigBuilder()
-                .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
-                .withValue("state.saveStatePeriod", 1);
+                .withValue(StateConfig_.ROUNDS_TO_KEEP_FOR_SIGNING, roundsToKeepForSigning)
+                .withValue(StateConfig_.SAVE_STATE_PERIOD, 1);
     }
 
     @NonNull

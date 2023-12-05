@@ -32,6 +32,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -108,8 +109,8 @@ class StartupStateUtilsTests {
     @NonNull
     private PlatformContext buildContext(final boolean deleteInvalidStateFiles) {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .withValue("state.deleteInvalidStateFiles", deleteInvalidStateFiles)
+                .withValue(StateConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
                 .getOrCreateConfig();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
