@@ -21,6 +21,8 @@ plugins {
 }
 
 mainModuleInfo {
+    annotationProcessor("com.swirlds.config.processor")
+
     runtimeOnly("resource.loader")
     runtimeOnly("com.sun.jna")
 }
@@ -30,7 +32,6 @@ testModuleInfo {
     requires("com.swirlds.test.framework")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.config.extensions")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

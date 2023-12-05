@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
@@ -84,6 +86,8 @@ public class CryptoDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
+    // In this transactionFee is not set in mono-service record, because it fails in node due diligence.
+    // But it feels right to set it. So setting this HIGHLY_NONDETERMINISTIC_TRANSACTION_FEES
     private HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
@@ -93,7 +97,7 @@ public class CryptoDeleteSuite extends HapiSuite {
         String SUBMITTING_NODE_PRE_TRANSFER = "submittingNodePreTransfer";
         String SUBMITTING_NODE_AFTER_BALANCE_LOAD = "submittingNodeAfterBalanceLoad";
 
-        return defaultHapiSpec("DeletedAccountCannotBePayer")
+        return defaultHapiSpec("DeletedAccountCannotBePayer", FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate(ACCOUNT_TO_BE_DELETED),
                         cryptoCreate(BENEFICIARY_ACCOUNT).balance(0L))
@@ -186,7 +190,7 @@ public class CryptoDeleteSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec cannotDeleteAlreadyDeletedAccount() {
-        return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount")
+        return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED), cryptoCreate(TRANSFER_ACCOUNT))
                 .when(cryptoDelete(ACCOUNT_TO_BE_DELETED)
                         .transfer(TRANSFER_ACCOUNT)
@@ -208,7 +212,7 @@ public class CryptoDeleteSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec cannotDeleteTreasuryAccount() {
-        return defaultHapiSpec("CannotDeleteTreasuryAccount")
+        return defaultHapiSpec("CannotDeleteTreasuryAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TREASURY), cryptoCreate(TRANSFER_ACCOUNT))
                 .when(tokenCreate("toBeTransferred")
                         .initialSupply(TOKEN_INITIAL_SUPPLY)
