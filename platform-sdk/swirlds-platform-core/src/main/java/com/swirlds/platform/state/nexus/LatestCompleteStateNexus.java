@@ -21,7 +21,6 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -69,6 +68,5 @@ public class LatestCompleteStateNexus extends SignedStateNexus {
             // Yes, so remove it
             clear();
         }
-
     }
 }
