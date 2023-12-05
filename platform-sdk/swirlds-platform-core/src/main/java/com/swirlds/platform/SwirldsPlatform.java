@@ -255,6 +255,7 @@ public class SwirldsPlatform implements Platform {
      * new state is created, before it is hashed.
      */
     private final SignedStateNexus latestImmutableState = new SignedStateNexus();
+
     private final QueueThread<GossipEvent> intakeQueue;
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
@@ -548,8 +549,7 @@ public class SwirldsPlatform implements Platform {
                 newLatestCompleteStateConsumer,
                 this::handleFatalError,
                 platformStatusManager,
-                savedStateController
-        );
+                savedStateController);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -1347,7 +1347,7 @@ public class SwirldsPlatform implements Platform {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     initialMinimumGenerationNonAncient,
-                    ()->latestImmutableState.getState("PCES replay"));
+                    () -> latestImmutableState.getState("PCES replay"));
         }
 
         consensusHashManager.signalEndOfPreconsensusReplay();

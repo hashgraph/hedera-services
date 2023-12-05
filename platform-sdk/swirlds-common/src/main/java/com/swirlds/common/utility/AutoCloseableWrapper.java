@@ -64,6 +64,6 @@ public class AutoCloseableWrapper<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public static <T> AutoCloseableWrapper<T> empty() {
-    	return (AutoCloseableWrapper<T>) EMPTY;
+        return (AutoCloseableWrapper<T>) EMPTY;
     }
 }

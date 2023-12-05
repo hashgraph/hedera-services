@@ -19,14 +19,9 @@ package com.swirlds.platform.components.state;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.platform.state.signed.StateToDiskReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -41,9 +36,7 @@ import java.util.List;
  * </ul>
  */
 public interface StateManagementComponent
-        extends PlatformComponent,
-                SignedStateToLoadConsumer,
-                NewSignedStateFromTransactionsConsumer {
+        extends PlatformComponent, SignedStateToLoadConsumer, NewSignedStateFromTransactionsConsumer {
 
     /**
      * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array
