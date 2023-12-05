@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import com.swirlds.common.config.EventConfig;
-import com.swirlds.common.config.EventConfig_;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
@@ -32,6 +30,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;

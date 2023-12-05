@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -33,6 +32,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;

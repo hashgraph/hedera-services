@@ -17,7 +17,6 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -26,6 +25,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;

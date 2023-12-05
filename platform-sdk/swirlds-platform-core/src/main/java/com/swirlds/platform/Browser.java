@@ -30,7 +30,6 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
-import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.startup.CommandLineArgs;
@@ -46,6 +45,7 @@ import com.swirlds.gui.model.GuiModel;
 import com.swirlds.gui.model.InfoApp;
 import com.swirlds.gui.model.InfoMember;
 import com.swirlds.gui.model.InfoSwirld;
+import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import edu.umd.cs.findbugs.annotations.NonNull;
