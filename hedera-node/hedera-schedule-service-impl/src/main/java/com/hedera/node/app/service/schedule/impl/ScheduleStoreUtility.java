@@ -45,6 +45,8 @@ final class ScheduleStoreUtility {
         if (scheduleToHash.scheduledTransaction() != null) {
             addToHash(hasher, scheduleToHash.scheduledTransaction());
         }
+        // @todo('9447') This should be modified to use calculated expiration once
+        //               differential testing completes
         hasher.putLong(scheduleToHash.providedExpirationSecond());
         hasher.putBoolean(scheduleToHash.waitForExpiry());
         return hasher.hash().toString();

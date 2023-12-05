@@ -162,16 +162,33 @@ public class SignedState implements SignedStateInfo {
      * @param freezeState     specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
-            @NonNull PlatformContext platformContext,
+            @NonNull final PlatformContext platformContext,
             @NonNull final State state,
-            @NonNull String reason,
+            @NonNull final String reason,
+            final boolean freezeState) {
+        this(platformContext.getConfiguration().getConfigData(StateConfig.class), state, reason, freezeState);
+    }
+
+    /**
+     * Instantiate a signed state.
+     *
+     * @param stateConfig state configuration
+     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
+     *                    with received rounds up through the round this SignedState represents
+     * @param reason      a short description of why this SignedState is being created. Each location where a
+     *                    SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
+     * @param freezeState specifies whether this state is the last one saved before the freeze
+     */
+    public SignedState(
+            @NonNull final StateConfig stateConfig,
+            @NonNull final State state,
+            @NonNull final String reason,
             final boolean freezeState) {
 
         state.reserve();
 
         this.state = state;
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
@@ -279,7 +296,7 @@ public class SignedState implements SignedStateInfo {
      * @return a wrapper that holds the state and the reservation
      */
     public @NonNull ReservedSignedState reserve(@NonNull final String reason) {
-        return new ReservedSignedState(this, reason);
+        return ReservedSignedState.createAndReserve(this, reason);
     }
 
     /**
@@ -290,6 +307,19 @@ public class SignedState implements SignedStateInfo {
             history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
         }
         reservations.reserve();
+    }
+
+    /**
+     * Try to increment the reservation count.
+     */
+    boolean tryIncrementReservationCount(@NonNull final String reason, final long reservationId) {
+        if (!reservations.tryReserve()) {
+            return false;
+        }
+        if (history != null) {
+            history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        }
+        return true;
     }
 
     /**

@@ -162,6 +162,17 @@ public class ConversionUtils {
     }
 
     /**
+     * Given an account, returns its "priority" address as a Besu address.
+     *
+     * @param account the account
+     * @return the priority address
+     */
+    public static Address priorityAddressOf(@NonNull final Account account) {
+        requireNonNull(account);
+        return Address.wrap(Bytes.wrap(explicitAddressOf(account)));
+    }
+
+    /**
      * Given an account, returns its "priority" address as a headlong address.
      *
      * @param account the account
@@ -438,7 +449,8 @@ public class ConversionUtils {
      */
     public static void throwIfUnsuccessful(@NonNull final ResponseCodeEnum status) {
         if (status != SUCCESS) {
-            throw new HandleException(status);
+            // We don't want to rollback the root updater here since it contains gas charges
+            throw new HandleException(status, HandleException.ShouldRollbackStack.NO);
         }
     }
 

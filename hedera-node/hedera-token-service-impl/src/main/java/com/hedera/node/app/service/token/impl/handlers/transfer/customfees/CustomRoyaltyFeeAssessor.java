@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -73,7 +74,7 @@ public class CustomRoyaltyFeeAssessor {
         }
 
         // get all hbar and fungible token changes from given input to the current level
-        final var exchangedValue = getFungibleCredits(result, tokenId, sender);
+        final var exchangedValue = getFungibleCredits(result, sender);
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.ROYALTY_FEE)) {
@@ -86,6 +87,10 @@ public class CustomRoyaltyFeeAssessor {
                 if (!royaltyFee.hasFallbackFee()) {
                     continue;
                 }
+                // Skip if the receiver has already paid the fallback fee for this token
+                if (result.getRoyaltiesPaid().contains(Pair.of(receiver, tokenId))) {
+                    continue;
+                }
                 final var fallback = royaltyFee.fallbackFeeOrThrow();
                 final var fallbackFee = asFixedFee(
                         fallback.amount(), fallback.denominatingTokenId(), collector, fee.allCollectorsAreExempt());
@@ -95,16 +100,15 @@ public class CustomRoyaltyFeeAssessor {
                     chargeRoyalty(exchangedValue, feeMeta, fee, result);
                 }
             }
-
-            // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-            // paid it for this token
-            if (exchangedValue.isEmpty()) {
-                // Receiver pays fallback fees
-                result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
-            } else {
-                // Sender effectively pays percent royalties
-                result.addToRoyaltiesPaid(Pair.of(sender, tokenId));
-            }
+        }
+        // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
+        // paid it for this token
+        if (exchangedValue.isEmpty()) {
+            // Receiver pays fallback fees
+            result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
+        } else {
+            // Sender effectively pays percent royalties
+            result.addToRoyaltiesPaid(Pair.of(sender, tokenId));
         }
     }
 
@@ -130,34 +134,38 @@ public class CustomRoyaltyFeeAssessor {
             final var royaltySpec = fee.royaltyFeeOrThrow();
             final var feeCollector = fee.feeCollectorAccountIdOrThrow();
 
-            final var royalty = safeFractionMultiply(
-                    royaltySpec.exchangeValueFraction().numerator(),
-                    royaltySpec.exchangeValueFraction().denominator(),
-                    amount);
-            validateTrue(royalty <= amount, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+            try {
+                final var royalty = safeFractionMultiply(
+                        royaltySpec.exchangeValueFraction().numerator(),
+                        royaltySpec.exchangeValueFraction().denominator(),
+                        amount);
+                validateTrue(royalty <= amount, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
-            /* The id of the charging token is only used here to avoid recursively charging
-            on fees charged in the units of their denominating token; but this is a credit,
-            hence the id is irrelevant, and we can use null. */
-            if (denom == null) {
-                // exchange is for hbar
-                adjustHbarFees(result, account, fee);
-            } else {
-                // exchange is for token
-                adjustHtsFees(result, account, feeCollector, feeMeta, royalty, denom);
-            }
+                /* The id of the charging token is only used here to avoid recursively charging
+                on fees charged in the units of their denominating token; but this is a credit,
+                hence the id is irrelevant, and we can use null. */
+                if (denom == null) {
+                    // exchange is for hbar
+                    adjustHbarFees(result, account, fee);
+                } else {
+                    // exchange is for token
+                    adjustHtsFees(result, account, feeCollector, feeMeta, royalty, denom);
+                }
 
-            final var assessedCustomFeeBuilder = AssessedCustomFee.newBuilder()
-                    .amount(royalty)
-                    .feeCollectorAccountId(feeCollector)
-                    .effectivePayerAccountId(account);
-            if (denom == null) {
-                // exchange is for hbar
-                result.addAssessedCustomFee(assessedCustomFeeBuilder.build());
-            } else {
-                // exchange is for token
-                result.addAssessedCustomFee(
-                        assessedCustomFeeBuilder.tokenId(denom).build());
+                final var assessedCustomFeeBuilder = AssessedCustomFee.newBuilder()
+                        .amount(royalty)
+                        .feeCollectorAccountId(feeCollector)
+                        .effectivePayerAccountId(account);
+                if (denom == null) {
+                    // exchange is for hbar
+                    result.addAssessedCustomFee(assessedCustomFeeBuilder.build());
+                } else {
+                    // exchange is for token
+                    result.addAssessedCustomFee(
+                            assessedCustomFeeBuilder.tokenId(denom).build());
+                }
+            } catch (final ArithmeticException e) {
+                throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             }
         }
     }

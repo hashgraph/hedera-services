@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.Instant;
@@ -39,10 +39,12 @@ class HeartbeatSchedulerTests {
         final FakeTime fakeTime = new FakeTime();
         final WiringModel model = WiringModel.create(platformContext, fakeTime);
 
-        final OutputWire<Instant> outputWire = model.buildHeartbeatWire(100);
+        final TaskScheduler<Void> scheduler =
+                model.schedulerBuilder("test").build().cast();
+        final Bindable<Instant, Void> heartbeatBindable = scheduler.buildHeartbeatInputWire("heartbeat", 100);
 
         final AtomicLong counter = new AtomicLong(0);
-        outputWire.solderTo("counter", (time) -> {
+        heartbeatBindable.bind((time) -> {
             assertEquals(time, fakeTime.now());
             counter.incrementAndGet();
         });
@@ -64,10 +66,13 @@ class HeartbeatSchedulerTests {
         final FakeTime fakeTime = new FakeTime();
         final WiringModel model = WiringModel.create(platformContext, fakeTime);
 
-        final OutputWire<Instant> outputWire = model.buildHeartbeatWire(Duration.ofMillis(10));
+        final TaskScheduler<Void> scheduler =
+                model.schedulerBuilder("test").build().cast();
+        final Bindable<Instant, Void> heartbeatBindable =
+                scheduler.buildHeartbeatInputWire("heartbeat", Duration.ofMillis(10));
 
         final AtomicLong counter = new AtomicLong(0);
-        outputWire.solderTo("counter", (time) -> {
+        heartbeatBindable.bind((time) -> {
             assertEquals(time, fakeTime.now());
             counter.incrementAndGet();
         });
@@ -89,24 +94,28 @@ class HeartbeatSchedulerTests {
         final FakeTime fakeTime = new FakeTime();
         final WiringModel model = WiringModel.create(platformContext, fakeTime);
 
-        final OutputWire<Instant> outputWireA = model.buildHeartbeatWire(100);
-        final OutputWire<Instant> outputWireB = model.buildHeartbeatWire(Duration.ofMillis(5));
-        final OutputWire<Instant> outputWireC = model.buildHeartbeatWire(Duration.ofMillis(50));
+        final TaskScheduler<Void> scheduler =
+                model.schedulerBuilder("test").build().cast();
+        final Bindable<Instant, Void> heartbeatBindableA = scheduler.buildHeartbeatInputWire("heartbeatA", 100);
+        final Bindable<Instant, Void> heartbeatBindableB =
+                scheduler.buildHeartbeatInputWire("heartbeatB", Duration.ofMillis(5));
+        final Bindable<Instant, Void> heartbeatBindableC =
+                scheduler.buildHeartbeatInputWire("heartbeatC", Duration.ofMillis(50));
 
         final AtomicLong counterA = new AtomicLong(0);
-        outputWireA.solderTo("counterA", (time) -> {
+        heartbeatBindableA.bind((time) -> {
             assertEquals(time, fakeTime.now());
             counterA.incrementAndGet();
         });
 
         final AtomicLong counterB = new AtomicLong(0);
-        outputWireB.solderTo("counterB", (time) -> {
+        heartbeatBindableB.bind((time) -> {
             assertEquals(time, fakeTime.now());
             counterB.incrementAndGet();
         });
 
         final AtomicLong counterC = new AtomicLong(0);
-        outputWireC.solderTo("counterC", (time) -> {
+        heartbeatBindableC.bind((time) -> {
             assertEquals(time, fakeTime.now());
             counterC.incrementAndGet();
         });

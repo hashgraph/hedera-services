@@ -110,7 +110,7 @@ public interface TokenServiceApi {
      * Finalizes a hollow account as a contract.
      *
      */
-    void finalizeHollowAccountAsContract(@NonNull AccountID hollowAccountId, long initialNonce);
+    void finalizeHollowAccountAsContract(@NonNull AccountID hollowAccountId);
 
     /**
      * Deletes the contract with the given id.
