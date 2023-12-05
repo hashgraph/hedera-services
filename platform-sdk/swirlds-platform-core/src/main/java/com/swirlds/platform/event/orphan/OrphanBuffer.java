@@ -27,6 +27,7 @@ import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -292,5 +293,19 @@ public class OrphanBuffer {
     @NonNull
     public Integer getCurrentOrphanCount() {
         return currentOrphanCount;
+    }
+
+    /**
+     * Clears the orphan buffer.
+     *
+     * @param ignored ignored trigger object
+     */
+    public void clear(@NonNull final ClearTrigger ignored) {
+        eventsWithParents.clear();
+
+        // clearing this map here is safe, under the assumption that the intake event counter will be reset
+        // before gossip starts back up
+        missingParentMap.clear();
+        currentOrphanCount = 0;
     }
 }
