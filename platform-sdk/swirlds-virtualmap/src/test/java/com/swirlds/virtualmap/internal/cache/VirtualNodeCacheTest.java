@@ -38,7 +38,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1996,7 +1996,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
      * We create new caches along the way. We don't drop any of them until the end.
      */
     @Test
-    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache"), @Tag(TestTypeTags.HAMMER)})
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache"), @Tag(TestQualifierTags.HAMMER)})
     @DisplayName("Build a tree step by step")
     void buildATree() {
         // ROUND 0: Add A, B, and C. First add A, then B, then C. When we add C, we have to move A.

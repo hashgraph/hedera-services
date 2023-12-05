@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import com.hedera.hashgraph.gradlebuild.service.TaskLockService
+
 plugins {
     id("java-library")
     id("com.hedera.hashgraph.java")
@@ -28,3 +30,36 @@ javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-cor
 configurations.getByName("mainRuntimeClasspath") {
     extendsFrom(configurations.getByName("internal"))
 }
+
+// All below configuration should eventually be removed once all 'sdk' tests in 'src/test'
+// are able to run in parallel without restrictions.
+tasks.test {
+    options {
+        this as JUnitPlatformOptions
+        excludeTags("TIMING_SENSITIVE")
+    }
+}
+
+val timingSensitive =
+    tasks.register<Test>("timingSensitive") {
+        // Separate target (task) for timingSensitive tests.
+        // Tests should eventually be fixed or moved to 'hammer'.
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+
+        usesService(
+            gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
+                maxParallelUsages = 1
+            }
+        )
+        mustRunAfter(
+            rootProject.subprojects
+                .filter { File(it.projectDir, "src/test").exists() }
+                .map { "${it.path}:test" }
+        )
+
+        useJUnitPlatform { includeTags("TIMING_SENSITIVE") }
+        maxHeapSize = "4096m"
+    }
+
+tasks.check { dependsOn(timingSensitive) }

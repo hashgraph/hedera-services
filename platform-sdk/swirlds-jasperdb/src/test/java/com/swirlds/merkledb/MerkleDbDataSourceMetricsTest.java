@@ -32,7 +32,6 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
@@ -79,7 +78,6 @@ class MerkleDbDataSourceMetricsTest {
                 1L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected only 1 db");
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     void createInternalNodeHashesAndCheckMemoryConsumption() throws IOException {
@@ -122,7 +120,6 @@ class MerkleDbDataSourceMetricsTest {
         assertNoMemoryForLeafAndKeyToPathLists();
     }
 
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Test
     void createAndCheckLeaves() throws IOException {

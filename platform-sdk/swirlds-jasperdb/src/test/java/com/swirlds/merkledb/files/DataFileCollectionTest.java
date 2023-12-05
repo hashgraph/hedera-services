@@ -21,7 +21,7 @@ import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedU
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.checkData;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.getVariableSizeDataForI;
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,7 +76,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
-@Tag(ISOLATED)
+@Tag(TIMING_SENSITIVE)
 @SuppressWarnings("SameParameterValue")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DataFileCollectionTest {

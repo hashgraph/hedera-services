@@ -21,7 +21,7 @@ import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_F
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -403,7 +403,6 @@ class VirtualMapTests extends VirtualTestBase {
     // FUTURE WORK Test that a deleted node's value cannot be subsequently read.
 
     //    @Test
-    //    @Tag(TestTypeTags.FUNCTIONAL)
     //    @Tag(TestComponentTags.FCMAP)
     //    @DisplayName("Remove all leaves by always removing the first leaf")
     //    void removeFirstLeaf() {
@@ -440,7 +439,6 @@ class VirtualMapTests extends VirtualTestBase {
     //    }
 
     //    @Test
-    //    @Tag(TestTypeTags.FUNCTIONAL)
     //    @Tag(TestComponentTags.FCMAP)
     //    @DisplayName("Remove a middle leaf")
     //    void removeMiddleLeaf() {
@@ -578,7 +576,6 @@ class VirtualMapTests extends VirtualTestBase {
      **/
 
     //    @Test
-    //    @Tag(TestTypeTags.FUNCTIONAL)
     //    @Tag(TestComponentTags.FCMAP)
     //    @DisplayName("Newly created maps have null hashes for everything")
     //    void nullHashesOnNewMap() throws ExecutionException, InterruptedException {
@@ -823,7 +820,7 @@ class VirtualMapTests extends VirtualTestBase {
      * result in the detached state having a data source.
      */
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     void canFlushDetachedStateForStateSaving() throws InterruptedException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.put(A_KEY, APPLE);
@@ -870,7 +867,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Tests nodeCacheSizeB metric")
     void testNodeCacheSizeMetric() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -930,7 +927,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Tests vMapFlushes metric")
     void testFlushCount() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -994,7 +991,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("A copied map is serializable and then deserializable")
     void testExternalSerializationAndDeserialization() throws IOException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();

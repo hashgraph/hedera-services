@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.ADDED;
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.REMOVED;
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -598,7 +598,7 @@ class DefaultMetricsTest {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     void testUpdaterAddedAfterStart(@Mock final Runnable updater) {
         // given
         final ScheduledExecutorService executor1 = Executors.newSingleThreadScheduledExecutor();

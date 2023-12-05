@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
 public class MTModifyTest {
@@ -33,7 +32,7 @@ public class MTModifyTest {
     private static final Random rand = new Random();
 
     @Test
-    @Tags({@Tag(TestTypeTags.HAMMER)})
+    @Tag(TestQualifierTags.HAMMER)
     public void mtModifyTest() throws Exception {
         VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>();
         final int maxKey = 100;

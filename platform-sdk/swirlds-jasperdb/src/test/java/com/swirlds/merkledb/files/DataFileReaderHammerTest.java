@@ -24,7 +24,6 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -41,14 +40,13 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
 public class DataFileReaderHammerTest {
 
     @Test
     @DisplayName("Test DataFileReader with interrupts")
-    @Tags({@Tag(TestTypeTags.HAMMER), @Tag(TestQualifierTags.TIME_CONSUMING)})
+    @Tag(TestQualifierTags.HAMMER)
     void interruptedReadsHammerTest() throws Exception {
         final int fileSize = 10_000_000;
         final int itemCount = 1_000;

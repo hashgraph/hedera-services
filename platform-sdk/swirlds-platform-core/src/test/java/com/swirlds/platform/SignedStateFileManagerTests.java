@@ -23,7 +23,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateF
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -88,7 +88,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("SignedStateFileManager Tests")
-@Tag(ISOLATED)
+@Tag(TIMING_SENSITIVE)
 class SignedStateFileManagerTests {
 
     private static final NodeId SELF_ID = new NodeId(1234);

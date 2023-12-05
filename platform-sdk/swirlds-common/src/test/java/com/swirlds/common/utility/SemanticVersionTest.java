@@ -26,7 +26,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -44,7 +43,6 @@ public class SemanticVersionTest {
             "Expected %s to throw %s, but no exception of the correct type was " + "thrown";
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testValidSemanticVersionParsing(
@@ -72,7 +70,6 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("invalidVersionSupplier")
     void testInvalidSemanticVersionParsing(
@@ -92,7 +89,6 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testSemanticVersionToString(
@@ -108,7 +104,6 @@ public class SemanticVersionTest {
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @MethodSource("validVersionSupplier")
     void testSerialization(

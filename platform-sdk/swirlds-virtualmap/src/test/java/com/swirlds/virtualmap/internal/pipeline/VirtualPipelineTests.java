@@ -18,7 +18,7 @@ package com.swirlds.virtualmap.internal.pipeline;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +43,6 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -266,9 +265,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("registerCopy rejects nulls")
     void registerCopyRejectsNull() {
         final DummyVirtualRoot root = new DummyVirtualRoot("registerCopyRejectsNull");
@@ -286,7 +284,6 @@ class VirtualPipelineTests {
      */
     @ParameterizedTest
     @CsvSource({"true,false", "false,true", "true,true"})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Ordered Release and/or Detach")
@@ -314,7 +311,6 @@ class VirtualPipelineTests {
      */
     @ParameterizedTest
     @CsvSource({"true,false", "false,true", "true,true"})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Random Release")
@@ -348,9 +344,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Reject Immutable Registration")
     void rejectImmutableRegistration() throws InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -369,7 +364,6 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Random Release Pre Hash")
@@ -421,9 +415,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Terminate waits for jobs to complete")
     void terminateWaitsForJobs() {
         final SlowVirtualRoot root = new SlowVirtualRoot("terminateWaitsForJobs");
@@ -525,9 +518,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Datasource is closed after the last copy is destroyed")
     void dataSourceClosedAfterLastCopyDestroyed() throws InterruptedException {
         // Create 10 copies. Copy 3, 6, and 9 are flush eligible.
@@ -552,9 +544,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Datasource is closed when pipeline is terminated")
     void dataSourceClosedWhenPipelineTerminates() throws InterruptedException {
         // Create 10 copies. Copy 3, 6, and 9 are flush eligible.
@@ -576,9 +567,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Datasource is closed when pipeline terminates due to error")
     void dataSourceClosedWhenPipelineTerminatesDueToError() throws InterruptedException {
         // Create 10 copies. Let's them all be flush eligible for simplicity in the test
@@ -651,9 +641,8 @@ class VirtualPipelineTests {
     }
 
     @ParameterizedTest
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @ValueSource(ints = {11, 50, 99, 100, 500, 1000, 1111})
     @DisplayName("Size based flushes")
     public void sizeBasedFlushes(int copyCount) throws InterruptedException {
@@ -685,9 +674,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Small copies are never flushed")
     void smallCopiesAreNeverFlushed() throws InterruptedException {
         final int copyCount = 1000;
@@ -716,9 +704,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Undestroyed Copy Blocks Flushes")
     void undestroyedCopyBlocksFlushes() throws InterruptedException {
         final int copyCount = 10;
@@ -752,9 +739,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Undestroyed Detached Copy Does Not Block")
     void undestroyedDetachedCopyDoesNotBlock() throws InterruptedException {
         final int copyCount = 10;
@@ -785,9 +771,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Merge Release Race")
     void mergeReleaseRace() throws InterruptedException {
         final int copyCount = 10;
@@ -847,7 +832,6 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Flush Throttle")
     void flushThrottle() throws InterruptedException {
@@ -931,7 +915,7 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Get same copy hash in multiple threads")
     void concurrentHashing() throws InterruptedException {
         final int NUM_COPIES = 100;
@@ -952,9 +936,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     void pipelineSizeStatTest() throws Exception {
         final int copiesCount = 100;
         final List<DummyVirtualRoot> copies = setupCopies(copiesCount, i -> false);
@@ -982,9 +965,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     void flushBacklogStatTest() throws Exception {
         final List<DummyVirtualRoot> copies = setupCopies(100, i -> (i > 0) && (i % 30 == 0));
         assertIntMetricValue("vmap_lifecycle_flushBacklogSize_VirtualPipelineTests", 3);
@@ -1005,9 +987,8 @@ class VirtualPipelineTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     void flushCountStatTest() throws Exception {
         final List<DummyVirtualRoot> copies = setupCopies(81, i -> (i > 0) && (i % 20 == 0));
         assertIntMetricValue("vmap_lifecycle_flushCount_VirtualPipelineTests", 0);

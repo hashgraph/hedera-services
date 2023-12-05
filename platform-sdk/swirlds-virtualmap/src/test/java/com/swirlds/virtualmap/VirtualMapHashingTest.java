@@ -30,7 +30,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.util.concurrent.ExecutionException;
@@ -48,7 +47,6 @@ class VirtualMapHashingTest {
     private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Hash Empty Map")
     void hashEmptyMap() {
@@ -62,7 +60,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Hash Map With One Entry")
     void hashMapWithOneEntry() {
@@ -78,7 +75,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Hash Map With Many Entries")
     void hashMapWithManyEntries() {
@@ -109,7 +105,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Embedded At Root Sync")
     void embeddedAtRootSync() {
@@ -137,7 +132,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Embedded At Root Async")
     void embeddedAtRootAsync() throws ExecutionException, InterruptedException {
@@ -165,7 +159,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Embedded In Tree Sync")
     void embeddedInTreeSync() {
@@ -198,7 +191,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Embedded In Tree ASync")
     void embeddedInTreeAsync() throws ExecutionException, InterruptedException {
@@ -231,7 +223,6 @@ class VirtualMapHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Multiple Maps Embedded In Tree Sync")
     void multipleMapsEmbeddedInTreeSync() {
@@ -283,7 +274,6 @@ class VirtualMapHashingTest {
 
     @ParameterizedTest
     @CsvSource({"1,2", "1,3", "1,4", "1,5", "2,3", "2,4", "2,5", "3,4", "3,5", "4,5"})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Delete some tree nodes and hash")
     void hashBugFoundByPTT(long delete1, long delete2) {
@@ -312,7 +302,6 @@ class VirtualMapHashingTest {
     @ValueSource(
             ints = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17, 30, 31, 32, 33, 62, 64, 120, 256, 1000, 1022, 1023, 1024
             })
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Internal node operations are properly synchronized")
     void internalNodeSynchronization(int nKeys) throws ExecutionException, InterruptedException {

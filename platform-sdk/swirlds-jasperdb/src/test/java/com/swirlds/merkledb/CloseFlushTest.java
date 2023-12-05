@@ -19,7 +19,7 @@ package com.swirlds.merkledb;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -45,7 +45,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -72,7 +71,7 @@ public class CloseFlushTest {
     }
 
     @Test
-    @Tags({@Tag(TestTypeTags.HAMMER)})
+    @Tag(TestQualifierTags.HAMMER)
     public void closeFlushTest() throws Exception {
         final int count = 100000;
         final ExecutorService exec = Executors.newSingleThreadExecutor();

@@ -25,7 +25,7 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.utility.StopWatch;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -86,7 +86,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         "20,5,100,300", // Shorter test. If something goes wrong, this usually catches it.
         "20,5,100,600"
     }) // Longer test. For 10 minutes we'll hammer on this thing.
-    @Tag(TestTypeTags.HAMMER)
+    @Tag(TestQualifierTags.HAMMER)
     void testMerge(
             final int chanceOfAddElement,
             final int chanceOfDeleteElement,

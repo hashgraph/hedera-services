@@ -23,8 +23,8 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTime
 import static com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration.UNLIMITED_CAPACITY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,7 +58,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -128,9 +127,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Queue Capacity Test")
     void queueCapacityTest() throws InterruptedException {
 
@@ -161,7 +159,6 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Items Are Handled Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -202,7 +199,6 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @DisplayName("Close Handles All Remaining Items Test")
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -268,7 +264,6 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
     @Tag(TIME_CONSUMING)
     @DisplayName("Clear After Interrupt Test")
@@ -306,9 +301,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Clear Test")
     void clearTest() throws InterruptedException {
 
@@ -360,9 +354,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("UnlimitedCapacityTest Test")
     void unlimitedCapacityTest() throws InterruptedException {
 
@@ -386,9 +379,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("InterruptableTest")
     void interruptableTest() throws InterruptedException {
         final Semaphore lock = new Semaphore(1);
@@ -423,9 +415,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("UninterruptableTest")
     void uninterruptableTest() throws InterruptedException {
         final Semaphore lock = new Semaphore(1);
@@ -459,9 +450,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Blocking Stop Override Test")
     void blockingStopOverrideTest() throws InterruptedException {
         final Semaphore lock = new Semaphore(1);
@@ -497,9 +487,8 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Interruptable Stop Override Test")
     void interruptableStopOverrideTest() throws InterruptedException, ExecutionException, TimeoutException {
         final Semaphore lock = new Semaphore(1);
@@ -531,9 +520,8 @@ class QueueThreadTests {
 
     @ParameterizedTest
     @MethodSource("queueTypes")
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("QueueTest")
     void queueTest(final BlockingQueue<Integer> queue) throws InterruptedException {
 
@@ -556,7 +544,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Seed Test")
     void seedTest() throws InterruptedException {
         final AtomicLong count = new AtomicLong();
@@ -622,7 +610,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Configuration Mutability Test")
     void configurationMutabilityTest() {
         // Build should make the configuration immutable
@@ -647,7 +635,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Single Use Per Config Test")
     void singleUsePerConfigTest() {
 
@@ -685,7 +673,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Copy Test")
     void copyTest() {
         final InterruptableConsumer<Integer> handler = (final Integer x) -> {};
@@ -718,7 +706,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Queue Max/Min Size Metrics Test - With Thread Start")
     void testQueueMaxMinSizeMetricsWithThreadStart() {
         // given
@@ -771,7 +759,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Queue Max/Min Size Metrics Test - Without Thread Start")
     void testQueueMaxMinSizeMetricsWithoutThreadStart() {
         // given
@@ -914,7 +902,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("busyTimeMetricTest() Test")
     @SuppressWarnings("unchecked")
     void busyTimeMetricTest() throws InterruptedException {
@@ -970,7 +958,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("waitUntilNotBusy() Test")
     void waitUntilNotBusyTest() throws InterruptedException {
 
@@ -1023,7 +1011,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Idle Callback Test")
     void idleCallbackTest() throws InterruptedException {
         final AtomicBoolean error = new AtomicBoolean(false);
@@ -1104,7 +1092,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     void batchCompletedCallbackTest() throws InterruptedException {
         final AtomicInteger count = new AtomicInteger(0);
 

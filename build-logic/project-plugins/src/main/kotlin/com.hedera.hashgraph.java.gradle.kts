@@ -18,6 +18,7 @@ import Utils.Companion.versionTxt
 import com.adarshr.gradle.testlogger.theme.ThemeType
 import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
+import com.hedera.hashgraph.gradlebuild.service.TaskLockService
 
 plugins {
     id("java")
@@ -40,8 +41,8 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-        vendor.set(JvmVendorSpec.ADOPTIUM)
+        languageVersion = JavaLanguageVersion.of(21)
+        vendor = JvmVendorSpec.ADOPTIUM
     }
 }
 
@@ -50,17 +51,13 @@ configurations.all {
     resolutionStrategy.preferProjectModules()
 }
 
-val internal: Configuration =
-    configurations.create("internal") {
-        isCanBeConsumed = false
-        isCanBeResolved = false
-    }
+@Suppress("UnstableApiUsage") val internal = configurations.dependencyScope("internal")
 
 dependencies { "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions")) }
 
 sourceSets.all {
-    configurations.getByName(compileClasspathConfigurationName) { extendsFrom(internal) }
-    configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal) }
+    configurations.getByName(compileClasspathConfigurationName) { extendsFrom(internal.get()) }
+    configurations.getByName(runtimeClasspathConfigurationName) { extendsFrom(internal.get()) }
 
     dependencies {
         // For dependencies of annotation processors use versions from 'hedera-dependency-versions',
@@ -96,7 +93,7 @@ val writeGitProperties =
                 .map { it.trim().substring(0, 7) }
         )
 
-        destinationFile.set(layout.buildDirectory.file("generated/git/git.properties"))
+        destinationFile = layout.buildDirectory.file("generated/git/git.properties")
     }
 
 tasks.processResources { from(writeGitProperties) }
@@ -142,97 +139,61 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.withType<Javadoc>().configureEach {
-    options.encoding = "UTF-8"
-    (options as StandardJavadocDocletOptions).tags(
-        "apiNote:a:API Note:",
-        "implSpec:a:Implementation Requirements:",
-        "implNote:a:Implementation Note:"
-    )
+    options {
+        this as StandardJavadocDocletOptions
+        encoding = "UTF-8"
+        tags(
+            "apiNote:a:API Note:",
+            "implSpec:a:Implementation Requirements:",
+            "implNote:a:Implementation Note:"
+        )
+    }
 }
 
 testing {
     @Suppress("UnstableApiUsage")
     suites {
-        // Configure the normal unit test suite to use JUnit Jupiter.
         named<JvmTestSuite>("test") {
-            // Enable JUnit as our test engine
+            // Configure the normal unit test suite to use JUnit Jupiter
             useJUnitJupiter()
             targets.all {
                 testTask {
                     options {
                         this as JUnitPlatformOptions
-                        excludeTags(
-                            "ISOLATED",
-                            "TIME_CONSUMING",
-                            "AT_SCALE",
-                            "REMOTE_ONLY",
-                            "HAMMER",
-                            "PERFORMANCE",
-                            "PROFILING_ONLY",
-                            "INFREQUENT_EXEC_ONLY"
-                        )
+                        excludeTags("HAMMER", "TIME_CONSUMING")
                     }
-                    // Increase the heap size for the unit tests
-                    maxHeapSize = "4096m"
-                    jvmArgs("-XX:ActiveProcessorCount=7")
-                    // Can be useful to set in some cases
-                    // testLogging.showStandardStreams = true
+                    maxHeapSize = "4g"
+                    // Some tests overlap due to using the same temp folders within one project
+                    // maxParallelForks = 4 <- set this, once tests can run in parallel
                 }
             }
+        }
 
-            // Task that is not running in parallel with any 'test' or other 'isolatedTest' task
-            tasks.register<Test>("isolatedTest") {
-                testClassesDirs = sources.output.classesDirs
-                classpath = sources.runtimeClasspath
+        // The following two test tasks are running tests filtered from 'src/test'.
+        // The corresponding tests will be moved into separate source sets and then these become
+        // separate test suites.
+        tasks.register<Test>("hammer") {
+            testClassesDirs = sourceSets.test.get().output.classesDirs
+            classpath = sourceSets.test.get().runtimeClasspath
+            shouldRunAfter(tasks.test)
 
-                useJUnitPlatform { includeTags("ISOLATED") }
-                maxHeapSize = "4096m"
-                jvmArgs("-XX:ActiveProcessorCount=16")
-
-                val allSubProjectsWithTests =
-                    rootProject.subprojects
-                        .filter { File(it.projectDir, "src/test").exists() }
-                        .map { it.name }
-                        .sorted()
-                allSubProjectsWithTests.forEach { mustRunAfter(":$it:test") }
-
-                val myIndex = allSubProjectsWithTests.indexOf(project.name)
-                if (myIndex > 0) {
-                    mustRunAfter(":${allSubProjectsWithTests[myIndex - 1]}:isolatedTest")
+            usesService(
+                gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
+                    maxParallelUsages = 1
                 }
-            }
+            )
 
-            // Add 'targets' (tasks of type Test) for the 'test' test suite: 'hammerTest' and
-            // 'performanceTest'.  Gradle's test suite API does not yet allow to add additional
-            // targets there (although it's planned).
-            // Thus, we use 'tasks.register' and set 'testClassesDirs' and 'sources' to the
-            // information we get from the 'source set' (sources) of this 'test suite'.
-            tasks.register<Test>("hammerTest") {
-                testClassesDirs = sources.output.classesDirs
-                classpath = sources.runtimeClasspath
+            useJUnitPlatform { includeTags("HAMMER") }
+            maxHeapSize = "8g"
+        }
 
-                shouldRunAfter(tasks.test)
+        tasks.register<Test>("timeConsuming") {
+            testClassesDirs = sourceSets.test.get().output.classesDirs
+            classpath = sourceSets.test.get().runtimeClasspath
+            shouldRunAfter(tasks.test)
 
-                useJUnitPlatform { includeTags("HAMMER") }
-                maxHeapSize = "8g"
-                jvmArgs("-XX:ActiveProcessorCount=7")
-            }
-
-            tasks.register<Test>("performanceTest") {
-                testClassesDirs = sources.output.classesDirs
-                classpath = sources.runtimeClasspath
-
-                shouldRunAfter(tasks.test)
-
-                useJUnitPlatform {
-                    includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
-                }
-
-                setForkEvery(1)
-                minHeapSize = "2g"
-                maxHeapSize = "16g"
-                jvmArgs("-XX:ActiveProcessorCount=7", "-XX:+UseZGC")
-            }
+            useJUnitPlatform { includeTags("TIME_CONSUMING") }
+            maxHeapSize = "16g"
         }
     }
 }
@@ -240,17 +201,9 @@ testing {
 tasks.jacocoTestReport {
     // Configure Jacoco so it outputs XML reports (needed by SonarCloud)
     reports {
-        xml.required.set(true)
-        html.required.set(true)
+        xml.required = true
+        html.required = true
     }
-
-    // Pick up results that have been produced by any of the 'Test' tasks,
-    // in this or previous build runs, to combine them in one report
-    val allTestTasks = tasks.withType<Test>()
-    executionData.from(
-        allTestTasks.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile }
-    )
-    mustRunAfter(allTestTasks)
 }
 
 testlogger {
@@ -269,10 +222,7 @@ tasks.assemble {
     dependsOn(tasks.testClasses)
 }
 
-tasks.check {
-    dependsOn(tasks.named("isolatedTest"))
-    dependsOn(tasks.jacocoTestReport)
-}
+tasks.check { dependsOn(tasks.jacocoTestReport) }
 
 // Do not report dependencies from one source set to another as 'required'.
 // In particular, in case of test fixtures, the analysis would suggest to

@@ -27,7 +27,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import java.util.concurrent.ExecutionException;
@@ -47,7 +46,6 @@ class VirtualRootNodeHashingTest {
     //    - check nodes inside the tree
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Hash Empty Root")
     void hashEmptyMap() {
@@ -66,7 +64,6 @@ class VirtualRootNodeHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Hash Root With One Entry")
     void hashMapWithOneEntry() {
@@ -81,7 +78,6 @@ class VirtualRootNodeHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Hash Root With Many Entries")
     void hashMapWithManyEntries() {
@@ -113,7 +109,6 @@ class VirtualRootNodeHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Embedded At Root Sync")
     void embeddedAtRootSync() {
@@ -142,7 +137,6 @@ class VirtualRootNodeHashingTest {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Embedded At Root Async")
     void embeddedAtRootAsync() throws ExecutionException, InterruptedException {
@@ -173,7 +167,6 @@ class VirtualRootNodeHashingTest {
 
     @ParameterizedTest
     @CsvSource({"1,2", "1,3", "1,4", "1,5", "2,3", "2,4", "2,5", "3,4", "3,5", "4,5"})
-    @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Delete some tree nodes and hash")
     void hashBugFoundByPTT(long delete1, long delete2) {

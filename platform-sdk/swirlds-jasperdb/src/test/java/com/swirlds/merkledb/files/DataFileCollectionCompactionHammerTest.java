@@ -24,7 +24,7 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -50,6 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Hammer the compaction subsystem with as many small compactions as possible to try to overwhelm it.
  */
+@Tag(TestQualifierTags.HAMMER)
 class DataFileCollectionCompactionHammerTest {
 
     @BeforeAll
@@ -127,7 +128,6 @@ class DataFileCollectionCompactionHammerTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    @Tags({@Tag(TestTypeTags.HAMMER)})
     void hammer() throws IOException, InterruptedException, ExecutionException {
         final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         final LongListHeap index = new LongListHeap();

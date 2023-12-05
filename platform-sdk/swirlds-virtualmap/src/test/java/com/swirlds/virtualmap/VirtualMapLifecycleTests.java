@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.TestTypeTags;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -54,7 +53,7 @@ class VirtualMapLifecycleTests {
      * 		Just in case.
      */
     @Test
-    @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-016"), @Tag(TestTypeTags.HAMMER)})
+    @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-016"), @Tag(TestQualifierTags.HAMMER)})
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Main thread mutates vm while background thread queries immutable vm")
     void queryCopyWhileMutatingOriginal() throws InterruptedException, ExecutionException, TimeoutException {

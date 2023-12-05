@@ -22,35 +22,22 @@ package com.swirlds.test.framework;
 public abstract class TestQualifierTags {
 
     /**
-     * Denotes a test that runs at scale, e.g. inserts a million things into the database.
-     *
-     * Most tests that run longer than a couple of seconds should probably carry this label.
+     * Marks a test which asserts functionally correct behavior under stress/loads with many repeated iterations.
+     * This tag will be removed, and instead all annotated tests are moved to a separate 'src/hammer' source set.
      */
-    public static final String AT_SCALE = "AT_SCALE";
-
-    /**
-     * Denotes a broken tests. This test is expected to fail or be flaky but should not be removed from the codebase.
-     */
-    public static final String BROKEN = "BROKEN";
-
-    /**
-     * Denotes a test that requires more resources than a laptop is likely to have.
-     */
-    public static final String REMOTE_ONLY = "REMOTE_ONLY";
-
-    /**
-     * Denotes a test that verifies minimum acceptable functionality and must pass on every commit
-     */
-    public static final String MIN_ACCEPTED_TEST = "MIN_ACCEPTED_TEST";
+    public static final String HAMMER = "HAMMER";
 
     /**
      * Denotes a test that normally needs more than 100 ms to be executed
+     * This tag will be removed, and instead all annotated tests are moved to a separate 'src/timeConsuming' source set.
      */
     public static final String TIME_CONSUMING = "TIME_CONSUMING";
 
     /**
      * Denotes that a test is so resource sensitive (e.g. uses Thread.sleep()) that the test task running the test
-     * needs to run without anything in parallel
+     * needs to run without anything in parallel.
+     * Tests in this category should be fixed to not being flaky, or moved to the 'hammer' category (that is also
+     * running in isolation) if the fit that category.
      */
-    public static final String ISOLATED = "ISOLATED";
+    public static final String TIMING_SENSITIVE = "TIMING_SENSITIVE";
 }

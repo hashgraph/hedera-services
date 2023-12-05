@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.health;
 
-import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
+import static com.swirlds.test.framework.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,7 +42,7 @@ class OSFileSystemCheckTests {
      * Test basic invalid files and a valid file.
      */
     @Test
-    @Tag(ISOLATED)
+    @Tag(TIMING_SENSITIVE)
     @DisplayName("Basic Tests")
     void basicTest() {
         // Directory
