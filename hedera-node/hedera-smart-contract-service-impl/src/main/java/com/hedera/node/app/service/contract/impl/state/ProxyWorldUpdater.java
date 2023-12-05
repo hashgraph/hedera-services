@@ -379,8 +379,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void revertChildRecords() {
-        enhancement.operations().revertChildRecords();
+    public void revertLastChildRecord() {
+        enhancement.operations().revertLastChildRecord();
     }
 
     /**

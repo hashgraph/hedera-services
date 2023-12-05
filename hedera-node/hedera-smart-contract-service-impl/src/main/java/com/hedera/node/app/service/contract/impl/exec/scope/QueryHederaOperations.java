@@ -77,7 +77,7 @@ public class QueryHederaOperations implements HederaOperations {
     }
 
     @Override
-    public void revertChildRecords() {
+    public void revertLastChildRecord() {
         // No-op
     }
 

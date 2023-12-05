@@ -848,7 +848,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public void revertChildRecords() {
+    public void revertLastChildRecord() {
         recordListBuilder.revertLastChildOnly();
     }
 

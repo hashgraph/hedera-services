@@ -132,8 +132,8 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void revertChildRecords() {
-        context.revertChildRecords();
+    public void revertLastChildRecord() {
+        context.revertLastChildRecord();
     }
 
     /**

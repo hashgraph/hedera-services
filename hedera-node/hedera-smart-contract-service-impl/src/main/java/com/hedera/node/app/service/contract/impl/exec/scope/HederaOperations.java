@@ -68,7 +68,7 @@ public interface HederaOperations {
     /**
      * Revert child records.
      */
-    void revertChildRecords();
+    void revertLastChildRecord();
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update

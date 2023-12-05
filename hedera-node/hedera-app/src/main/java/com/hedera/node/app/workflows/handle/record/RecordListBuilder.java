@@ -395,14 +395,15 @@ public final class RecordListBuilder {
         }
     }
 
+    /**
+     * Reverts or removes the last child transaction on which the revert() method was called.
+     * <p> If the child record is REVERSIBLE, then the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}.
+     * If the child record is REMOVABLE, then the record is removed from the list.
+     */
     public void revertLastChildOnly() {
         if (childRecordBuilders == null) {
             childRecordBuilders = new ArrayList<>();
         }
-        if (precedingTxnRecordBuilders == null) {
-            precedingTxnRecordBuilders = new ArrayList<>();
-        }
-
         final var count = childRecordBuilders.size();
         final var lastRecordIndex = count - 1;
         if (count > 0) {
@@ -414,7 +415,6 @@ public final class RecordListBuilder {
             }
         }
     }
-
 
     /**
      * Builds a list of all records. Assigns transactions IDs as needed.
