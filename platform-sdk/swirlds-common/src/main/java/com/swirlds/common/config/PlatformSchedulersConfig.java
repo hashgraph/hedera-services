@@ -19,6 +19,7 @@ package com.swirlds.common.config;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -114,6 +115,7 @@ public record PlatformSchedulersConfig(
      *
      * @return the signed state file manager scheduler type
      */
+    @NonNull
     public TaskSchedulerType getSignedStateFileManagerSchedulerType() {
         return TaskSchedulerType.valueOf(signedStateFileManagerSchedulerType);
     }
