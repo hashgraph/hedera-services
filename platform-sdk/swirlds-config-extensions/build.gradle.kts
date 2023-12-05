@@ -21,6 +21,6 @@ plugins {
 
 testModuleInfo {
     requires("com.swirlds.common")
-    requires("com.swirlds.test.framework")
+    requires("com.swirlds.common.test.fixtures")
     requires("org.junit.jupiter.api")
 }

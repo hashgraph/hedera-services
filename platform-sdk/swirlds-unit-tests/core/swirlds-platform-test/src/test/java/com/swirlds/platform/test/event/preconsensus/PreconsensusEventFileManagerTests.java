@@ -45,7 +45,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig_;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
 import java.io.IOException;

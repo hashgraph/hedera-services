@@ -31,7 +31,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

@@ -26,9 +26,9 @@ module com.hedera.node.test.clients {
     requires com.github.docker.java.api;
     requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
+    requires com.swirlds.common.test.fixtures;
     requires com.swirlds.config.api;
     requires com.swirlds.platform.core;
-    requires com.swirlds.test.framework;
     requires grpc.netty;
     requires io.netty.handler;
     requires java.net.http;

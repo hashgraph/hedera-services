@@ -122,7 +122,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;

@@ -38,8 +38,6 @@ import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.units.TimeUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
