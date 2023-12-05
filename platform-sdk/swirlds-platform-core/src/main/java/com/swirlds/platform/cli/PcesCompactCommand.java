@@ -38,7 +38,7 @@ public class PcesCompactCommand extends AbstractCommand {
     }
 
     /**
-     * Entry point for program.
+     * Entry point for program
      */
     @Override
     public Integer call() {
