@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -85,11 +86,11 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.cryptoDeleteAllowanceOrThrow();
         // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
-        //        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
-        //            if (allowance.hasOwner()) {
-        //                context.requireKeyOrThrow(allowance.ownerOrThrow(), INVALID_ALLOWANCE_OWNER_ID);
-        //            }
-        //        }
+        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+            if (allowance.hasOwner()) {
+                context.requireKeyOrThrow(allowance.ownerOrThrow(), INVALID_ALLOWANCE_OWNER_ID);
+            }
+        }
     }
 
     @Override

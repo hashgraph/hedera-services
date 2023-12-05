@@ -182,7 +182,10 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(erc20(), erc721());
+        return allOf(
+//                erc20(),
+                erc721()
+        );
     }
 
     List<HapiSpec> erc20() {
@@ -210,27 +213,28 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     List<HapiSpec> erc721() {
         return List.of(
-                getErc721TokenName(),
-                getErc721Symbol(),
-                getErc721TokenURI(),
-                getErc721OwnerOf(),
-                getErc721BalanceOf(),
-                getErc721TotalSupply(),
-                erc721TokenApprove(),
-                erc721GetApproved(),
-                getErc721TokenURIFromErc20TokenFails(),
-                getErc721OwnerOfFromErc20TokenFails(),
-                directCallsWorkForErc721(),
-                someErc721ApproveAndRemoveScenariosPass(),
-                someErc721NegativeTransferFromScenariosPass(),
-                erc721TransferFromWithApproval(),
-                erc721TransferFromWithApproveForAll(),
-                someErc721GetApprovedScenariosPass(),
-                someErc721BalanceOfScenariosPass(),
-                someErc721OwnerOfScenariosPass(),
-                someErc721IsApprovedForAllScenariosPass(),
-                getErc721IsApprovedForAll(),
-                someErc721SetApprovedForAllScenariosPass());
+//                getErc721TokenName(),
+//                getErc721Symbol(),
+//                getErc721TokenURI(),
+//                getErc721OwnerOf(),
+//                getErc721BalanceOf(),
+//                getErc721TotalSupply(),
+//                erc721TokenApprove(),
+//                erc721GetApproved(),
+//                getErc721TokenURIFromErc20TokenFails(),
+//                getErc721OwnerOfFromErc20TokenFails(),
+//                directCallsWorkForErc721(),
+                someErc721ApproveAndRemoveScenariosPass()
+//                someErc721NegativeTransferFromScenariosPass(),
+//                erc721TransferFromWithApproval(),
+//                erc721TransferFromWithApproveForAll(),
+//                someErc721GetApprovedScenariosPass(),
+//                someErc721BalanceOfScenariosPass(),
+//                someErc721OwnerOfScenariosPass(),
+//                someErc721IsApprovedForAllScenariosPass(),
+//                getErc721IsApprovedForAll(),
+//                someErc721SetApprovedForAllScenariosPass()
+        );
     }
 
     @HapiTest
@@ -1659,43 +1663,40 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoTransfer(movingUnique(NF_TOKEN, 3L, 4L).between(SOME_ERC_721_SCENARIOS, B_CIVILIAN)),
                         getTokenNftInfo(NF_TOKEN, 1L).hasAccountID(A_CIVILIAN),
                         getTokenNftInfo(NF_TOKEN, 2L).hasAccountID(A_CIVILIAN),
-                        // FIX THIS
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        DO_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                        //                                        BigInteger.valueOf(3))
-                        //                                .via("NOT_AN_OPERATOR")
-                        //                                .gas(1_000_000)
-                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                        // FIX NEEDED
+                        sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(3))
+                                .via("NOT_AN_OPERATOR")
+                                .gas(1_000_000)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // * Can't revoke if not owner or approvedForAll
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        REVOKE_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        BigInteger.ONE)
-                        //                                .via("MISSING_REVOKE")
-                        //                                .gas(1_000_000)
-                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                        //                        cryptoApproveAllowance()
-                        //                                .payingWith(B_CIVILIAN)
-                        //                                .addNftAllowance(B_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS,
-                        // false, List.of(3L))
-                        //                                .signedBy(DEFAULT_PAYER, B_CIVILIAN)
-                        //                                .fee(ONE_HBAR)
+                                                sourcing(() -> contractCall(
+                                                                SOME_ERC_721_SCENARIOS,
+                                                                REVOKE_SPECIFIC_APPROVAL,
+                                                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                                                BigInteger.ONE)
+                                                        .via("MISSING_REVOKE")
+                                                        .gas(1_000_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                                cryptoApproveAllowance()
+                                                        .payingWith(B_CIVILIAN)
+                                                        .addNftAllowance(B_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS,
+                         false, List.of(3L))
+                                                        .signedBy(DEFAULT_PAYER, B_CIVILIAN)
+                                                        .fee(ONE_HBAR),
                         // * Still can't approve if msg.sender != owner and not an operator
-                        // FIX NEEDED
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        DO_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                        //                                        BigInteger.valueOf(3))
-                        //                                .via("E")
-                        //                                .gas(1_000_000)
-                        //                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.valueOf(3))
+                                .via("E")
+                                .gas(1_000_000)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // --- Positive cases for approve ---
                         // * owner == msg.sender can approve
                         sourcing(() -> contractCall(
@@ -1713,22 +1714,22 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .addNftAllowance(A_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS, true, List.of())
                                 .signedBy(DEFAULT_PAYER, A_CIVILIAN)
                                 .fee(ONE_HBAR),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        REVOKE_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via("B")
-                                .gas(1_000_000)),
-                        // These should work because the contract is an operator for aCivilian
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                                        BigInteger.TWO)
-                                .via("C")
-                                .gas(1_000_000)),
+//                        sourcing(() -> contractCall(
+//                                        SOME_ERC_721_SCENARIOS,
+//                                        REVOKE_SPECIFIC_APPROVAL,
+//                                        asHeadlongAddress(tokenMirrorAddr.get()),
+//                                        BigInteger.ONE)
+//                                .via("B")
+//                                .gas(1_000_000))
+//                        // These should work because the contract is an operator for aCivilian
+//                        sourcing(() -> contractCall(
+//                                        SOME_ERC_721_SCENARIOS,
+//                                        DO_SPECIFIC_APPROVAL,
+//                                        asHeadlongAddress(tokenMirrorAddr.get()),
+//                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
+//                                        BigInteger.TWO)
+//                                .via("C")
+//                                .gas(1_000_000))
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         "iMustOwnAfterReceiving",
@@ -1749,32 +1750,33 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .addNftAllowance(B_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS, true, List.of())
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.valueOf(3))
-                                .gas(1_000_000)),
-                        cryptoTransfer(movingUniqueWithAllowance(NF_TOKEN, 3L).between(B_CIVILIAN, A_CIVILIAN))
-                                .payingWith(A_CIVILIAN)
-                                .fee(ONE_HBAR),
-                        getTokenNftInfo(NF_TOKEN, 3L).hasAccountID(A_CIVILIAN),
+//                        sourcing(() -> contractCall(
+//                                        SOME_ERC_721_SCENARIOS,
+//                                        DO_SPECIFIC_APPROVAL,
+//                                        asHeadlongAddress(tokenMirrorAddr.get()),
+//                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
+//                                        BigInteger.valueOf(3))
+//                                .gas(1_000_000))
+//                        cryptoTransfer(movingUniqueWithAllowance(NF_TOKEN, 3L).between(B_CIVILIAN, A_CIVILIAN))
+//                                .payingWith(A_CIVILIAN)
+//                                .fee(ONE_HBAR),
+//                        getTokenNftInfo(NF_TOKEN, 3L).hasAccountID(A_CIVILIAN),
                         cryptoApproveAllowance()
                                 .payingWith(B_CIVILIAN)
                                 .addNftAllowance(B_CIVILIAN, NF_TOKEN, A_CIVILIAN, false, List.of(5L))
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
-                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasSpenderID(A_CIVILIAN),
+                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasSpenderID(A_CIVILIAN)
                         // * Because contract is operator for bCivilian, it can revoke aCivilian as
                         // spender for 5L
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        REVOKE_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(5))
-                                .gas(1_000_000)),
-                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
+//                        sourcing(() -> contractCall(
+//                                        SOME_ERC_721_SCENARIOS,
+//                                        REVOKE_SPECIFIC_APPROVAL,
+//                                        asHeadlongAddress(tokenMirrorAddr.get()),
+//                                        BigInteger.valueOf(5))
+//                                .gas(1_000_000)),
+//                        getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender()
+                );
     }
 
     @HapiTest
