@@ -401,18 +401,16 @@ public final class RecordListBuilder {
      * If the child record is REMOVABLE, then the record is removed from the list.
      */
     public void revertLastChildOnly() {
-        if (childRecordBuilders == null) {
-            childRecordBuilders = new ArrayList<>();
+        if (childRecordBuilders.isEmpty()) {
+            return;
         }
-        final var count = childRecordBuilders.size();
-        final var lastRecordIndex = count - 1;
-        if (count > 0) {
-            final var child = childRecordBuilders.get(lastRecordIndex);
-            if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
-                child.status(ResponseCodeEnum.REVERTED_SUCCESS);
-            } else if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
-                childRecordBuilders.remove(lastRecordIndex);
-            }
+        final var lastRecordIndex = childRecordBuilders.size() - 1;
+        final var child = childRecordBuilders.get(lastRecordIndex);
+
+        if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+            child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+        } else if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+            childRecordBuilders.remove(lastRecordIndex);
         }
     }
 
