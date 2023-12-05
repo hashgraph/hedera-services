@@ -181,9 +181,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(
-                //                erc20(),
-                erc721());
+        return allOf(erc20(), erc721());
     }
 
     List<HapiSpec> erc20() {
@@ -211,27 +209,27 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     List<HapiSpec> erc721() {
         return List.of(
-                //                getErc721TokenName(),
-                //                getErc721Symbol(),
-                //                getErc721TokenURI(),
-                //                getErc721OwnerOf(),
-                //                getErc721BalanceOf(),
-                //                getErc721TotalSupply(),
-                //                erc721TokenApprove(),
-                //                erc721GetApproved(),
-                //                getErc721TokenURIFromErc20TokenFails(),
-                //                getErc721OwnerOfFromErc20TokenFails(),
-                //                directCallsWorkForErc721(),
+                getErc721TokenName(),
+                getErc721Symbol(),
+                getErc721TokenURI(),
+                getErc721OwnerOf(),
+                getErc721BalanceOf(),
+                getErc721TotalSupply(),
+                erc721TokenApprove(),
+                erc721GetApproved(),
+                getErc721TokenURIFromErc20TokenFails(),
+                getErc721OwnerOfFromErc20TokenFails(),
+                directCallsWorkForErc721(),
                 someErc721ApproveAndRemoveScenariosPass()
-                //                someErc721NegativeTransferFromScenariosPass(),
-                //                erc721TransferFromWithApproval(),
-                //                erc721TransferFromWithApproveForAll(),
-                //                someErc721GetApprovedScenariosPass(),
-                //                someErc721BalanceOfScenariosPass(),
-                //                someErc721OwnerOfScenariosPass(),
-                //                someErc721IsApprovedForAllScenariosPass(),
-                //                getErc721IsApprovedForAll(),
-                //                someErc721SetApprovedForAllScenariosPass()
+                someErc721NegativeTransferFromScenariosPass(),
+                erc721TransferFromWithApproval(),
+                erc721TransferFromWithApproveForAll(),
+                someErc721GetApprovedScenariosPass(),
+                someErc721BalanceOfScenariosPass(),
+                someErc721OwnerOfScenariosPass(),
+                someErc721IsApprovedForAllScenariosPass(),
+                getErc721IsApprovedForAll(),
+                someErc721SetApprovedForAllScenariosPass()
                 );
     }
 
