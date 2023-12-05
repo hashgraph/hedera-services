@@ -20,12 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,18 +39,42 @@ import org.junit.jupiter.api.Test;
  */
 class PlatformWiringTests {
     @Test
-    @DisplayName("Assert that all input wires are bound to something")
-    void testBindings() {
-        final PlatformWiring wiring =
-                new PlatformWiring(TestPlatformContextBuilder.create().build(), new FakeTime());
+    @DisplayName("Assert that all input wires are bound to something, when using legacy intake")
+    void testBindingsWithLegacyIntake() {
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("event.useLegacyIntake", true).getOrCreateConfig();
 
-        wiring.bind(
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
+        final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
+
+        wiring.bind(mock(SignedStateFileManager.class));
+        assertFalse(wiring.getModel().checkForUnboundInputWires());
+    }
+
+    @Test
+    @DisplayName("Assert that all input wires are bound to something, when using new intake")
+    void testBindingsWithNewIntake() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.useLegacyIntake", false)
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
+        final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
+
+        wiring.bindIntake(
                 mock(InternalEventValidator.class),
                 mock(EventDeduplicator.class),
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(LinkedEventIntake.class));
+        wiring.bind(mock(SignedStateFileManager.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }
