@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -23,6 +24,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
@@ -33,6 +36,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.CreateTopicResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -91,6 +95,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
 
         final var builder = new Topic.Builder();
 
@@ -104,6 +109,13 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.submitKey());
             builder.submitKey(op.submitKey());
+        }
+
+        if (op.hasAutoRenewAccount()) {
+            final var account = accountStore.getAccountById(op.autoRenewAccount());
+            validateFalse(account == null, INVALID_AUTORENEW_ACCOUNT);
+            validateFalse(account.smartContract(), INVALID_AUTORENEW_ACCOUNT);
+            validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
 
         /* Validate if the current topic can be created */
