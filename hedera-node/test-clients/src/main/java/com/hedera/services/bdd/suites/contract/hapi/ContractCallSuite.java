@@ -78,6 +78,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
@@ -92,10 +93,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Address;
@@ -254,7 +255,8 @@ public class ContractCallSuite extends HapiSuite {
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
-                repeatedCreate2FailsWithInterpretableActionSidecars());
+                repeatedCreate2FailsWithInterpretableActionSidecars(),
+                internalCallToDeletedContractReturnsSuccessfulNoop());
     }
 
     @HapiTest
@@ -899,7 +901,7 @@ public class ContractCallSuite extends HapiSuite {
                             .getContractCallResult();
                     final var htsMetadata = decoder.decode(htsResult.toByteArray());
                     // The HTS method leaves non-UTF-8 bytes as-is
-                    Assertions.assertEquals(hexedNonUtf8Meta, CommonUtils.hex(htsMetadata.get(0)));
+                    assertEquals(hexedNonUtf8Meta, CommonUtils.hex(htsMetadata.get(0)));
 
                     final var ercResult = getErcResult
                             .getResponseRecord()
@@ -908,7 +910,7 @@ public class ContractCallSuite extends HapiSuite {
                     // But the ERC721 method returns the Unicode replacement
                     // character
                     final var ercMetadata = decoder.decode(ercResult.toByteArray());
-                    Assertions.assertEquals("efbfbd", CommonUtils.hex(ercMetadata.get(0)));
+                    assertEquals("efbfbd", CommonUtils.hex(ercMetadata.get(0)));
                 }));
     }
 
@@ -1168,13 +1170,13 @@ public class ContractCallSuite extends HapiSuite {
 
                     ctxLog.info("symbol: [{}]", symbol);
 
-                    Assertions.assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
+                    assertEquals("OCT", symbol, "TokenIssuer's symbol should be fixed value");
                     final var funcDecimals = Function.fromJson(getABIFor(FUNCTION, DECIMALS, contract));
 
                     final Integer decimals = getValueFromRegistry(spec, DECIMALS, funcDecimals);
 
                     ctxLog.info("decimals {}", decimals);
-                    Assertions.assertEquals(3, decimals, "TokenIssuer's decimals should be fixed value");
+                    assertEquals(3, decimals, "TokenIssuer's decimals should be fixed value");
 
                     final long tokenMultiplier = (long) Math.pow(10, decimals);
 
@@ -1184,7 +1186,7 @@ public class ContractCallSuite extends HapiSuite {
                             ((BigInteger) getValueFromRegistry(spec, ISSUER_TOKEN_BALANCE, function)).longValue();
 
                     ctxLog.info("initial balance of Issuer {}", issuerBalance / tokenMultiplier);
-                    Assertions.assertEquals(
+                    assertEquals(
                             1_000_000,
                             issuerBalance / tokenMultiplier,
                             "TokenIssuer's initial token balance should be" + " 1_000_000");
@@ -1241,8 +1243,7 @@ public class ContractCallSuite extends HapiSuite {
                     ctxLog.info("bobBalance  {}", bobBalance / tokenMultiplier);
                     ctxLog.info("carolBalance  {}", carolBalance / tokenMultiplier);
 
-                    Assertions.assertEquals(
-                            1000, aliceBalance / tokenMultiplier, "Alice's token balance should be 1_000");
+                    assertEquals(1000, aliceBalance / tokenMultiplier, "Alice's token balance should be 1_000");
 
                     final var subop12 = contractCall(
                                     contract,
@@ -1299,13 +1300,13 @@ public class ContractCallSuite extends HapiSuite {
                     ctxLog.info("daveBalance at end {}", daveBalance / tokenMultiplier);
                     ctxLog.info("issuerBalance at end {}", issuerBalance / tokenMultiplier);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             997000, issuerBalance / tokenMultiplier, "TokenIssuer's final balance should be 997000");
 
-                    Assertions.assertEquals(900, aliceBalance / tokenMultiplier, "Alice's final balance should be 900");
-                    Assertions.assertEquals(1600, bobBalance / tokenMultiplier, "Bob's final balance should be 1600");
-                    Assertions.assertEquals(500, carolBalance / tokenMultiplier, "Carol's final balance should be 500");
-                    Assertions.assertEquals(0, daveBalance / tokenMultiplier, "Dave's final balance should be 0");
+                    assertEquals(900, aliceBalance / tokenMultiplier, "Alice's final balance should be 900");
+                    assertEquals(1600, bobBalance / tokenMultiplier, "Bob's final balance should be 1600");
+                    assertEquals(500, carolBalance / tokenMultiplier, "Carol's final balance should be 500");
+                    assertEquals(0, daveBalance / tokenMultiplier, "Dave's final balance should be 0");
                 }))
                 .then(
                         getContractRecords(contract).hasCostAnswerPrecheck(NOT_SUPPORTED),
@@ -1396,7 +1397,7 @@ public class ContractCallSuite extends HapiSuite {
                     }
 
                     ctxLog.info("Fake contract code size {}", codeSize);
-                    Assertions.assertEquals(0, codeSize, "Fake contract code size should be 0");
+                    assertEquals(0, codeSize, "Fake contract code size should be 0");
                 }));
     }
 
@@ -1548,6 +1549,33 @@ public class ContractCallSuite extends HapiSuite {
                         .fee(0L)
                         .payingWith("accountToPay")
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
+    }
+
+    HapiSpec internalCallToDeletedContractReturnsSuccessfulNoop() {
+        final AtomicLong calleeNum = new AtomicLong();
+        final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
+        final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
+        final String CALL_EXTERNAL_FUNCTION = "callExternalFunction";
+        final String INNER_TXN = "innerTx";
+
+        return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set),
+                        contractDelete(INTERNAL_CALLEE_CONTRACT))
+                .when(withOpContext((spec, ignored) -> allRunFor(
+                        spec,
+                        contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
+                                .gas(50_000L)
+                                .via(INNER_TXN))))
+                .then(withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord(INNER_TXN);
+                    allRunFor(spec, lookup);
+                    final var result =
+                            lookup.getResponseRecord().getContractCallResult().getContractCallResult();
+                    assertEquals(ByteString.copyFrom(new byte[32]), result);
+                }));
     }
 
     @HapiTest
@@ -2207,7 +2235,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
                                     .getBalance();
 
-                            Assertions.assertEquals(accountBalanceAfterCall, accountBalanceBeforeCall - fee + 200L);
+                            assertEquals(accountBalanceAfterCall, accountBalanceBeforeCall - fee + 200L);
                         }),
                         sourcing(() -> getContractInfo(NESTED_TRANSFERRING_CONTRACT)
                                 .has(contractWith().balance(10_000L - 200L))),
@@ -2341,7 +2369,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .getContractInfo(CONTRACT_FROM)
                                     .getBalance();
 
-                            Assertions.assertEquals(contractBalanceAfterCall, 10_000L);
+                            assertEquals(contractBalanceAfterCall, 10_000L);
                         }),
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L));
     }
