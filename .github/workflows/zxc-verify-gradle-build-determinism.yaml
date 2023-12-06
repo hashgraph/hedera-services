@@ -1,0 +1,169 @@
+name: "ZXC: Verify Gradle Build Determinism"
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "The branch, tag, or commit to checkout:"
+        type: string
+        required: false
+        default: ""
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.9"
+
+    secrets:
+      gradle-cache-username:
+        description: "The username used to authenticate with the Gradle Build Cache Node."
+        required: true
+      gradle-cache-password:
+        description: "The password used to authenticate with the Gradle Build Cache Node."
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  GRADLE_MANIFEST_PATH: ${{ github.workspace }}/.manifests/gradle
+  GRADLE_MANIFEST_GENERATOR: ${{ github.workspace }}/.github/workflows/support/scripts/generate-gradle-artifact-baseline.sh
+  GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+
+jobs:
+  generate-baseline:
+    name: Generate Baseline
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    outputs:
+      path: ${{ steps.baseline.outputs.path }}
+      file: ${{ steps.baseline.outputs.file }}
+      name: ${{ steps.baseline.outputs.name }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Java
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@f105ef0cdb3b102a020be1767fcc8a974898b7c6 # v1.2.0
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+
+      - name: Baseline Existence Check
+        id: baseline
+        run: |
+          BASELINE_NAME="${{ github.sha }}.tar.gz"
+          BASELINE_PATH="gs://hedera-ci-ephemeral-artifacts/${{ github.repository }}/gradle/baselines"
+          BASELINE_FILE="${BASELINE_PATH}/${BASELINE_NAME}"
+          BASELINE_EXISTS="false"
+          
+          if gsutil ls "${BASELINE_FILE}" >/dev/null 2>&1; then
+             BASELINE_EXISTS="true"
+          fi
+          
+          echo "exists=${BASELINE_EXISTS}" >> "${GITHUB_OUTPUT}"
+          echo "path=${BASELINE_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "name=${BASELINE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "file=${BASELINE_FILE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build Artifacts
+        id: gradle-build
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failed() && !cancelled() }}
+        run: ./gradlew assemble --scan
+
+      - name: Generate Manifest
+        id: manifest
+        env:
+          MANIFEST_PATH: ${{ env.GRADLE_MANIFEST_PATH }}
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failed() && !cancelled() }}
+        run: ${{ env.GRADLE_MANIFEST_GENERATOR }}
+
+      - name: Upload Baseline
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failed() && !cancelled() }}
+        run: gsutil cp "${{ steps.manifest.outputs.file }}" "${{ steps.baseline.outputs.path }}"
+
+  verify-artifacts:
+    name: "Verify Artifacts (${{ format('%s[%s]', matrix.os[1], matrix.os[2]) || matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    needs:
+      - generate-baseline
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-22.04
+          - ubuntu-20.04
+          - macos-12
+          - macos-11
+          - windows-2022
+          - windows-2019
+          - [self-hosted, Linux, medium, ephemeral]
+          - [self-hosted, Linux, large, ephemeral]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Java
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@f105ef0cdb3b102a020be1767fcc8a974898b7c6 # v1.2.0
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+
+      - name: Download Baseline
+        run: |
+          mkdir -p "${GRADLE_MANIFEST_PATH}"
+          cd "${GRADLE_MANIFEST_PATH}"
+          gsutil cp "${{ needs.generate-baseline.outputs.file }}" .
+          tar -xzf "${{ needs.generate-baseline.outputs.name }}"
+
+      - name: Build Artifacts
+        id: gradle-build
+        run: ./gradlew assemble --scan
+
+      - name: Validate Libraries
+        working-directory: ${{ github.workspace }}/hedera-node/data/libs
+        run: sha256sum -c "${GRADLE_MANIFEST_PATH}/libraries.sha256"
+
+      - name: Validate Applications
+        working-directory: ${{ github.workspace }}/hedera-node/data/apps
+        run: sha256sum -c "${GRADLE_MANIFEST_PATH}/applications.sha256"
+

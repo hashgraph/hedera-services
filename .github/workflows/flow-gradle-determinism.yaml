@@ -1,0 +1,42 @@
+name: Gradle Determinism
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The branch, tag, or commit to checkout:"
+        type: string
+        required: false
+        default: ""
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.9"
+  push:
+    branches:
+      - develop
+      - 'release/**'
+    tags:
+      - 'v*.*.*'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
+    with:
+      ref: ${{ github.event.inputs.ref || '' }}
+      java-distribution: ${{ inputs.java-distribution || 'temurin' }}
+      java-version: ${{ inputs.java-version || '17.0.9' }}
