@@ -18,6 +18,7 @@ package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig_;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 
@@ -99,9 +100,9 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
         }
 
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue("chatter.otherEventDelay", networkParams.otherEventDelay())
-                .withValue("chatter.processingTimeInterval", networkParams.procTimeInterval())
-                .withValue("chatter.heartbeatInterval", networkParams.heartbeatInterval());
+                .withValue(ChatterConfig_.OTHER_EVENT_DELAY, networkParams.otherEventDelay())
+                .withValue(ChatterConfig_.PROCESSING_TIME_INTERVAL, networkParams.procTimeInterval())
+                .withValue(ChatterConfig_.HEARTBEAT_INTERVAL, networkParams.heartbeatInterval());
 
         final ChatterInstance<T> chatterInstance = new ChatterInstance<>(
                 networkParams.numNodes(),

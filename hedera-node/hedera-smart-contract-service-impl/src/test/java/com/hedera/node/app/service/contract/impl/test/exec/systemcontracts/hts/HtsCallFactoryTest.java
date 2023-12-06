@@ -85,7 +85,7 @@ class HtsCallFactoryTest extends HtsCallTestBase {
     void instantiatesCallWithInContextEnhancementAndDelegateCallInfo() {
         given(initialFrame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
                 .willReturn(DEFAULT_CONFIG);
-        given(initialFrame.getContextVariable(FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE))
+        given(initialFrame.getContextVariable(FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE))
                 .willReturn(systemContractGasCalculator);
         stack.push(initialFrame);
         stack.addFirst(frame);
