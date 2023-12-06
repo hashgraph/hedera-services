@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
@@ -55,7 +54,7 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     }
 
     protected PricedResult externalizeSuccessfulResult() {
-        return gasOnly(resultOfViewingToken(requireNonNull(token)), SUCCESS, true);
+        return gasOnly(resultOfViewingToken(token), SUCCESS, true);
     }
 
     protected PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
@@ -69,7 +68,7 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
      * @return the result of viewing the given {@code token}
      */
     @NonNull
-    protected abstract FullResult resultOfViewingToken(@NonNull Token token);
+    protected abstract FullResult resultOfViewingToken(Token token);
 
     /**
      * Returns the result of viewing the given {@code token} given the {@code status}.

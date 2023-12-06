@@ -126,6 +126,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
     }
 
     // Should just return false on isToken() check for missing token type
+    @HapiTest
     private HapiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
