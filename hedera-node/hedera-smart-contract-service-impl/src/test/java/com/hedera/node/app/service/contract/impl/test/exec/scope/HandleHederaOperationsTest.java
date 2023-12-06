@@ -204,7 +204,7 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void lazyCreationCostInGasHardcoded() {
+    void lazyCreationCostInGasTest() {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(gasCalculator.gasRequirement(any(), eq(DispatchType.CRYPTO_CREATE), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(6L);
