@@ -719,12 +719,18 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());
             if (childCategory == SCHEDULED) {
-                final var finalizeContext = new ChildFinalizeContextImpl(
-                        new ReadableStoreFactory(childStack),
-                        new WritableStoreFactory(childStack, TokenService.NAME),
-                        childRecordBuilder);
-                childRecordFinalizer.finalizeChildRecord(finalizeContext);
-                childStack.commitFullStack();
+                if (e.shouldRollbackStack()) {
+                    childStack.rollbackFullStack();
+                }
+                final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+                userTransactionRecordBuilder.status(e.getStatus());
+                recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
+                if (dispatchValidationResult != null && e.shouldRollbackStack()) {
+                    // Only re-charge fees if we rolled back the stack
+                    childContext.feeAccumulator.chargeFees(
+                            syntheticPayer, networkInfo().selfNodeInfo().accountId(), dispatchValidationResult.fees());
+                }
+
                 final String message =
                         """
                            Child transaction with category %s failed with status %s.\
