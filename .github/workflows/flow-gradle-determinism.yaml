@@ -31,7 +31,7 @@ defaults:
 permissions:
   id-token: write
   contents: read
-Intentionally broken
+
 jobs:
   check:
     name: Check
