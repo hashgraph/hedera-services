@@ -460,9 +460,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         final var alias = requireNonNull(account).alias();
         return alias != null
                 && alias.length() == EVM_ADDRESS_LENGTH_AS_LONG
-                && (isLongZero(address) ? !address.equals(asLongZeroAddress(account.accountId().accountNum())) : (!address.equals(pbjToBesuAddress(alias))
-        )
-        );
+                && (isLongZero(address)
+                        ? !address.equals(asLongZeroAddress(account.accountId().accountNum()))
+                        : (!address.equals(pbjToBesuAddress(alias))));
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {

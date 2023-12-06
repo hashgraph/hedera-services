@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -76,9 +77,12 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var body = context.body().ethereumTransactionOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
-        final var ethTxData = callDataHydration
-                .tryToHydrate(body, fileStore, hederaConfig.firstUserEntity())
-                .ethTxData();
+        final var hydratedTx = callDataHydration
+                .tryToHydrate(body, fileStore, hederaConfig.firstUserEntity());
+
+        validateTruePreCheck(hydratedTx.status() == SUCCESS, hydratedTx.status());
+
+        final var ethTxData = hydratedTx.ethTxData();
         validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
 
         // Ignore the return value; we just want to cache the signature for use in handle()

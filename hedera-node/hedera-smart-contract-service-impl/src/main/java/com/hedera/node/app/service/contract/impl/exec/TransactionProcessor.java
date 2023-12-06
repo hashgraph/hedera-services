@@ -222,9 +222,11 @@ public class TransactionProcessor {
                 if (sponsor.stakedAccountId() != null) {
                     modifiedBodyBuilder.stakedAccountId(sponsor.stakedAccountId());
                 }
-                modifiedBodyBuilder.autoRenewPeriod(Duration.newBuilder()
-                        .seconds(sponsor.autoRenewSeconds())
-                        .build());
+                if (sponsor.autoRenewSeconds() > 0) {
+                    modifiedBodyBuilder.autoRenewPeriod(Duration.newBuilder()
+                            .seconds(sponsor.autoRenewSeconds())
+                            .build());
+                }
                 modifiedBodyBuilder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations());
                 modifiedBodyBuilder.declineReward(sponsor.declineReward());
 
