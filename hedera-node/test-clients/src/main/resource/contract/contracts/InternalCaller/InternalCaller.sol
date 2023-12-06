@@ -10,7 +10,7 @@ contract InternalCaller {
 
     function callExternalFunction(address _addr) external returns (uint) {
         (bool success, bytes memory result) = _addr.call(abi.encodeWithSignature("externalFunction()"));
-        return abi.decode(result, (uint));
+        return success && result.length > 0 ? abi.decode(result, (uint)) : 0;
     }
 
     function callRevertWithRevertReason(address _addr) external {
