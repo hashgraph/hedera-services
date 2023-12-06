@@ -215,7 +215,6 @@ public class ContractStateMigrator {
             long contractId, @NonNull int[] key, @NonNull byte[] value, @Nullable int[] prev, @Nullable int[] next)
             implements Comparable<ContractSlotLocal> {
 
-        // (with contractId == -1 (otherwise invalid) the sentinel always sorts _first_)
         public static final ContractSlotLocal SENTINEL = new ContractSlotLocal(
                 -1L, new int[EVM_WORD_WIDTH_IN_INTS], new byte[EVM_WORD_WIDTH_IN_BYTES], null, null);
 
