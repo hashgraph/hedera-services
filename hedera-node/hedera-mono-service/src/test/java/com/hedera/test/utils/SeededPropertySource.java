@@ -1117,7 +1117,7 @@ public class SeededPropertySource {
 
     /**
      * Return an entity id with the default shard and realm of {@code 0} so that when using
-     * PBJ converters inside {@link com.hedera.test.serde.SelfSerializableDataTest} object
+     * PBJ converters inside {@link com.hedera.test.serde.SelfSerializableDataTests} object
      * providers, we don't lose information.
      *
      * @return an entity id in the default shard and realm

@@ -27,14 +27,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class CryptoTransferLoadTestWithInvalidAccounts extends LoadTest {
+public final class CryptoTransferLoadTestWithInvalidAccounts extends LoadTests {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithInvalidAccounts.class);
 
     public static void main(String... args) {

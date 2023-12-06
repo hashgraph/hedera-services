@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
+public class CryptoTransferLoadTestWithAutoAccounts extends LoadTests {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithAutoAccounts.class);
 
     @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine

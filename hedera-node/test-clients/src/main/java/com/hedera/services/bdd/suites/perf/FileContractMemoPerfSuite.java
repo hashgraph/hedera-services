@@ -34,7 +34,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -43,7 +43,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FileContractMemoPerfSuite extends LoadTest {
+public class FileContractMemoPerfSuite extends LoadTests {
     private static final Logger log = LogManager.getLogger(FileContractMemoPerfSuite.class);
 
     private final ResponseCodeEnum[] permissiblePrechecks =

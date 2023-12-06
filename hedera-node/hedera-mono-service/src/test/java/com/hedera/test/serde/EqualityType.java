@@ -17,7 +17,7 @@
 package com.hedera.test.serde;
 
 /**
- * Used by the base {@link SelfSerializableDataTest} to signal to expected object providers what type of
+ * Used by the base {@link SelfSerializableDataTests} to signal to expected object providers what type of
  * equality test will be used.
  *
  * <p>We added this so that when {@code OBJECT_EQUALITY} is being used, we can insert an extra step of

@@ -115,7 +115,7 @@ public class PerfTestLoadSettings {
     private int totalTokenAssociations = DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
     /** Total scheduled transactions in the saved state file */
     private int totalScheduled = DEFAULT_TOTAL_SCHEDULED;
-    /** Initial balance for the Crypto accounts created during LoadTest */
+    /** Initial balance for the Crypto accounts created during LoadTests */
     private long initialBalance = DEFAULT_INITIAL_BALANCE;
 
     /** topic ID for reconnect and other tests; */

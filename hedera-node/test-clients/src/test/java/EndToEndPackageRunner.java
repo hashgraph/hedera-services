@@ -122,46 +122,46 @@ import com.hedera.services.bdd.suites.issues.Issue2319Spec;
 import com.hedera.services.bdd.suites.issues.Issue305Spec;
 import com.hedera.services.bdd.suites.issues.Issue310Suite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
+import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTests;
 import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
 import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
-import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTest;
-import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
+import com.hedera.services.bdd.suites.perf.QueryOnlyLoadTests;
+import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTests;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
 import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
-import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
-import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
+import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTests;
+import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTests;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoAllowancePerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
+import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTests;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithAutoAccounts;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithInvalidAccounts;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
 import com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot;
 import com.hedera.services.bdd.suites.perf.file.FileExpansionLoadProvider;
-import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
-import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
+import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTests;
+import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTests;
 import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsMemoPerfSuite;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTest;
-import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTest;
+import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTests;
+import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTests;
 import com.hedera.services.bdd.suites.perf.schedule.OnePendingSigScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.token.TokenCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
-import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
+import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTests;
 import com.hedera.services.bdd.suites.perf.token.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.perf.token.UniqueTokenStateSetup;
 import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
-import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTests;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessagePerfSuite;
-import com.hedera.services.bdd.suites.perf.topic.createTopicLoadTest;
+import com.hedera.services.bdd.suites.perf.topic.CreateTopicLoadTests;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
-import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
+import com.hedera.services.bdd.suites.records.DuplicateManagementTests;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
@@ -508,10 +508,10 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> perf() {
         return List.of(
-                extractSpecsFromSuite(AccountBalancesClientSaveLoadTest::new),
+                extractSpecsFromSuite(AccountBalancesClientSaveLoadTests::new),
                 extractSpecsFromSuite(AdjustFeeScheduleSuite::new),
                 extractSpecsFromSuite(FileContractMemoPerfSuite::new),
-                extractSpecsFromSuite(QueryOnlyLoadTest::new));
+                extractSpecsFromSuite(QueryOnlyLoadTests::new));
     }
 
     @Tag("perf")
@@ -519,19 +519,19 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> perfContract() {
         return List.of(
-                extractSpecsFromSuite(ContractCallLoadTest::new),
+                extractSpecsFromSuite(ContractCallLoadTests::new),
                 extractSpecsFromSuite(ContractCallLocalPerfSuite::new),
                 extractSpecsFromSuite(ContractCallPerfSuite::new),
                 extractSpecsFromSuite(ContractPerformanceSuite::new),
                 extractSpecsFromSuite(FibonacciPlusLoadProvider::new),
-                extractSpecsFromSuite(MixedSmartContractOpsLoadTest::new));
+                extractSpecsFromSuite(MixedSmartContractOpsLoadTests::new));
     }
 
     @Tag("perf")
     @Tag("perf.contract.opcodes")
     @TestFactory
     Collection<DynamicContainer> perfContractOpcodes() {
-        return List.of(extractSpecsFromSuite(SStoreOperationLoadTest::new));
+        return List.of(extractSpecsFromSuite(SStoreOperationLoadTests::new));
     }
 
     @Tag("perf")
@@ -541,7 +541,7 @@ class EndToEndPackageRunner extends TestBase {
         return List.of(
                 extractSpecsFromSuite(CryptoAllowancePerfSuite::new),
                 extractSpecsFromSuite(CryptoCreatePerfSuite::new),
-                extractSpecsFromSuite(CryptoTransferLoadTest::new),
+                extractSpecsFromSuite(CryptoTransferLoadTests::new),
                 extractSpecsFromSuite(CryptoTransferLoadTestWithAutoAccounts::new),
                 extractSpecsFromSuite(CryptoTransferLoadTestWithInvalidAccounts::new),
                 extractSpecsFromSuite(CryptoTransferPerfSuite::new),
@@ -555,8 +555,8 @@ class EndToEndPackageRunner extends TestBase {
     Collection<DynamicContainer> perfFile() {
         return List.of(
                 extractSpecsFromSuite(FileExpansionLoadProvider::new),
-                extractSpecsFromSuite(FileUpdateLoadTest::new),
-                extractSpecsFromSuite(MixedFileOpsLoadTest::new));
+                extractSpecsFromSuite(FileUpdateLoadTests::new),
+                extractSpecsFromSuite(MixedFileOpsLoadTests::new));
     }
 
     @Tag("perf")
@@ -564,10 +564,10 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> perfMixedOps() {
         return List.of(
-                extractSpecsFromSuite(MixedFileOpsLoadTest::new),
+                extractSpecsFromSuite(MixedFileOpsLoadTests::new),
                 extractSpecsFromSuite(MixedOpsMemoPerfSuite::new),
-                extractSpecsFromSuite(MixedTransferAndSubmitLoadTest::new),
-                extractSpecsFromSuite(MixedTransferCallAndSubmitLoadTest::new));
+                extractSpecsFromSuite(MixedTransferAndSubmitLoadTests::new),
+                extractSpecsFromSuite(MixedTransferCallAndSubmitLoadTests::new));
     }
 
     @Tag("perf")
@@ -586,7 +586,7 @@ class EndToEndPackageRunner extends TestBase {
         return List.of(
                 extractSpecsFromSuite(TokenCreatePerfSuite::new),
                 extractSpecsFromSuite(TokenRelStatusChanges::new),
-                extractSpecsFromSuite(TokenTransferBasicLoadTest::new),
+                extractSpecsFromSuite(TokenTransferBasicLoadTests::new),
                 extractSpecsFromSuite(TokenTransfersLoadProvider::new),
                 extractSpecsFromSuite(UniqueTokenStateSetup::new));
     }
@@ -596,10 +596,10 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> perfTopic() {
         return List.of(
-                extractSpecsFromSuite(createTopicLoadTest::new),
+                extractSpecsFromSuite(CreateTopicLoadTests::new),
                 extractSpecsFromSuite(CreateTopicPerfSuite::new),
                 extractSpecsFromSuite(HCSChunkingRealisticPerfSuite::new),
-                extractSpecsFromSuite(SubmitMessageLoadTest::new),
+                extractSpecsFromSuite(SubmitMessageLoadTests::new),
                 extractSpecsFromSuite(SubmitMessagePerfSuite::new));
     }
 
@@ -609,7 +609,7 @@ class EndToEndPackageRunner extends TestBase {
         return List.of(
                 extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
-                extractSpecsFromSuite(DuplicateManagementTest::new),
+                extractSpecsFromSuite(DuplicateManagementTests::new),
                 extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(RecordCreationSuite::new),
                 extractSpecsFromSuite(SignedTransactionBytesRecordsSuite::new));

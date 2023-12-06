@@ -96,17 +96,17 @@ public class XTestConstants {
     public static final Bytes SN_2345_METADATA = Bytes.wrap("https://example.com/721/" + 2345);
     public static final Bytes SN_3456_METADATA = Bytes.wrap("https://example.com/721/" + 3456);
     public static final com.esaulpaugh.headlong.abi.Address ERC721_TOKEN_ADDRESS =
-            AbstractContractXTest.asHeadlongAddress(
+            AbstractContractXTests.asHeadlongAddress(
                     asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
     public static final TokenID ERC20_TOKEN_ID =
             TokenID.newBuilder().tokenNum(1027L).build();
     public static final com.esaulpaugh.headlong.abi.Address ERC20_TOKEN_ADDRESS =
-            AbstractContractXTest.asHeadlongAddress(
+            AbstractContractXTests.asHeadlongAddress(
                     asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
     public static final TokenID OTHER_TOKEN_ID =
             TokenID.newBuilder().tokenNum(1777L).build();
     public static final com.esaulpaugh.headlong.abi.Address OTHER_TOKEN_ADDRESS =
-            AbstractContractXTest.asHeadlongAddress(
+            AbstractContractXTests.asHeadlongAddress(
                     asLongZeroAddress(OTHER_TOKEN_ID.tokenNum()).toArray());
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
@@ -124,7 +124,7 @@ public class XTestConstants {
     public static final TokenID INVALID_TOKEN_ID =
             TokenID.newBuilder().tokenNum(Long.MAX_VALUE).build();
     public static final com.esaulpaugh.headlong.abi.Address INVALID_TOKEN_ADDRESS =
-            AbstractContractXTest.asHeadlongAddress(
+            AbstractContractXTests.asHeadlongAddress(
                     asLongZeroAddress(INVALID_TOKEN_ID.tokenNum()).toArray());
     public static final Bytes SENDER_ALIAS =
             Bytes.fromHex("3a21030edcc130e13fb5102e7c883535af8c2b0a5a617231f77fd127ce5f3b9a620591");

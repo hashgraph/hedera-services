@@ -32,7 +32,7 @@ public final class KeysModule {
 
     @Provides
     @Singleton
-    public static ActivationTest provideActivationTest() {
+    public static ActivationTests provideActivationTest() {
         return HederaKeyActivation::isActive;
     }
 

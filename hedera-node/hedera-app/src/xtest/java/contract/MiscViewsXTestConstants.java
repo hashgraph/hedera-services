@@ -17,7 +17,7 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static contract.AbstractContractXTest.asHeadlongAddress;
+import static contract.AbstractContractXTests.asHeadlongAddress;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;

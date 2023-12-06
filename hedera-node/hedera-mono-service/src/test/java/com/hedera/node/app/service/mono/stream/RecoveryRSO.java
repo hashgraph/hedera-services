@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.stream;
 
 /**
- * POJO to read a JSON object from the {@link RecordStreamRecoveryAndReplayTest}'s "recovery stream" resource.
+ * POJO to read a JSON object from the {@link RecordStreamRecoveryAndReplayTests}'s "recovery stream" resource.
  */
 public class RecoveryRSO {
     private String consensusTime;

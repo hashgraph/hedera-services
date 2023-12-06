@@ -22,12 +22,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.spec.utilops.LoadTests;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoCreatePerfSuite extends LoadTest {
+public class CryptoCreatePerfSuite extends LoadTests {
     private static final Logger log = LogManager.getLogger(CryptoCreatePerfSuite.class);
 
     public static void main(String... args) {

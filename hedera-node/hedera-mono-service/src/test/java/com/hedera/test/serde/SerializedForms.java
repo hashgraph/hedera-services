@@ -16,43 +16,43 @@
 
 package com.hedera.test.serde;
 
-import static com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
-import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSerdeTests.NUM_ON_DISK_ACCOUNT_TEST_CASES;
+import static com.hedera.test.serde.SelfSerializableDataTests.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceiptSerdeTest;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceiptSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccountStateSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleEntityId;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContextSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContextSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSchedule;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduleSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduleSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsStateSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfoSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfoSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTokenSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopicSerdeTest;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopicSerdeTests;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
-import com.hedera.node.app.service.mono.state.submerkle.EvmFnResultSerdeTest;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResultSerdeTests;
 import com.hedera.node.app.service.mono.state.submerkle.EvmLog;
-import com.hedera.node.app.service.mono.state.submerkle.EvmLogSerdeTest;
+import com.hedera.node.app.service.mono.state.submerkle.EvmLogSerdeTests;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordSerdeTest;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordSerdeTests;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
@@ -60,7 +60,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
-import com.hedera.node.app.service.mono.state.submerkle.TxnIdSerdeTest;
+import com.hedera.node.app.service.mono.state.submerkle.TxnIdSerdeTests;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.ContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -176,13 +176,13 @@ public class SerializedForms {
             entry(OnDiskTokenRel.class, SeededPropertySource::nextOnDiskTokenRel, MIN_TEST_CASES_PER_VERSION),
             entry(CurrencyAdjustments.class, SeededPropertySource::nextCurrencyAdjustments, MIN_TEST_CASES_PER_VERSION),
             entry(EntityId.class, SeededPropertySource::nextEntityId, MIN_TEST_CASES_PER_VERSION),
-            entry(EvmFnResult.class, SeededPropertySource::nextEvmResult, EvmFnResultSerdeTest.NUM_TEST_CASES),
-            entry(EvmLog.class, SeededPropertySource::nextEvmLog, EvmLogSerdeTest.NUM_TEST_CASES),
+            entry(EvmFnResult.class, SeededPropertySource::nextEvmResult, EvmFnResultSerdeTests.NUM_TEST_CASES),
+            entry(EvmLog.class, SeededPropertySource::nextEvmLog, EvmLogSerdeTests.NUM_TEST_CASES),
             entry(ExchangeRates.class, SeededPropertySource::nextExchangeRates, MIN_TEST_CASES_PER_VERSION),
             entry(
                     ExpirableTxnRecord.class,
                     SeededPropertySource::nextRecord,
-                    ExpirableTxnRecordSerdeTest.NUM_TEST_CASES),
+                    ExpirableTxnRecordSerdeTests.NUM_TEST_CASES),
             entry(FcAssessedCustomFee.class, SeededPropertySource::nextAssessedFee, MIN_TEST_CASES_PER_VERSION),
             entry(FcCustomFee.class, SeededPropertySource::nextCustomFee, MIN_TEST_CASES_PER_VERSION),
             entry(FcTokenAllowance.class, SeededPropertySource::nextFcTokenAllowance, MIN_TEST_CASES_PER_VERSION),
@@ -192,32 +192,32 @@ public class SerializedForms {
             entry(
                     MerkleAccountState.class,
                     SeededPropertySource::nextAccountState,
-                    MerkleAccountStateSerdeTest.NUM_TEST_CASES),
+                    MerkleAccountStateSerdeTests.NUM_TEST_CASES),
             entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
             entry(
                     MerkleNetworkContext.class,
                     SeededPropertySource::next0320NetworkContext,
-                    MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
+                    MerkleNetworkContextSerdeTests.NUM_TEST_CASES),
             entry(
                     MerkleScheduledTransactionsState.class,
                     SeededPropertySource::nextScheduledTransactionsState,
-                    MerkleScheduledTransactionsStateSerdeTest.NUM_TEST_CASES),
-            entry(MerkleSchedule.class, MerkleScheduleSerdeTest::nextSchedule, MerkleScheduleSerdeTest.NUM_TEST_CASES),
+                    MerkleScheduledTransactionsStateSerdeTests.NUM_TEST_CASES),
+            entry(MerkleSchedule.class, MerkleScheduleSerdeTests::nextSchedule, MerkleScheduleSerdeTests.NUM_TEST_CASES),
             entry(MerkleSpecialFiles.class, SeededPropertySource::nextMerkleSpecialFiles, MIN_TEST_CASES_PER_VERSION),
-            entry(MerkleToken.class, SeededPropertySource::nextToken, MerkleTokenSerdeTest.NUM_TEST_CASES),
+            entry(MerkleToken.class, SeededPropertySource::nextToken, MerkleTokenSerdeTests.NUM_TEST_CASES),
             entry(
                     MerkleTokenRelStatus.class,
                     SeededPropertySource::nextMerkleTokenRelStatus,
                     MIN_TEST_CASES_PER_VERSION),
-            entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTest.NUM_TEST_CASES),
+            entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTests.NUM_TEST_CASES),
             entry(MerkleUniqueToken.class, SeededPropertySource::next0260UniqueToken, MIN_TEST_CASES_PER_VERSION),
             entry(NftAdjustments.class, SeededPropertySource::nextOwnershipChanges, MIN_TEST_CASES_PER_VERSION),
             entry(
                     RecordsRunningHashLeaf.class,
                     SeededPropertySource::nextRecordsRunningHashLeaf,
                     MIN_TEST_CASES_PER_VERSION),
-            entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
-            entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION),
+            entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTests.NUM_TEST_CASES),
+            entry(TxnReceipt.class, TxnReceiptSerdeTests::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION),
             entry(ContractKey.class, SeededPropertySource::nextContractKey, MIN_TEST_CASES_PER_VERSION),
             entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
             entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
@@ -225,7 +225,7 @@ public class SerializedForms {
             entry(
                     MerkleStakingInfo.class,
                     SeededPropertySource::next0371StakingInfo,
-                    MerkleStakingInfoSerdeTest.NUM_TEST_CASES),
+                    MerkleStakingInfoSerdeTests.NUM_TEST_CASES),
             entry(
                     SerializableSemVers.class,
                     SeededPropertySource::nextSerializableSemVers,
@@ -233,7 +233,7 @@ public class SerializedForms {
 
     private static <T extends SelfSerializable> void saveForCurrentVersion(
             final Class<T> type, final Function<SeededPropertySource, T> factory, final int numTestCases) {
-        final var instance = SelfSerializableDataTest.instantiate(type);
+        final var instance = SelfSerializableDataTests.instantiate(type);
         final var currentVersion = instance.getVersion();
         for (int i = 0; i < numTestCases; i++) {
             final var propertySource = SeededPropertySource.forSerdeTest(currentVersion, i);
