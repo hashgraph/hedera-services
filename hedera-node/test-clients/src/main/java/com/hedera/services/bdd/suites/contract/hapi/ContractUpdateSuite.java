@@ -339,6 +339,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     HapiSpec fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
