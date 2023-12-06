@@ -289,15 +289,7 @@ public class HandleWorkflow {
         // It's awful that we have to check this every time a transaction is handled, especially since this mostly
         // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
         genesisRecordsTimeHook.process(tokenServiceContext);
-        try {
-            // If this is the first user transaction after midnight, then handle staking updates prior to handling the
-            // transaction itself.
-            stakingPeriodTimeHook.process(tokenServiceContext);
-        } catch (final Exception e) {
-            // If anything goes wrong, we log the error and continue
-            logger.error("Failed to process staking period time hook", e);
-        }
-        // @future('7836'): update the exchange rate and call from here
+        stakingPeriodTimeHook.process(stack, tokenServiceContext);
 
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction
