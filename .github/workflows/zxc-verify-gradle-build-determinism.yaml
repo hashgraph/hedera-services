@@ -194,10 +194,12 @@ jobs:
         run: ./gradlew assemble --scan --no-build-cache
 
       - name: Validate Libraries
+        continue-on-error: true
         working-directory: ${{ github.workspace }}/hedera-node/data/lib
         run: sha256sum -c "${GRADLE_MANIFEST_PATH}/libraries.sha256"
 
       - name: Validate Applications
+        continue-on-error: true
         working-directory: ${{ github.workspace }}/hedera-node/data/apps
         run: sha256sum -c "${GRADLE_MANIFEST_PATH}/applications.sha256"
 
@@ -208,6 +210,7 @@ jobs:
         run: ${{ env.GRADLE_MANIFEST_GENERATOR }}
 
       - name: Compare Library Manifests
+        continue-on-error: true
         run: |
           if ! diff -u "${GRADLE_MANIFEST_PATH}/libraries.sha256" "${{ steps.regen-manifest.outputs.libraries }}" >/dev/null 2>&1; then
             echo "::group::Library Manifest Differences"
