@@ -34,6 +34,7 @@ public class KeyUtils {
 
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    public static final int EVM_ADDRESS_BYTE_LENGTH = 20;
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
@@ -110,8 +111,11 @@ public class KeyUtils {
             return !((ContractID) key.value()).hasContractNum()
                     || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
         } else if (pbjKey.hasContractID()) {
-            return !((ContractID) key.value()).hasContractNum()
-                    || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
+            if (((ContractID) key.value()).hasContractNum()) {
+                return ((ContractID) key.value()).contractNum() == 0;
+            } else {
+                return ((Bytes) ((ContractID) key.value()).contract().value()).length() == 0;
+            }
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
@@ -155,7 +159,11 @@ public class KeyUtils {
         } else if (pbjKey.hasDelegatableContractId()) {
             return ((ContractID) key.value()).contractNum().intValue() > 0;
         } else if (pbjKey.hasContractID()) {
-            return ((ContractID) key.value()).contractNum().intValue() > 0;
+            if (((ContractID) key.value()).hasContractNum()) {
+                return ((ContractID) key.value()).contractNum().intValue() > 0;
+            } else {
+                return ((Bytes) ((ContractID) key.value()).contract().value()).length() == EVM_ADDRESS_BYTE_LENGTH;
+            }
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;

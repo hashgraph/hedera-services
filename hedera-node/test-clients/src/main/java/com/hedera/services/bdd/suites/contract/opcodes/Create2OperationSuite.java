@@ -837,6 +837,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec canUseAliasesInPrecompilesAndContractKeys() {
         final var creation2 = CREATE_2_TXN;
         final var contract = "Create2PrecompileUser";
