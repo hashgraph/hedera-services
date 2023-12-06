@@ -45,6 +45,11 @@ public class AbstractCodeCache {
     public Code getIfPresent(final Address address) {
         final var cacheKey = new BytesKey(address.toArray());
 
+        if (!entityAccess.isUsable(address)) {
+            cache.invalidate(cacheKey);
+            return null;
+        }
+
         var code = cache.getIfPresent(cacheKey);
 
         if (code != null) {

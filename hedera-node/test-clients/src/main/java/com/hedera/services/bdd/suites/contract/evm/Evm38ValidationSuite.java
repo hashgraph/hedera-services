@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.evm;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -43,6 +44,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -60,6 +62,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.List;
@@ -112,6 +115,8 @@ public class Evm38ValidationSuite extends HapiSuite {
     public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
     public static final String RETURNER_REPORTED_LOG_MESSAGE = "Returner reported {} when called with mirror address";
     private static final String STATIC_CALL = "staticcall";
+    private static final String BENEFICIARY = "beneficiary";
+    private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
 
     public static void main(String... args) {
         new Evm38ValidationSuite().runSuiteSync();
@@ -136,7 +141,8 @@ public class Evm38ValidationSuite extends HapiSuite {
                 verifiesExistenceForExtCodeSize(),
                 verifiesExistenceForExtCodeHash(),
                 verifiesExistenceForStaticCall(),
-                canInternallyCallAliasedAddressesOnlyViaCreate2Address());
+                canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
+                callingDestructedContractReturnsStatusDeleted());
     }
 
     @HapiTest
@@ -647,6 +653,27 @@ public class Evm38ValidationSuite extends HapiSuite {
                             mirrorResult,
                             "Internal calls with mirror address should not be" + " possible for aliased contracts");
                 }));
+    }
+
+    @HapiTest
+    HapiSpec callingDestructedContractReturnsStatusDeleted() {
+        final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
+        return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
+                .given(
+                        cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
+                        uploadInitCode(SIMPLE_UPDATE_CONTRACT))
+                .when(
+                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                                .gas(300_000L),
+                        sourcing(() -> contractCall(
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "del",
+                                        asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
+                                .gas(1_000_000L)))
+                .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
+                        .gas(350_000L)
+                        .hasKnownStatus(CONTRACT_DELETED));
     }
 
     @Override

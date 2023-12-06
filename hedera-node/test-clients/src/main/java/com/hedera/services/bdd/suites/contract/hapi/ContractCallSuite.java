@@ -235,7 +235,6 @@ public class ContractCallSuite extends HapiSuite {
                 nonPayable(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
-                callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
                 specialQueriesXTest(),
                 sendHbarsToAddressesMultipleTimes(),
