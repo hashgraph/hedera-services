@@ -156,6 +156,7 @@ class ProxyWorldUpdaterTest {
     void getsHederaContractByNumber() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
+        given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
@@ -173,6 +174,7 @@ class ProxyWorldUpdaterTest {
     void returnsNullHederaContractIfMissing() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
+        given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
         assertNull(subject.getHederaAccount(numericId));
     }
@@ -193,6 +195,7 @@ class ProxyWorldUpdaterTest {
                 .evmAddress(tuweniToPbjBytes(
                         asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
+        given(hederaOperations.shardAndRealmValidated(aliasId)).willReturn(aliasId);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
     }
@@ -213,6 +216,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesHollowFinalization() {
+        given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
         subject.finalizeHollowAccount(EIP_1014_ADDRESS);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);

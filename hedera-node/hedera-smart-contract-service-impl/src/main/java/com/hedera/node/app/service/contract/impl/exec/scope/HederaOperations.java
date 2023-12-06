@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -25,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,6 +37,8 @@ import java.util.List;
  * Provides the Hedera operations that only a {@link ProxyWorldUpdater} needs (but not a {@link DispatchingEvmFrameState}.
  */
 public interface HederaOperations {
+    ContractID MISSING_CONTRACT_ID = ContractID.newBuilder().contractNum(0).build();
+
     /**
      * Creates a new {@link HederaOperations} that is a child of this {@link HederaOperations}.
      *
@@ -242,4 +247,29 @@ public interface HederaOperations {
      * @param evmAddress    Evm address of hollow account
      */
     void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress);
+
+    /**
+     * Given a {@link ContractID}, returns it if the shard and realm match for this node; otherwise,
+     * returns {@link #MISSING_CONTRACT_ID}.
+     *
+     * @param contractId the contract ID to validate
+     * @return the validated contract ID
+     */
+    ContractID shardAndRealmValidated(@NonNull ContractID contractId);
+
+    /**
+     * Given a {@link ContractID} and the current Hedera config, returns the given id if its shard and realm
+     * match the config; otherwise, returns {@link #MISSING_CONTRACT_ID}.
+     *
+     * @param contractId the contract ID to validate
+     * @param hederaConfig the current Hedera config
+     * @return the validated contract ID
+     */
+    default ContractID configValidated(@NonNull final ContractID contractId, @NonNull final HederaConfig hederaConfig) {
+        requireNonNull(contractId);
+        requireNonNull(hederaConfig);
+        return contractId.shardNum() == hederaConfig.shard() && contractId.realmNum() == hederaConfig.realm()
+                ? contractId
+                : MISSING_CONTRACT_ID;
+    }
 }

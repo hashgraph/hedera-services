@@ -168,6 +168,7 @@ public class EventIntake {
         try {
             // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
             if (consensus().isExpired(event)) {
+                event.clear();
                 return;
             }
 

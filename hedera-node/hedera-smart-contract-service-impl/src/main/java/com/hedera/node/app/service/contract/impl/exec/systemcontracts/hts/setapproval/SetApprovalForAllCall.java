@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setap
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants.APPROVAL_FOR_ALL_EVENT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL;
@@ -92,7 +91,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
         if (status != ResponseCodeEnum.SUCCESS) {
             // This checks ensure mono behaviour
             if (status.equals(INVALID_ALLOWANCE_SPENDER_ID)) {
-                return reversionWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, gasRequirement);
+                return completionWith(INVALID_ALLOWANCE_SPENDER_ID, gasRequirement);
             }
             if (status.equals(INVALID_TOKEN_ID)) {
                 return completionWith(INVALID_TOKEN_ID, gasRequirement);
