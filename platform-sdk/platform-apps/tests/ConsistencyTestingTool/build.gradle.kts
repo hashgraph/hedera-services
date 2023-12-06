@@ -18,6 +18,8 @@ plugins { id("com.hedera.hashgraph.application") }
 
 application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
 
+mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
+
 testModuleInfo {
     requires("com.swirlds.platform.core")
     requires("org.junit.jupiter.api")
