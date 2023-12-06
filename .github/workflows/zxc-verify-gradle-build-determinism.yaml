@@ -168,6 +168,10 @@ jobs:
         with:
           cache-disabled: true
 
+      - name: Setup CoreUtils (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        run: brew install coreutils
+
       - name: Authenticate to Google Cloud
         id: google-auth
         uses: google-github-actions/auth@f105ef0cdb3b102a020be1767fcc8a974898b7c6 # v1.2.0
