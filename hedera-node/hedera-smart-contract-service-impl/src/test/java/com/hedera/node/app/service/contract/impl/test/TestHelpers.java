@@ -100,6 +100,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -131,6 +132,9 @@ public class TestHelpers {
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
 
+    public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.permittedContractCallers", Set.of(1062787L))
+            .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
@@ -169,7 +173,7 @@ public class TestHelpers {
     public static final long BESU_MAX_REFUND_QUOTIENT = 2;
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
-    public static final Bytes INITCODE = Bytes.wrap("60a06040526000600b55".getBytes());
+    public static final Bytes INITCODE = Bytes.wrap("0060a06040526000600b55".getBytes());
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     public static final Bytes CONSTRUCTOR_PARAMS = Bytes.wrap(new byte[] {2, 3, 2, 3, 2, 3, 2, 3, 2, 3});
     public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
@@ -392,7 +396,8 @@ public class TestHelpers {
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
-
+    public static final Address PERMITTED_ADDRESS_CALLER =
+            Address.wrap((org.apache.tuweni.bytes.Bytes.wrap(asEvmAddress(1062787L))));
     public static final Account OPERATOR =
             Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
 
