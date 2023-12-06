@@ -164,7 +164,6 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.state.signed.StateDumpRequest;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.InitTrigger;

@@ -100,12 +100,8 @@ public final class PreconsensusEventReplayWorkflow {
                     firstStateTimestamp = null;
                     firstStateRound = -1;
                 } else {
-                    firstStateTimestamp = startState
-                            .get()
-                            .getConsensusTimestamp();
-                    firstStateRound = startState
-                            .get()
-                            .getRound();
+                    firstStateTimestamp = startState.get().getConsensusTimestamp();
+                    firstStateRound = startState.get().getRound();
                 }
             }
 
