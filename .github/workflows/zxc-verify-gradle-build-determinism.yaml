@@ -178,7 +178,7 @@ jobs:
         run: ./gradlew assemble --scan --no-build-cache
 
       - name: Validate Libraries
-        working-directory: ${{ github.workspace }}/hedera-node/data/libs
+        working-directory: ${{ github.workspace }}/hedera-node/data/lib
         run: sha256sum -c "${GRADLE_MANIFEST_PATH}/libraries.sha256"
 
       - name: Validate Applications
