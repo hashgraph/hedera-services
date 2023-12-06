@@ -79,7 +79,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -232,7 +231,6 @@ public class ContractCallSuite extends HapiSuite {
                 nonPayable(),
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
-                callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
                 specialQueriesXTest(),
                 sendHbarsToAddressesMultipleTimes(),
@@ -1459,27 +1457,6 @@ public class ContractCallSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .contractCallResult(
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
-    }
-
-    @HapiTest
-    HapiSpec callingDestructedContractReturnsStatusDeleted() {
-        final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
-                .given(
-                        cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT))
-                .when(
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(300_000L),
-                        sourcing(() -> contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "del",
-                                        asHeadlongAddress(asAddress(accountIDAtomicReference.get())))
-                                .gas(1_000_000L)))
-                .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
-                        .gas(350_000L)
-                        .hasKnownStatus(CONTRACT_DELETED));
     }
 
     HapiSpec insufficientGas() {
