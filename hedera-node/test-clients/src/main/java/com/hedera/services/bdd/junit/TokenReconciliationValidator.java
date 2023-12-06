@@ -32,6 +32,7 @@ import java.util.Map;
  * <ol>
  *   <li>The balances implied by the {@code TransferList} adjustments in the record stream.
  *   <li>The balances returned by {@code hasTokenBalance} queries.
+ *   NOTE: Since tokenBalances are no more returned from the query, the validation should be modified
  * </ol>
  *
  * <p>It uses the {@link com.hedera.services.bdd.suites.records.TokenBalanceValidation} suite to perform the queries.

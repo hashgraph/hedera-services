@@ -32,6 +32,7 @@ dependencies.components {
     withModule<RemoveAnnotationLibrariesMetadataRule>("com.github.ben-manes.caffeine:caffeine")
     withModule<RemoveAnnotationLibrariesMetadataRule>("com.github.spotbugs:spotbugs-annotations")
     withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.dagger:dagger-compiler")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.dagger:dagger-producers")
     withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.dagger:dagger-spi")
     withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.guava:guava")
     withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.protobuf:protobuf-java-util")
@@ -44,9 +45,13 @@ dependencies.components {
     withModule<IoPrometheusSimpleclientMetadataRule>("io.prometheus:simpleclient")
 
     withModule<RemoveKotlinStdlibCommonMetadataRule>("org.jetbrains.kotlin:kotlin-stdlib")
+
+    withModule<RemoveHamcrestCoreMetadataRule>("junit:junit")
 }
 
 extraJavaModuleInfo {
+    failOnAutomaticModules.set(true) // Only allow Jars with 'module-info' on all module paths
+
     module("io.grpc:grpc-netty", "grpc.netty") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -89,9 +94,7 @@ extraJavaModuleInfo {
     }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
-        // requireAllDefinedDependencies() <- Currently not possible due to a Gradlex plugin
-        // limitation
-        requires("com.google.guava.failureaccess")
+        requireAllDefinedDependencies()
         requires("java.logging")
     }
     module("com.google.guava:failureaccess", "com.google.guava.failureaccess") {
@@ -193,6 +196,9 @@ extraJavaModuleInfo {
     module("io.netty:netty-common", "io.netty.common") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("java.logging")
+        requires("jdk.unsupported")
+        ignoreServiceProvider("reactor.blockhound.integration.BlockHoundIntegration")
     }
     module("io.netty:netty-handler", "io.netty.handler") {
         exportAllPackages()
@@ -258,7 +264,6 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-
     module("com.goterl:lazysodium-java", "lazysodium.java") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -269,7 +274,7 @@ extraJavaModuleInfo {
     }
     module("net.java.dev.jna:jna", "com.sun.jna") {
         exportAllPackages()
-        // no dependencies
+        requires("java.logging")
     }
     module("org.eclipse.collections:eclipse-collections-api", "org.eclipse.collections.api") {
         exportAllPackages()
@@ -304,64 +309,181 @@ extraJavaModuleInfo {
         "io.netty.transport.epoll.linux.aarch_64"
     )
 
+    // Annotation processing only
+    module("com.google.auto.service:auto-service-annotations", "com.google.auto.service") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("com.google.auto.service:auto-service", "com.google.auto.service.processor") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.auto:auto-common", "com.google.auto.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.dagger:dagger-compiler", "dagger.compiler") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.dagger:dagger-producers", "dagger.producers") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.dagger:dagger-spi", "dagger.spi") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module(
+        "com.google.devtools.ksp:symbol-processing-api",
+        "com.google.devtools.ksp.symbolprocessingapi"
+    ) {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+
+    // Testing only
+    module("com.google.jimfs:jimfs", "com.google.jimfs") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.awaitility:awaitility", "awaitility") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.mockito:mockito-inline", "org.mockito.inline") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+
+    // JMH only
+    module("net.sf.jopt-simple:jopt-simple", "jopt.simple") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.openjdk.jmh:jmh-core", "jmh.core") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+
+    // Test clients only
+    module("com.github.docker-java:docker-java-api", "com.github.docker.java.api") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module(
+        "com.github.docker-java:docker-java-transport-zerodep",
+        "com.github.docker.transport.zerodep"
+    ) {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.google.protobuf:protobuf-java-util", "com.google.protobuf.util") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.squareup:javapoet", "com.squareup.javapoet") {
+        exportAllPackages()
+        requires("java.compiler")
+    }
+    module("junit:junit", "junit") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.apache.commons:commons-compress", "org.apache.commons.compress") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.hamcrest:hamcrest", "org.hamcrest") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.json:json", "org.json") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.mockito:mockito-core", "org.mockito") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.objenesis:objenesis", "org.objenesis") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.testcontainers:testcontainers", "org.testcontainers") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.mockito:mockito-junit-jupiter", "org.mockito.junit.jupiter") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+
+    // Jars that are not patched but to which Jars we patch above have 'requires'.
+    // If the 'requires' are created by requireAllDefinedDependencies(), the information
+    // how the library coordinates map to the Module Names is requires here.
+    knownModule(
+        "com.fasterxml.jackson.core:jackson-annotations",
+        "com.fasterxml.jackson.annotation"
+    )
     knownModule("com.github.ben-manes.caffeine:caffeine", "com.github.benmanes.caffeine")
     knownModule("com.google.code.gson:gson", "com.google.gson")
     knownModule("io.helidon.grpc:io.grpc", "io.grpc")
+    knownModule("net.bytebuddy:byte-buddy", "net.bytebuddy")
+    knownModule("net.bytebuddy:byte-buddy-agent", "net.bytebuddy.agent")
     knownModule("org.apache.logging.log4j:log4j-api", "org.apache.logging.log4j")
-    knownModule("org.apache.logging.log4j:log4j-slf4j2-impl", "org.apache.logging.log4j.slf4j")
-    knownModule("org.bouncycastle:bcpkix-jdk18on", "org.bouncycastle.pkix")
     knownModule("org.bouncycastle:bcprov-jdk18on", "org.bouncycastle.provider")
-    knownModule("org.bouncycastle:bcutil-jdk18on", "org.bouncycastle.util")
+    knownModule("org.jetbrains.kotlin:kotlin-stdlib", "kotlin.stdlib")
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
+    knownModule("org.junit.jupiter:junit-jupiter-api", "org.junit.jupiter.api")
+    knownModule("org.ow2.asm:asm", "org.objectweb.asm")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
-    knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
-    knownModule("com.squareup:javapoet", "com.squareup.javapoet")
-    knownModule("com.google.auto.service:auto-service-annotations", "com.google.auto.service")
-
-    // Annotation processing only
-    automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")
-    automaticModule("com.google.dagger:dagger-producers", "dagger.producers")
-    automaticModule("com.google.dagger:dagger-spi", "dagger.spi")
-    automaticModule(
-        "com.google.devtools.ksp:symbol-processing-api",
-        "com.google.devtools.ksp.symbolprocessingapi"
-    )
-    automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
-    automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
-    automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
-    automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
-    automaticModule("com.google.auto.service:auto-service", "com.google.auto.service.processor")
-    automaticModule("com.google.auto:auto-common", "com.google.auto.common")
-
-    // Testing only
-    automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")
-    automaticModule("org.awaitility:awaitility", "awaitility")
-    automaticModule("org.hamcrest:hamcrest-core", "org.hamcrest.core")
-    automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
-    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
-    automaticModule(
-        "uk.org.webcompere:system-stubs-jupiter",
-        "uk.org.webcompere.systemstubs.jupiter"
-    )
-
-    // JMH only
-    automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
-    automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
-    automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
-    automaticModule("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
-    automaticModule("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection")
-
-    // Test clients only
-    automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
-    automaticModule(
-        "com.github.docker-java:docker-java-transport",
-        "com.github.docker.java.transport"
-    )
-    automaticModule(
-        "com.github.docker-java:docker-java-transport-zerodep",
-        "com.github.docker.transport.zerodep"
-    )
-    automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
-    automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
-    automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
 }

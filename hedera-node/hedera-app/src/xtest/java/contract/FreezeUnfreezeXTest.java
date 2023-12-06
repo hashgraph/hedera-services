@@ -18,7 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
@@ -178,9 +178,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .array()),
-                        output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output));
         // FREEZE DIFFERENT FREEZE KEY
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -188,9 +186,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                .array()),
-                        output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output));
     }
 
     @Override
