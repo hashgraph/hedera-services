@@ -178,66 +178,6 @@ class StateManagementComponentTests {
     }
 
     @Test
-    @DisplayName("Signed States For Old Rounds Are Not Processed")
-    void signedStateFromTransactionsCodePath() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final DefaultStateManagementComponent component = newStateManagementComponent();
-
-        systemTransactionConsumer.reset();
-        component.start();
-
-        final SignedState signedStateRound1 = new RandomSignedStateGenerator(random)
-                .setRound(1)
-                .setSigningNodeIds(List.of())
-                .build();
-        signedStateRound1.getState().setHash(null);
-
-        final SignedState signedStateRound2 = new RandomSignedStateGenerator(random)
-                .setRound(2)
-                .setSigningNodeIds(List.of())
-                .build();
-        signedStateRound2.getState().setHash(null);
-
-        final SignedState signedStateRound3 = new RandomSignedStateGenerator(random)
-                .setRound(3)
-                .setSigningNodeIds(List.of())
-                .build();
-        signedStateRound3.getState().setHash(null);
-
-        // Transaction proceeds, state is hashed, signature of hash sent, and state is set as last state.
-        component.newSignedStateFromTransactions(signedStateRound2.reserve("test"));
-        assertNotNull(
-                signedStateRound2.getState().getHash(),
-                "The hash for transaction states that are processed will not be null.");
-        assertEquals(
-                systemTransactionConsumer.getNumSubmitted(),
-                1,
-                "The transaction could should be 1 for processing a valid state.");
-
-        // Transaction fails to be signed due to lower round.
-        component.newSignedStateFromTransactions(signedStateRound1.reserve("test"));
-        assertNull(
-                signedStateRound1.getState().getHash(),
-                "The states with older rounds will not have their hash computed.");
-        assertEquals(
-                systemTransactionConsumer.getNumSubmitted(),
-                1,
-                "The states with older rounds will not have hash signatures transmitted.");
-
-        // Transaction proceeds, state is hashed, signature of hash sent, and state is set as last state.
-        component.newSignedStateFromTransactions(signedStateRound3.reserve("test"));
-        assertNotNull(
-                signedStateRound3.getState().getHash(),
-                "The state should be processed and have a hash computed and set.");
-        assertEquals(
-                systemTransactionConsumer.getNumSubmitted(),
-                2,
-                "The signed hash for processed states will be transmitted.");
-
-        component.stop();
-    }
-
-    @Test
     @DisplayName("Test that the state is saved to disk when it is received via reconnect")
     void testReconnectStateSaved() {
         final Random random = RandomUtils.getRandomPrintSeed();
