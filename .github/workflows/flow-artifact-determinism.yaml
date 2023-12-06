@@ -1,4 +1,4 @@
-name: Gradle Determinism
+name: Artifact Determinism
 on:
   workflow_dispatch:
     inputs:
@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   check:
-    name: Check
+    name: Gradle
     uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
     with:
       ref: ${{ github.event.inputs.ref || '' }}
