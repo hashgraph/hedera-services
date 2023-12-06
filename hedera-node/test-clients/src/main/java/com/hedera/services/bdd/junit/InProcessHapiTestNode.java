@@ -27,6 +27,8 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.PlatformStatNames;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -217,6 +219,14 @@ public class InProcessHapiTestNode implements HapiTestNode {
         }
     }
 
+    public void waitForBehind(long seconds) throws TimeoutException{
+        waitFor(PlatformStatus.BEHIND, seconds);
+    }
+
+    public void waitForReconnectComplete(long seconds) throws TimeoutException{
+        waitFor(PlatformStatus.RECONNECT_COMPLETE, seconds);
+    }
+
     @Override
     public void waitForShutdown(long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
@@ -238,11 +248,15 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void waitForFreeze(long seconds) throws TimeoutException {
+        waitFor(PlatformStatus.FREEZE_COMPLETE, seconds);
+    }
+
+    private void waitFor(PlatformStatus status, long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
-        while (th != null && !th.hedera.isFrozen()) {
+        while (th != null && th.hedera != null && th.hedera.getPlatformStatus().equals(status)) {
             if (System.currentTimeMillis() > waitUntil) {
                 throw new TimeoutException(
-                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not reach status " + status);
             }
 
             try {

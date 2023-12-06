@@ -249,14 +249,18 @@ final class SubProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void waitForFreeze(long seconds) throws TimeoutException {
+        waitFor("FREEZE_COMPLETE", seconds);
+    }
+
+    private void waitFor(String status, long seconds) throws TimeoutException {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
         while (handle != null && handle.isAlive()) {
             if (System.currentTimeMillis() > waitUntil) {
                 throw new TimeoutException(
-                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not freeze!");
+                        "node " + nodeId + ": Waited " + seconds + " seconds, but node did not reach status " + status);
             }
 
-            if ("FREEZE_COMPLETE".equals(getPlatformStatus())) {
+            if (status.equals(getPlatformStatus())) {
                 return;
             }
 
@@ -268,6 +272,16 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                         "node " + nodeId + ": Interrupted while sleeping in waitForFreeze busy loop", e);
             }
         }
+    }
+
+    @Override
+    public void waitForBehind(final long seconds) throws TimeoutException {
+        waitFor("BEHIND", seconds);
+    }
+
+    @Override
+    public void waitForReconnectComplete(final long seconds) throws TimeoutException {
+        waitFor("RECONNECT_COMPLETE", seconds);
     }
 
     public void terminate() {

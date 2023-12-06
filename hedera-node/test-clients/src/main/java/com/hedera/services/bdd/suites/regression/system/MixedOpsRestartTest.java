@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.regression;
+package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -46,6 +46,7 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.nio.ByteBuffer;
 import java.time.Instant;

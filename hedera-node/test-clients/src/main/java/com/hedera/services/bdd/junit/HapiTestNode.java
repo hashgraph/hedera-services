@@ -54,6 +54,10 @@ public interface HapiTestNode {
      */
     void waitForActive(long seconds) throws TimeoutException;
 
+    void waitForBehind(long seconds) throws TimeoutException;
+
+    void waitForReconnectComplete(long seconds) throws TimeoutException;
+
     /**
      * Stops the node software gracefully
      */

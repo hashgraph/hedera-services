@@ -259,6 +259,10 @@ public class UtilVerbs {
         return new WaitForActiveOp(allNodes(), waitSeconds);
     }
 
+    public static WaitForActiveOp waitForNodeToBecomeBehind(String name, int waitSeconds) {
+        return new WaitForActiveOp(byName(name), waitSeconds);
+    }
+
     public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
         return new WaitForFreezeOp(byName(name), waitSeconds);
     }
@@ -266,9 +270,16 @@ public class UtilVerbs {
     public static StartNodesOp startAllNodes(int waitSeconds) {
         return new StartNodesOp(allNodes(), waitSeconds);
     }
+    public static StartNodesOp startNode(String name, int waitSeconds) {
+        return new StartNodesOp(byName(name), waitSeconds);
+    }
 
     public static ShutDownNodesOp shutDownAllNodes(int waitSeconds) {
         return new ShutDownNodesOp(allNodes(), waitSeconds);
+    }
+
+    public static ShutDownNodesOp shutDownNode(String name, int waitSeconds) {
+        return new ShutDownNodesOp(byName(name), waitSeconds);
     }
 
     public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {

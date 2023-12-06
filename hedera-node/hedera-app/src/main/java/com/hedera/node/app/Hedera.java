@@ -295,6 +295,10 @@ public final class Hedera implements SwirldMain {
                 && daggerApp.grpcServerManager().isRunning();
     }
 
+    public PlatformStatus getPlatformStatus() {
+        return platformStatus;
+    }
+
     /**
      * Indicates whether this node is FROZEN.
      * @return True if the platform is frozen
