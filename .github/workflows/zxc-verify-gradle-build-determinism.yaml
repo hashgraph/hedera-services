@@ -1,3 +1,19 @@
+##
+# Copyright (C) 2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
 name: "ZXC: Verify Gradle Build Determinism"
 on:
   workflow_call:
@@ -87,11 +103,11 @@ jobs:
           BASELINE_PATH="gs://hedera-ci-ephemeral-artifacts/${{ github.repository }}/gradle/baselines"
           BASELINE_FILE="${BASELINE_PATH}/${BASELINE_NAME}"
           BASELINE_EXISTS="false"
-          
+
           if gsutil ls "${BASELINE_FILE}" >/dev/null 2>&1; then
              BASELINE_EXISTS="true"
           fi
-          
+
           echo "exists=${BASELINE_EXISTS}" >> "${GITHUB_OUTPUT}"
           echo "path=${BASELINE_PATH}" >> "${GITHUB_OUTPUT}"
           echo "name=${BASELINE_NAME}" >> "${GITHUB_OUTPUT}"
