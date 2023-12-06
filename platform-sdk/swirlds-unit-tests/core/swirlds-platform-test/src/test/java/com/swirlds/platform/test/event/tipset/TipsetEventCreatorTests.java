@@ -258,7 +258,7 @@ class TipsetEventCreatorTests {
             @NonNull final Map<NodeId, SimulatedNode> eventCreators, @NonNull final EventImpl eventImpl) {
 
         for (final SimulatedNode eventCreator : eventCreators.values()) {
-            eventCreator.eventCreator.registerEvent(eventImpl);
+            eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(), TipsetUtils.getParentDescriptors(eventImpl));
         }
@@ -764,9 +764,9 @@ class TipsetEventCreatorTests {
         final EventImpl eventD1 = createMockEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
-        eventCreator.registerEvent(eventB1);
-        eventCreator.registerEvent(eventC1);
-        eventCreator.registerEvent(eventD1);
+        eventCreator.registerEvent(eventB1.getBaseEvent());
+        eventCreator.registerEvent(eventC1.getBaseEvent());
+        eventCreator.registerEvent(eventD1.getBaseEvent());
 
         // Create the next several events.
         // We should be able to create a total of 3 before we exhaust all possible parents.
@@ -792,7 +792,7 @@ class TipsetEventCreatorTests {
         final NodeId otherParentId = eventA2.getUnhashedData().getOtherId();
         final EventImpl legalOtherParent = createMockEvent(random, otherParentId, 0, nodeA, 0);
 
-        eventCreator.registerEvent(legalOtherParent);
+        eventCreator.registerEvent(legalOtherParent.getBaseEvent());
 
         // We should be able to create an event on the new parent.
         assertNotNull(eventCreator.maybeCreateEvent());
@@ -839,11 +839,11 @@ class TipsetEventCreatorTests {
         final EventImpl eventE1 = createMockEvent(
                 random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
-        eventCreator.registerEvent(eventB1);
-        eventCreator.registerEvent(eventC1);
-        eventCreator.registerEvent(eventD1);
+        eventCreator.registerEvent(eventB1.getBaseEvent());
+        eventCreator.registerEvent(eventC1.getBaseEvent());
+        eventCreator.registerEvent(eventD1.getBaseEvent());
         // Attempt to register event from a node not in the address book.
-        eventCreator.registerEvent(eventE1);
+        eventCreator.registerEvent(eventE1.getBaseEvent());
 
         // Create the next several events.
         // We should be able to create a total of 3 before we exhaust all possible parents in the address book.

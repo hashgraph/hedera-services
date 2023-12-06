@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
 import static com.swirlds.common.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.common.system.events.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -42,7 +41,6 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -158,7 +156,7 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final EventImpl event) {
+    public void registerEvent(@NonNull final GossipEvent event) {
 
         final NodeId eventCreator = event.getHashedData().getCreatorId();
         if (!addressBook.contains(eventCreator)) {
@@ -172,17 +170,11 @@ public class TipsetEventCreator implements EventCreator {
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = buildDescriptor(event);
                 lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
-                lastSelfEventTransactionCount = event.getTransactions() == null ? 0 : event.getTransactions().length;
-
-                if (event.getBaseEventUnhashedData().getOtherId() != UNDEFINED_NODE_ID) {
-                    final EventDescriptor parentDescriptor = new EventDescriptor(
-                            event.getBaseEventHashedData().getOtherParentHash(),
-                            event.getBaseEventUnhashedData().getOtherId(),
-                            event.getBaseEventHashedData().getOtherParentGen(),
-                            event.getBaseEventHashedData().getBirthRound());
-
-                    childlessOtherEventTracker.registerSelfEventParents(List.of(parentDescriptor));
-                }
+                lastSelfEventTransactionCount = event.getHashedData().getTransactions() == null
+                        ? 0
+                        : event.getHashedData().getTransactions().length;
+                childlessOtherEventTracker.registerSelfEventParents(
+                        event.getHashedData().getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
                 return;

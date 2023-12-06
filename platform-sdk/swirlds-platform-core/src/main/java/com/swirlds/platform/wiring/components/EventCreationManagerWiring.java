@@ -25,7 +25,6 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -84,18 +83,9 @@ public class EventCreationManagerWiring {
      * @param eventCreationManager the event creation manager to bind
      */
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
-        eventInput.bind((@NonNull final GossipEvent event) -> {
-            // FUTURE WORK: once the feature flag has been removed,
-            // convert the internals of event creation to use GossipEvent
-            // instead of EventImpl.
-            final EventImpl eventImpl = new EventImpl(event.getHashedData(), event.getUnhashedData());
-            eventCreationManager.registerEvent(eventImpl);
-        });
-
+        eventInput.bind(eventCreationManager::registerEvent);
         minimumGenerationNonAncientInput.bind(eventCreationManager::setMinimumGenerationNonAncient);
-
         pauseInput.bind(eventCreationManager::setPauseStatus);
-
         heartbeatBindable.bind(now -> {
             return eventCreationManager.maybeCreateEvent();
         });
