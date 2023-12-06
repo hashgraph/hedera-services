@@ -141,6 +141,8 @@ public class PlatformWiring implements Startable, Stoppable {
             eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
             orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
             inOrderLinkerWiring.eventOutput().solderTo(linkedEventIntakeWiring.eventInput());
+            orphanBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
+            eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
 
             solderMinimumGenerationNonAncient();
         }

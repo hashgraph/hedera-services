@@ -6,6 +6,7 @@ Groups high level grouping of components and component groups. Substitutes known
 pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
+    -s 'eventCreationManager:non-validated events:†' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBuffer_splitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntake_splitter,getMinimumGenerationNonAncient' \
@@ -21,6 +22,7 @@ Same as "Uncollapsed" but with low level things collapsed. Attempts to hide thin
 pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
+    -s 'eventCreationManager:non-validated events:†' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBuffer_splitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntake_splitter,getMinimumGenerationNonAncient' \
