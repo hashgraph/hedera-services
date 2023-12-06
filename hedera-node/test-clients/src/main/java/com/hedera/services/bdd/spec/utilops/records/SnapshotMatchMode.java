@@ -41,7 +41,8 @@ public enum SnapshotMatchMode {
      */
     NONDETERMINISTIC_TRANSACTION_FEES,
     /**
-     * Allows for non-deterministic nonce.
+     * Allows for non-deterministic nonce. This can happen when there is a NodeStakeUpdate transaction in the
+     * mix.
      */
     NONDETERMINISTIC_NONCE,
     /**

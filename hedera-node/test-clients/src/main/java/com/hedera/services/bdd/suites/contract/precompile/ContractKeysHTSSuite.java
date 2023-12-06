@@ -1684,7 +1684,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN));
     }
 
-    @HapiTest // HERE
+    @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -1927,7 +1927,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN));
     }
 
-    @HapiTest // HERE
+    @HapiTest
     private HapiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
@@ -1935,7 +1935,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
         return defaultHapiSpec(
                         "AssociatePrecompileWithDelegateContractKeyForNonFungibleFrozen",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
