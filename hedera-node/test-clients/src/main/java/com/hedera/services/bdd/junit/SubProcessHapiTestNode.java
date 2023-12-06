@@ -331,6 +331,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     }
 
     @SuppressWarnings("java:S2142")
+    // sonar doesn't like the fact that we are catching and ignoring an exception
     private String getPlatformStatus() {
         Map<String, String> statusMap = new HashMap();
         String statusKey = "";

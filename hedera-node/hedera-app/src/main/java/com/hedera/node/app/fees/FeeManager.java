@@ -63,7 +63,7 @@ public final class FeeManager {
 
     private static final FeeComponents DEFAULT_FEE_COMPONENTS =
             FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
-    public static final FeeData DEFAULT_FEE_DATA = FeeData.newBuilder()
+    private static final FeeData DEFAULT_FEE_DATA = FeeData.newBuilder()
             .networkdata(DEFAULT_FEE_COMPONENTS)
             .nodedata(DEFAULT_FEE_COMPONENTS)
             .servicedata(DEFAULT_FEE_COMPONENTS)

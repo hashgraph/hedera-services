@@ -41,9 +41,10 @@ public final class SystemExitUtils {
      * @param message          a message to log, if not null
      * @param haltRuntime      whether to halt the java runtime or not
      */
-    @SuppressWarnings("java:S2583")
     public static void exitSystem(
-            @NonNull final SystemExitCode suppliedExitCode, @Nullable final String message, final boolean haltRuntime) {
+            @Nullable final SystemExitCode suppliedExitCode,
+            @Nullable final String message,
+            final boolean haltRuntime) {
         // this will warn that the exit code will never be null, but we should probably keep it as a fail safe
         final SystemExitCode exitCode = suppliedExitCode == null ? SystemExitCode.NO_EXIT_CODE : suppliedExitCode;
 

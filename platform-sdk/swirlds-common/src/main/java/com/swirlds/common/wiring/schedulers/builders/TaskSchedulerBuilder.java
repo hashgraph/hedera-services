@@ -243,7 +243,6 @@ public class TaskSchedulerBuilder<O> {
      * @param outerCounter the counter provided by the outer scope, or null if not provided
      * @return the combined counter, or a no op counter if both are null
      */
-    @SuppressWarnings("java:S6416")
     @NonNull
     private static ObjectCounter combineCounters(
             @Nullable final ObjectCounter innerCounter, @Nullable final ObjectCounter outerCounter) {
