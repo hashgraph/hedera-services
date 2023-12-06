@@ -30,14 +30,17 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
     public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
-    public static final String TINYBAR_VALUES_VARIABLE = "tinybarValues";
-    public static final String SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE = "systemContractGasCalculator";
+    public static final String TINYBAR_VALUES_CONTEXT_VARIABLE = "tinybarValues";
+    public static final String RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE = "receiverSigRequiredFailed";
+    public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -68,17 +71,52 @@ public class FrameUtils {
         return initialFrameOf(frame).getContextVariable(TRACKER_CONTEXT_VARIABLE);
     }
 
+    /**
+     * Returns whether the transaction executing the given frame just experienced a message call
+     * fail due to a missing receiver signature requirement.
+     *
+     * @param frame a frame in the transaction of interest
+     * @return true if the transaction just hit a missing receiver signature requirement
+     */
+    public static boolean messageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
+        return receiverSigReqFailureContextVariableFor(frame).get();
+    }
+
+    /**
+     * Sets a context variable that indicates the transaction executing the given frame just experienced
+     * a message call fail due to a missing receiver signature requirement.
+     *
+     * @param frame a frame in the transaction of interest
+     */
+    public static void setMessageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
+        receiverSigReqFailureContextVariableFor(frame).set(true);
+    }
+
+    /**
+     * Clears a context variable that indicates the transaction executing the given frame just experienced
+     * a message call fail due to a missing receiver signature requirement.
+     *
+     * @param frame a frame in the transaction of interest
+     */
+    public static void clearMessageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
+        receiverSigReqFailureContextVariableFor(frame).set(false);
+    }
+
+    private static AtomicBoolean receiverSigReqFailureContextVariableFor(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).getContextVariable(RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE);
+    }
+
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
         return (ProxyWorldUpdater) frame.getWorldUpdater();
     }
 
     public static @NonNull TinybarValues tinybarValuesFor(@NonNull final MessageFrame frame) {
-        return initialFrameOf(frame).getContextVariable(TINYBAR_VALUES_VARIABLE);
+        return initialFrameOf(frame).getContextVariable(TINYBAR_VALUES_CONTEXT_VARIABLE);
     }
 
     public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(
             @NonNull final MessageFrame frame) {
-        return initialFrameOf(frame).getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE);
+        return initialFrameOf(frame).getContextVariable(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE);
     }
 
     /**
@@ -131,6 +169,12 @@ public class FrameUtils {
 
     public static boolean alreadyHalted(@NonNull final MessageFrame frame) {
         return frame.getState() == MessageFrame.State.EXCEPTIONAL_HALT;
+    }
+
+    public static Optional<MessageFrame> maybeNext(@NonNull final MessageFrame frame) {
+        final var stack = frame.getMessageFrameStack();
+        final var frames = stack.iterator();
+        return frames.hasNext() ? Optional.of(frames.next()) : Optional.empty();
     }
 
     public static boolean unqualifiedDelegateDetected(final MessageFrame frame) {
