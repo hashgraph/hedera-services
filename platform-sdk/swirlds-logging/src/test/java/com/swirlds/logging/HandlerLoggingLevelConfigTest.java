@@ -37,7 +37,8 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testConstructor() {
         // given
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig());
+        final HandlerLoggingLevelConfig config =
+                new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig());
 
         // then
         checkDefaultBehavior(config);
@@ -56,11 +57,9 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithDifferentPrefixAndLevel() {
         // given
-        final Configuration configuration = getConfigBuilder()
-                .withValue("logging.level", "ERROR")
-                .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config =
-                new HandlerLoggingLevelConfig(configuration, "test.prefix");
+        final Configuration configuration =
+                getConfigBuilder().withValue("logging.level", "ERROR").getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.prefix");
 
         // then
         checkEnabledForLevel(config, "", Level.ERROR);
@@ -99,9 +98,9 @@ public class HandlerLoggingLevelConfigTest {
     private static void checkEnabledForLevel(HandlerLoggingLevelConfig config, String name, Level level) {
         Stream.of(Level.values())
                 .filter(level::enabledLoggingOfLevel)
-                .forEach(l ->
-                        Assertions.assertTrue(config.isEnabled(name, l, null),
-                                "%s should be enabled for package '%s' with level %s".formatted(l, name, level)));
+                .forEach(l -> Assertions.assertTrue(
+                        config.isEnabled(name, l, null),
+                        "%s should be enabled for package '%s' with level %s".formatted(l, name, level)));
         Stream.of(Level.values())
                 .filter(l -> !level.enabledLoggingOfLevel(l))
                 .forEach(l -> Assertions.assertFalse(
