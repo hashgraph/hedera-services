@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -736,6 +737,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // It is unlikely we have _any_ tests with nondeterministic logs but deterministic
             // call results, so we just use the same match mode for both
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
+        } else if ("constructorParameters".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS);
         } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
             return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
         } else {

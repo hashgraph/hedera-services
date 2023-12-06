@@ -376,6 +376,7 @@ public final class RecordListBuilder {
                 followingChildRemoved = true;
             } else {
                 if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
+                    child.tokenTransferLists().clear();
                     child.status(ResponseCodeEnum.REVERTED_SUCCESS);
                 }
 

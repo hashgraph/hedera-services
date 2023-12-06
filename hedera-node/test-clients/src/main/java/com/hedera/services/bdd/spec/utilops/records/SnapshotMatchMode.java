@@ -33,6 +33,10 @@ public enum SnapshotMatchMode {
      */
     NONDETERMINISTIC_FUNCTION_PARAMETERS,
     /**
+     * Allows for non-deterministic constructor parameters.
+     */
+    NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+    /**
      * Allows for non-deterministic amounts.
      */
     NONDETERMINISTIC_TRANSACTION_FEES,
