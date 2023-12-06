@@ -45,6 +45,7 @@ jobs:
     name: Generate Baseline
     runs-on: [self-hosted, Linux, medium, ephemeral]
     outputs:
+      sha: ${{ steps.commit.outputs.sha }}
       path: ${{ steps.baseline.outputs.path }}
       file: ${{ steps.baseline.outputs.file }}
       name: ${{ steps.baseline.outputs.name }}
@@ -75,10 +76,14 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
+      - name: Retrieve Commit Hash
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+
       - name: Baseline Existence Check
         id: baseline
         run: |
-          BASELINE_NAME="${{ github.sha }}.tar.gz"
+          BASELINE_NAME="${{ steps.commit.outputs.sha }}.tar.gz"
           BASELINE_PATH="gs://hedera-ci-ephemeral-artifacts/${{ github.repository }}/gradle/baselines"
           BASELINE_FILE="${BASELINE_PATH}/${BASELINE_NAME}"
           BASELINE_EXISTS="false"
