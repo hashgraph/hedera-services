@@ -64,19 +64,12 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     public TransactionBody callGrantApproval() {
         if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE) {
             var ownerId = getOwnerId();
-            return (spender.accountNum() == 0)
-                    ? buildCryptoDeleteAllowance(remove(ownerId)).build()
-                    : buildCryptoApproveAllowance(approve(ownerId)).build();
+            return isNftApprovalRevocation()
+                    ? buildCryptoDeleteAllowance(remove(ownerId))
+                    : buildCryptoApproveAllowance(approve(ownerId));
         } else {
-            return buildCryptoApproveAllowance(approve(senderId)).build();
+            return buildCryptoApproveAllowance(approve(senderId));
         }
-    }
-
-    private AccountID getOwnerId() {
-        return enhancement
-                .nativeOperations()
-                .getNft(token.tokenNum(), amount.longValue())
-                .ownerId();
     }
 
     private CryptoDeleteAllowanceTransactionBody remove(AccountID ownerId) {
@@ -109,11 +102,22 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                         .build();
     }
 
-    private TransactionBody.Builder buildCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody body) {
-        return TransactionBody.newBuilder().cryptoDeleteAllowance(body);
+    private TransactionBody buildCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody body) {
+        return TransactionBody.newBuilder().cryptoDeleteAllowance(body).build();
     }
 
-    private TransactionBody.Builder buildCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody body) {
-        return TransactionBody.newBuilder().cryptoApproveAllowance(body);
+    private TransactionBody buildCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody body) {
+        return TransactionBody.newBuilder().cryptoApproveAllowance(body).build();
+    }
+
+    private AccountID getOwnerId() {
+        return enhancement
+                .nativeOperations()
+                .getNft(token.tokenNum(), amount.longValue())
+                .ownerId();
+    }
+
+    private boolean isNftApprovalRevocation() {
+        return spender.accountNum() == 0;
     }
 }
