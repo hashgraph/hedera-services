@@ -401,9 +401,8 @@ public final class RecordListBuilder {
      * If the child record is REMOVABLE, then the record is removed from the list.
      */
     public void revertLastChildOnly() {
-        if (childRecordBuilders.isEmpty()) {
-            return;
-        }
+        if (childRecordBuilders == null || childRecordBuilders.isEmpty())  return;
+
         final var lastRecordIndex = childRecordBuilders.size() - 1;
         final var child = childRecordBuilders.get(lastRecordIndex);
 
