@@ -246,7 +246,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 tokenInfoTupleFor(token, ledgerId),
                 serialNumber,
-                priorityAddressOf(nft.ownerIdOrElse(token.treasuryAccountIdOrThrow()), nativeOperations),
+                priorityAddressOf(nft.ownerIdOrElse(token.treasuryAccountIdOrElse(ZERO_ACCOUNT_ID)), nativeOperations),
                 nft.mintTimeOrElse(new Timestamp(0, 0)).seconds(),
                 nftMetaData,
                 priorityAddressOf(nft.spenderIdOrElse(ZERO_ACCOUNT_ID), nativeOperations));
