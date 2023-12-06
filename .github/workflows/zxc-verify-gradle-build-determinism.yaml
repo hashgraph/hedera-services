@@ -162,11 +162,11 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
         env:
-          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/python3') }}
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/bin/python3') }}
 
       - name: Download Baseline
         env:
-          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/python3') }}
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/bin/python3') }}
         run: |
           mkdir -p "${GRADLE_MANIFEST_PATH}"
           cd "${GRADLE_MANIFEST_PATH}"
