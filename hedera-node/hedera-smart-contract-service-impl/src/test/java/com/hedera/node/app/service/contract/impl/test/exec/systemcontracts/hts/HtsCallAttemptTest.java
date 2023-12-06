@@ -346,7 +346,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations,
-                UseTopLevelSigs.YES))
+                UseTopLevelSigs.NO))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
@@ -376,7 +376,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations,
-                UseTopLevelSigs.YES))
+                UseTopLevelSigs.NO))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
@@ -403,7 +403,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations,
-                UseTopLevelSigs.YES))
+                UseTopLevelSigs.NO))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
@@ -435,7 +435,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
         // receiverSigRequired on; in which case the sender will need to activate a contract id key
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations, UseTopLevelSigs.YES))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations, UseTopLevelSigs.NO))
                 .willReturn(strategy);
         if (AssociationsTranslator.ASSOCIATE_ONE.selectorHex().equals(selectorHex)) {
             given(associationsDecoder.decodeAssociateOne(any())).willReturn(TransactionBody.DEFAULT);
@@ -496,7 +496,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
         // receiverSigRequired on; in which case the sender will need to activate a contract id key
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations, UseTopLevelSigs.YES))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations, UseTopLevelSigs.NO))
                 .willReturn(strategy);
         if (ClassicTransfersTranslator.CRYPTO_TRANSFER.selectorHex().equals(selectorHex)) {
             given(classicTransfersDecoder.decodeCryptoTransfer(any(), any())).willReturn(TransactionBody.DEFAULT);
@@ -550,7 +550,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "0xe0f4059a,NON_FUNGIBLE",
     })
     void constructsMints(final String hexedSelector, final LinkedTokenType linkedTokenType) {
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations, UseTopLevelSigs.YES))
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations, UseTopLevelSigs.NO))
                 .willReturn(strategy);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         lenient()
