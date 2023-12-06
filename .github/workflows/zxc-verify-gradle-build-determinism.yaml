@@ -118,8 +118,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs:
       - generate-baseline
-    env:
-      PYTHON3_EXECUTABLE: ${{ runner.os == 'Windows' && '\bin\python3.exe' || '/bin/python3' }}
     strategy:
       fail-fast: false
       matrix:
@@ -164,11 +162,11 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
         env:
-          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.Python3_ROOT_DIR, env.PYTHON3_EXECUTABLE) }}
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.Python3_ROOT_DIR, runner.os == 'Windows' && '\bin\python3.exe' || '/bin/python3') }}
 
       - name: Download Baseline
         env:
-          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.Python3_ROOT_DIR, env.PYTHON3_EXECUTABLE) }}
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.Python3_ROOT_DIR, runner.os == 'Windows' && '\bin\python3.exe' || '/bin/python3') }}
         run: |
           mkdir -p "${GRADLE_MANIFEST_PATH}"
           cd "${GRADLE_MANIFEST_PATH}"
