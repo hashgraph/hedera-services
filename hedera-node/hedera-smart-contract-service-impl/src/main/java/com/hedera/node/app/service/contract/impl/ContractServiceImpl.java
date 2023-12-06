@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public enum ContractServiceImpl implements ContractService {
     CONTRACT_SERVICE;
-
+    public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractServiceComponent component;
 
     ContractServiceImpl() {

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -35,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -316,9 +318,14 @@ public class ClassicTransfersDecoder {
             @NonNull final AccountID to,
             final long amount,
             final IsApproval isApproval) {
+        final var accountAmounts = new ArrayList<AccountAmount>();
+        accountAmounts.add(credit(to, amount));
+        accountAmounts.add(debit(from, amount, isApproval));
+        accountAmounts.sort(Comparator.comparing(AccountAmount::accountID, ACCOUNT_ID_COMPARATOR));
+
         return TokenTransferList.newBuilder()
                 .token(tokenId)
-                .transfers(credit(to, amount), debit(from, amount, isApproval))
+                .transfers(accountAmounts)
                 .build();
     }
 
