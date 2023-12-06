@@ -22,11 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -37,6 +39,7 @@ import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -238,14 +241,17 @@ public class EventImplTests {
     }
 
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(new Hash(), new NodeId(0), -1, -1);
+        final EventDescriptor otherDescriptor = new EventDescriptor(new Hash(), new NodeId(0), -1, -1);
+
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
                         new NodeId(0L),
-                        0L,
-                        0L,
-                        CryptographyHolder.get().getNullHash(),
-                        CryptographyHolder.get().getNullHash(),
+                        selfDescriptor,
+                        Collections.singletonList(otherDescriptor),
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
