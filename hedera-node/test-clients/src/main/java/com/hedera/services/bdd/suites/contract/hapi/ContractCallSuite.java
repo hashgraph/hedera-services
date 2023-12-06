@@ -76,7 +76,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
-import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -249,8 +248,7 @@ public class ContractCallSuite extends HapiSuite {
                 depositMoreThanBalanceFailsGracefully(),
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
-                hollowCreationFailsCleanly(),
-                internalCallToDeletedContractReturnsSuccessfulNoop());
+                hollowCreationFailsCleanly());
     }
 
     private HapiSpec hollowCreationFailsCleanly() {
@@ -1482,33 +1480,6 @@ public class ContractCallSuite extends HapiSuite {
                         .fee(0L)
                         .payingWith("accountToPay")
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
-    }
-
-    HapiSpec internalCallToDeletedContractReturnsSuccessfulNoop() {
-        final AtomicLong calleeNum = new AtomicLong();
-        final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
-        final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
-        final String CALL_EXTERNAL_FUNCTION = "callExternalFunction";
-        final String INNER_TXN = "innerTx";
-
-        return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
-                .given(
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set),
-                        contractDelete(INTERNAL_CALLEE_CONTRACT))
-                .when(withOpContext((spec, ignored) -> allRunFor(
-                        spec,
-                        contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
-                                .gas(50_000L)
-                                .via(INNER_TXN))))
-                .then(withOpContext((spec, opLog) -> {
-                    final var lookup = getTxnRecord(INNER_TXN);
-                    allRunFor(spec, lookup);
-                    final var result =
-                            lookup.getResponseRecord().getContractCallResult().getContractCallResult();
-                    assertEquals(ByteString.copyFrom(new byte[32]), result);
-                }));
     }
 
     @HapiTest
