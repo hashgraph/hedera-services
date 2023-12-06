@@ -350,13 +350,13 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 moving(15, TOKEN_WITH_CUSTOM_FEE).between(TOKEN_TREASURY, OWNER),
                                 movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)),
                         scheduleCreate(
-                                SCHEDULED_TXN,
-                                cryptoApproveAllowance()
-                                        .addCryptoAllowance(OWNER, SPENDER, 10 * ONE_HBAR)
-                                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1500)
-                                        .addTokenAllowance(OWNER, TOKEN_WITH_CUSTOM_FEE, SPENDER, 100)
-                                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(2L))
-                                        .fee(ONE_HUNDRED_HBARS))
+                                        SCHEDULED_TXN,
+                                        cryptoApproveAllowance()
+                                                .addCryptoAllowance(OWNER, SPENDER, 10 * ONE_HBAR)
+                                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1500)
+                                                .addTokenAllowance(OWNER, TOKEN_WITH_CUSTOM_FEE, SPENDER, 100)
+                                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(2L))
+                                                .fee(ONE_HUNDRED_HBARS))
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, 8)
                                 .recordingScheduledTxn())
@@ -528,11 +528,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c")))
+                                        NON_FUNGIBLE_TOKEN,
+                                        List.of(
+                                                ByteString.copyFromUtf8("a"),
+                                                ByteString.copyFromUtf8("b"),
+                                                ByteString.copyFromUtf8("c")))
                                 .via(NFT_TOKEN_MINT_TXN),
                         mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
                         cryptoTransfer(
@@ -675,11 +675,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c")))
+                                        NON_FUNGIBLE_TOKEN,
+                                        List.of(
+                                                ByteString.copyFromUtf8("a"),
+                                                ByteString.copyFromUtf8("b"),
+                                                ByteString.copyFromUtf8("c")))
                                 .via(NFT_TOKEN_MINT_TXN),
                         mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
                         cryptoTransfer(
@@ -756,7 +756,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }))
                 .then(overriding(LAZY_CREATION_ENABLED, FALSE), withOpContext((spec, opLog) -> {
                     final var op3 = cryptoTransfer(
-                            tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
+                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasPrecheck(INVALID_SIGNATURE)
@@ -852,7 +852,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .toByteArray();
                     final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                     final var op = cryptoTransfer(
-                            tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, 2 * ONE_HUNDRED_HBARS))
+                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, 2 * ONE_HUNDRED_HBARS))
                             .hasKnownStatus(SUCCESS)
                             .via(TRANSFER_TXN);
 
@@ -905,7 +905,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         TxnVerbs.ethereumCryptoTransferToAlias(
-                                spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
+                                        spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -955,7 +955,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         TxnVerbs.ethereumCryptoTransferToAlias(
-                                spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
+                                        spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -1003,7 +1003,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         TxnVerbs.ethereumCryptoTransferToAlias(
-                                spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
+                                        spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -1014,7 +1014,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .via(failedLazyCreateTxn)
                                 .hasKnownStatus(INSUFFICIENT_GAS),
                         TxnVerbs.ethereumCryptoTransferToAlias(
-                                spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
+                                        spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -1097,7 +1097,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .deferStatusResolution();
 
                     final var op3 = cryptoTransfer(
-                            tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
+                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasPrecheck(OK)
@@ -1237,10 +1237,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                         .between(TOKEN_TREASURY, CIVILIAN),
                                 movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
                         cryptoTransfer(
-                                moving(10_000, ftWithNonNetOfTransfersFractional)
-                                        .between(CIVILIAN, finalReceiverKey),
-                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
-                                        .between(CIVILIAN, finalReceiverKey))
+                                        moving(10_000, ftWithNonNetOfTransfersFractional)
+                                                .between(CIVILIAN, finalReceiverKey),
+                                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
+                                                .between(CIVILIAN, finalReceiverKey))
                                 .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
                                 .via(finalTxn));
     }
@@ -1265,9 +1265,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 spec,
                                 balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
                                 contractCall(
-                                        INTERNAL_CALLER_CONTRACT,
-                                        "callWithValueTo",
-                                        mirrorAddrWith(receiverId.get().getAccountNum()))
+                                                INTERNAL_CALLER_CONTRACT,
+                                                "callWithValueTo",
+                                                mirrorAddrWith(receiverId.get().getAccountNum()))
                                         .gas(100_000L)
                                         .via(INNER_TXN))))
                 .then(
