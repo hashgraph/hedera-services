@@ -42,8 +42,6 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
-import com.swirlds.platform.network.ExternalIpAddress;
-import com.swirlds.platform.network.IpAddressStatus;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.awt.Checkbox;
@@ -248,14 +246,6 @@ public class HashgraphDemoMain implements SwirldMain {
             print(g, "%5.3f sec, receive to consensus", recCons);
             final Address address = platform.getAddressBook().getAddress(platform.getSelfId());
             print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternal(), 0);
-
-            final ExternalIpAddress ipAddress = Network.getExternalIpAddress();
-            String externalIpAddress = ipAddress.toString();
-            if (ipAddress.getStatus() == IpAddressStatus.IP_FOUND) {
-                externalIpAddress += " : " + address.getPortExternal();
-            }
-
-            print(g, "External: " + externalIpAddress, 0);
 
             final int height1 = (row - 1) * textLineHeight; // text area at the top
             final int height2 = getHeight() - height1; // the main display, below the text
