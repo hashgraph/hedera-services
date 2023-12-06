@@ -135,14 +135,14 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         requireNonNull(config);
 
         final var nft = readableNftStore.get(nftId.tokenId(), nftId.serialNumber());
-        final var token = readableTokenStore.get(nftId.tokenId());
+        final var token = requireNonNull(readableTokenStore).get(nftId.tokenId());
         if (nft == null) {
             return Optional.empty();
         } else {
             final var info = TokenNftInfo.newBuilder()
                     .ledgerId(config.id())
                     .nftID(nftId)
-                    .accountID(nft.hasOwnerId() ? nft.ownerId() : token.treasuryAccountId())
+                    .accountID(nft.ownerIdOrElse(token.treasuryAccountIdOrThrow()))
                     .creationTime(nft.mintTime())
                     .metadata(nft.metadata())
                     .spenderId(nft.spenderId())

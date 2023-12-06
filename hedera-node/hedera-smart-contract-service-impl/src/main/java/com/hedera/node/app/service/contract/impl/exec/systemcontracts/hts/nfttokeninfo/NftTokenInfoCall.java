@@ -35,9 +35,12 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
+    private static final Logger logger = LogManager.getLogger(NftTokenInfoCall.class);
     private final Configuration configuration;
     private final boolean isStaticCall;
     private final long serialNumber;
@@ -88,13 +91,16 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         }
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
+        logger.info(
+                "NFT token info call for token {} and serial number {} " + "returned nft {}",
+                token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(),
+                serialNumber,
+                nft);
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
+        final var nftTokenInfo = nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, nativeOperations());
         return successResult(
-                NON_FUNGIBLE_TOKEN_INFO
-                        .getOutputs()
-                        .encodeElements(
-                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId)),
+                NON_FUNGIBLE_TOKEN_INFO.getOutputs().encodeElements(status.protoOrdinal(), nftTokenInfo),
                 gasRequirement);
     }
 }

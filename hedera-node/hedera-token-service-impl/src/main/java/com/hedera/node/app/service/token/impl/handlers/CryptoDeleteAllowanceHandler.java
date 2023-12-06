@@ -174,7 +174,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
                 // Clear spender on the nft
                 // sets account number to AccountIDProtoCodec.ACCOUNT_UNSET
-                final var copy = nft.copyBuilder().spenderId(AccountID.DEFAULT).build();
+                final var copy = nft.copyBuilder().spenderId((AccountID) null).build();
                 nftStore.put(copy);
             }
         }
