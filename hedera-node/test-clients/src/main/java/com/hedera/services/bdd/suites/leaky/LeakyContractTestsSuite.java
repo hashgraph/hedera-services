@@ -175,7 +175,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -196,7 +195,6 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -1429,39 +1427,22 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
+    @HapiTest
     private HapiSpec autoAssociationSlotsAppearsInInfo() {
         final int maxAutoAssociations = 100;
-        final int ADVENTUROUS_NETWORK = 1_000;
         final String CONTRACT = "Multipurpose";
-        final String associationsLimitProperty = "entities.limitTokenAssociations";
-        final String defaultAssociationsLimit =
-                HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
-        return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
-                .given(overridingThree(
-                        "entities.limitTokenAssociations",
-                        "true",
-                        "tokens.maxPerAccount",
-                        "" + 1,
-                        CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY,
-                        "true"))
+        return propertyPreservingHapiSpec("autoAssociationSlotsAppearsInInfo")
+                .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
+                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "true"))
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .maxAutomaticTokenAssociations(maxAutoAssociations)
-                                .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-
-                        // Default is NOT to limit associations for entities
-                        overriding(associationsLimitProperty, defaultAssociationsLimit),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(maxAutoAssociations),
                         getContractInfo(CONTRACT)
                                 .has(ContractInfoAsserts.contractWith().maxAutoAssociations(maxAutoAssociations))
-                                .logged(),
-                        // Restore default
-                        overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
+                                .logged());
     }
 
     @HapiTest
@@ -2162,6 +2143,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
@@ -2310,6 +2292,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
