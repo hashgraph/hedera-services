@@ -264,7 +264,7 @@ public final class Hedera implements SwirldMain {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService())
-                .forEach(servicesRegistry::register);
+                .forEach(service -> servicesRegistry.register(service, version));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
         // constructor to make sure it has the config and other info it needs to be created correctly.

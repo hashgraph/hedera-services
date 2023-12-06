@@ -125,7 +125,7 @@ final class GenesisSchemaTest {
 
     @Test
     void createsAllAccounts() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -212,7 +212,7 @@ final class GenesisSchemaTest {
 
     @Test
     void someAccountsAlreadyExist() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
 
         // We'll only configure 4 system accounts, half of which will already exist
         config = buildConfig(4, true);
@@ -276,7 +276,7 @@ final class GenesisSchemaTest {
 
     @Test
     void allAccountsAlreadyExist() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
 
         // All the system accounts will already exist
         final var accts = new HashMap<AccountID, Account>();
@@ -321,7 +321,7 @@ final class GenesisSchemaTest {
 
     @Test
     void blocklistNotEnabled() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
 
         // None of the blocklist accounts will exist, but they shouldn't be created since blocklists aren't enabled
         config = buildConfig(NUM_SYSTEM_ACCOUNTS, false);
@@ -341,7 +341,7 @@ final class GenesisSchemaTest {
 
     @Test
     void systemAccountsCreated() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -365,7 +365,7 @@ final class GenesisSchemaTest {
 
     @Test
     void accountsBetweenFilesAndContracts() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -386,7 +386,7 @@ final class GenesisSchemaTest {
 
     @Test
     void contractEntityIdsNotUsed() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -403,7 +403,7 @@ final class GenesisSchemaTest {
 
     @Test
     void accountsAfterContracts() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -424,7 +424,7 @@ final class GenesisSchemaTest {
 
     @Test
     void entityIdsBetweenSystemAccountsAndRewardAccountsAreEmpty() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -441,7 +441,7 @@ final class GenesisSchemaTest {
 
     @Test
     void stakingRewardAccounts() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -460,7 +460,7 @@ final class GenesisSchemaTest {
 
     @Test
     void entityIdsAfterRewardAccountsAreEmpty() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -477,7 +477,7 @@ final class GenesisSchemaTest {
 
     @Test
     void miscAccountsAfter900() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,
@@ -497,7 +497,7 @@ final class GenesisSchemaTest {
 
     @Test
     void blocklistAccountIdsMatchEntityIds() {
-        final var schema = new TokenSchema();
+        final var schema = new TokenSchema(version);
         schema.migrate(new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
                 newStates,

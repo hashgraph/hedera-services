@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.TokenSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -34,8 +35,8 @@ public class TokenServiceImpl implements TokenService {
     public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry, final SemanticVersion version) {
         requireNonNull(registry);
-        registry.register(new TokenSchema());
+        registry.register(new TokenSchema(version));
     }
 }

@@ -64,7 +64,7 @@ class FreezeServiceImplTest {
         final var subject = new FreezeServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        subject.registerSchemas(registry);
+        subject.registerSchemas(registry, version);
         verify(registry).register(schemaCaptor.capture());
         final var schema = schemaCaptor.getValue();
 
@@ -83,7 +83,7 @@ class FreezeServiceImplTest {
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
 
-        subject.registerSchemas(registry);
+        subject.registerSchemas(registry, version);
         registry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
                 state.createReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);

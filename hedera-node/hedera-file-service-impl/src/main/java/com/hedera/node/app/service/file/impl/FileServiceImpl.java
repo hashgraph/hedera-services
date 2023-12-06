@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -28,7 +29,7 @@ public final class FileServiceImpl implements FileService {
     public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA";
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new FileGenesisSchema());
+    public void registerSchemas(@NonNull final SchemaRegistry registry, final SemanticVersion version) {
+        registry.register(new FileGenesisSchema(version));
     }
 }

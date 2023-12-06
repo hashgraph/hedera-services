@@ -48,7 +48,7 @@ class ScheduleServiceImplTest {
     void registersExpectedSchema() {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
-        subject.registerSchemas(registry);
+        subject.registerSchemas(registry, version);
         Mockito.verify(registry).register(schemaCaptor.capture());
 
         final Schema schema = schemaCaptor.getValue();

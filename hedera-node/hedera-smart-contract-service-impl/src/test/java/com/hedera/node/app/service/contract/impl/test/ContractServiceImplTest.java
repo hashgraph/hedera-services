@@ -38,7 +38,7 @@ class ContractServiceImplTest {
     void registersContractSchema() {
         final var captor = ArgumentCaptor.forClass(Schema.class);
         final var mockRegistry = mock(SchemaRegistry.class);
-        CONTRACT_SERVICE.registerSchemas(mockRegistry);
+        CONTRACT_SERVICE.registerSchemas(mockRegistry, version);
         verify(mockRegistry).register(captor.capture());
         assertInstanceOf(ContractSchema.class, captor.getValue());
     }

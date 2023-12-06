@@ -39,7 +39,7 @@ class FileServiceImplTest {
     void registersExpectedSchema() {
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        subject().registerSchemas(registry);
+        subject().registerSchemas(registry, version);
 
         verify(registry).register(schemaCaptor.capture());
 
