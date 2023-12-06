@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
+import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -40,7 +41,7 @@ public final class TipsetUtils {
         if (event.getBaseHash() == null) {
             throw new IllegalStateException("event is not hashed");
         }
-        return new EventDescriptor(event.getBaseHash(), event.getCreatorId(), event.getGeneration());
+        return event.getHashedData().createEventDescriptor();
     }
 
     /**
@@ -81,19 +82,12 @@ public final class TipsetUtils {
     public static List<EventDescriptor> getParentDescriptors(@NonNull final GossipEvent event) {
         final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
 
-        if (event.getHashedData().getSelfParentHash() != null) {
-            final EventDescriptor parent = new EventDescriptor(
-                    event.getHashedData().getSelfParentHash(),
-                    event.getHashedData().getCreatorId(),
-                    event.getHashedData().getSelfParentGen());
-            parentDescriptors.add(parent);
+        final BaseEventHashedData hashedData = event.getHashedData();
+        if (hashedData.hasSelfParent()) {
+            parentDescriptors.add(event.getHashedData().getSelfParent());
         }
-        if (event.getHashedData().getOtherParentHash() != null) {
-            final EventDescriptor parent = new EventDescriptor(
-                    event.getHashedData().getOtherParentHash(),
-                    event.getUnhashedData().getOtherId(),
-                    event.getHashedData().getOtherParentGen());
-            parentDescriptors.add(parent);
+        if (hashedData.hasOtherParent()) {
+            hashedData.getOtherParents().forEach(parentDescriptors::add);
         }
 
         return parentDescriptors;

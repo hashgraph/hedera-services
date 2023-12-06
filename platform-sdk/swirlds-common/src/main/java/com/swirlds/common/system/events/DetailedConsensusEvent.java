@@ -23,6 +23,7 @@ import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.events.BaseEventHashedData.ClassVersion;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -86,7 +87,11 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
             final EventSerializationOptions option)
             throws IOException {
         out.writeOptionalSerializable(baseEventHashedData, false, option);
-        out.writeSerializable(baseEventUnhashedData, false);
+        if (baseEventHashedData.getVersion() < ClassVersion.BIRTH_ROUND) {
+            out.writeSerializable(baseEventUnhashedData, false);
+        } else {
+            out.writeByteArray(baseEventUnhashedData.getSignature());
+        }
         out.writeSerializable(consensusData, false);
     }
 
@@ -104,7 +109,13 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         baseEventHashedData = in.readSerializable(false, BaseEventHashedData::new);
-        baseEventUnhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+        if (baseEventHashedData.getVersion() < ClassVersion.BIRTH_ROUND) {
+            baseEventUnhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+            baseEventUnhashedData.updateOtherParentEventDescriptor(baseEventHashedData);
+        } else {
+            final byte[] signature = in.readByteArray(BaseEventUnhashedData.MAX_SIG_LENGTH);
+            baseEventUnhashedData = new BaseEventUnhashedData(null, signature);
+        }
         consensusData = in.readSerializable(false, ConsensusData::new);
     }
 
