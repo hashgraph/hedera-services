@@ -121,7 +121,7 @@ public class TargetNetworkPrep extends HapiSuite {
                                             + ((feeObs.get().networkFee()
                                                             + feeObs.get().serviceFee())
                                                     * 0.1))))),
-                            balanceSnapshot(snapshot801, NODE_REWARD),
+                            balanceSnapshot(snapshot801, NODE_REWARD).payingWith(GENESIS),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
                                     .signedBy(civilian)
