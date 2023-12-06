@@ -95,7 +95,8 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        final var payer = context.payer();
+        final var txn = context.body();
+        final var payer = txn.transactionIDOrThrow().accountIDOrThrow();
 
         final var accountStore = context.writableStore(WritableAccountStore.class);
         // validate payer account exists
