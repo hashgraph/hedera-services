@@ -88,6 +88,12 @@ public final class RecordListBuilder {
     private List<SingleTransactionRecordBuilderImpl> childRecordBuilders;
 
     /**
+     * Whether a following REMOVABLE child was removed. We need this to know whether to adjust consensus times
+     * to eliminate gaps in following consensus times for mono-service fidelity.
+     */
+    private boolean followingChildRemoved = false;
+
+    /**
      * Creates a new instance with the given user transaction consensus timestamp.
      *
      * @param consensusTimestamp The consensus timestamp of the user transaction
@@ -343,6 +349,8 @@ public final class RecordListBuilder {
                         precedingTxnRecordBuilders.set(i, null);
                     }
                 }
+                // Any removable preceding children will come last in the list, so there's
+                // no need to eliminate gaps in consensus times even if this returns true
                 precedingTxnRecordBuilders.removeIf(Objects::isNull);
             }
         } else {
@@ -365,6 +373,7 @@ public final class RecordListBuilder {
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
                 childRecordBuilders.set(i, null);
+                followingChildRemoved = true;
             } else {
                 if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE && SUCCESSES.contains(child.status())) {
                     child.status(ResponseCodeEnum.REVERTED_SUCCESS);
@@ -410,6 +419,11 @@ public final class RecordListBuilder {
 
         int nextNonce = count + 1; // Initialize to be 1 more than the number of preceding items
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
+        // A dirty hack to match mono-service behavior of always assigning sequential consensus times
+        // to contract service child transactions; no real reason this is necessary
+        if (followingChildRemoved && count > 0) {
+            ensureSequentialConsensusTimes(userTxnRecordBuilder.consensusNow(), childRecordBuilders);
+        }
         for (int i = 0; i < count; i++) {
             final SingleTransactionRecordBuilderImpl recordBuilder = childRecordBuilders.get(i);
             // Only create a new transaction ID for child records if one is not provided
@@ -421,6 +435,14 @@ public final class RecordListBuilder {
             records.add(recordBuilder.build());
         }
         return new Result(userTxnRecord, unmodifiableList(records));
+    }
+
+    private void ensureSequentialConsensusTimes(
+            @NonNull final Instant parentConsensusTimestamp,
+            @NonNull final List<SingleTransactionRecordBuilderImpl> recordBuilders) {
+        for (int i = 0, n = recordBuilders.size(); i < n; i++) {
+            recordBuilders.get(i).consensusTimestamp(parentConsensusTimestamp.plusNanos(i + 1L));
+        }
     }
 
     /**
