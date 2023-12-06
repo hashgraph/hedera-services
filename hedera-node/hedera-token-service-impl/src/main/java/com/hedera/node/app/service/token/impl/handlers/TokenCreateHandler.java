@@ -157,7 +157,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var treasuryRel = requireNonNull(tokenRelationStore.get(op.treasuryOrThrow(), newTokenId));
         if (op.initialSupply() > 0) {
             // This keeps modified token with minted balance into modifications in token store
-            mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
+            mintFungible(newToken, treasuryRel, op.initialSupply(), accountStore, tokenStore, tokenRelationStore);
         }
         // Increment treasury's title count
         final var treasuryAccount = requireNonNull(accountStore.getForModify(treasuryRel.accountIdOrThrow()));
@@ -174,9 +174,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * Associate treasury account and the collector accounts of custom fees whose token denomination
      * is set to sentinel value, to use denomination as newly created token.
      *
-     * @param newToken                        newly created token
-     * @param accountStore                    account store
-     * @param tokenRelStore                   token relation store
+     * @param newToken newly created token
+     * @param accountStore account store
+     * @param tokenRelStore token relation store
      * @param requireCollectorAutoAssociation set of custom fees whose token denomination is set to sentinel value
      * @param recordBuilder
      */
@@ -221,6 +221,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
     /**
      * Create a new token with the given parameters.
+     *
      * @param newTokenNum new token number
      * @param op token creation transaction body
      * @param resolvedExpiryMeta resolved expiry meta
@@ -247,7 +248,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.tokenType(),
                 op.supplyType(),
                 resolvedExpiryMeta.autoRenewAccountId(),
-                resolvedExpiryMeta.autoRenewPeriod(),
+                // We want to return 0 instead of ExpiryMeta.NA when querying this token's info
+                resolvedExpiryMeta.hasAutoRenewPeriod() ? resolvedExpiryMeta.autoRenewPeriod() : 0L,
                 resolvedExpiryMeta.expiry(),
                 op.memo(),
                 op.maxSupply(),
@@ -261,6 +263,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * Modify the custom fees with the newly created token number as the token denomination.
      * For any custom fixed fees that has 0.0.0 as denominating tokenId, it should be changed
      * to the newly created token number before setting it to the token.
+     *
      * @param customFees list of custom fees
      * @param newTokenNum newly created token number
      * @return modified custom fees
@@ -290,6 +293,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
     /**
      * Get the expiry metadata for the token to be created from the transaction body.
+     *
      * @param op token creation transaction body
      * @return given expiry metadata
      */
@@ -306,7 +310,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Validate the semantics of the token creation transaction body, that involves checking with
      * dynamic properties or state.
-     * @param context  handle context
+     *
+     * @param context handle context
      * @param accountStore account store
      * @param op token creation transaction body
      * @param config tokens configuration

@@ -54,10 +54,12 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
+            com.hedera.node.services.cli,
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.memory to
+            com.hedera.node.services.cli,
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;

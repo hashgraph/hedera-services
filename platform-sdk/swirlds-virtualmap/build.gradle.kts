@@ -20,6 +20,8 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
+mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
+
 jmhModuleInfo {
     requires("com.swirlds.common")
     requires("jmh.core")
