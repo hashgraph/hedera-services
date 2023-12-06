@@ -44,7 +44,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private final Random r = new Random(38582L);
 
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
-    private static final int STAKED_CREATIONS = 50;
+    private static final int STAKED_CREATIONS = 5;
 
     public static void main(String... args) {
         parseArgs(args);

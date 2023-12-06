@@ -109,13 +109,14 @@ public class TargetNetworkPrep extends HapiSuite {
                                     "100_000_000")))
                     .when(
                             cryptoCreate(civilian),
-                            balanceSnapshot(snapshot800, STAKING_REWARD),
+                            balanceSnapshot(snapshot800, STAKING_REWARD).payingWith(GENESIS),
                             cryptoTransfer(tinyBarsFromTo(civilian, STAKING_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
                                     .signedBy(civilian)
                                     .exposingFeesTo(feeObs)
                                     .logged(),
                             sourcing(() -> getAccountBalance(STAKING_REWARD)
+                                    .payingWith(GENESIS)
                                     .hasTinyBars(changeFromSnapshot(snapshot800, (long) (ONE_HBAR
                                             + ((feeObs.get().networkFee()
                                                             + feeObs.get().serviceFee())
@@ -126,6 +127,7 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .signedBy(civilian)
                                     .logged(),
                             sourcing(() -> getAccountBalance(NODE_REWARD)
+                                    .payingWith(GENESIS)
                                     .hasTinyBars(changeFromSnapshot(snapshot801, (long) (ONE_HBAR
                                             + ((feeObs.get().networkFee()
                                                             + feeObs.get().serviceFee())
@@ -148,7 +150,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                             .noAlias()
                                             .noAllowances()),
                             withOpContext((spec, opLog) -> {
-                                final var genesisInfo = getAccountInfo("0.0.2");
+                                final var genesisInfo = getAccountInfo("0.0.2")
+                                        .payingWith(GENESIS);
                                 allRunFor(spec, genesisInfo);
                                 final var key = genesisInfo
                                         .getResponse()
