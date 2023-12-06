@@ -8,6 +8,15 @@ contract InternalCaller {
         _addr.call(abi.encodeWithSignature("nonExisting()"));
     }
 
+    function staticCallNonExisting(address _addr) external {
+        _addr.staticcall(abi.encodeWithSignature("nonExisting()"));
+    }
+
+    function staticCallExternalFunction(address _addr) external returns (uint) {
+        (bool success, bytes memory result) = _addr.staticcall(abi.encodeWithSignature("externalFunction()"));
+        return success && result.length > 0 ? abi.decode(result, (uint)) : 0;
+    }
+
     function callExternalFunction(address _addr) external returns (uint) {
         (bool success, bytes memory result) = _addr.call(abi.encodeWithSignature("externalFunction()"));
         return success && result.length > 0 ? abi.decode(result, (uint)) : 0;
