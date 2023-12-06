@@ -35,10 +35,8 @@ import org.apache.logging.log4j.Logger;
  */
 public final class SignatureTransmitter {
 
-    private static final Logger logger = LogManager.getLogger(SignatureTransmitter.class);
 
-    private final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
-    private final PlatformStatusGetter platformStatusGetter;
+
 
     /**
      * Create a new SignatureTransmitter.
@@ -50,33 +48,5 @@ public final class SignatureTransmitter {
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final PlatformStatusGetter platformStatusGetter) {
 
-        this.prioritySystemTransactionSubmitter = Objects.requireNonNull(prioritySystemTransactionSubmitter);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
-    }
-
-    /**
-     * Transmit this node's signature to other nodes for a signed state. Signatures from zero weight nodes are
-     * transmitted and valuable for the purpose of detecting ISSes.
-     *
-     * @param round     the round of the state that was signed
-     * @param signature the self signature on the state
-     * @param stateHash the hash of the state that was signed
-     */
-    public void transmitSignature(final long round, @NonNull final Signature signature, @NonNull final Hash stateHash) {
-
-        Objects.requireNonNull(signature);
-        Objects.requireNonNull(stateHash);
-
-        if (platformStatusGetter.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
-            // the only time we don't want to submit signatures is during PCES replay
-            return;
-        }
-
-        final SystemTransaction signatureTransaction = new StateSignatureTransaction(round, signature, stateHash);
-        final boolean success = prioritySystemTransactionSubmitter.submit(signatureTransaction);
-
-        if (!success) {
-            logger.error(EXCEPTION.getMarker(), "failed to create signed state transaction");
-        }
     }
 }

@@ -27,6 +27,7 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
@@ -230,8 +231,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param signedStateFileManager the signed state file manager to bind
      */
-    public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
+    public void bind(@NonNull final SignedStateFileManager signedStateFileManager, StateSigner stateSigner) {
         signedStateFileManagerWiring.bind(signedStateFileManager);
+        stateSignerWiring.bind(stateSigner);
 
         // FUTURE WORK: bind all the things!
     }

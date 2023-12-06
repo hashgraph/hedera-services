@@ -514,7 +514,8 @@ public class SwirldsPlatform implements Platform {
                 appCommunicationComponent,
                 txn -> this.createSystemTransaction(txn, true));
 
-        platformWiring.bind(signedStateFileManager);
+        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
+        platformWiring.bind(signedStateFileManager, stateSigner);
 
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
@@ -532,13 +533,11 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 threadManager,
                 dispatchBuilder,
-                new PlatformSigner(keysAndCerts),
-                txn -> this.createSystemTransaction(txn, true),
                 newLatestCompleteStateConsumer,
                 this::handleFatalError,
-                platformStatusManager,
                 savedStateController,
-                platformWiring.getDumpStateToDiskInput()::put);
+                platformWiring.getDumpStateToDiskInput()::put,
+                platformWiring.getSignStateInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
