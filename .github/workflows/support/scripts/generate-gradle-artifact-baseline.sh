@@ -72,7 +72,7 @@ start_group "Configuring Environment"
 
   start_task "Resolving the GITHUB_OUTPUT path"
     # Ensure GITHUB_OUTPUT is provided or default to the repository root
-    if [[ -z "${GITHUB_OUTPUT}" || ! -d "${GITHUB_OUTPUT}" ]]; then
+    if [[ -z "${GITHUB_OUTPUT}" ]]; then
       GITHUB_OUTPUT="${TEMP_DIR}/workflow-output.txt"
     fi
   end_task "DONE (Path: ${GITHUB_OUTPUT})"
