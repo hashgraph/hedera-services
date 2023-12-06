@@ -1,4 +1,5 @@
 module com.swirlds.demo.migration {
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.fcqueue;
@@ -10,5 +11,4 @@ module com.swirlds.demo.migration {
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires org.apache.logging.log4j;
-    requires com.hedera.pbj.runtime;
 }

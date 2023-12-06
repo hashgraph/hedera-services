@@ -26,8 +26,8 @@ module com.swirlds.demo.platform {
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
-    requires com.hedera.pbj.runtime;
     requires com.google.protobuf;
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common;
