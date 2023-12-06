@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.config.MerkleDbConfig_;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
@@ -59,9 +60,9 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @BeforeAll
     static void beforeAll() throws Exception {
         final Configuration config = new TestConfigBuilder()
-                .withValue("merkleDb.keySetBloomFilterSizeInBytes", 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
-                .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
-                .withValue("merkleDb.keySetHalfDiskHashMapBuffer", "1000")
+                .withValue(MerkleDbConfig_.KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES, 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
+                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_SIZE, "10000")
+                .withValue(MerkleDbConfig_.KEY_SET_HALF_DISK_HASH_MAP_BUFFER, "1000")
                 .getOrCreateConfig();
 
         ConfigurationHolder.getInstance().setConfiguration(config);

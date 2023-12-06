@@ -154,9 +154,6 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
     @Test
     void returnsNftTokenInfoStatusForMissingTokenStaticCall() {
-        when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
-
         final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config);
 
         final var result = subject.execute().fullResult().result();

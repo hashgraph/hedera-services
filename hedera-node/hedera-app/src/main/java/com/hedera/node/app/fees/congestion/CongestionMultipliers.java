@@ -70,7 +70,7 @@ public class CongestionMultipliers {
      * @return the  congestion level starts
      */
     @NonNull
-    public Instant[] genericCongestionStarts() {
+    public Instant[] entityUtilizationCongestionStarts() {
         return entityUtilizationMultiplier.congestionLevelStarts();
     }
 
