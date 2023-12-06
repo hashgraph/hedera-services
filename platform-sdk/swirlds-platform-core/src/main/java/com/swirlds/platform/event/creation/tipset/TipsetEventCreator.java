@@ -17,10 +17,10 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
+import static com.swirlds.common.system.events.EventConstants.CREATOR_ID_UNDEFINED;
+import static com.swirlds.common.system.events.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
-import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
-import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.buildDescriptor;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
@@ -178,7 +178,8 @@ public class TipsetEventCreator implements EventCreator {
                     final EventDescriptor parentDescriptor = new EventDescriptor(
                             event.getBaseEventHashedData().getOtherParentHash(),
                             event.getBaseEventUnhashedData().getOtherId(),
-                            event.getBaseEventHashedData().getOtherParentGen());
+                            event.getBaseEventHashedData().getOtherParentGen(),
+                            event.getBaseEventHashedData().getBirthRound());
 
                     childlessOtherEventTracker.registerSelfEventParents(List.of(parentDescriptor));
                 }
@@ -410,12 +411,6 @@ public class TipsetEventCreator implements EventCreator {
      */
     @NonNull
     private GossipEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
-
-        final long selfParentGeneration = getGeneration(lastSelfEvent);
-        final Hash selfParentHash = getHash(lastSelfEvent);
-
-        final long otherParentGeneration = getGeneration(otherParent);
-        final Hash otherParentHash = getHash(otherParent);
         final NodeId otherParentId = getCreator(otherParent);
 
         final Instant now = time.now();
@@ -430,10 +425,9 @@ public class TipsetEventCreator implements EventCreator {
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
                 selfId,
-                selfParentGeneration,
-                otherParentGeneration,
-                selfParentHash,
-                otherParentHash,
+                lastSelfEvent,
+                otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
+                addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);

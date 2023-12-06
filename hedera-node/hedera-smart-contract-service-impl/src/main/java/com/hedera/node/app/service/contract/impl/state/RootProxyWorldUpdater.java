@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -46,7 +47,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
 
     private boolean committed = false;
     private List<ContractID> createdContractIds;
-    private List<ContractNonceInfo> updatedContractNonces;
+    private List<ContractNonceInfo> updatedContractNonces = Collections.emptyList();
 
     @Inject
     public RootProxyWorldUpdater(
@@ -94,7 +95,12 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // information for the Hedera record
         final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
         createdContractIds = contractChangeSummary.newContractIds();
-        updatedContractNonces = contractChangeSummary.updatedContractNonces();
+
+        // If nonces externalization is enabled, we need to capture the updated nonces
+        if (contractsConfig.noncesExternalizationEnabled()) {
+            updatedContractNonces = contractChangeSummary.updatedContractNonces();
+        }
+
         super.commit();
         // Be sure not to externalize contract ids or nonces without a successful commit
         committed = true;
