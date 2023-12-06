@@ -92,18 +92,18 @@ jobs:
 
       - name: Build Artifacts
         id: gradle-build
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failed() && !cancelled() }}
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: ./gradlew assemble --scan
 
       - name: Generate Manifest
         id: manifest
         env:
           MANIFEST_PATH: ${{ env.GRADLE_MANIFEST_PATH }}
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failed() && !cancelled() }}
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: ${{ env.GRADLE_MANIFEST_GENERATOR }}
 
       - name: Upload Baseline
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failed() && !cancelled() }}
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: gsutil cp "${{ steps.manifest.outputs.file }}" "${{ steps.baseline.outputs.path }}"
 
   verify-artifacts:
