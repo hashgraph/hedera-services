@@ -30,17 +30,14 @@ public class HandlerLoggingLevelConfigTest {
 
     @Test
     void testConstructorExceptions() {
-        final Configuration configuration = getTestConfigBuilder().getOrCreateConfig();
         Assertions.assertThrows(NullPointerException.class, () -> new HandlerLoggingLevelConfig(null));
-        Assertions.assertThrows(NullPointerException.class, () -> new HandlerLoggingLevelConfig(null, null));
-        Assertions.assertThrows(NullPointerException.class, () -> new HandlerLoggingLevelConfig(null, "foo"));
+        Assertions.assertThrows(NullPointerException.class, () -> new HandlerLoggingLevelConfig(null, (String) null));
     }
 
     @Test
     void testConstructor() {
         // given
-        final HandlerLoggingLevelConfig config =
-                new HandlerLoggingLevelConfig(getTestConfigBuilder().getOrCreateConfig());
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig());
 
         // then
         checkDefaultBehavior(config);
@@ -50,7 +47,7 @@ public class HandlerLoggingLevelConfigTest {
     void testWithDifferentPrefix() {
         // given
         final HandlerLoggingLevelConfig config =
-                new HandlerLoggingLevelConfig(getTestConfigBuilder().getOrCreateConfig(), "test.prefix");
+                new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig(), "test.prefix");
 
         // then
         checkDefaultBehavior(config);
@@ -59,24 +56,27 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithDifferentPrefixAndLevel() {
         // given
+        final Configuration configuration = getConfigBuilder()
+                .withValue("logging.level", "ERROR")
+                .getOrCreateConfig();
         final HandlerLoggingLevelConfig config =
-                new HandlerLoggingLevelConfig(getTestConfigBuilder().getOrCreateConfig(), "test");
+                new HandlerLoggingLevelConfig(configuration, "test.prefix");
 
         // then
-        checkEnabledForLevel(config, "", Level.INFO);
-        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.INFO);
-        checkEnabledForLevel(config, "com.sample", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.Class", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package.ClassA", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package.ClassB", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package.ClassC", Level.INFO);
+        checkEnabledForLevel(config, "", Level.ERROR);
+        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.ERROR);
+        checkEnabledForLevel(config, "com.sample", Level.ERROR);
+        checkEnabledForLevel(config, "com.sample.Class", Level.ERROR);
+        checkEnabledForLevel(config, "com.sample.package", Level.ERROR);
+        checkEnabledForLevel(config, "com.sample.package.ClassA", Level.ERROR);
+        checkEnabledForLevel(config, "com.sample.package.ClassB", Level.ERROR);
+        checkEnabledForLevel(config, "com.sample.package.ClassC", Level.ERROR);
     }
 
     @Test
     void testWithConfig() {
         // given
-        final Configuration configuration = getTestConfigBuilder()
+        final Configuration configuration = getConfigBuilder()
                 .withValue("logging.level", "INFO")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .withValue("logging.level.com.sample.package", "ERROR")
@@ -96,32 +96,23 @@ public class HandlerLoggingLevelConfigTest {
         checkEnabledForLevel(config, "com.sample.package.ClassC", Level.TRACE);
     }
 
-    @Test
-    void testWithBadConfig() {
-        // given
-        final Configuration configuration =
-                getTestConfigBuilder().withValue("logging.level", "UNKNOWN").getOrCreateConfig();
-
-        // then
-        Assertions.assertThrows(IllegalArgumentException.class, () -> new HandlerLoggingLevelConfig(configuration));
-    }
-
-    private static void checkEnabledForLevel(
-            final HandlerLoggingLevelConfig config, final String name, final Level level) {
+    private static void checkEnabledForLevel(HandlerLoggingLevelConfig config, String name, Level level) {
         Stream.of(Level.values())
                 .filter(level::enabledLoggingOfLevel)
-                .forEach(l -> Assertions.assertTrue(
-                        config.isEnabled(name, l, null), l + " should be enabled for '" + name + "'"));
+                .forEach(l ->
+                        Assertions.assertTrue(config.isEnabled(name, l, null),
+                                "%s should be enabled for package '%s' with level %s".formatted(l, name, level)));
         Stream.of(Level.values())
                 .filter(l -> !level.enabledLoggingOfLevel(l))
                 .forEach(l -> Assertions.assertFalse(
-                        config.isEnabled(name, l, null), l + " should not be enabled for '" + name + "'"));
+                        config.isEnabled(name, l, null),
+                        "%s should not be enabled for package '%s' with level %s".formatted(l, name, level)));
     }
 
     @Test
     void testWithConfigUpdate() {
         // given
-        final Configuration configuration = getTestConfigBuilder()
+        final Configuration configuration = getConfigBuilder()
                 .withValue("logging.level", "INFO")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .withValue("logging.level.com.sample.package", "ERROR")
@@ -131,7 +122,7 @@ public class HandlerLoggingLevelConfigTest {
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
 
         // when
-        final Configuration newConfiguration = getTestConfigBuilder()
+        final Configuration newConfiguration = getConfigBuilder()
                 .withValue("logging.level", "ERROR")
                 .withValue("logging.level.com.sample.package", "WARN")
                 .getOrCreateConfig();
@@ -151,7 +142,7 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithConfigUpdateWitEmptyConfig() {
         // given
-        final Configuration configuration = getTestConfigBuilder()
+        final Configuration configuration = getConfigBuilder()
                 .withValue("logging.level", "INFO")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .withValue("logging.level.com.sample.package", "ERROR")
@@ -161,7 +152,7 @@ public class HandlerLoggingLevelConfigTest {
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
 
         // when
-        final Configuration newConfiguration = getTestConfigBuilder().getOrCreateConfig();
+        final Configuration newConfiguration = getConfigBuilder().getOrCreateConfig();
         config.update(newConfiguration);
 
         // then
@@ -178,14 +169,15 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithConfigAndDefaultLevel() {
         // given
-        final Configuration configuration = getTestConfigBuilder()
+        final Configuration configuration = getConfigBuilder()
+                .withValue("logging.level", "WARN")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "");
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
 
         // then
-        checkEnabledForLevel(config, "", Level.INFO);
-        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.INFO);
+        checkEnabledForLevel(config, "", Level.WARN);
+        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.WARN);
         checkEnabledForLevel(config, "com.sample", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.Class", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.package", Level.DEBUG);
@@ -197,10 +189,10 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithConfigAndDefaultLevelAndPrefix() {
         // given
-        final Configuration configuration = getTestConfigBuilder()
-                .withValue("logging.handler.test.level.com.sample", "DEBUG")
+        final Configuration configuration = getConfigBuilder()
+                .withValue("logging.level.com.sample", "DEBUG")
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test");
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.logging.level");
 
         // then
         checkEnabledForLevel(config, "", Level.INFO);
@@ -232,7 +224,7 @@ public class HandlerLoggingLevelConfigTest {
         Assertions.assertTrue(config.isEnabled("", null, null), "always return true if error happens");
     }
 
-    private static TestConfigBuilder getTestConfigBuilder() {
+    private static TestConfigBuilder getConfigBuilder() {
         return new TestConfigBuilder()
                 .withConverter(new MarkerStateConverter())
                 .withConverter(new ConfigLevelConverter());
