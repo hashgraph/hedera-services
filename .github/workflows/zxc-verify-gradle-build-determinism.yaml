@@ -139,7 +139,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@b64ffcaf5b410884ad320a9cfac8866006a109aa # v4.8.0
         with:
-          python-version: '3.12'
+          python-version: 3.9
 
       - name: Setup Java
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
@@ -162,11 +162,11 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
         env:
-          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.Python3_ROOT_DIR, runner.os == 'Windows' && '\bin\python3.exe' || '/bin/python3') }}
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/python3') }}
 
       - name: Download Baseline
         env:
-          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.Python3_ROOT_DIR, runner.os == 'Windows' && '\bin\python3.exe' || '/bin/python3') }}
+          CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/python3') }}
         run: |
           mkdir -p "${GRADLE_MANIFEST_PATH}"
           cd "${GRADLE_MANIFEST_PATH}"
