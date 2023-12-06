@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -24,7 +23,6 @@ import java.util.Objects;
  * Responsible for coordinating the clearing of the platform wiring objects.
  */
 public class PlatformCoordinator {
-    private final PlatformContext platformContext;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final EventDeduplicatorWiring eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -35,7 +33,6 @@ public class PlatformCoordinator {
     /**
      * Constructor
      *
-     * @param platformContext               the platform context
      * @param internalEventValidatorWiring  the internal event validator wiring
      * @param eventDeduplicatorWiring       the event deduplicator wiring
      * @param eventSignatureValidatorWiring the event signature validator wiring
@@ -44,7 +41,6 @@ public class PlatformCoordinator {
      * @param linkedEventIntakeWiring       the linked event intake wiring
      */
     public PlatformCoordinator(
-            @NonNull final PlatformContext platformContext,
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
             @NonNull final EventDeduplicatorWiring eventDeduplicatorWiring,
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
@@ -52,7 +48,6 @@ public class PlatformCoordinator {
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring) {
 
-        this.platformContext = Objects.requireNonNull(platformContext);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);

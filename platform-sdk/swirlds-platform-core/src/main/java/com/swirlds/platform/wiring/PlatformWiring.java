@@ -86,7 +86,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
 
             platformCoordinator = new PlatformCoordinator(
-                    platformContext,
                     internalEventValidatorWiring,
                     eventDeduplicatorWiring,
                     eventSignatureValidatorWiring,
