@@ -45,6 +45,7 @@ import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -847,8 +848,8 @@ class VirtualPipelineTests {
         final int maxThrottle = 100; // For the purposes of this test, this should be a multiple of throttleStepSize
 
         final Configuration config = new TestConfigBuilder()
-                .withValue("virtualMap.flushThrottleStepSize", throttleStepSize + "ms")
-                .withValue("virtualMap.maximumFlushThrottlePeriod", maxThrottle + "ms")
+                .withValue(VirtualMapConfig_.FLUSH_THROTTLE_STEP_SIZE, throttleStepSize + "ms")
+                .withValue(VirtualMapConfig_.MAXIMUM_FLUSH_THROTTLE_PERIOD, maxThrottle + "ms")
                 .getOrCreateConfig();
         ConfigurationHolder.getInstance().setConfiguration(config);
 

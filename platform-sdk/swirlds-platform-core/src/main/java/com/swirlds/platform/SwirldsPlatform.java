@@ -86,8 +86,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
@@ -179,14 +177,12 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
-import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.platform.wiring.SignedStateFileManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -507,20 +503,15 @@ public class SwirldsPlatform implements Platform {
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         components.add(model);
-        final TaskScheduler<StateSavingResult> savedStateScheduler = model.schedulerBuilder("signed_state_file_manager")
-                .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
-                .withUnhandledTaskCapacity(stateConfig.stateSavingQueueSize())
-                .build()
-                .cast();
-        final SignedStateFileManagerWiring signedStateFileManagerWiring =
-                new SignedStateFileManagerWiring(savedStateScheduler);
-        signedStateFileManagerWiring.bind(signedStateFileManager);
-        signedStateFileManagerWiring.solderPces(preconsensusEventWriter);
-        signedStateFileManagerWiring.solderStatusManager(platformStatusManager);
-        signedStateFileManagerWiring.solderAppCommunication(appCommunicationComponent);
+
+        platformWiring = components.add(new PlatformWiring(platformContext, time));
+        platformWiring.wireExternalComponents(
+                preconsensusEventWriter, platformStatusManager, appCommunicationComponent);
+
+        platformWiring.bind(signedStateFileManager);
 
         final SavedStateController savedStateController =
-                new SavedStateController(stateConfig, signedStateFileManagerWiring.saveStateToDisk()::offer);
+                new SavedStateController(stateConfig, platformWiring.getSaveStateToDiskInput()::offer);
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -532,7 +523,7 @@ public class SwirldsPlatform implements Platform {
                 this::handleFatalError,
                 platformStatusManager,
                 savedStateController,
-                signedStateFileManagerWiring.dumpStateToDisk()::put);
+                platformWiring.getDumpStateToDiskInput()::put);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates = getSavedStateFiles(actualMainClassName, selfId, swirldName);
@@ -715,9 +706,7 @@ public class SwirldsPlatform implements Platform {
 
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
-            platformWiring = null;
         } else {
-            platformWiring = components.add(new PlatformWiring(platformContext, time));
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
             final EventDeduplicator eventDeduplicator =
@@ -731,7 +720,7 @@ public class SwirldsPlatform implements Platform {
                     currentAddressBook,
                     intakeEventCounter);
             final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
-            final InOrderLinker inOrderLinker = new InOrderLinker(intakeEventCounter);
+            final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
             final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
                     platformContext,
                     threadManager,
@@ -753,7 +742,7 @@ public class SwirldsPlatform implements Platform {
                     platformStatusManager::getCurrentStatus,
                     latestReconnectRound::get);
 
-            platformWiring.bind(
+            platformWiring.bindIntake(
                     internalEventValidator,
                     eventDeduplicator,
                     eventSignatureValidator,
@@ -762,7 +751,7 @@ public class SwirldsPlatform implements Platform {
                     linkedEventIntake,
                     eventCreationManager);
 
-            intakeHandler = platformWiring.getEventInput();
+            intakeHandler = platformWiring.getEventInput()::put;
         }
 
         intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
@@ -1124,7 +1113,7 @@ public class SwirldsPlatform implements Platform {
                 } else {
                     platformWiring
                             .getAddressBookUpdateInput()
-                            .accept(new AddressBookUpdate(
+                            .inject(new AddressBookUpdate(
                                     signedState.getState().getPlatformState().getPreviousAddressBook(),
                                     signedState.getState().getPlatformState().getAddressBook()));
                     platformWiring.updateMinimumGenerationNonAncient(signedState.getMinRoundGeneration());

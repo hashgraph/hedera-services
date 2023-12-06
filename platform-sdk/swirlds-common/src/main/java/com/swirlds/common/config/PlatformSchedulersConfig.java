@@ -43,6 +43,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param eventCreationManagerSchedulerType        the event creation manager scheduler type
  * @param eventCreationManagerUnhandledCapacity    number of unhandled tasks allowed in the event creation manager
  *                                                 scheduler
+ * @param signedStateFileManagerSchedulerType      the signed state file manager scheduler type
+ * @param signedStateFileManagerUnhandledCapacity  number of unhandled tasks allowed in the signed state file manager
+ *                                                 scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -59,7 +62,9 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL") String linkedEventIntakeSchedulerType,
         @ConfigProperty(defaultValue = "500") int linkedEventIntakeUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") String eventCreationManagerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity) {
+        @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") String signedStateFileManagerSchedulerType,
+        @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity) {
 
     /**
      * Get the internal event validator scheduler type
@@ -129,5 +134,15 @@ public record PlatformSchedulersConfig(
     @NonNull
     public TaskSchedulerType getEventCreationManagerSchedulerType() {
         return TaskSchedulerType.valueOf(eventCreationManagerSchedulerType);
+    }
+
+    /**
+     * Get the signed state file manager scheduler type
+     *
+     * @return the signed state file manager scheduler type
+     */
+    @NonNull
+    public TaskSchedulerType getSignedStateFileManagerSchedulerType() {
+        return TaskSchedulerType.valueOf(signedStateFileManagerSchedulerType);
     }
 }

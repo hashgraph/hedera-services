@@ -284,11 +284,19 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 .accountId(OWNER_ID)
                                 .alias(OWNER_ADDRESS)
                                 .key(SENDER_CONTRACT_ID_KEY)
-                                .tokenAllowances(List.of(AccountFungibleTokenAllowance.newBuilder()
-                                        .spenderId(APPROVED_ID)
-                                        .tokenId(ERC20_TOKEN_ID)
-                                        .amount(Long.MAX_VALUE)
-                                        .build()))
+                                .tokenAllowances(List.of(
+                                        AccountFungibleTokenAllowance.newBuilder()
+                                                .spenderId(APPROVED_ID)
+                                                .tokenId(ERC20_TOKEN_ID)
+                                                .amount(Long.MAX_VALUE)
+                                                .build(),
+                                        // To use transferFrom() we must always have an approval,
+                                        // even when the spender is the owner
+                                        AccountFungibleTokenAllowance.newBuilder()
+                                                .spenderId(OWNER_ID)
+                                                .tokenId(ERC20_TOKEN_ID)
+                                                .amount(Long.MAX_VALUE)
+                                                .build()))
                                 .build());
                 put(
                         UNAUTHORIZED_SPENDER_ID,

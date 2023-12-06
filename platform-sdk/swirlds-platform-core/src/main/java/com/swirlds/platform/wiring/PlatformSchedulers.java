@@ -23,6 +23,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.StateSavingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -36,6 +37,7 @@ import java.util.List;
  * @param inOrderLinkerScheduler           the scheduler for the in-order linker
  * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
  * @param eventCreationManagerScheduler    the scheduler for the event creation manager
+ * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
@@ -44,7 +46,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
-        @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler) {
+        @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
+        @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -104,6 +107,12 @@ public record PlatformSchedulers(
                         .withType(config.getEventCreationManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("signedStateFileManager")
+                        .withType(config.getSignedStateFileManagerSchedulerType())
+                        .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast());
