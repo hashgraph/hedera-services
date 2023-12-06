@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.event.EventConstants;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
 import java.util.function.LongUnaryOperator;
 
