@@ -76,9 +76,9 @@ class FeatureFlagsTest {
                         ConversionUtils.numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
                 .getOrCreateConfig();
         final var grandfathered = mock(HederaEvmAccount.class);
-        given(grandfathered.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
-        assertTrue(subject.isAllowCallsToNonContractAccountsEnabled(config, grandfathered));
-        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(config2, grandfathered));
+        assertTrue(subject.isAllowCallsToNonContractAccountsEnabled(config, 1L));
+        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(
+                config2, ConversionUtils.numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)));
     }
 }

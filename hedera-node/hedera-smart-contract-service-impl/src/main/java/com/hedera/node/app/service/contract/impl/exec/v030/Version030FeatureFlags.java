@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.v030;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,7 +50,7 @@ public class Version030FeatureFlags implements FeatureFlags {
 
     @Override
     public boolean isAllowCallsToNonContractAccountsEnabled(
-            @NonNull Configuration config, @Nullable HederaEvmAccount possiblyGrandfathered) {
+            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
         return false;
     }
 }

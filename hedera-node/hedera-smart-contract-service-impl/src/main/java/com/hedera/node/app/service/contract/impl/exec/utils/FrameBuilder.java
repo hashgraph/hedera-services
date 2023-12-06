@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TI
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -154,8 +155,7 @@ public class FrameBuilder {
             @NonNull final FeatureFlags featureFlags,
             @NonNull final Configuration config) {
         Code code = CodeV0.EMPTY_CODE;
-        final var toAccount = worldUpdater.getHederaAccount(transaction.contractIdOrThrow());
-        if (toAccount != null || worldUpdater.contractMustBePresent()) {
+        if (canLoadCodeFromAccount(transaction, worldUpdater)) {
             final var account = worldUpdater.getHederaAccount(to);
             if (account == null && worldUpdater.contractMustBePresent()) {
                 validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
@@ -169,5 +169,24 @@ public class FrameBuilder {
                 .inputData(transaction.evmPayload())
                 .code(code)
                 .build();
+    }
+
+    private boolean canLoadCodeFromAccount(
+            @NonNull final HederaEvmTransaction transaction, @NonNull final HederaWorldUpdater worldUpdater) {
+        requireNonNull(transaction);
+        requireNonNull(worldUpdater);
+        final var contractId = transaction.contractIdOrThrow();
+
+        // If the contract is deleted, never load code from it.
+        final var contract = worldUpdater
+                .enhancement()
+                .nativeOperations()
+                .readableAccountStore()
+                .getContractById(contractId);
+        if (contract != null && contract.deleted()) {
+            return false;
+        }
+
+        return worldUpdater.getHederaAccount(contractId) != null || worldUpdater.contractMustBePresent();
     }
 }

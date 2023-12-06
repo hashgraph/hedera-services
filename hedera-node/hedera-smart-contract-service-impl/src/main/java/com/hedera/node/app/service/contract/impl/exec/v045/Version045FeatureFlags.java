@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.v045;
 
 import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,12 +33,11 @@ public class Version045FeatureFlags extends Version034FeatureFlags {
 
     @Override
     public boolean isAllowCallsToNonContractAccountsEnabled(
-            @NonNull Configuration config, @Nullable HederaEvmAccount possiblyGrandfatheredAddress) {
-        final var grandfathered = possiblyGrandfatheredAddress != null
-                && ConversionUtils.isLongZero(possiblyGrandfatheredAddress.getAddress())
+            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
+        final var grandfathered = possiblyGrandFatheredEntityNum != null
                 && config.getConfigData(ContractsConfig.class)
                         .evmNonExtantContractsFail()
-                        .contains(ConversionUtils.numberOfLongZero(possiblyGrandfatheredAddress.getAddress()));
+                        .contains(possiblyGrandFatheredEntityNum);
         return config.getConfigData(ContractsConfig.class).evmAllowCallsToNonContractAccounts() && !grandfathered;
     }
 }

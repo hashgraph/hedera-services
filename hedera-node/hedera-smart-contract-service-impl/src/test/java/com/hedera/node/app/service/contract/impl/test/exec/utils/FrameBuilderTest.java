@@ -22,15 +22,20 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.ti
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.apache.tuweni.bytes.Bytes;
@@ -71,11 +76,24 @@ class FrameBuilderTest {
     @Mock
     private FeatureFlags featureFlags;
 
+    @Mock
+    private Enhancement enhancement;
+
+    @Mock
+    private HederaNativeOperations hederaNativeOperations;
+
+    @Mock
+    private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private Account contract;
+
     private final FrameBuilder subject = new FrameBuilder();
 
     @Test
     void constructsExpectedFrameForCallToExtantContractIncludingAccessTrackerWithSidecarEnabled() {
         final var transaction = wellKnownHapiCall();
+        givenContractExists();
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
         given(account.getEvmCode()).willReturn(CONTRACT_CODE);
@@ -122,6 +140,7 @@ class FrameBuilderTest {
     @Test
     void constructsExpectedFrameForCallToExtantContractNotIncludingAccessTrackerWithSidecarDisabled() {
         final var transaction = wellKnownHapiCall();
+        givenContractExists();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
@@ -169,6 +188,7 @@ class FrameBuilderTest {
     @Test
     void callFailsWhenContractNotFound() {
         final var transaction = wellKnownHapiCall();
+        givenContractExists();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
@@ -192,6 +212,7 @@ class FrameBuilderTest {
     @Test
     void constructsExpectedFrameForCallToMissingContract() {
         final var transaction = wellKnownRelayedHapiCall(VALUE);
+        givenContractExists();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
@@ -272,5 +293,12 @@ class FrameBuilderTest {
         assertEquals(Bytes.EMPTY, frame.getInputData());
         assertEquals(expectedCode, frame.getCode());
         assertSame(tinybarValues, tinybarValuesFor(frame));
+    }
+
+    private void givenContractExists() {
+        given(worldUpdater.enhancement()).willReturn(enhancement);
+        given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
+        given(hederaNativeOperations.readableAccountStore()).willReturn(readableAccountStore);
+        given(readableAccountStore.getContractById(any())).willReturn(contract);
     }
 }
