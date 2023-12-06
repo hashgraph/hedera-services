@@ -197,24 +197,21 @@ jobs:
         id: gradle-build
         run: ./gradlew assemble --scan --no-build-cache
 
-      - name: Validate Libraries
-        continue-on-error: true
-        working-directory: ${{ github.workspace }}/hedera-node/data/lib
-        run: sha256sum -c "${GRADLE_MANIFEST_PATH}/libraries.sha256"
-
-      - name: Validate Applications
-        continue-on-error: true
-        working-directory: ${{ github.workspace }}/hedera-node/data/apps
-        run: sha256sum -c "${GRADLE_MANIFEST_PATH}/applications.sha256"
-
       - name: Regenerate Manifest
         id: regen-manifest
         env:
           MANIFEST_PATH: ${{ env.GRADLE_MANIFEST_PATH }}/regenerated
         run: ${{ env.GRADLE_MANIFEST_GENERATOR }}
 
+      - name: Validate Libraries
+        working-directory: ${{ github.workspace }}/hedera-node/data/lib
+        run: sha256sum -c "${GRADLE_MANIFEST_PATH}/libraries.sha256"
+
+      - name: Validate Applications
+        working-directory: ${{ github.workspace }}/hedera-node/data/apps
+        run: sha256sum -c "${GRADLE_MANIFEST_PATH}/applications.sha256"
+
       - name: Compare Library Manifests
-        continue-on-error: true
         run: |
           if ! diff -u "${GRADLE_MANIFEST_PATH}/libraries.sha256" "${{ steps.regen-manifest.outputs.libraries }}" >/dev/null 2>&1; then
             echo "::group::Library Manifest Differences"
@@ -231,3 +228,10 @@ jobs:
             echo "::endgroup::"
             exit 1
           fi
+
+      - name: Publish Manifests
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: ${{ steps.regen-manifest.conclusion == 'success' && failure() && !cancelled() }}
+        with:
+          name: Gradle Manifests [${{ join(matrix.os, ', ') }}]
+          path: ${{ env.GRADLE_MANIFEST_PATH }}/**
