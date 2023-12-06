@@ -71,6 +71,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -722,9 +723,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 if (e.shouldRollbackStack()) {
                     childStack.rollbackFullStack();
                 }
-                final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
-                userTransactionRecordBuilder.status(e.getStatus());
-                recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
+                childRecordBuilder.status(e.getStatus());
+                recordListBuilder.revertChildrenOf(childRecordBuilder);
                 if (dispatchValidationResult != null && e.shouldRollbackStack()) {
                     // Only re-charge fees if we rolled back the stack
                     childContext.feeAccumulator.chargeFees(
