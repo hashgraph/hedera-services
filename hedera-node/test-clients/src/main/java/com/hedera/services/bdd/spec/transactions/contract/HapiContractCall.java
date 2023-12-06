@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
@@ -249,9 +250,13 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        return spec.fees()
+        final var ans = spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.ContractCall, scFees::getContractCallTxFeeMatrices, txn, numPayerKeys);
+        final var additionalGasCost =
+                extractTransactionBody(txn).getContractCall().getGas()
+                        * spec.ratesProvider().currentTinybarGasPrice();
+        return ans + additionalGasCost;
     }
 
     @Override

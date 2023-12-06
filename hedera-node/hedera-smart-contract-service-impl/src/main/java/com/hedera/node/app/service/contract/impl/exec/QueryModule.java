@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -48,6 +49,12 @@ import java.util.function.Supplier;
 
 @Module
 public interface QueryModule {
+    @Provides
+    @QueryScope
+    static HederaConfig provideHederaConfig(@NonNull final QueryContext context) {
+        return requireNonNull(context).configuration().getConfigData(HederaConfig.class);
+    }
+
     @Provides
     @QueryScope
     static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
