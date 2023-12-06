@@ -126,12 +126,14 @@ end_group
 
 start_group "Generating Final Release Manifests"
 
-  start_task "Generating the manifest file"
+  start_task "Generating the manifest archive"
   tar -czf "${TEMP_DIR}/manifest.tar.gz" -C "${TEMP_DIR}" libraries.sha256 applications.sha256 >/dev/null 2>&1 || fail "TAR ERROR (Exit Code: ${?})" "${?}"
   end_task
 
-  start_task "Copying the manifest file"
+  start_task "Copying the manifest files"
   cp "${TEMP_DIR}/manifest.tar.gz" "${MANIFEST_PATH}/${GITHUB_SHA}.tar.gz" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
+  cp "${TEMP_DIR}/libraries.sha256" "${MANIFEST_PATH}/libraries.sha256" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
+  cp "${TEMP_DIR}/applications.sha256" "${MANIFEST_PATH}/applications.sha256" || fail "COPY ERROR (Exit Code: ${?})" "${?}"
   end_task "DONE (Path: ${MANIFEST_PATH}/${GITHUB_SHA}.tar.gz)"
 
   start_task "Setting Step Outputs"
@@ -139,6 +141,8 @@ start_group "Generating Final Release Manifests"
       printf "path=%s\n" "${MANIFEST_PATH}"
       printf "file=%s\n" "${MANIFEST_PATH}/${GITHUB_SHA}.tar.gz"
       printf "name=%s\n" "${GITHUB_SHA}.tar.gz"
+      printf "applications=%s\n" "${MANIFEST_PATH}/applications.sha256"
+      printf "libraries=%s\n" "${MANIFEST_PATH}/libraries.sha256"
     } >> "${GITHUB_OUTPUT}"
   end_task
 end_group

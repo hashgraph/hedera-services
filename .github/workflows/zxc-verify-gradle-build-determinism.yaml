@@ -185,3 +185,26 @@ jobs:
         working-directory: ${{ github.workspace }}/hedera-node/data/apps
         run: sha256sum -c "${GRADLE_MANIFEST_PATH}/applications.sha256"
 
+      - name: Regenerate Manifest
+        id: regen-manifest
+        env:
+          MANIFEST_PATH: ${{ env.GRADLE_MANIFEST_PATH }}/regenerated
+        run: ${{ env.GRADLE_MANIFEST_GENERATOR }}
+
+      - name: Compare Library Manifests
+        run: |
+          if ! diff -u "${GRADLE_MANIFEST_PATH}/libraries.sha256" "${{ steps.regen-manifest.outputs.libraries }}" >/dev/null 2>&1; then
+            echo "::group::Library Manifest Differences"
+            diff -u "${GRADLE_MANIFEST_PATH}/libraries.sha256" "${{ steps.regen-manifest.outputs.libraries }}"
+            echo "::endgroup::"
+            exit 1
+          fi
+
+      - name: Compare Application Manifests
+        run: |
+          if ! diff -u "${GRADLE_MANIFEST_PATH}/applications.sha256" "${{ steps.regen-manifest.outputs.applications }}" >/dev/null 2>&1; then
+            echo "::group::Application Manifest Differences"
+            diff -u "${GRADLE_MANIFEST_PATH}/applications.sha256" "${{ steps.regen-manifest.outputs.applications }}"
+            echo "::endgroup::"
+            exit 1
+          fi
