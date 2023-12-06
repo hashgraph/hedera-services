@@ -131,6 +131,11 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
+      - name: Setup Python
+        uses: actions/setup-python@b64ffcaf5b410884ad320a9cfac8866006a109aa # v4.8.0
+        with:
+          python-version: '3.12'
+
       - name: Setup Java
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
@@ -161,7 +166,7 @@ jobs:
 
       - name: Build Artifacts
         id: gradle-build
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble --scan --no-build-cache
 
       - name: Validate Libraries
         working-directory: ${{ github.workspace }}/hedera-node/data/libs
