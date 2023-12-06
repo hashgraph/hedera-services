@@ -69,7 +69,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
         @ConfigProperty(defaultValue = "5000") int eventStreamQueueCapacity,
         @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
-        @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
+        @ConfigProperty(defaultValue = "./eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
         @ConfigProperty(defaultValue = "true") boolean useLegacyIntake) {}
