@@ -509,7 +509,10 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
         platformWiring.wireExternalComponents(
-                preconsensusEventWriter, platformStatusManager, appCommunicationComponent);
+                preconsensusEventWriter,
+                platformStatusManager,
+                appCommunicationComponent,
+                txn -> this.createSystemTransaction(txn, true));
 
         platformWiring.bind(signedStateFileManager);
 
@@ -933,6 +936,7 @@ public class SwirldsPlatform implements Platform {
      */
     private boolean createSystemTransaction(
             @NonNull final SystemTransaction systemTransaction, final boolean priority) {
+        //TODO get rid of this
         Objects.requireNonNull(systemTransaction);
         return transactionPool.submitTransaction(systemTransaction, priority);
     }

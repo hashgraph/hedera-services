@@ -29,6 +29,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -61,6 +62,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+    private final StateSignerWiring stateSignerWiring;
 
     private final PlatformCoordinator platformCoordinator;
 
@@ -111,6 +113,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateFileManagerWiring =
                 SignedStateFileManagerWiring.create(schedulers.signedStateFileManagerScheduler());
+        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
 
         wire();
     }
@@ -171,7 +174,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public void wireExternalComponents(
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusManager statusManager,
-            @NonNull final AppCommunicationComponent appCommunicationComponent) {
+            @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter) {
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
@@ -184,6 +188,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
+        stateSignerWiring
+                .stateSignature()
+                .solderTo("priority system transaction submitter", prioritySystemTransactionSubmitter::submit);
     }
 
     /**
@@ -278,6 +285,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     @NonNull
     public InputWire<StateDumpRequest> getDumpStateToDiskInput() {
         return signedStateFileManagerWiring.dumpStateToDisk();
+    }
+
+    @NonNull
+    public InputWire<ReservedSignedState> getSignStateInput() {
+        return stateSignerWiring.signState();
     }
 
     /**

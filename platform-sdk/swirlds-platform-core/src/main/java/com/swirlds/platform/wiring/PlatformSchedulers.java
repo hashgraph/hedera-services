@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.config.PlatformSchedulersConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.platform.event.GossipEvent;
@@ -38,6 +39,7 @@ import java.util.List;
  * @param linkedEventIntakeScheduler       the scheduler for the linked event intake
  * @param eventCreationManagerScheduler    the scheduler for the event creation manager
  * @param signedStateFileManagerScheduler  the scheduler for the signed state file manager
+ * @param stateSignerScheduler             the scheduler for the state signer
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
@@ -47,7 +49,8 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> linkedEventIntakeScheduler,
         @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
-        @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler) {
+        @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
+        @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -62,42 +65,42 @@ public record PlatformSchedulers(
 
         return new PlatformSchedulers(
                 model.schedulerBuilder("internalEventValidator")
-                        .withType(config.getInternalEventValidatorSchedulerType())
+                        .withType(config.internalEventValidatorSchedulerType())
                         .withUnhandledTaskCapacity(config.internalEventValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")
-                        .withType(config.getEventDeduplicatorSchedulerType())
+                        .withType(config.eventDeduplicatorSchedulerType())
                         .withUnhandledTaskCapacity(config.eventDeduplicatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventSignatureValidator")
-                        .withType(config.getEventSignatureValidatorSchedulerType())
+                        .withType(config.eventSignatureValidatorSchedulerType())
                         .withUnhandledTaskCapacity(config.eventSignatureValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("orphanBuffer")
-                        .withType(config.getOrphanBufferSchedulerType())
+                        .withType(config.orphanBufferSchedulerType())
                         .withUnhandledTaskCapacity(config.orphanBufferUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
-                        .withType(config.getInOrderLinkerSchedulerType())
+                        .withType(config.inOrderLinkerSchedulerType())
                         .withUnhandledTaskCapacity(config.inOrderLinkerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
                         .cast(),
                 model.schedulerBuilder("linkedEventIntake")
-                        .withType(config.getLinkedEventIntakeSchedulerType())
+                        .withType(config.linkedEventIntakeSchedulerType())
                         .withUnhandledTaskCapacity(config.linkedEventIntakeUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
@@ -111,10 +114,16 @@ public record PlatformSchedulers(
                         .build()
                         .cast(),
                 model.schedulerBuilder("signedStateFileManager")
-                        .withType(config.getSignedStateFileManagerSchedulerType())
+                        .withType(config.signedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .build()
-                        .cast());
+                        .cast(),
+                model.schedulerBuilder("stateSigner")
+                        .withType(config.stateSignerSchedulerType())
+                        .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
+                        .build()
+                        .cast()
+                );
     }
 }

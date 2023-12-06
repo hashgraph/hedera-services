@@ -173,6 +173,7 @@ public class Browser {
             for (final Class<? extends Record> configType : configTypes) {
                 configBuilder.withConfigDataType(configType);
             }
+            configBuilder.withConverter(Converters::convertTaskSchedulerType);
 
             final PlatformBuilder builder = new PlatformBuilder(
                     appMain.getClass().getName(),
