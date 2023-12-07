@@ -58,7 +58,6 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
     @Mock
     private Nft nft;
 
-
     @Test
     void erc20approve() {
         subject = new ERCGrantApprovalCall(
