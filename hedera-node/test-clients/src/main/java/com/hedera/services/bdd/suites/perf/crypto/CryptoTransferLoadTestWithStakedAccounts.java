@@ -44,7 +44,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private final Random r = new Random(38582L);
 
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
-    private static final int STAKED_CREATIONS = 5;
+    private static final int STAKED_CREATIONS = 50;
 
     public static void main(String... args) {
         parseArgs(args);
@@ -129,7 +129,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                         }))
                 .then(
                         defaultLoadTest(transferBurst, settings),
-                        getAccountBalance("sender").payingWith(GENESIS).logged());
+                        getAccountBalance("sender").logged());
     }
 
     @Override

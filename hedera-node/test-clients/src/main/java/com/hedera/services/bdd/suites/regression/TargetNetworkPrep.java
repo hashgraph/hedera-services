@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.regression;
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
@@ -110,25 +109,23 @@ public class TargetNetworkPrep extends HapiSuite {
                                     "100_000_000")))
                     .when(
                             cryptoCreate(civilian),
-                            balanceSnapshot(snapshot800, STAKING_REWARD).payingWith(GENESIS),
+                            balanceSnapshot(snapshot800, STAKING_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, STAKING_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
                                     .signedBy(civilian)
                                     .exposingFeesTo(feeObs)
                                     .logged(),
                             sourcing(() -> getAccountBalance(STAKING_REWARD)
-                                    .payingWith(GENESIS)
                                     .hasTinyBars(changeFromSnapshot(snapshot800, (long) (ONE_HBAR
                                             + ((feeObs.get().networkFee()
                                                             + feeObs.get().serviceFee())
                                                     * 0.1))))),
-                            balanceSnapshot(snapshot801, NODE_REWARD).payingWith(GENESIS),
+                            balanceSnapshot(snapshot801, NODE_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
                                     .signedBy(civilian)
                                     .logged(),
                             sourcing(() -> getAccountBalance(NODE_REWARD)
-                                    .payingWith(GENESIS)
                                     .hasTinyBars(changeFromSnapshot(snapshot801, (long) (ONE_HBAR
                                             + ((feeObs.get().networkFee()
                                                             + feeObs.get().serviceFee())
@@ -151,8 +148,7 @@ public class TargetNetworkPrep extends HapiSuite {
                                             .noAlias()
                                             .noAllowances()),
                             withOpContext((spec, opLog) -> {
-                                final var genesisInfo = getAccountInfo("0.0.2")
-                                        .payingWith(GENESIS);
+                                final var genesisInfo = getAccountInfo("0.0.2");
                                 allRunFor(spec, genesisInfo);
                                 final var key = genesisInfo
                                         .getResponse()
@@ -162,8 +158,10 @@ public class TargetNetworkPrep extends HapiSuite {
                                 final var cloneConfirmations = inParallel(IntStream.rangeClosed(200, 750)
                                         .filter(i -> i < 350 || i >= 400)
                                         .mapToObj(i -> getAccountInfo("0.0." + i)
+                                                .noLogging()
                                                 .payingWith(GENESIS)
-                                                .has(accountWith().key(key)))
+                                                .has(AccountInfoAsserts.accountWith()
+                                                        .key(key)))
                                         .toArray(HapiSpecOperation[]::new));
                                 allRunFor(spec, cloneConfirmations);
                             }));

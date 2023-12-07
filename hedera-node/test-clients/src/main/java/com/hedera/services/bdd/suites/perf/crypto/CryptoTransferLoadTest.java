@@ -123,7 +123,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                 .logging())
                 .then(
                         defaultLoadTest(transferBurst, settings),
-                        getAccountBalance("sender").payingWith(GENESIS).logged());
+                        getAccountBalance("sender").logged());
     }
 
     @Override
