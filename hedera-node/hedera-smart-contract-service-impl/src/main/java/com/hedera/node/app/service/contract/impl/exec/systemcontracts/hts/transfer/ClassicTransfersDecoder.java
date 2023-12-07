@@ -124,6 +124,10 @@ public class ClassicTransfersDecoder {
     public TransactionBody decodeTransferToken(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(encoded);
+        final long amount = call.get(3);
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be non-negative");
+        }
         return bodyOf(tokenTransfers(sendingUnitsFromTo(
                 ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
