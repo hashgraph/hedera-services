@@ -22,7 +22,6 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +145,7 @@ public class AdjustmentUtils {
      * @return The list of credits
      */
     public static Map<AccountID, Long> getFungibleTokenCredits(final Map<AccountID, Long> tokenIdChanges) {
-        final var credits = new HashMap<AccountID, Long>();
+        final var credits = new LinkedHashMap<AccountID, Long>();
         for (final var entry : tokenIdChanges.entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
