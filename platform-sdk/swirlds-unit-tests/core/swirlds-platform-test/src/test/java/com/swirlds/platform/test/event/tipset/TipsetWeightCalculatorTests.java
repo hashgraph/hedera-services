@@ -30,9 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
@@ -42,6 +44,7 @@ import com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +57,18 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("TipsetWeightCalculator Tests")
 class TipsetWeightCalculatorTests {
+
+    /**
+     * Create a new event descriptor with the given parameters and {@link EventConstants#BIRTH_ROUND_UNDEFINED} for the birth round.
+     * @param hash the hash of the event
+     * @param creator the creator of the event
+     * @param generation the generation of the event
+     * @return the event descriptor
+     */
+    private EventDescriptor newEventDescriptor(
+            @NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
+        return new EventDescriptor(hash, creator, generation, EventConstants.BIRTH_ROUND_UNDEFINED);
+    }
 
     @Test
     @DisplayName("Basic Behavior Test")
@@ -97,7 +112,7 @@ class TipsetWeightCalculatorTests {
             }
 
             final EventDescriptor selfParent = latestEvents.get(creator);
-            final EventDescriptor fingerprint = new EventDescriptor(randomHash(random), creator, generation);
+            final EventDescriptor fingerprint = newEventDescriptor(randomHash(random), creator, generation);
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
@@ -217,16 +232,16 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot1 = calculator.getSnapshot();
 
         // Each node creates an event.
-        final EventDescriptor eventA1 = new EventDescriptor(randomHash(random), nodeA, 1);
+        final EventDescriptor eventA1 = newEventDescriptor(randomHash(random), nodeA, 1);
         tracker.addEvent(eventA1, List.of());
         childlessEventTracker.addEvent(eventA1, List.of());
-        final EventDescriptor eventB1 = new EventDescriptor(randomHash(random), nodeB, 1);
+        final EventDescriptor eventB1 = newEventDescriptor(randomHash(random), nodeB, 1);
         tracker.addEvent(eventB1, List.of());
         childlessEventTracker.addEvent(eventB1, List.of());
-        final EventDescriptor eventC1 = new EventDescriptor(randomHash(random), nodeC, 1);
+        final EventDescriptor eventC1 = newEventDescriptor(randomHash(random), nodeC, 1);
         tracker.addEvent(eventC1, List.of());
         childlessEventTracker.addEvent(eventC1, List.of());
-        final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
+        final EventDescriptor eventD1 = newEventDescriptor(randomHash(random), nodeD, 1);
         tracker.addEvent(eventD1, List.of());
         childlessEventTracker.addEvent(eventD1, List.of());
 
@@ -235,16 +250,16 @@ class TipsetWeightCalculatorTests {
         assertSame(snapshot1, calculator.getSnapshot());
 
         // Each node creates another event. All nodes use all available other parents except the event from D.
-        final EventDescriptor eventA2 = new EventDescriptor(randomHash(random), nodeA, 2);
+        final EventDescriptor eventA2 = newEventDescriptor(randomHash(random), nodeA, 2);
         tracker.addEvent(eventA2, List.of(eventA1, eventB1, eventC1));
         childlessEventTracker.addEvent(eventA2, List.of(eventA1, eventB1, eventC1));
-        final EventDescriptor eventB2 = new EventDescriptor(randomHash(random), nodeB, 2);
+        final EventDescriptor eventB2 = newEventDescriptor(randomHash(random), nodeB, 2);
         tracker.addEvent(eventB2, List.of(eventA1, eventB1, eventC1));
         childlessEventTracker.addEvent(eventB2, List.of(eventA1, eventB1, eventC1));
-        final EventDescriptor eventC2 = new EventDescriptor(randomHash(random), nodeC, 2);
+        final EventDescriptor eventC2 = newEventDescriptor(randomHash(random), nodeC, 2);
         tracker.addEvent(eventC2, List.of(eventA1, eventB1, eventC1));
         childlessEventTracker.addEvent(eventC2, List.of(eventA1, eventB1, eventC1));
-        final EventDescriptor eventD2 = new EventDescriptor(randomHash(random), nodeD, 2);
+        final EventDescriptor eventD2 = newEventDescriptor(randomHash(random), nodeD, 2);
         tracker.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
         childlessEventTracker.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
@@ -265,16 +280,16 @@ class TipsetWeightCalculatorTests {
         assertEquals(1, calculator.getMaxSelfishnessScore());
 
         // Create another batch of events where D is bullied.
-        final EventDescriptor eventA3 = new EventDescriptor(randomHash(random), nodeA, 3);
+        final EventDescriptor eventA3 = newEventDescriptor(randomHash(random), nodeA, 3);
         tracker.addEvent(eventA3, List.of(eventA2, eventB2, eventC2));
         childlessEventTracker.addEvent(eventA3, List.of(eventA2, eventB2, eventC2));
-        final EventDescriptor eventB3 = new EventDescriptor(randomHash(random), nodeB, 3);
+        final EventDescriptor eventB3 = newEventDescriptor(randomHash(random), nodeB, 3);
         tracker.addEvent(eventB3, List.of(eventA2, eventB2, eventC2));
         childlessEventTracker.addEvent(eventB3, List.of(eventA2, eventB2, eventC2));
-        final EventDescriptor eventC3 = new EventDescriptor(randomHash(random), nodeC, 3);
+        final EventDescriptor eventC3 = newEventDescriptor(randomHash(random), nodeC, 3);
         tracker.addEvent(eventC3, List.of(eventA2, eventB2, eventC2));
         childlessEventTracker.addEvent(eventC3, List.of(eventA2, eventB2, eventC2));
-        final EventDescriptor eventD3 = new EventDescriptor(randomHash(random), nodeD, 3);
+        final EventDescriptor eventD3 = newEventDescriptor(randomHash(random), nodeD, 3);
         tracker.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
         childlessEventTracker.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
 
@@ -294,16 +309,16 @@ class TipsetWeightCalculatorTests {
         assertEquals(2, calculator.getMaxSelfishnessScore());
 
         // Create a bach of events that don't ignore D. Let's all ignore C, because C is a jerk.
-        final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
+        final EventDescriptor eventA4 = newEventDescriptor(randomHash(random), nodeA, 4);
         tracker.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
         childlessEventTracker.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
-        final EventDescriptor eventB4 = new EventDescriptor(randomHash(random), nodeB, 4);
+        final EventDescriptor eventB4 = newEventDescriptor(randomHash(random), nodeB, 4);
         tracker.addEvent(eventB4, List.of(eventA3, eventB3, eventD3));
         childlessEventTracker.addEvent(eventB4, List.of(eventA3, eventB3, eventD3));
-        final EventDescriptor eventC4 = new EventDescriptor(randomHash(random), nodeC, 4);
+        final EventDescriptor eventC4 = newEventDescriptor(randomHash(random), nodeC, 4);
         tracker.addEvent(eventC4, List.of(eventA3, eventB3, eventC3, eventD3));
         childlessEventTracker.addEvent(eventC4, List.of(eventA3, eventB3, eventC3, eventD3));
-        final EventDescriptor eventD4 = new EventDescriptor(randomHash(random), nodeD, 4);
+        final EventDescriptor eventD4 = newEventDescriptor(randomHash(random), nodeD, 4);
         tracker.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
         childlessEventTracker.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
 
@@ -323,13 +338,13 @@ class TipsetWeightCalculatorTests {
         assertEquals(1, calculator.getMaxSelfishnessScore());
 
         // Stop ignoring C. D stops creating events.
-        final EventDescriptor eventA5 = new EventDescriptor(randomHash(random), nodeA, 5);
+        final EventDescriptor eventA5 = newEventDescriptor(randomHash(random), nodeA, 5);
         tracker.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
         childlessEventTracker.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
-        final EventDescriptor eventB5 = new EventDescriptor(randomHash(random), nodeB, 5);
+        final EventDescriptor eventB5 = newEventDescriptor(randomHash(random), nodeB, 5);
         tracker.addEvent(eventB5, List.of(eventA4, eventB4, eventC4, eventD4));
         childlessEventTracker.addEvent(eventB5, List.of(eventA4, eventB4, eventC4, eventD4));
-        final EventDescriptor eventC5 = new EventDescriptor(randomHash(random), nodeC, 5);
+        final EventDescriptor eventC5 = newEventDescriptor(randomHash(random), nodeC, 5);
         tracker.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
         childlessEventTracker.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
 
@@ -349,13 +364,13 @@ class TipsetWeightCalculatorTests {
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
         // count as being selfish.
-        final EventDescriptor eventA6 = new EventDescriptor(randomHash(random), nodeA, 6);
+        final EventDescriptor eventA6 = newEventDescriptor(randomHash(random), nodeA, 6);
         tracker.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
         childlessEventTracker.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
-        final EventDescriptor eventB6 = new EventDescriptor(randomHash(random), nodeB, 6);
+        final EventDescriptor eventB6 = newEventDescriptor(randomHash(random), nodeB, 6);
         tracker.addEvent(eventB6, List.of(eventA5, eventB5, eventC5));
         childlessEventTracker.addEvent(eventB6, List.of(eventA5, eventB5, eventC5));
-        final EventDescriptor eventC6 = new EventDescriptor(randomHash(random), nodeC, 6);
+        final EventDescriptor eventC6 = newEventDescriptor(randomHash(random), nodeC, 6);
         tracker.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
         childlessEventTracker.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
 
@@ -374,13 +389,13 @@ class TipsetWeightCalculatorTests {
         assertEquals(0, calculator.getMaxSelfishnessScore());
 
         // Rinse and repeat.
-        final EventDescriptor eventA7 = new EventDescriptor(randomHash(random), nodeA, 7);
+        final EventDescriptor eventA7 = newEventDescriptor(randomHash(random), nodeA, 7);
         tracker.addEvent(eventA7, List.of(eventA6, eventB6, eventC6));
         childlessEventTracker.addEvent(eventA7, List.of(eventA6, eventB6, eventC6));
-        final EventDescriptor eventB7 = new EventDescriptor(randomHash(random), nodeB, 7);
+        final EventDescriptor eventB7 = newEventDescriptor(randomHash(random), nodeB, 7);
         tracker.addEvent(eventB7, List.of(eventA6, eventB6, eventC6));
         childlessEventTracker.addEvent(eventB7, List.of(eventA6, eventB6, eventC6));
-        final EventDescriptor eventC7 = new EventDescriptor(randomHash(random), nodeC, 7);
+        final EventDescriptor eventC7 = newEventDescriptor(randomHash(random), nodeC, 7);
         tracker.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
         childlessEventTracker.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
 
@@ -431,13 +446,13 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot1 = calculator.getSnapshot();
 
         // Each node creates an event.
-        final EventDescriptor eventA1 = new EventDescriptor(randomHash(random), nodeA, 1);
+        final EventDescriptor eventA1 = newEventDescriptor(randomHash(random), nodeA, 1);
         builder.addEvent(eventA1, List.of());
-        final EventDescriptor eventB1 = new EventDescriptor(randomHash(random), nodeB, 1);
+        final EventDescriptor eventB1 = newEventDescriptor(randomHash(random), nodeB, 1);
         builder.addEvent(eventB1, List.of());
-        final EventDescriptor eventC1 = new EventDescriptor(randomHash(random), nodeC, 1);
+        final EventDescriptor eventC1 = newEventDescriptor(randomHash(random), nodeC, 1);
         builder.addEvent(eventC1, List.of());
-        final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
+        final EventDescriptor eventD1 = newEventDescriptor(randomHash(random), nodeD, 1);
         builder.addEvent(eventD1, List.of());
 
         assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.getTheoreticalAdvancementWeight(List.of()));
@@ -445,7 +460,7 @@ class TipsetWeightCalculatorTests {
         assertSame(snapshot1, calculator.getSnapshot());
 
         // Create a node "on top of" B1.
-        final EventDescriptor eventA2 = new EventDescriptor(randomHash(random), nodeA, 2);
+        final EventDescriptor eventA2 = newEventDescriptor(randomHash(random), nodeA, 2);
         builder.addEvent(eventA2, List.of(eventA1, eventB1));
         final TipsetAdvancementWeight advancement1 = calculator.addEventAndGetAdvancementWeight(eventA2);
         assertEquals(TipsetAdvancementWeight.of(1, 0), advancement1);
@@ -456,7 +471,7 @@ class TipsetWeightCalculatorTests {
         // If we get 1 more advancement point then the snapshot will advance. But building
         // on top of a zero stake node will not contribute to this and the snapshot will not
         // advance. Build on top of node D.
-        final EventDescriptor eventA3 = new EventDescriptor(randomHash(random), nodeA, 3);
+        final EventDescriptor eventA3 = newEventDescriptor(randomHash(random), nodeA, 3);
         builder.addEvent(eventA3, List.of(eventA2, eventD1));
         final TipsetAdvancementWeight advancement2 = calculator.addEventAndGetAdvancementWeight(eventA3);
         assertEquals(TipsetAdvancementWeight.of(0, 1), advancement2);
@@ -465,7 +480,7 @@ class TipsetWeightCalculatorTests {
         assertSame(snapshot1, calculator.getSnapshot());
 
         // Now, build on top of C. This should push us into the next snapshot.
-        final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
+        final EventDescriptor eventA4 = newEventDescriptor(randomHash(random), nodeA, 4);
         builder.addEvent(eventA4, List.of(eventA3, eventC1));
         final TipsetAdvancementWeight advancement3 = calculator.addEventAndGetAdvancementWeight(eventA4);
         assertEquals(TipsetAdvancementWeight.of(1, 0), advancement3);
@@ -501,21 +516,21 @@ class TipsetWeightCalculatorTests {
                 platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
 
         // Create generation 1 events.
-        final EventDescriptor eventA1 = new EventDescriptor(randomHash(random), nodeA, 1);
+        final EventDescriptor eventA1 = newEventDescriptor(randomHash(random), nodeA, 1);
         builder.addEvent(eventA1, List.of());
-        final EventDescriptor eventB1 = new EventDescriptor(randomHash(random), nodeB, 1);
+        final EventDescriptor eventB1 = newEventDescriptor(randomHash(random), nodeB, 1);
         builder.addEvent(eventB1, List.of());
-        final EventDescriptor eventC1 = new EventDescriptor(randomHash(random), nodeC, 1);
+        final EventDescriptor eventC1 = newEventDescriptor(randomHash(random), nodeC, 1);
         builder.addEvent(eventC1, List.of());
-        final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
+        final EventDescriptor eventD1 = newEventDescriptor(randomHash(random), nodeD, 1);
         builder.addEvent(eventD1, List.of());
 
         // Create some generation 2 events. A does not create an event yet.
-        final EventDescriptor eventB2 = new EventDescriptor(randomHash(random), nodeB, 2);
+        final EventDescriptor eventB2 = newEventDescriptor(randomHash(random), nodeB, 2);
         builder.addEvent(eventB2, List.of(eventA1, eventB1, eventC1, eventD1));
-        final EventDescriptor eventC2 = new EventDescriptor(randomHash(random), nodeC, 2);
+        final EventDescriptor eventC2 = newEventDescriptor(randomHash(random), nodeC, 2);
         builder.addEvent(eventC2, List.of(eventA1, eventB1, eventC1, eventD1));
-        final EventDescriptor eventD2 = new EventDescriptor(randomHash(random), nodeD, 2);
+        final EventDescriptor eventD2 = newEventDescriptor(randomHash(random), nodeD, 2);
         builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
         // Mark generation 1 as ancient.
@@ -531,7 +546,7 @@ class TipsetWeightCalculatorTests {
         // Including generation 1 events as parents shouldn't cause us to throw. (Angry log messages are ok).
         assertDoesNotThrow(() -> {
             calculator.getTheoreticalAdvancementWeight(List.of(eventA1, eventB2, eventC2, eventD1));
-            final EventDescriptor eventA2 = new EventDescriptor(randomHash(random), nodeA, 2);
+            final EventDescriptor eventA2 = newEventDescriptor(randomHash(random), nodeA, 2);
             builder.addEvent(eventA2, List.of(eventA1, eventB2, eventC2, eventD1));
             calculator.addEventAndGetAdvancementWeight(eventA2);
         });
