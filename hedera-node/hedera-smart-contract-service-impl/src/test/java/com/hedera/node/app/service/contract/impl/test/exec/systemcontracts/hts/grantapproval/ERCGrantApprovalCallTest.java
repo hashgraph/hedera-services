@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REVOKE_APPROVAL_SPENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,6 +102,36 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         eq(verificationStrategy),
                         eq(OWNER_ID),
                         eq(SingleTransactionRecordBuilder.class)))
+                .willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nft.ownerId()).willReturn(OWNER_ID);
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
+                        .getOutputs()
+                        .encodeElements()),
+                result.getOutput());
+    }
+
+    @Test
+    void erc721revoke() {
+        subject = new ERCGrantApprovalCall(
+                mockEnhancement(),
+                systemContractGasCalculator,
+                verificationStrategy,
+                OWNER_ID,
+                NON_FUNGIBLE_TOKEN_ID,
+                REVOKE_APPROVAL_SPENDER_ID,
+                BigInteger.valueOf(100L),
+                TokenType.NON_FUNGIBLE_UNIQUE);
+        given(systemContractOperations.dispatch(
+                any(TransactionBody.class),
+                eq(verificationStrategy),
+                eq(OWNER_ID),
+                eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
