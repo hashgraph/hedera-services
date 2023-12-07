@@ -1,7 +1,7 @@
 # Roster Glossary of Terms
 ![Event Window Terminology](./EventWindowTerminology.drawio.svg)
 ![Roster Terminology Diagram](./RosterTerminologyDiagram.drawio.svg)
-## Consensus Terminology
+## Round Terminology
 
 ### Latest Consensus Round
 
@@ -30,12 +30,35 @@ round` - `rounds non-ancient`.
 
 Specifies the window of events that are being considered in consensus.  The window specified the following:
 * `latestConsensusRound` - the latest round that has reached consensus.
-* `minRoundNonAncient` - the minimum round that is considered non-ancient.
-* `minGenNonAncient` - the minimum generation that is considered non-ancient.  (This is deprecated). 
+* `minRoundNonAncient` - the minimum round that is considered non-ancient. 
+
+### Latest Handled Round
+
+The `latestHandledRound` is the latest round to have been completely handled and applied to the state by the node.  
+Note that the application of this round to state produces a new roster to become effective after a configured 
+`rosterOffset`.  see terminology below.  
+
+### Future Event Horizon (a.k.a. Max Gossip Round)  
+
+The `futureEventHorizon` is the maximum round for which the node has an effective roster.  It is also the 
+maximum round that this node can gossip about.  Events which have a birth round higher than the `futureEventHorizon` 
+will not be gossipped.    
+
+### Past Event Horizon (a.k.a. Min Gossip Round)
+
+The `pastEventHorizon`, equal to `minRoundNonAncient` is the minimum round for which the node has an effective roster. 
+It is also the minimum round that this node can gossip about.  Events which have a birth round lower than the
+`pastEventHorizon` are ancient and will not be gossipped.
+
+### Validatable Event Window (within the Event Horizon)
+
+The `validatableEventWindow` is the window of rounds which have effective rosters that have not become ancient.  It 
+spans, inclusively, from the `pastEventHorizon` to the `futureEventHorizon`.  Events with `birthRound` within this 
+window are non-ancient and can be validated.
 
 ## Roster Terminology
 
-### Roster (a.k.a Consensus Roster)
+### Roster (a.k.a. Consensus Roster)
 
 The collection of nodes which create events and participate in consensus.  Prior to the dynamic address book effort, 
 this was called the `AddressBook` in the platform's code.  The name was changed to `Roster` to disambiguate it from 
@@ -69,6 +92,32 @@ The round of transactions that created this roster once they were applied to the
 A setting.  The number of rounds it takes for a roster to become effective after being created. This is likely to be 
 a small integer value, e.g. 2. If this number is 2, then processing all the transactions in round 100 yields the 
 effective roster for round 102.
+
+### Ancient Roster
+
+All rosters that are effective for ancient rounds are ancient rosters. 
+
+### Minimum Roster Non-Ancient || Least Effective Roster
+
+`minRosterNonAncient` is the roster that is effective for `minRoundNonAncient`.  
+
+### Latest Handled Roster
+
+`latestHandledRoster` is the roster that was effective and used to calculate consensus for the `latestHandledRound`.
+
+### Latest Consensus Roster
+
+`latestConsensusRoster` is the roster that is effective for the `latestConsensusRound`.
+
+### Current Effective Roster
+
+`currentEffectiveRoster` is the roster that is effective for the `pendingConsensusRound`.  It is currently being 
+used by consensus and determines the current network topology.  
+
+### Greatest Effective Roster
+
+`greatestEffectiveRoster` is the roster that is effective for the `futureEventHorizon`.  It is the greatest roster 
+to have been produced by handling transactions and applying them to the state. 
 
 ## Event Terminology
 
