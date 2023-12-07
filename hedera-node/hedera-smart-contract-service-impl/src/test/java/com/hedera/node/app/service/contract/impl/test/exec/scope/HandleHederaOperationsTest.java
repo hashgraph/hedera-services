@@ -103,7 +103,12 @@ class HandleHederaOperationsTest {
     @BeforeEach
     void setUp() {
         subject = new HandleHederaOperations(
-                DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context, tinybarValues, gasCalculator, DEFAULT_HEDERA_CONFIG);
+                DEFAULT_LEDGER_CONFIG,
+                DEFAULT_CONTRACTS_CONFIG,
+                context,
+                tinybarValues,
+                gasCalculator,
+                DEFAULT_HEDERA_CONFIG);
     }
 
     @Test
