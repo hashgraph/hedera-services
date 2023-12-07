@@ -18,7 +18,11 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
@@ -26,9 +30,12 @@ import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -50,6 +57,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * A fully mutable {@link HederaOperations} implementation based on a {@link HandleContext}.
@@ -59,10 +67,24 @@ public class HandleHederaOperations implements HederaOperations {
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
+    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
+            CryptoUpdateTransactionBody.newBuilder()
+                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
+
+    private static final CryptoCreateTransactionBody.Builder CREATE_TXN_BODY_BUILDER =
+            CryptoCreateTransactionBody.newBuilder()
+                    .initialBalance(0)
+                    .maxAutomaticTokenAssociations(0)
+                    .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS))
+                    .key(IMMUTABILITY_SENTINEL_KEY)
+                    .memo(LAZY_MEMO);
+
     private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
     private final ContractsConfig contractsConfig;
     private final HederaConfig hederaConfig;
+    private final SystemContractGasCalculator gasCalculator;
+
     private final HandleContext context;
 
     @Inject
@@ -71,12 +93,14 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final HandleContext context,
             @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaConfig hederaConfig) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
         this.tinybarValues = requireNonNull(tinybarValues);
         this.hederaConfig = requireNonNull(hederaConfig);
+        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     /**
@@ -154,9 +178,25 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public long lazyCreationCostInGas() {
-        // TODO - implement correctly
-        return 1L;
+    public long lazyCreationCostInGas(@NonNull final Address recipient) {
+        final var payerId = context.payer();
+        // Calculate gas for a CryptoCreateTransactionBody with an alias address
+        final var createFee = gasCalculator.gasRequirement(
+                TransactionBody.newBuilder()
+                        .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
+                        .build(),
+                DispatchType.CRYPTO_CREATE,
+                payerId);
+
+        // Calculate gas for an update TransactionBody
+        final var updateFee = gasCalculator.gasRequirement(
+                TransactionBody.newBuilder()
+                        .cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER)
+                        .build(),
+                DispatchType.CRYPTO_UPDATE,
+                payerId);
+
+        return createFee + updateFee;
     }
 
     /**
