@@ -70,10 +70,6 @@ public class HandleHederaOperations implements HederaOperations {
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
-    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
-            CryptoUpdateTransactionBody.newBuilder()
-                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
-
     private static final CryptoCreateTransactionBody.Builder CREATE_TXN_BODY_BUILDER =
             CryptoCreateTransactionBody.newBuilder()
                     .initialBalance(0)
@@ -87,7 +83,6 @@ public class HandleHederaOperations implements HederaOperations {
     private final ContractsConfig contractsConfig;
     private final SystemContractGasCalculator gasCalculator;
     private final HederaConfig hederaConfig;
-    private final SystemContractGasCalculator gasCalculator;
 
     private final HandleContext context;
 
@@ -105,7 +100,6 @@ public class HandleHederaOperations implements HederaOperations {
         this.tinybarValues = requireNonNull(tinybarValues);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.hederaConfig = requireNonNull(hederaConfig);
-        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     /**
