@@ -533,14 +533,15 @@ public class FileGenesisSchema extends Schema {
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
 
-        // These files all start off as an empty byte array. Only file 150 is actually used, the others are not, but
-        // may be used in the future.
+        // These files all start off as an empty byte array for all upgrade files from 150-159.
+        // But only file 150 is actually used, the others are not, but may be used in the future.
         logger.debug("Creating genesis software update files");
         final var fileNums = filesConfig.softwareUpdateRange();
         final var firstUpdateNum = fileNums.left();
         final var lastUpdateNum = fileNums.right();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        // initializing the files 150 -159
         for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
             final var fileId = FileID.newBuilder()
                     .shardNum(hederaConfig.shard())
