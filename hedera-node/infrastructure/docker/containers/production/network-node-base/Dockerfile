@@ -81,7 +81,7 @@ RUN apt-get update && \
 	apt-get autoremove && \
 	apt-get autoclean && \
 	apt-get clean all && \
-    rm -rf /var/cache/apt
+	rm -rf /var/cache/apt
 
 # Install Java Alternatives
 RUN update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/jdk-${OPENJDK_VERSION}/bin/java" 1500 && \
