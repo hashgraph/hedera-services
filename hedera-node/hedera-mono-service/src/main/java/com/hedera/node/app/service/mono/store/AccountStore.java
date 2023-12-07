@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -99,12 +100,12 @@ public class AccountStore {
         return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
     }
 
-    public boolean isContractUsable(final Id id) {
+    public Pair<Boolean, ResponseCodeEnum> isContractUsable(final Id id) {
         try {
             loadContract(id);
-            return true;
+            return Pair.of(Boolean.TRUE, OK);
         } catch (InvalidTransactionException e) {
-            return false;
+            return Pair.of(Boolean.FALSE, e.getResponseCode());
         }
     }
 
