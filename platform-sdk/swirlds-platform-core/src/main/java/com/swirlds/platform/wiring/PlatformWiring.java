@@ -146,8 +146,6 @@ public class PlatformWiring implements Startable, Stoppable {
 
             solderMinimumGenerationNonAncient();
         }
-
-        // TODO we need to wire in the event creator!!
     }
 
     /**
