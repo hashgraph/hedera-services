@@ -44,7 +44,7 @@ concurrency:
 #   "configs/services/suites/daily/GCP-Daily-Services-Crypto-Update-CentOS7-4N-2C.json"       ----         90m
 #   "configs/services/suites/daily/GCP-Daily-Services-Crypto-Update-4N-2C.json"               ----         90m
 #   "configs/services/suites/daily/GCP-Daily-Services-Crypto-Update-Ubuntu2204-4N-2C.json"    ----         90m
-#   TOTAL RUN TIME:             540 minutes, 9 hours
+#   TOTAL RUN TIME:             450 minutes, 7.5 hours
 
 jobs:
 
