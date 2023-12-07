@@ -32,9 +32,9 @@ import static org.mockito.Mockito.spy;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;

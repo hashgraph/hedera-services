@@ -18,7 +18,7 @@ package com.swirlds.platform.event.creation.rules;
 
 import static com.swirlds.platform.event.creation.EventCreationStatus.PLATFORM_STATUS;
 
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import edu.umd.cs.findbugs.annotations.NonNull;

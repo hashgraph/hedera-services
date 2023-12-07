@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;

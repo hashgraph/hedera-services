@@ -34,7 +34,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

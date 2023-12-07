@@ -34,7 +34,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import com.google.protobuf.ByteString;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;

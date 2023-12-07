@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.state.PlatformData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

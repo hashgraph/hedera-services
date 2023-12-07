@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 
 /**

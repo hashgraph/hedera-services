@@ -40,7 +40,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;

@@ -28,7 +28,7 @@ import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

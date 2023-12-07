@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.ChatterNotifier;

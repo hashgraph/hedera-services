@@ -18,7 +18,7 @@ package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 

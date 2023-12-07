@@ -31,11 +31,11 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.config.AddressBookConfig_;
 import com.swirlds.platform.state.PlatformData;

@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;

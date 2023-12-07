@@ -1,8 +1,6 @@
 module com.swirlds.platform.gui {
-    exports com.swirlds.gui;
-    exports com.swirlds.gui.hashgraph;
-    exports com.swirlds.gui.components;
-    exports com.swirlds.gui.model;
+
+    // TODO remove this module
 
     requires transitive com.swirlds.common;
     requires transitive java.desktop;

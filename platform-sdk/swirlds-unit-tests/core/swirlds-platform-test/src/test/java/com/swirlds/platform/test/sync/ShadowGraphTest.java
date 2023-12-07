@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;

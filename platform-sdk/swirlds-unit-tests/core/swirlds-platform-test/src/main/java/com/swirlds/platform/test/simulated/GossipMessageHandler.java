@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.simulated;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

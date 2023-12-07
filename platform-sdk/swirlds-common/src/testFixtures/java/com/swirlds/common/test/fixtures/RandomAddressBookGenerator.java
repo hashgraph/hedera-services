@@ -21,7 +21,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.SerializablePublicKey;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;

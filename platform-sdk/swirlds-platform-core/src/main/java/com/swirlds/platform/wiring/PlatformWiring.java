@@ -23,7 +23,7 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;

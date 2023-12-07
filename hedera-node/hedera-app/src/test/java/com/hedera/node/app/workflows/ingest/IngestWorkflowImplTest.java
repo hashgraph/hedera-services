@@ -53,7 +53,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

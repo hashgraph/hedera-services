@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.throttle.Throttle;
 import com.swirlds.demo.merkle.map.FCMConfig;

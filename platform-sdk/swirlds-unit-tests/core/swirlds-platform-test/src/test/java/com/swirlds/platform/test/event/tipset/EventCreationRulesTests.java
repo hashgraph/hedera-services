@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
-import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig_;

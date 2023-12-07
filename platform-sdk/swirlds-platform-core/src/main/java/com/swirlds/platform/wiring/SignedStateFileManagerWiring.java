@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
+import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;

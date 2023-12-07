@@ -19,7 +19,7 @@ package com.swirlds.platform.test;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.consensus.ConsensusSnapshot;

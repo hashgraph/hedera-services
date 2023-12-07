@@ -38,7 +38,7 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;

@@ -21,9 +21,9 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;

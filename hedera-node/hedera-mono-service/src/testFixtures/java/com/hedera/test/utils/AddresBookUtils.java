@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.SerializablePublicKey;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;

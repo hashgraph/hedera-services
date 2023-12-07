@@ -20,7 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;

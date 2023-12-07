@@ -17,11 +17,11 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;

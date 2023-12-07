@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;

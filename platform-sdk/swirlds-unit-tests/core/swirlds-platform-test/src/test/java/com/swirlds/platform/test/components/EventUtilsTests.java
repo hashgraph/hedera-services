@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.EventConstants;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;

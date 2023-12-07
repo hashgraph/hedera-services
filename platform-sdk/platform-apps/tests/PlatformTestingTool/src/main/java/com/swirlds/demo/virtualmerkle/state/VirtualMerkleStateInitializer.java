@@ -17,7 +17,7 @@
 package com.swirlds.demo.virtualmerkle.state;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor;

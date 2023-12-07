@@ -76,7 +76,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.Map;

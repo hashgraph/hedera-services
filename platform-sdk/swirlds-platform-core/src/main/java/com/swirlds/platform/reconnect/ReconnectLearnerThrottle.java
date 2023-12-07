@@ -22,9 +22,9 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
 import com.swirlds.logging.legacy.payload.UnableToReconnectPayload;
 import com.swirlds.platform.Utilities;

@@ -21,10 +21,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;

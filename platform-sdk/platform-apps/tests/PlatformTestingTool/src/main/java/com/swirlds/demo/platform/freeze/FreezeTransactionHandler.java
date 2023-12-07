@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.freeze;
 
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.demo.platform.fs.stresstest.proto.FreezeTransaction;
 import java.time.Instant;
 import org.apache.logging.log4j.LogManager;

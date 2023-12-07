@@ -20,9 +20,9 @@ import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.ConsensusConfig_;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 
 /**
  * A simulated node that uses chatter to gossip.

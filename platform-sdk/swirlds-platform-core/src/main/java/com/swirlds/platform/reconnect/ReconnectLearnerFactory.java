@@ -17,7 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;

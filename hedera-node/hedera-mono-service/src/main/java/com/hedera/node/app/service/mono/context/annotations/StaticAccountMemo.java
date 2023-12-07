@@ -19,10 +19,10 @@ package com.hedera.node.app.service.mono.context.annotations;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldDualState;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 
 /**

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.chatter.network;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;

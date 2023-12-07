@@ -20,10 +20,10 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;

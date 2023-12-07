@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManagerUtils;

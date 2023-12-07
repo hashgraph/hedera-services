@@ -30,7 +30,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;

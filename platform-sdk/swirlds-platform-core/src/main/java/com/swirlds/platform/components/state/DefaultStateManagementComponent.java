@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
-import com.swirlds.common.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;

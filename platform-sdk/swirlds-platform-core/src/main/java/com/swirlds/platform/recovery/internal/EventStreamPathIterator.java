@@ -19,7 +19,7 @@ package com.swirlds.platform.recovery.internal;
 import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
 
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.common.utility.BinarySearch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

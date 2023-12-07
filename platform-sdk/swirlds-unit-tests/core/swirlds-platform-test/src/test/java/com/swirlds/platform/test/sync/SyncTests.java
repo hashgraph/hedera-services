@@ -28,8 +28,8 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.common.test.fixtures.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;

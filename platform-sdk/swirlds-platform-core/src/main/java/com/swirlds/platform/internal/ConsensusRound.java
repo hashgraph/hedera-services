@@ -17,9 +17,9 @@
 package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;

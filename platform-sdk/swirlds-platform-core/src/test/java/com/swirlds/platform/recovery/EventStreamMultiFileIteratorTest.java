@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;

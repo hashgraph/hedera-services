@@ -29,7 +29,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;

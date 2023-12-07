@@ -18,8 +18,8 @@ package com.swirlds.platform.consensus;
 
 import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventMetadata;

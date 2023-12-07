@@ -19,11 +19,11 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;

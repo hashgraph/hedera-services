@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.fixtures.event;
 
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.internal.EventImpl;
 
 /**

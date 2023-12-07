@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import java.util.Map;

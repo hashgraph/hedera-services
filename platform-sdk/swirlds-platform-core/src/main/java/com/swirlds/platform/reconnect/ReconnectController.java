@@ -20,8 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;

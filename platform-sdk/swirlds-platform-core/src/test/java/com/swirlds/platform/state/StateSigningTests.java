@@ -34,9 +34,9 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;

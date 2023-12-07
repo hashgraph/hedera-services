@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.swirlds.common.system.address.Address;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

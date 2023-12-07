@@ -55,6 +55,13 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.address;
     exports com.swirlds.platform.gossip.sync;
     exports com.swirlds.platform.system;
+    exports com.swirlds.platform.system.address;
+    exports com.swirlds.platform.system.events;
+    exports com.swirlds.platform.system.transaction;
+    exports com.swirlds.platform.system.state.notifications;
+    exports com.swirlds.platform.system.status;
+    exports com.swirlds.platform.system.status.actions;
+
     exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
 

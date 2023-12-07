@@ -24,7 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.FileInputStream;

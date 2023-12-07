@@ -16,10 +16,10 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.system.InitTrigger.GENESIS;
-import static com.swirlds.common.system.InitTrigger.RESTART;
-import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
-import static com.swirlds.common.system.UptimeData.NO_ROUND;
+import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.InitTrigger.RESTART;
+import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.platform.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -48,33 +48,34 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
-import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
-import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
-import com.swirlds.common.notification.listeners.StateLoadedFromDiskCompleteListener;
-import com.swirlds.common.notification.listeners.StateLoadedFromDiskNotification;
+import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.ReconnectCompleteNotification;
+import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
+import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.stream.EventStreamManager;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.address.AddressBookUtils;
-import com.swirlds.common.system.events.EventDescriptor;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusManager;
-import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
-import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.system.UptimeData;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
+import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
+import com.swirlds.platform.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.internal.SwirldTransaction;
+import com.swirlds.platform.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -322,7 +323,7 @@ public class SwirldsPlatform implements Platform {
     private final AsyncEventCreationManager eventCreator;
 
     /**
-     * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
+     * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND}
      * if no reconnect state has been received since startup.
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);

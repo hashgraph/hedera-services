@@ -21,9 +21,9 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;

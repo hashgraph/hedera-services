@@ -18,7 +18,7 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.platform.browser.Browser;
 import com.swirlds.platform.browser.CommandLineArgs;
 import java.io.IOException;

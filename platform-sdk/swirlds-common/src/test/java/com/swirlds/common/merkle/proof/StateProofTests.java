@@ -45,7 +45,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.interfaces.MerkleType;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;

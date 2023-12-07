@@ -23,10 +23,10 @@ import static com.swirlds.logging.legacy.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;

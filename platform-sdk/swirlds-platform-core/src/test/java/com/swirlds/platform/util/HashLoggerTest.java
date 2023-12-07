@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;

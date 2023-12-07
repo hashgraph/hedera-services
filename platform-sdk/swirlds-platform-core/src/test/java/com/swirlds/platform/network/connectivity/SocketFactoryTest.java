@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.SocketConfig_;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.test.framework.TestQualifierTags;

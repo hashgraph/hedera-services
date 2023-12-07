@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;

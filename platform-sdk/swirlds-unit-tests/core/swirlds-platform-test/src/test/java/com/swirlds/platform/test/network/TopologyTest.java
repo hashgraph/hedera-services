@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;

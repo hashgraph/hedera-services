@@ -23,8 +23,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.common.test.fixtures.crypto.ECDSASigningProvider;
 import com.swirlds.common.test.fixtures.crypto.ED25519SigningProvider;
 import com.swirlds.common.test.fixtures.crypto.SigningProvider;

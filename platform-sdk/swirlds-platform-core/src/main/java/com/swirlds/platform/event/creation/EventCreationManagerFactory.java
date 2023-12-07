@@ -21,10 +21,10 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;

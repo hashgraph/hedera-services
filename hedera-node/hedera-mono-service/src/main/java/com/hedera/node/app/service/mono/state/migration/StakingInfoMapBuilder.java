@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 
 public final class StakingInfoMapBuilder {

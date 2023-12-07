@@ -16,8 +16,8 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
-import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.listeners.ReconnectCompleteNotification;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.platform.PAYLOAD_CATEGORY;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;

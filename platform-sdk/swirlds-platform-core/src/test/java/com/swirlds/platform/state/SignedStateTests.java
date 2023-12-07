@@ -33,8 +33,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;

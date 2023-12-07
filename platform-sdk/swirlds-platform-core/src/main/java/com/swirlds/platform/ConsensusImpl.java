@@ -21,8 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;

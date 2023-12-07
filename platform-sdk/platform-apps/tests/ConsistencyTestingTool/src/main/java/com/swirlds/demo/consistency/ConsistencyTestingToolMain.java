@@ -18,12 +18,7 @@ package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;

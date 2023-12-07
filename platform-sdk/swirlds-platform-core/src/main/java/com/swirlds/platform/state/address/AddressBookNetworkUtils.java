@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.address;
 
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;

@@ -17,7 +17,7 @@
 package com.swirlds.platform.network.communication.handshake;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
