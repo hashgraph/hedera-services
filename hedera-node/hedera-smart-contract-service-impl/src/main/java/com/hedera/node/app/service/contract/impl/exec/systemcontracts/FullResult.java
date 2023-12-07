@@ -123,4 +123,9 @@ public record FullResult(
                 gasRequirement,
                 null);
     }
+
+    public static FullResult haltResult(final long gasRequirement) {
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.empty()), gasRequirement, null);
+    }
 }

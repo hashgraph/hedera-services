@@ -191,7 +191,7 @@ public class RecordFinalizerBase {
             AccountID receiverAccountId = null;
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
-                if (modifiedNft.hasOwnerId()) {
+                if (modifiedNft.hasOwnerId() && !AccountID.DEFAULT.equals(modifiedNft.ownerId())) {
                     receiverAccountId = modifiedNft.ownerId();
                 } else {
                     receiverAccountId = token.treasuryAccountId();
