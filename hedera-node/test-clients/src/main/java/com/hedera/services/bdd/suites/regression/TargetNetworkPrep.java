@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.regression;
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
@@ -161,10 +162,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                 final var cloneConfirmations = inParallel(IntStream.rangeClosed(200, 750)
                                         .filter(i -> i < 350 || i >= 400)
                                         .mapToObj(i -> getAccountInfo("0.0." + i)
-                                                .noLogging()
                                                 .payingWith(GENESIS)
-                                                .has(AccountInfoAsserts.accountWith()
-                                                        .key(key)))
+                                                .has(accountWith().key(key)))
                                         .toArray(HapiSpecOperation[]::new));
                                 allRunFor(spec, cloneConfirmations);
                             }));
