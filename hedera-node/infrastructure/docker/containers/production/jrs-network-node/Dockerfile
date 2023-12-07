@@ -12,13 +12,17 @@ FROM ${IMAGE_PREFIX}network-node-base:${IMAGE_TAG}
 ENV JAVA_HEAP_MIN=""
 ENV JAVA_HEAP_MAX=""
 ENV JAVA_OPTS=""
+ENV MALLOC_ARENA_MAX=4
 
 # Add SDK components
 ADD sdk/data/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
 ADD sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
 
 # Add Diagnostic Utilities
-RUN apt-get install -y net-tools
+RUN apt-get install -y net-tools && \
+    apt-get autoclean && \
+    apt-get clean all && \
+    rm -rf /var/cache/apt
 
 # Add the entrypoint script
 ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
