@@ -97,6 +97,7 @@ class HederaTracerTest {
     private static final Bytes output = Bytes.wrap("output".getBytes(StandardCharsets.UTF_8));
     private static final Address originator = Address.fromHexString("0x1");
     private static final Address contract = Address.fromHexString("0x2");
+    private static final Address badContractAddress = Address.fromHexString("0x12345678901234567890");
     private static final Address accountReceiver = Address.fromHexString("0x3");
     private static final Address sender = Address.fromHexString("0x4");
 
@@ -320,6 +321,33 @@ class HederaTracerTest {
         // assert call depth is correct
         assertEquals(3, subject.getActions().size());
         assertEquals(1, subject.getActions().get(2).getCallDepth());
+    }
+
+    @Test
+    void initializesActionsWhenBadRecipientAddress() {
+        Operation mockOperation = mock(Operation.class);
+
+        // mock out top level frame
+        final var topLevelMessageFrame = mock(MessageFrame.class);
+        given(topLevelMessageFrame.getCode()).willReturn(code);
+        given(topLevelMessageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(topLevelMessageFrame.getOriginatorAddress()).willReturn(originator);
+        given(topLevelMessageFrame.getContractAddress()).willReturn(badContractAddress);
+        given(topLevelMessageFrame.getRemainingGas()).willReturn(initialGas);
+        given(topLevelMessageFrame.getInputData()).willReturn(input);
+        given(topLevelMessageFrame.getValue()).willReturn(value);
+        given(topLevelMessageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(badContractAddress)).willReturn(badContractAddress);
+        given(worldUpdater.getAccount(badContractAddress)).willReturn(mock(MutableAccount.class));
+
+        // trace top level frame
+        subject.init(topLevelMessageFrame);
+        final var actions = subject.getActions();
+        final var solidityAction = actions.get(0);
+        assertThat(solidityAction.getRecipientAccount()).isNull();
+        assertThat(solidityAction.getInvalidSolidityAddress()).isEqualTo(badContractAddress.toArray());
     }
 
     @Test
