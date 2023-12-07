@@ -276,12 +276,17 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                 context.exchangeRateInfo().activeRate(Instant.now()),
                 context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT),
                 context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
+        final var systemContractGasCalculator = new SystemContractGasCalculator(
+                tinybarValues,
+                new CanonicalDispatchPrices(new AssetsLoader()),
+                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
                         component.config().getConfigData(LedgerConfig.class),
                         component.config().getConfigData(ContractsConfig.class),
                         context,
                         tinybarValues,
+                        systemContractGasCalculator,
                         component.config().getConfigData(HederaConfig.class)),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
@@ -290,10 +295,6 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getSenderAddress()).willReturn(sender);
         final Deque<MessageFrame> stack = new ArrayDeque<>();
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(component.config());
-        final var systemContractGasCalculator = new SystemContractGasCalculator(
-                tinybarValues,
-                new CanonicalDispatchPrices(new AssetsLoader()),
-                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
         given(initialFrame.getContextVariable(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE))
                 .willReturn(systemContractGasCalculator);
         stack.push(initialFrame);

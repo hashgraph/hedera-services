@@ -32,6 +32,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Provides the Hedera operations that only a {@link ProxyWorldUpdater} needs (but not a {@link DispatchingEvmFrameState}.
@@ -109,10 +110,11 @@ public interface HederaOperations {
 
     /**
      * Returns the lazy creation cost within this scope.
+     * @param recipient the recipient contract address
      *
      * @return the lazy creation cost in gas
      */
-    long lazyCreationCostInGas();
+    long lazyCreationCostInGas(@NonNull final Address recipient);
 
     /**
      * Returns the gas price in tinybars within this scope.

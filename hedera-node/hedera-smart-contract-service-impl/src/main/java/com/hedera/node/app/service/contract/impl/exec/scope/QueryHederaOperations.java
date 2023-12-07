@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * TODO - a read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
@@ -128,7 +129,7 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public long lazyCreationCostInGas() {
+    public long lazyCreationCostInGas(@NonNull final Address recipient) {
         throw new UnsupportedOperationException("Queries cannot get lazy creation cost");
     }
 
