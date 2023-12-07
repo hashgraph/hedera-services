@@ -62,11 +62,11 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
-        // pause the orphan buffer to break the cycle that exists in intake, and flush the pause through
-        orphanBufferWiring.pauseInput().inject(true);
-        orphanBufferWiring.flushRunnable().run();
+        // pause the linked event intake, to prevent any new events from making it through the intake pipeline
+        linkedEventIntakeWiring.pauseInput().inject(true);
+        linkedEventIntakeWiring.flushRunnable().run();
 
-        // now that no cycles exist, flush all the wiring objects
+        // flush everything remaining in the intake pipeline out into the void
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
@@ -74,8 +74,8 @@ public class PlatformCoordinator {
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
 
-        // once everything has been flushed through the system, it's safe to unpause the orphan buffer
-        orphanBufferWiring.pauseInput().inject(false);
+        // once everything has been flushed out of the system, it's safe to unpause the linked event intake
+        linkedEventIntakeWiring.pauseInput().inject(false);
 
         // data is no longer moving through the system. clear all the internal data structures in the wiring objects
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());

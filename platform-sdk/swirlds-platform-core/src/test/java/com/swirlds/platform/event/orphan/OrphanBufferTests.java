@@ -298,51 +298,6 @@ class OrphanBufferTests {
     }
 
     @Test
-    @DisplayName("Test pausing orphan buffer")
-    void pause() {
-        // cause the bootstrap events to become ancient
-        orphanBuffer.setMinimumGenerationNonAncient(1);
-
-        // events that have been emitted from the orphan buffer
-        final Collection<Hash> emittedEvents = new HashSet<>();
-
-        // handle half of the events. this will result in many events being in the orphan buffer
-        final int halfEventCount = intakeEvents.size() / 2;
-        for (int i = 0; i < halfEventCount; i++) {
-            final GossipEvent intakeEvent = intakeEvents.get(i);
-
-            final List<GossipEvent> unorphanedEvents = new ArrayList<>();
-
-            unorphanedEvents.addAll(orphanBuffer.handleEvent(intakeEvent));
-
-            for (final GossipEvent unorphanedEvent : unorphanedEvents) {
-                assertValidParents(unorphanedEvent, 1, emittedEvents);
-                emittedEvents.add(unorphanedEvent.getHashedData().getHash());
-            }
-        }
-
-        final long eventsExitedPipelineBeforePause = eventsExitedIntakePipeline.get();
-
-        orphanBuffer.setPaused(true);
-        final List<GossipEvent> noEvents = orphanBuffer.setMinimumGenerationNonAncient(maxGeneration);
-        assertEquals(0, noEvents.size(), "A paused orphan buffer shouldn't emit events upon generation change");
-        assertEquals(
-                eventsExitedPipelineBeforePause,
-                eventsExitedIntakePipeline.get(),
-                "A paused orphan buffer shouldn't cause any events to exit the intake pipeline upon generation change");
-        orphanBuffer.setPaused(false);
-
-        orphanBuffer.setMinimumGenerationNonAncient(maxGeneration + 1);
-        assertNotEquals(
-                eventsExitedPipelineBeforePause,
-                eventsExitedIntakePipeline.get(),
-                "An unpaused orphan buffer with large generation change should cause many events to exit the intake pipeline");
-
-        assertEquals(halfEventCount, eventsExitedIntakePipeline.get() + emittedEvents.size());
-        assertEquals(0, orphanBuffer.getCurrentOrphanCount());
-    }
-
-    @Test
     @DisplayName("Test Parent Iterator")
     void testParentIterator() {
         final GossipEvent event = mock(GossipEvent.class);

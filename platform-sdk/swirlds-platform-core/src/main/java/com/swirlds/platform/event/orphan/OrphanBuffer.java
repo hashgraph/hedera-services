@@ -82,15 +82,6 @@ public class OrphanBuffer {
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     /**
-     * Whether or not the orphan buffer is paused.
-     * <p>
-     * When the orphan buffer is paused, it will not process any updates to the minimum generation non-ancient. This
-     * guarantees that the orphan buffer cannot cyclically cause itself to receive additional input by emitting events
-     * that cause the minimum generation non-ancient to be updated, thus causing more events to be emitted.
-     */
-    private boolean paused;
-
-    /**
      * Constructor
      *
      * @param platformContext    the platform context
@@ -108,8 +99,6 @@ public class OrphanBuffer {
                                 PLATFORM_CATEGORY, "orphanBufferSize", Integer.class, this::getCurrentOrphanCount)
                         .withDescription("number of orphaned events currently in the orphan buffer")
                         .withUnit("events"));
-
-        this.paused = false;
     }
 
     /**
@@ -152,11 +141,6 @@ public class OrphanBuffer {
      */
     @NonNull
     public List<GossipEvent> setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        if (paused) {
-            // If the orphan buffer is paused, don't process any updates to the minimum generation non-ancient.
-            return List.of();
-        }
-
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
         eventsWithParents.shiftWindow(minimumGenerationNonAncient);
@@ -174,18 +158,6 @@ public class OrphanBuffer {
                 parentAndOrphans -> unorphanedEvents.addAll(missingParentBecameAncient(parentAndOrphans)));
 
         return unorphanedEvents;
-    }
-
-    /**
-     * Pause or unpause the orphan buffer.
-     * <p>
-     * The orphan buffer must be paused prior to being flushed, since its output can cyclically cause it to receive
-     * additional input, via an update to minimum generation non ancient.
-     *
-     * @param paused whether or not the orphan buffer should be paused
-     */
-    public void setPaused(final boolean paused) {
-        this.paused = paused;
     }
 
     /**
