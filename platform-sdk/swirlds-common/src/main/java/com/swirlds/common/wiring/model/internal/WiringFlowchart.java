@@ -16,275 +16,355 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SUBSTITUTION;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_STATELESS;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
+
+import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 /**
- * A utility for drawing mermaid style flowcharts of wiring models.
+ * A readable wiring flowchart.
  */
-public final class WiringFlowchart {
+public class WiringFlowchart {
 
-    private WiringFlowchart() {}
+    public static final String SCHEDULER_COLOR = "ff9";
+    public static final String DIRECT_SCHEDULER_COLOR = "ccc";
+    public static final String TEXT_COLOR = "000";
+    public static final String GROUP_COLOR = "9cf";
+    public static final String SUBSTITUTION_COLOR = "f88";
 
-    private static final String INDENTATION = "    ";
-    private static final String SCHEDULER_COLOR = "ff9";
-    private static final String DIRECT_SCHEDULER_COLOR = "ccc";
-    private static final String TEXT_COLOR = "000";
-    private static final String GROUP_COLOR = "9cf";
+    private final MermaidNameShortener nameProvider = new MermaidNameShortener();
+    private final MermaidStyleManager styleManager = new MermaidStyleManager();
 
     /**
-     * Draw an edge.
-     *
-     * @param sb                 a string builder where the mermaid file is being assembled
-     * @param edge               the edge to draw
-     * @param collapsedVertexMap a map from vertices that are in collapsed groups to the group name that they should be
-     *                           replaced with
+     * A map from vertex name to vertex.
      */
-    private static void drawEdge(
-            @NonNull final StringBuilder sb,
-            @NonNull final ModelEdge edge,
-            @NonNull final Map<ModelVertex, String> collapsedVertexMap) {
-
-        final String source;
-        if (collapsedVertexMap.containsKey(edge.source())) {
-            source = collapsedVertexMap.get(edge.source());
-        } else {
-            source = edge.source().getName();
-        }
-
-        final String destination;
-        if (collapsedVertexMap.containsKey(edge.destination())) {
-            destination = collapsedVertexMap.get(edge.destination());
-
-        } else {
-            destination = edge.destination().getName();
-        }
-
-        if (source.equals(destination)) {
-            // Don't draw arrows from a component back to itself.
-            return;
-        }
-
-        sb.append(INDENTATION).append(source);
-
-        if (edge.insertionIsBlocking()) {
-            if (edge.label().isEmpty()) {
-                sb.append(" --> ");
-            } else {
-                sb.append(" -- \"").append(edge.label()).append("\" --> ");
-            }
-        } else {
-            if (edge.label().isEmpty()) {
-                sb.append(" -.-> ");
-            } else {
-                sb.append(" -. \"").append(edge.label()).append("\" .-> ");
-            }
-        }
-        sb.append(destination).append("\n");
-    }
+    private final Map<String, ModelVertex> vertexMap;
 
     /**
-     * Modify the shape of the vertex on the graph (e.g. should this vertex be drawn with a box, a circle, etc.).
+     * Draws a mermaid flowchart from the given wiring model.
      *
-     * @param sb     a string builder where the mermaid file is being assembled
-     * @param vertex the vertex to modify
+     * @param modelVertexMap a map from vertex name to vertex
+     * @param substitutions  a list of edge substitutions to perform
+     * @param groups         a list of groups to create
      */
-    private static void modifyVertexShape(@NonNull final StringBuilder sb, @NonNull final ModelVertex vertex) {
-        if (vertex.getType() == TaskSchedulerType.CONCURRENT) {
-            sb.append("[[").append(vertex.getName()).append("]]");
-        } else if (vertex.getType() == TaskSchedulerType.DIRECT) {
-            sb.append("[/").append(vertex.getName()).append("/]");
-        } else if (vertex.getType() == TaskSchedulerType.DIRECT_STATELESS) {
-            sb.append("{{").append(vertex.getName()).append("}}");
-        }
+    public WiringFlowchart(
+            @NonNull final Map<String, ModelVertex> modelVertexMap,
+            @NonNull final List<ModelEdgeSubstitution> substitutions,
+            @NonNull final List<ModelGroup> groups) {
+
+        Objects.requireNonNull(modelVertexMap);
+
+        vertexMap = copyVertexMap(modelVertexMap);
+        substituteEdges(substitutions);
+        handleGroups(groups);
     }
 
     /**
-     * Based on the type of vertex, determine the appropriate color.
+     * Do a deep copy of the vertex map. Allows the local copy to be modified without affecting the original.
      *
-     * @param vertex the vertex to get the color for
-     * @return the color
-     */
-    private static String getVertexColor(@NonNull final ModelVertex vertex) {
-        final TaskSchedulerType type = vertex.getType();
-
-        return switch (type) {
-            case SEQUENTIAL:
-            case SEQUENTIAL_THREAD:
-            case CONCURRENT:
-                yield SCHEDULER_COLOR;
-            case DIRECT:
-            case DIRECT_STATELESS:
-                yield DIRECT_SCHEDULER_COLOR;
-        };
-    }
-
-    /**
-     * Draw a vertex.
-     *
-     * @param sb                 a string builder where the mermaid file is being assembled
-     * @param vertex             the vertex to draw
-     * @param collapsedVertexMap a map from vertices that are in collapsed groups to the group name that they should be
-     *                           replaced with
-     * @param indentLevel        the level of indentation
-     */
-    private static void drawVertex(
-            @NonNull final StringBuilder sb,
-            @NonNull final ModelVertex vertex,
-            @NonNull final Map<ModelVertex, String> collapsedVertexMap,
-            final int indentLevel) {
-
-        if (!collapsedVertexMap.containsKey(vertex)) {
-            sb.append(INDENTATION.repeat(indentLevel)).append(vertex.getName());
-            modifyVertexShape(sb, vertex);
-            sb.append("\n");
-
-            sb.append(INDENTATION.repeat(indentLevel))
-                    .append("style ")
-                    .append(vertex.getName())
-                    .append(" fill:#")
-                    .append(getVertexColor(vertex))
-                    .append(",stroke:#")
-                    .append(TEXT_COLOR)
-                    .append(",stroke-width:2px\n");
-        }
-    }
-
-    private static void drawGroup(
-            @NonNull final StringBuilder sb,
-            @NonNull final ModelGroup group,
-            @NonNull final Set<ModelVertex> vertices,
-            @NonNull final Map<ModelVertex, String> collapsedVertexMap) {
-
-        sb.append(INDENTATION).append("subgraph ").append(group.name()).append("\n");
-
-        final String color;
-        if (group.collapse()) {
-            color = SCHEDULER_COLOR;
-        } else {
-            color = GROUP_COLOR;
-        }
-
-        sb.append(INDENTATION.repeat(2))
-                .append("style ")
-                .append(group.name())
-                .append(" fill:#")
-                .append(color)
-                .append(",stroke:#")
-                .append(TEXT_COLOR)
-                .append(",stroke-width:2px\n");
-
-        vertices.stream().sorted().forEachOrdered(vertex -> drawVertex(sb, vertex, collapsedVertexMap, 2));
-        sb.append(INDENTATION).append("end\n");
-    }
-
-    /**
-     * Get the actual list of vertices for each group (as opposed to just the names of the vertices in the groups).
-     *
-     * @return the map from group name to the vertices in that group
+     * @return a deep copy of the vertex map
      */
     @NonNull
-    private static Map<String, Set<ModelVertex>> buildGroupMap(
-            @NonNull final Map<String, ModelVertex> vertices, @NonNull final Set<ModelGroup> groups) {
+    private Map<String, ModelVertex> copyVertexMap(@NonNull final Map<String, ModelVertex> original) {
+        final Map<String, ModelVertex> copy = new HashMap<>();
 
-        final Map<String, Set<ModelVertex>> groupMap = new HashMap<>();
+        // First, copy the vertices without copying the edges.
+        // We should only encounter StandardVertex instances here.
+        for (final ModelVertex vertex : original.values()) {
+            if (!(vertex instanceof StandardVertex)) {
+                throw new IllegalStateException("Encountered a vertex that is not a StandardVertex");
+            }
+            final StandardVertex vertexCopy =
+                    new StandardVertex(vertex.getName(), vertex.getType(), SCHEDULER, vertex.isInsertionIsBlocking());
 
-        for (final ModelGroup group : groups) {
-            groupMap.put(group.name(), new HashSet<>());
-            for (final String vertexName : group.elements()) {
-                groupMap.get(group.name()).add(vertices.get(vertexName));
+            copy.put(vertex.getName(), vertexCopy);
+        }
+
+        // Next, copy the edges.
+        for (final ModelVertex vertex : original.values()) {
+            for (final ModelEdge edge : vertex.getOutgoingEdges()) {
+
+                final ModelVertex source = copy.get(edge.getSource().getName());
+                final ModelVertex destination = copy.get(edge.getDestination().getName());
+
+                final ModelEdge edgeCopy =
+                        new ModelEdge(source, destination, edge.getLabel(), edge.isInsertionIsBlocking());
+
+                source.getOutgoingEdges().add(edgeCopy);
             }
         }
 
-        return groupMap;
+        return copy;
     }
 
     /**
-     * Get the list of vertices that are not in any group.
-     *
-     * @param vertices a map from vertex names to vertices
-     * @param groupMap a map of group names to the vertices in those groups
-     * @return the list of vertices that are not in any group
+     * Find all edges that need to be substituted and perform the substitution.
      */
-    private static List<ModelVertex> getUngroupedVertices(
-            @NonNull final Map<String, ModelVertex> vertices,
-            @NonNull Map<String /* the name of the group */, Set<ModelVertex>> groupMap) {
+    private void substituteEdges(@NonNull final List<ModelEdgeSubstitution> substitutions) {
+        for (final ModelEdgeSubstitution substitution : substitutions) {
+            substituteEdge(substitution);
+        }
+    }
 
-        final Set<ModelVertex> uniqueVertices = new HashSet<>(vertices.values());
+    /**
+     * Perform a single edge substitution.
+     */
+    private void substituteEdge(@NonNull final ModelEdgeSubstitution substitution) {
+        // First, create a new vertex that will represent the destination of the substitution.
+        final StandardVertex substitutedVertex =
+                new StandardVertex(substitution.substitution(), DIRECT, SUBSTITUTION, true);
+        vertexMap.put(substitution.substitution(), substitutedVertex);
 
-        for (final Set<ModelVertex> group : groupMap.values()) {
-            for (final ModelVertex vertex : group) {
-                final boolean removed = uniqueVertices.remove(vertex);
-                if (!removed) {
-                    throw new IllegalStateException("Vertex " + vertex.getName() + " is in multiple groups.");
+        // Next, cause all substituted edges to point to this new vertex.
+        for (final ModelVertex vertex : vertexMap.values()) {
+            if (!substitution.source().equals(vertex.getName())) {
+                // Only replace edges with the given source.
+                continue;
+            }
+
+            final HashSet<ModelEdge> uniqueEdges = new HashSet<>();
+
+            for (final ModelEdge edge : vertex.getOutgoingEdges()) {
+                if (!substitution.edge().equals(edge.getLabel())) {
+                    // Only replace destinations for edges with the given label.
+                    vertex.getOutgoingEdges().add(edge);
+                    continue;
+                }
+
+                edge.getDestination().getSubstitutedInputs().add(substitution.substitution());
+                edge.setDestination(substitutedVertex);
+                uniqueEdges.add(edge);
+            }
+
+            vertex.getOutgoingEdges().clear();
+            vertex.getOutgoingEdges().addAll(uniqueEdges);
+        }
+    }
+
+    /**
+     * Handle groups in the order provided.
+     */
+    private void handleGroups(@NonNull final List<ModelGroup> groups) {
+        for (final ModelGroup group : groups) {
+            final GroupVertex groupVertex = createGroup(group);
+            if (group.collapse()) {
+                collapseGroup(groupVertex);
+            }
+        }
+    }
+
+    /**
+     * Collect all vertices that are contained within the given group and create a new vertex that represents the
+     * group.
+     *
+     * @param group the group to create a vertex for
+     * @return the new vertex
+     */
+    private GroupVertex createGroup(@NonNull final ModelGroup group) {
+        // Collect all vertices that are contained within the group.
+        final List<ModelVertex> subVertices = new ArrayList<>();
+
+        for (final String vertexName : group.elements()) {
+            final ModelVertex subVertex = vertexMap.get(vertexName);
+            if (subVertex == null) {
+                throw new IllegalStateException("Vertex " + vertexName
+                        + " is not in the vertex map. Can not insert into group " + group.name() + ".");
+            }
+
+            subVertices.add(subVertex);
+        }
+
+        // Remove those vertices from the vertex map.
+        for (final ModelVertex subVertex : subVertices) {
+            vertexMap.remove(subVertex.getName());
+        }
+
+        // Create a new vertex that represents the group.
+        final GroupVertex groupVertex = new GroupVertex(group.name(), subVertices);
+        vertexMap.put(group.name(), groupVertex);
+
+        return groupVertex;
+    }
+
+    /**
+     * Collapse a group of vertices into a single vertex.
+     *
+     * @param group the group to collapse
+     */
+    private void collapseGroup(@NonNull final GroupVertex group) {
+        final List<ModelEdge> edges = collectEdges();
+        final List<ModelVertex> groupVertices = collectGroupVertices(group);
+
+        final TaskSchedulerType schedulerType = getSchedulerTypeOfCollapsedGroup(groupVertices);
+
+        final StandardVertex newVertex = new StandardVertex(group.getName(), schedulerType, SCHEDULER, true);
+
+        // Assign all vertices with a source that is collapsed to the new vertex.
+        // Redirect all vertices with a destination that is collapsed to the new vertex.
+        for (final ModelEdge edge : edges) {
+            final boolean collapsedSource = groupVertices.contains(edge.getSource());
+            final boolean collapsedDestination = groupVertices.contains(edge.getDestination());
+
+            if (collapsedSource && collapsedDestination) {
+                // If the source and or destination are collapsed, then the edge is removed.
+                continue;
+            }
+
+            if (collapsedSource) {
+                edge.setSource(newVertex);
+                newVertex.getOutgoingEdges().add(edge);
+            }
+
+            if (collapsedDestination) {
+                // Add and remove from set to avoid possible duplicates.
+                edge.getSource().getOutgoingEdges().remove(edge);
+                edge.setDestination(newVertex);
+                edge.getSource().getOutgoingEdges().add(edge);
+            }
+        }
+
+        // Extract substitutions from collapsed vertices.
+        for (final ModelVertex vertex : groupVertices) {
+            for (final String input : vertex.getSubstitutedInputs()) {
+                newVertex.getSubstitutedInputs().add(input);
+            }
+        }
+
+        // Remove old vertices from the vertex map.
+        for (final ModelVertex vertex : groupVertices) {
+            vertexMap.remove(vertex.getName());
+        }
+
+        // Finally, add the new vertex to the vertex map.
+        vertexMap.put(newVertex.getName(), newVertex);
+    }
+
+    /**
+     * When collapsing a group, determine the type of task scheduler type that should be displayed.
+     */
+    @NonNull
+    private TaskSchedulerType getSchedulerTypeOfCollapsedGroup(@NonNull final List<ModelVertex> groupVertices) {
+
+        boolean hasSequential = false;
+        boolean hasState = false;
+
+        for (final ModelVertex vertex : groupVertices) {
+            if (vertex.getType() == CONCURRENT) {
+                return CONCURRENT;
+            }
+
+            if (vertex.getType() == SEQUENTIAL || vertex.getType() == SEQUENTIAL_THREAD) {
+                if (hasSequential) {
+                    // We've detected more than one sequential scheduler type, so there is more than one logical
+                    // thread of execution within this group.
+                    return CONCURRENT;
+                }
+                hasSequential = true;
+            }
+
+            if (vertex.getType() == DIRECT) {
+                hasState = true;
+            }
+        }
+
+        if (hasSequential) {
+            return SEQUENTIAL;
+        } else {
+            if (hasState) {
+                return DIRECT;
+            }
+            return DIRECT_STATELESS;
+        }
+    }
+
+    /**
+     * Get all edges in the flowchart.
+     *
+     * @return all edges in the flowchart, sorted
+     */
+    private List<ModelVertex> collectGroupVertices(@NonNull final GroupVertex group) {
+        final List<ModelVertex> vertices = new ArrayList<>();
+        final LinkedList<ModelVertex> stack = new LinkedList<>();
+        stack.addLast(group);
+
+        while (!stack.isEmpty()) {
+            final ModelVertex vertex = stack.removeLast();
+            vertices.add(vertex);
+            if (vertex instanceof final GroupVertex groupVertex) {
+                for (final ModelVertex subVertex : groupVertex.getSubVertices()) {
+                    stack.addLast(subVertex);
                 }
             }
         }
 
-        return new ArrayList<>(uniqueVertices);
+        Collections.sort(vertices);
+        return vertices;
     }
 
     /**
-     * For all vertices that are in collapsed groups, we want to draw edges to the collapsed group instead of to the
-     * individual vertices in the group. This method builds a map from the collapsed vertices to the group name that
-     * they should be replaced with.
+     * Get all edges in the flowchart.
      *
-     * @param groups   the groups
-     * @param vertices a map from vertex names to vertices
-     * @return a map from collapsed vertices to the group name that they should be replaced with
+     * @return all edges in the flowchart, sorted
      */
-    @NonNull
-    private static Map<ModelVertex, String> getCollapsedVertexMap(
-            @NonNull final Set<ModelGroup> groups, @NonNull final Map<String, ModelVertex> vertices) {
+    private List<ModelEdge> collectEdges() {
+        final List<ModelEdge> edges = new ArrayList<>();
+        final LinkedList<ModelVertex> stack = new LinkedList<>();
 
-        final HashMap<ModelVertex, String> collapsedVertexMap = new HashMap<>();
+        for (final ModelVertex vertex : vertexMap.values()) {
+            stack.addLast(vertex);
+        }
 
-        for (final ModelGroup group : groups) {
-            if (!group.collapse()) {
-                continue;
-            }
-
-            for (final String vertexName : group.elements()) {
-                collapsedVertexMap.put(vertices.get(vertexName), group.name());
+        while (!stack.isEmpty()) {
+            final ModelVertex vertex = stack.removeLast();
+            edges.addAll(vertex.getOutgoingEdges());
+            if (vertex instanceof final GroupVertex groupVertex) {
+                for (final ModelVertex subVertex : groupVertex.getSubVertices()) {
+                    stack.addLast(subVertex);
+                }
             }
         }
 
-        return collapsedVertexMap;
+        Collections.sort(edges);
+        return edges;
     }
 
     /**
-     * Generate a mermaid flowchart of the wiring model.
+     * Render the flowchart to a string.
      *
-     * @param vertices the vertices in the wiring model
-     * @param edges    the edges in the wiring model
-     * @param groups   the groups in the wiring model
-     * @return a mermaid flowchart of the wiring model, in string form
+     * @return the rendered flowchart
      */
     @NonNull
-    public static String generateWiringDiagram(
-            @NonNull final Map<String, ModelVertex> vertices,
-            @NonNull final Set<ModelEdge> edges,
-            @NonNull final Set<ModelGroup> groups) {
-
+    public String render() {
         final StringBuilder sb = new StringBuilder();
         sb.append("flowchart LR\n");
 
-        final Map<String, Set<ModelVertex>> groupMap = buildGroupMap(vertices, groups);
-        final List<ModelVertex> ungroupedVertices = getUngroupedVertices(vertices, groupMap);
-        final Map<ModelVertex, String> collapsedVertexMap = getCollapsedVertexMap(groups, vertices);
+        final List<ModelVertex> sortedVertices =
+                vertexMap.values().stream().sorted().toList();
+        for (final ModelVertex vertex : sortedVertices) {
+            vertex.render(sb, nameProvider, styleManager);
+        }
 
-        groups.stream()
-                .sorted()
-                .forEachOrdered(group -> drawGroup(sb, group, groupMap.get(group.name()), collapsedVertexMap));
-        ungroupedVertices.stream().sorted().forEachOrdered(vertex -> drawVertex(sb, vertex, collapsedVertexMap, 1));
-        edges.stream().sorted().forEachOrdered(edge -> drawEdge(sb, edge, collapsedVertexMap));
+        for (final ModelEdge edge : collectEdges()) {
+            edge.render(sb, nameProvider);
+        }
+
+        styleManager.render(sb);
 
         return sb.toString();
     }

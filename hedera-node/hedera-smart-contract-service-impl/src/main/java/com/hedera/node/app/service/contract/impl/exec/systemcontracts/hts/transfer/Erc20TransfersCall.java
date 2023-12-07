@@ -60,6 +60,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     private final VerificationStrategy verificationStrategy;
     private final AccountID senderId;
     private final AddressIdConverter addressIdConverter;
+    private final boolean requiresApproval;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -72,7 +73,8 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             @Nullable final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
-            @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final AddressIdConverter addressIdConverter,
+            final boolean requiresApproval) {
         super(gasCalculator, enhancement, false);
         this.amount = amount;
         this.from = from;
@@ -81,6 +83,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.senderId = requireNonNull(senderId);
         this.addressIdConverter = requireNonNull(addressIdConverter);
+        this.requiresApproval = requiresApproval;
     }
 
     /**
@@ -150,7 +153,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                                         AccountAmount.newBuilder()
                                                 .accountID(ownerId)
                                                 .amount(-amount)
-                                                .isApproval(!spenderId.equals(ownerId))
+                                                .isApproval(requiresApproval || !spenderId.equals(ownerId))
                                                 .build())
                                 .build()))
                 .build();

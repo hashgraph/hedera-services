@@ -54,7 +54,7 @@ public class HeartbeatScheduler implements Startable, Stoppable {
         this.model = Objects.requireNonNull(model);
         this.time = Objects.requireNonNull(time);
         this.name = Objects.requireNonNull(name);
-        model.registerVertex(name, TaskSchedulerType.DIRECT, false);
+        model.registerVertex(name, TaskSchedulerType.SEQUENTIAL, false);
     }
 
     /**
