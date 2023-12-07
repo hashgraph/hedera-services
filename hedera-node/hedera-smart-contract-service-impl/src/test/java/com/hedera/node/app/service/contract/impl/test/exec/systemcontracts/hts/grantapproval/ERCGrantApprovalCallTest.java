@@ -128,10 +128,10 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 BigInteger.valueOf(100L),
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(
-                any(TransactionBody.class),
-                eq(verificationStrategy),
-                eq(OWNER_ID),
-                eq(SingleTransactionRecordBuilder.class)))
+                        any(TransactionBody.class),
+                        eq(verificationStrategy),
+                        eq(OWNER_ID),
+                        eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
