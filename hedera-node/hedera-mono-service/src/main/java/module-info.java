@@ -271,7 +271,7 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.logging;
-    requires com.swirlds.platform.core;
+    requires transitive com.swirlds.platform.core;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
