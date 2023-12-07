@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -167,7 +168,9 @@ class SignedStateFileManagerTests {
     @DisplayName("Standard Operation Test")
     void standardOperationTest(final boolean successExpected) throws IOException {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
@@ -199,7 +202,9 @@ class SignedStateFileManagerTests {
     @DisplayName("Save Fatal Signed State")
     void saveFatalSignedState() throws InterruptedException, IOException {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
@@ -232,7 +237,9 @@ class SignedStateFileManagerTests {
     @DisplayName("Save ISS Signed State")
     void saveISSignedState() throws IOException {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
@@ -264,9 +271,11 @@ class SignedStateFileManagerTests {
         final int stateSavePeriod = 100;
         final int statesOnDisk = 3;
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue("state.saveStatePeriod", stateSavePeriod)
-                .withValue("state.signedStateDisk", statesOnDisk)
-                .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
+                .withValue(StateConfig_.SAVE_STATE_PERIOD, stateSavePeriod)
+                .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
@@ -385,8 +394,10 @@ class SignedStateFileManagerTests {
         final int statesOnDisk = 3;
 
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue("state.signedStateDisk", statesOnDisk)
-                .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
+                .withValue(StateConfig_.SIGNED_STATE_DISK, statesOnDisk)
+                .withValue(
+                        StateConfig_.SAVED_STATE_DIRECTORY,
+                        testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();

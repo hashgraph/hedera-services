@@ -294,7 +294,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param b The second arg
      * @return true if both are null, or if both have the same version number
      */
-    private boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
+    public static boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
         return (a == null && b == null) || (a != null && b != null && SEMANTIC_VERSION_COMPARATOR.compare(a, b) == 0);
     }
 
@@ -314,7 +314,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @return True if, and only if, {@code maybeBefore} is a lower version number than {@code
      *     maybeAfter}.
      */
-    private boolean isSoOrdered(
+    public static boolean isSoOrdered(
             @Nullable final SemanticVersion maybeBefore, @NonNull final SemanticVersion maybeAfter) {
 
         // If they are the same version, then we must fail.
@@ -332,7 +332,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // If the comparison yields the first argument as being before
         // or matching the second argument, then we return true because
         // the condition we're testing for holds.
-        return SEMANTIC_VERSION_COMPARATOR.compare(maybeBefore, maybeAfter) <= 0;
+        return SEMANTIC_VERSION_COMPARATOR.compare(maybeBefore, maybeAfter) < 0;
     }
 
     /**

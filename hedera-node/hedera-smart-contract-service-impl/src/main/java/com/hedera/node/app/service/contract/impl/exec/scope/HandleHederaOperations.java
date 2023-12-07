@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,6 +74,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final LedgerConfig ledgerConfig;
     private final ContractsConfig contractsConfig;
     private final SystemContractGasCalculator gasCalculator;
+    private final HederaConfig hederaConfig;
     private final HandleContext context;
 
     @Inject
@@ -81,12 +83,14 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final HandleContext context,
             @NonNull final TinybarValues tinybarValues,
-            @NonNull final SystemContractGasCalculator gasCalculator) {
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final HederaConfig hederaConfig) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
         this.tinybarValues = requireNonNull(tinybarValues);
         this.gasCalculator = requireNonNull(gasCalculator);
+        this.hederaConfig = requireNonNull(hederaConfig);
     }
 
     /**
@@ -353,6 +357,11 @@ public class HandleHederaOperations implements HederaOperations {
                         .contractID(contractId)
                         .evmAddress(evmAddress)
                         .build());
+    }
+
+    @Override
+    public ContractID shardAndRealmValidated(@NonNull final ContractID contractId) {
+        return configValidated(contractId, hederaConfig);
     }
 
     private void dispatchAndMarkCreation(

@@ -183,8 +183,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     }
 
     @Override
-    public @Nullable HederaEvmAccount getHederaAccount(@NonNull final ContractID contractId) {
+    public @Nullable HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
         requireNonNull(contractId);
+        contractId = enhancement.operations().shardAndRealmValidated(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
             address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -294,6 +295,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public void finalizeHollowAccount(@NonNull final Address alias) {
         evmFrameState.finalizeHollowAccount(alias);
         // add child record on merge
+        pendingCreation = null;
         var contractId = getHederaContractId(alias);
         var evmAddress = aliasFrom(alias);
         enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);

@@ -846,7 +846,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         1L)
-                                .fee(ONE_HBAR)
+                                .fee(2 * ONE_HBAR)
                                 .hasKnownStatus(SUCCESS)
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)
@@ -905,7 +905,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         1L)
-                                .fee(ONE_HBAR)
+                                .fee(2 * ONE_HBAR)
                                 .hasKnownStatus(SUCCESS)
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)

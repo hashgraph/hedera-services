@@ -18,7 +18,7 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
 import static contract.XTestConstants.SENDER_ADDRESS;
@@ -66,6 +66,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -285,7 +286,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                         component.config().getConfigData(ContractsConfig.class),
                         context,
                         tinybarValues,
-                        systemContractGasCalculator),
+                        systemContractGasCalculator,
+                        component.config().getConfigData(HederaConfig.class)),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);
@@ -293,7 +295,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getSenderAddress()).willReturn(sender);
         final Deque<MessageFrame> stack = new ArrayDeque<>();
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(component.config());
-        given(initialFrame.getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE))
+        given(initialFrame.getContextVariable(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE))
                 .willReturn(systemContractGasCalculator);
         stack.push(initialFrame);
         stack.addFirst(frame);

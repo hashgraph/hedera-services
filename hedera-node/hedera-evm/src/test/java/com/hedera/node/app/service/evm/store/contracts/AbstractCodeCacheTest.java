@@ -19,10 +19,10 @@ package com.hedera.node.app.service.evm.store.contracts;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,6 +56,7 @@ class AbstractCodeCacheTest {
 
     @Test
     void getTriggeringLoad() {
+        given(entityAccess.isUsable(any())).willReturn(true);
         given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.of("abc".getBytes()));
         Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
@@ -66,6 +67,7 @@ class AbstractCodeCacheTest {
 
     @Test
     void getContractNotFound() {
+        given(entityAccess.isUsable(any())).willReturn(true);
         given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
@@ -78,11 +80,11 @@ class AbstractCodeCacheTest {
         BytesKey key = new BytesKey(demoAddress.toArray());
         Code code = CodeV0.EMPTY_CODE;
 
+        given(entityAccess.isUsable(any())).willReturn(true);
         codeCache.cacheValue(key, code);
         Code codeResult = codeCache.getIfPresent(demoAddress);
 
         assertEquals(code, codeResult);
-        verifyNoInteractions(entityAccess);
     }
 
     @Test
@@ -119,6 +121,7 @@ class AbstractCodeCacheTest {
 
     @Test
     void getTokenCodeReturnsRedirectCode() {
+        given(entityAccess.isUsable(any())).willReturn(true);
         given(entityAccess.isTokenAccount(any())).willReturn(true);
 
         assertEquals(
@@ -128,6 +131,7 @@ class AbstractCodeCacheTest {
 
     @Test
     void invalidateSuccess() {
+        given(entityAccess.isUsable(any())).willReturn(true);
         given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.of("abc".getBytes()));
 
         codeCache.getIfPresent(Address.fromHexString("0xabc"));
@@ -147,5 +151,13 @@ class AbstractCodeCacheTest {
         boolean eq2 = key1.equals("abc");
 
         assertEquals(eq1, eq2);
+    }
+
+    @Test
+    void getIfPresentForNotUsableEntity() {
+        Address target = Address.fromHexString("0xabc");
+        given(entityAccess.isUsable(target)).willReturn(false);
+
+        assertNull(codeCache.getIfPresent(target));
     }
 }
