@@ -471,7 +471,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: sed -i 's/^org.gradle.configuration-cache=.*/org.gradle.configuration-cache=false/' gradle.properties
+        run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties
 
       - name: Setup Snyk
         env:

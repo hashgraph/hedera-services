@@ -53,7 +53,7 @@ jobs:
           arguments: assemble --scan
 
       - name: Disable Gradle Configuration Cache
-        run: sed -i 's/^org.gradle.configuration-cache=.*/org.gradle.configuration-cache=false/' gradle.properties
+        run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties
 
       - name: Setup NodeJS
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
