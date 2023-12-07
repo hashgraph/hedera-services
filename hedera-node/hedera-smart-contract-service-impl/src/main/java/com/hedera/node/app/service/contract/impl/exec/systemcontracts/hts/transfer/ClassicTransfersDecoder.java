@@ -132,7 +132,7 @@ public class ClassicTransfersDecoder {
                 ConversionUtils.asTokenId(call.get(0)),
                 addressIdConverter.convert(call.get(1)),
                 addressIdConverter.convertCredit(call.get(2)),
-                call.get(3),
+                amount,
                 IsApproval.FALSE)));
     }
 
