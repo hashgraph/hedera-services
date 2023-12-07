@@ -208,10 +208,9 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(freezeStore);
         requireNonNull(upgradeStore);
         final FileID updateFileID = freezeTxn.updateFile();
-        requireNonNull(updateFileID);
 
         if ((freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE)
-                && (upgradeStore.peek(updateFileID) == null)) {
+                && (updateFileID == null || upgradeStore.peek(updateFileID) == null)) {
             throw new IllegalStateException("Update file not found");
         }
     }

@@ -81,6 +81,8 @@ class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
     private Account account;
 
+    private final FileID fileUpgradeFileId = FileID.newBuilder().fileNum(150L).build();
+
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
@@ -232,7 +234,8 @@ class FreezeHandlerTest {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
-        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
+        given(upgradeFileStore.peek(fileUpgradeFileId))
+                .willReturn(File.newBuilder().build());
 
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
@@ -258,8 +261,9 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, TELEMETRY_UPGRADE};
 
         // set up the file store to return a fake upgrade file
-        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
-        given(upgradeFileStore.getFull()).willThrow(IOException.class);
+        given(upgradeFileStore.peek(fileUpgradeFileId))
+                .willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull(fileUpgradeFileId)).willThrow(IOException.class);
 
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
@@ -309,8 +313,9 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
         // set up the file store to return a fake upgrade file
-        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
-        given(upgradeFileStore.getFull()).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(upgradeFileStore.peek(fileUpgradeFileId))
+                .willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
 
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
@@ -338,10 +343,10 @@ class FreezeHandlerTest {
     void happyPathPrepareUpgrade() throws IOException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // start time not required
-
         // set up the file store to return a fake upgrade file
-        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
-        given(upgradeFileStore.getFull()).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(upgradeFileStore.peek(fileUpgradeFileId))
+                .willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
