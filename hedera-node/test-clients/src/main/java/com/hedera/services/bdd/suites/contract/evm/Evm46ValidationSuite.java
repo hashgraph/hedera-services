@@ -77,10 +77,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-@HapiTestSuite
-public class Evm45ValidationSuite extends HapiSuite {
+// @HapiTestSuite
+public class Evm46ValidationSuite extends HapiSuite {
 
-    private static final Logger LOG = LogManager.getLogger(Evm45ValidationSuite.class);
+    private static final Logger LOG = LogManager.getLogger(Evm46ValidationSuite.class);
     private static final String NAME = "name";
     private static final String ERC_721_ABI = "ERC721ABI";
     private static final String NON_EXISTING_MIRROR_ADDRESS = "0000000000000000000000000000000000123456";
@@ -110,7 +110,7 @@ public class Evm45ValidationSuite extends HapiSuite {
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
 
     public static void main(String... args) {
-        new Evm45ValidationSuite().runSuiteAsync();
+        new Evm46ValidationSuite().runSuiteAsync();
     }
 
     @Override
