@@ -152,7 +152,7 @@ public class EventDeduplicator {
      *
      * @param ignored ignored trigger object
      */
-    public void clear(final ClearTrigger ignored) {
+    public void clear(@NonNull final ClearTrigger ignored) {
         observedEvents.clear();
     }
 }
