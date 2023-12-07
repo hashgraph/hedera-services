@@ -21,6 +21,8 @@ plugins {
     id("java-test-fixtures")
 }
 
+mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
+
 jmhModuleInfo { requires("com.swirlds.config.api") }
 
 testModuleInfo {

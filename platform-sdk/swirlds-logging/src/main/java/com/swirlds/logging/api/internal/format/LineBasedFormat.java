@@ -51,11 +51,13 @@ public class LineBasedFormat {
      * @param event
      */
     public static void print(@NonNull final Appendable writer, @NonNull final LogEvent event) {
-        if (event == null) {
-            EMERGENCY_LOGGER.logNPE("event");
-        }
         if (writer == null) {
             EMERGENCY_LOGGER.logNPE("printer");
+            return;
+        }
+        if (event == null) {
+            EMERGENCY_LOGGER.logNPE("event");
+            return;
         }
         try {
             writer.append(timestampAsString(event.timestamp()));

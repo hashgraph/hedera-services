@@ -40,7 +40,7 @@ public final class Loggers {
      * @return a {@link Logger} instance with the given name
      */
     @NonNull
-    public static Logger getLogger(@NonNull String name) {
+    public static Logger getLogger(@NonNull final String name) {
         if (name == null) {
             EMERGENCY_LOGGER.logNPE("name");
             return getLogger("");
@@ -56,7 +56,7 @@ public final class Loggers {
      * @return a {@link Logger} instance for the given class
      */
     @NonNull
-    public static Logger getLogger(@NonNull Class<?> clazz) {
+    public static Logger getLogger(@NonNull final Class<?> clazz) {
         if (clazz == null) {
             EMERGENCY_LOGGER.logNPE("clazz");
             return getLogger("");

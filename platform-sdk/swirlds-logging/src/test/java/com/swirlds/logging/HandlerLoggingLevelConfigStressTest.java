@@ -35,20 +35,15 @@ public class HandlerLoggingLevelConfigStressTest {
     @Inject
     TestExecutor testExecutor;
 
-    private static Level getRandomLevel() {
-        final Level[] levels = Level.values();
-        return levels[(int) (Math.random() * levels.length)];
-    }
-
     private static Runnable createRunnable(final HandlerLoggingLevelConfig config) {
         return () -> {
             for (int i = 0; i < 20; i++) {
                 // update config
                 final Configuration configuration = defaultConfigBuilder()
-                        .withValue("logging.level", getRandomLevel())
-                        .withValue("logging.level.com.sample", getRandomLevel())
-                        .withValue("logging.level.com.sample.package", getRandomLevel())
-                        .withValue("logging.level.com.sample.package.Class", getRandomLevel())
+                        .withValue("logging.level", Level.WARN)
+                        .withValue("logging.level.com.sample", Level.INFO)
+                        .withValue("logging.level.com.sample.package", Level.ERROR)
+                        .withValue("logging.level.com.sample.package.Class", Level.TRACE)
                         .getOrCreateConfig();
                 config.update(configuration);
 
