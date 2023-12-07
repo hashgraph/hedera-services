@@ -607,7 +607,6 @@ public class Evm46ValidationSuite extends HapiSuite {
                                         CALL_REVERT_WITH_REVERT_REASON_FUNCTION,
                                         mirrorAddrWith(calleeNum.get()))
                                 .gas(GAS_LIMIT_FOR_CALL * 8)
-                                .hasKnownStatus(SUCCESS)
                                 .via(INNER_TXN))))
                 .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)));
     }
@@ -954,8 +953,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 STATIC_CALL_EXTERNAL_FUNCTION,
                                 mirrorAddrWith(new Random().nextLong()))
                         .gas(GAS_LIMIT_FOR_CALL)
-                        .via(INNER_TXN)
-                        .hasKnownStatus(SUCCESS))
+                        .via(INNER_TXN))
                 .then(getTxnRecord(INNER_TXN)
                         .logged()
                         .hasPriority(
