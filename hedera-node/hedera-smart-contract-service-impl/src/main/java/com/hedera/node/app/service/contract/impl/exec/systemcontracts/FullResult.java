@@ -85,7 +85,7 @@ public record FullResult(
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
-                        ReturnTypes.tuweniEncodedRc(recordBuilder.status())),
+                        Bytes.wrap(recordBuilder.status().protoName().getBytes())),
                 gasRequirement,
                 recordBuilder);
     }
