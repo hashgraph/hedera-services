@@ -57,7 +57,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
-/** Represents an uniqueToken entity. Part of the nft implementation. */
+/**
+ * Represents an uniqueToken entity. Part of the nft implementation.
+ */
 public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<EntityNumPair>, MerkleLeaf {
     private static final int TREASURY_OWNER_CODE = 0;
 
@@ -247,7 +249,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public byte[] getMetadata() {
-        return metadata;
+        return (metadata != null) ? metadata.clone() : null;
     }
 
     public RichInstant getCreationTime() {

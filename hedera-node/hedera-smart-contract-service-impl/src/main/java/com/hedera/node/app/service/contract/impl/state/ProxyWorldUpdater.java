@@ -174,8 +174,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     }
 
     @Override
-    public @Nullable HederaEvmAccount getHederaAccount(@NonNull final ContractID contractId) {
+    public @Nullable HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
         requireNonNull(contractId);
+        contractId = enhancement.operations().shardAndRealmValidated(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
             address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -216,7 +217,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(
             @NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        final var gasCost = enhancement.operations().lazyCreationCostInGas();
+        final var gasCost = enhancement.operations().lazyCreationCostInGas(recipient);
         if (gasCost > frame.getRemainingGas()) {
             return Optional.of(INSUFFICIENT_GAS);
         }
