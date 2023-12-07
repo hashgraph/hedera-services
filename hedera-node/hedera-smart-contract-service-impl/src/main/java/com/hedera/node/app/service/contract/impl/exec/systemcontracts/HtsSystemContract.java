@@ -84,6 +84,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         return resultOfExecuting(attempt, call, input, frame);
     }
 
+    @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.
     private static FullResult resultOfExecuting(
             @NonNull final HtsCallAttempt attempt,
             @NonNull final HtsCall call,

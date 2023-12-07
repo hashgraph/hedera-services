@@ -179,9 +179,6 @@ public final class FeeManager {
         // If it is not known, that is, if we have no fee data for that transaction, then we MUST NOT execute that
         // transaction! We will not be able to charge appropriately for it.
         final var feeData = getFeeData(functionality, consensusTime, subType);
-        if (feeData == null) {
-            throw new IllegalStateException("No fee data found for transaction type " + functionality);
-        }
 
         // Create the fee calculator
         return new FeeCalculatorImpl(

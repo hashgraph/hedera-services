@@ -408,6 +408,8 @@ public final class RecordListBuilder {
         // Add all preceding transactions. The last item in the list has the earliest consensus time, so it needs to
         // be added to "records" first. However, the first item should have a nonce of 1, and the last item should have
         // a nonce of N, where N is the number of preceding transactions.
+        // precedingTxnRecordBuilders is not null. It will be 0 in case of null.
+        @SuppressWarnings("java:S2259")
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
             final SingleTransactionRecordBuilderImpl recordBuilder = precedingTxnRecordBuilders.get(i);

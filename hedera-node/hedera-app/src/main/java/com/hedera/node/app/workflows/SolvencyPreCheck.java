@@ -220,9 +220,6 @@ public class SolvencyPreCheck {
     private long estimatedGasPriceInTinybars(
             @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
-        if (feeData == null) {
-            throw new IllegalStateException("No fee data found for transaction type " + functionality);
-        }
         final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
         final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
         return Math.max(priceInTinyBars, 1L);
