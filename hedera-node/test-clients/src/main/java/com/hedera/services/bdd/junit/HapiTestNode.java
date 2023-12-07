@@ -64,6 +64,10 @@ public interface HapiTestNode {
     void shutdown();
 
     /**
+     * Blocks the network port on the node so that it cannot communicate with other nodes.
+     */
+    void blockNetworkPort();
+    /**
      * Waits for the node to shut down.
      *
      * @param seconds the number of seconds to wait for the server to shut down before throwing an exception.

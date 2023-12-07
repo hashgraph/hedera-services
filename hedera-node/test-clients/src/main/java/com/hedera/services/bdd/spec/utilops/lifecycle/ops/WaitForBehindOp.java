@@ -20,10 +20,9 @@ import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.utilops.lifecycle.LifecycleOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.concurrent.TimeoutException;
 
 /**
  * Blocks waiting until the selected node or nodes are active, or until a timeout of {@code waitSeconds} has happened.
@@ -41,13 +40,13 @@ public class WaitForBehindOp extends LifecycleOp {
 
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
-        logger.info("Waiting for node {} to become active, waiting up to {}s...", node, waitSeconds);
+        logger.info("Waiting for node {} to become behind, waiting up to {}s...", node, waitSeconds);
         try {
-            node.waitForActive(waitSeconds);
-            logger.info("Node {} started and is active", node);
+            node.waitForBehind(waitSeconds);
+            logger.info("Node {} fell behind other nodes", node);
             return false; // Do not stop the test, all is well.
         } catch (TimeoutException e) {
-            logger.info("Node {} did not become active within {}s", node, waitSeconds);
+            logger.info("Node {} did not fall behind {}s", node, waitSeconds);
             return true; // Stop the test, we're toast.
         }
     }

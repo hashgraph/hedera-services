@@ -16,25 +16,6 @@
 
 package com.hedera.services.bdd.suites.regression.system;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -46,33 +27,47 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockPortOnNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownAllNodes;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startAllNodes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDown;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToBecomeActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * This test is to verify reconnect functionality. It submits a burst of mixed operations, then
- * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
+ * blocks network for one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
  * submits the same burst of mixed operations again.
  */
-// @HapiTestSuite // This should be disabled to be not run in CI, since it shuts down nodes
-public class MixedOpsReconnectTest extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(MixedOpsReconnectTest.class);
+@HapiTestSuite // This should be disabled to be not run in CI, since it shuts down nodes
+public class MixedOpsNodeDisconnectTest extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(MixedOpsNodeDisconnectTest.class);
 
-    private static final int NUM_SUBMISSIONS = 5;
+    private static final int NUM_SUBMISSIONS = 15;
     private static final String SUBMIT_KEY = "submitKey";
     private static final String TOKEN = "token";
     private static final String SENDER = "sender";
@@ -163,13 +158,14 @@ public class MixedOpsReconnectTest extends HapiSuite {
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
-                        shutDownNode("Carol", 75),
-                        waitForNodeToShutDown("Carol", 75))
+                        blockPortOnNode("Carol", 75))
                 .when(
                         inParallel(mixedOpsBurst.get()),
                         // start all nodes
-                        startNode("Carol", 60),
+                        startNode("Carol"),
                         // wait for all nodes to be ACTIVE
+                        waitForNodeToBeBehind("Carol", 60),
+                        waitForNodeToFinishReconnect("Carol", 60),
                         waitForNodeToBecomeActive("Carol", 60))
                 .then(
                         // Once nodes come back ACTIVE, submit some operations again

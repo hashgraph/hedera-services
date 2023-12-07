@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit;
 
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -27,7 +28,6 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
@@ -42,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -168,6 +169,41 @@ public class InProcessHapiTestNode implements HapiTestNode {
                 "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
     }
 
+    public void blockNetworkPort() {
+        if (th != null && th.hedera.isActive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = new ProcessBuilder(cmd).start();
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @Override
     public void shutdown() {
         if (th != null && (th.hedera.isFrozen() || th.hedera.isActive())) {
@@ -219,11 +255,11 @@ public class InProcessHapiTestNode implements HapiTestNode {
         }
     }
 
-    public void waitForBehind(long seconds) throws TimeoutException{
+    public void waitForBehind(long seconds) throws TimeoutException {
         waitFor(PlatformStatus.BEHIND, seconds);
     }
 
-    public void waitForReconnectComplete(long seconds) throws TimeoutException{
+    public void waitForReconnectComplete(long seconds) throws TimeoutException {
         waitFor(PlatformStatus.RECONNECT_COMPLETE, seconds);
     }
 

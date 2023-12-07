@@ -151,7 +151,8 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, new HederaSoftwareVersion()));
+        Set.of(entityService, dsService)
+                .forEach(service -> servicesRegistry.register(service, new HederaSoftwareVersion()));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
@@ -246,7 +247,8 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Intentionally register the services in a different order than the expected migration order
-        List.of(dsService, serviceA, entityIdService, serviceB).forEach(service -> servicesRegistry.register(service, new HederaSoftwareVersion()));
+        List.of(dsService, serviceA, entityIdService, serviceB)
+                .forEach(service -> servicesRegistry.register(service, new HederaSoftwareVersion()));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));

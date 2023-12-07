@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.regression.system;
 
-import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -28,15 +27,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownAllNodes;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startAllNodes;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToBecomeActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToShutDown;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
@@ -59,19 +58,17 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
 
 /**
- * This test is to verify restart functionality. It submits a burst of mixed operations, then
- * freezes all nodes, shuts them down, restarts them, and submits the same burst of mixed operations
- * again.
+ * This test is to verify reconnect functionality. It submits a burst of mixed operations, then
+ * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
+ * submits the same burst of mixed operations again.
  */
-@HapiTestSuite
-@Tag(RESTART) // This should be disabled to be not run in CI, since it shuts down nodes
-public class MixedOpsRestartTest extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(MixedOpsRestartTest.class);
+@HapiTestSuite // This should be disabled to be not run in CI, since it shuts down nodes
+public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(MixedOpsNodeDeathReconnectTest.class);
 
-    private static final int NUM_SUBMISSIONS = 5;
+    private static final int NUM_SUBMISSIONS = 15;
     private static final String SUBMIT_KEY = "submitKey";
     private static final String TOKEN = "token";
     private static final String SENDER = "sender";
@@ -90,11 +87,11 @@ public class MixedOpsRestartTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(restartMixedOps());
+        return List.of(reconnectMixedOps());
     }
 
     @HapiTest
-    private HapiSpec restartMixedOps() {
+    private HapiSpec reconnectMixedOps() {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         Random r = new Random(38582L);
@@ -162,20 +159,16 @@ public class MixedOpsRestartTest extends HapiSuite {
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
-                        inParallel(mixedOpsBurst.get()))
+                        shutDownNode("Carol"),
+                        waitForNodeToShutDown("Carol", 75))
                 .when(
-                        // freeze nodes
-                        freezeOnly().startingIn(10).payingWith(GENESIS),
-                        // wait for all nodes to be in FREEZE status
-                        waitForNodesToFreeze(75),
-                        // shut down all nodes, since the platform doesn't automatically go back to ACTIVE status
-                        shutDownAllNodes(),
-                        // wait for all nodes to be shut down
-                        waitForNodesToShutDown(60),
+                        inParallel(mixedOpsBurst.get()),
                         // start all nodes
-                        startAllNodes(),
+                        startNode("Carol"),
                         // wait for all nodes to be ACTIVE
-                        waitForNodesToBecomeActive(60))
+                        waitForNodeToBeBehind("Carol", 60),
+                        waitForNodeToFinishReconnect("Carol", 60),
+                        waitForNodeToBecomeActive("Carol", 60))
                 .then(
                         // Once nodes come back ACTIVE, submit some operations again
                         cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),

@@ -26,17 +26,19 @@ import org.apache.logging.log4j.Logger;
 /**
  * Starts the selected node or nodes specified by the {@link NodeSelector}.
  */
-public class StartNodesOp extends LifecycleOp {
-    private static final Logger logger = LogManager.getLogger(StartNodesOp.class);
+public class BlockNodesNetworkOp extends LifecycleOp {
+    private static final Logger logger = LogManager.getLogger(BlockNodesNetworkOp.class);
+    private final int waitSeconds;
 
-    public StartNodesOp(@NonNull final NodeSelector selector) {
+    public BlockNodesNetworkOp(@NonNull final NodeSelector selector, int waitSeconds) {
         super(selector);
+        this.waitSeconds = waitSeconds;
     }
 
     @Override
     protected boolean run(@NonNull final HapiTestNode node) {
-        logger.info("Starting node {}...", node);
-        node.start();
+        logger.info("Blocking port on node {}, waiting for {} seconds...", node, waitSeconds);
+        node.blockNetworkPort();
         return false;
     }
 }
