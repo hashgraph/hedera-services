@@ -383,6 +383,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, 5000000L),
             entry(CONTRACTS_REDIRECT_TOKEN_CALLS, true),
             entry(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST, 100L),
+            // add comment
             entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, 10000L),
             entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
             entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
