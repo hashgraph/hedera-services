@@ -658,8 +658,11 @@ public class Evm38ValidationSuite extends HapiSuite {
     @HapiTest
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
+        return propertyPreservingHapiSpec("callingDestructedContractReturnsStatusDeleted")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
                 .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
                         cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
