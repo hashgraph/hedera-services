@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
@@ -146,7 +146,7 @@ class HederaEvmOperationsUtilV038Test {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(evmProperties.allowCallsToNonContractAccounts()).willReturn(false);
 
         // when:
@@ -177,7 +177,7 @@ class HederaEvmOperationsUtilV038Test {
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(messageFrame.getContractAddress()).willReturn(Address.ZERO);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
-        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(evmProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(evmProperties.allowCallsToNonContractAccounts()).willReturn(true);
         given(evmProperties.grandfatherContracts()).willReturn(grandfatherContracts);
 

@@ -80,7 +80,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
             ContractsV_0_30Module.class,
             ContractsV_0_34Module.class,
             ContractsV_0_38Module.class,
-            ContractsV_0_45Module.class
+            ContractsV_0_46Module.class
         })
 public interface ContractsModule {
     int SYSTEM_ACCOUNT_BOUNDARY = 750;
@@ -96,7 +96,7 @@ public interface ContractsModule {
     @interface V_0_38 {}
 
     @Qualifier
-    @interface V_0_45 {}
+    @interface V_0_46 {}
 
     @Binds
     @Singleton
@@ -219,10 +219,10 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
-    static MessageCallProcessor provideV_0_45MessageCallProcessor(
-            final @V_0_45 EVM evm,
-            final @V_0_45 PrecompileContractRegistry precompiles,
+    @StringKey(ContractsV_0_46Module.EVM_VERSION_0_46)
+    static MessageCallProcessor provideV_0_46MessageCallProcessor(
+            final @V_0_46 EVM evm,
+            final @V_0_46 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
@@ -260,9 +260,9 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
-    static ContractCreationProcessor provideV_0_45ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_45 EVM evm, Set<ContractValidationRule> validationRules) {
+    @StringKey(ContractsV_0_46Module.EVM_VERSION_0_46)
+    static ContractCreationProcessor provideV_0_46ContractCreateProcessor(
+            final GasCalculator gasCalculator, final @V_0_46 EVM evm, Set<ContractValidationRule> validationRules) {
         return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 

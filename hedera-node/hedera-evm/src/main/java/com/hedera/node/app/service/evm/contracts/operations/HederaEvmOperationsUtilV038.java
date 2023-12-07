@@ -32,7 +32,7 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
 public interface HederaEvmOperationsUtilV038 {
-    public static String EVM_VERSION_0_45 = "v0.45";
+    public static String EVM_VERSION_0_46 = "v0.46";
 
     /**
      * An extracted address check and execution of extended Hedera Operations. Halts the execution
@@ -63,8 +63,8 @@ public interface HederaEvmOperationsUtilV038 {
                 return systemAccountExecutionSupplier.get();
             }
             // skip target entity existing check when
-            // evm >= 0.45 or FF is enabled or the target is grandfather contract
-            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
+            // evm >= 0.46 or FF is enabled or the target is grandfather contract
+            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_46)
                     || !evmProperties.allowCallsToNonContractAccounts()
                     || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
                 if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_45;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
@@ -65,8 +65,8 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
                 return new OperationResult(cost(true), null);
             }
             // skip target entity existing check when
-            // evm >= 0.45 or FF is enabled or the target is grandfather contract
-            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_45)
+            // evm >= 0.46 or FF is enabled or the target is grandfather contract
+            if (!evmProperties.evmVersion().equals(EVM_VERSION_0_46)
                     || !evmProperties.allowCallsToNonContractAccounts()
                     || evmProperties.grandfatherContracts().contains(frame.getContractAddress())) {
                 if (!addressValidator.test(address, frame)) {
