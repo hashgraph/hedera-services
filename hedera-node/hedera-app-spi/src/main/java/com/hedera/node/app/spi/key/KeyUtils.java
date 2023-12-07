@@ -107,15 +107,9 @@ public class KeyUtils {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             return ((Bytes) key.value()).length() == 0;
-        } else if (pbjKey.hasDelegatableContractId()) {
-            return !((ContractID) key.value()).hasContractNum()
-                    || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
-        } else if (pbjKey.hasContractID()) {
-            if (((ContractID) key.value()).hasContractNum()) {
-                return ((ContractID) key.value()).contractNum() == 0;
-            } else {
-                return ((Bytes) ((ContractID) key.value()).contract().value()).length() == 0;
-            }
+        } else if (pbjKey.hasDelegatableContractId() || pbjKey.hasContractID()) {
+            return ((ContractID) key.value()).contractNumOrElse(0L) == 0
+                    && ((ContractID) key.value()).evmAddressOrElse(Bytes.EMPTY).length() == 0L;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
@@ -156,14 +150,9 @@ public class KeyUtils {
             final var ecKey = ((Bytes) key.value());
             return ecKey.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
                     && (ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY);
-        } else if (pbjKey.hasDelegatableContractId()) {
-            return ((ContractID) key.value()).contractNum().intValue() > 0;
-        } else if (pbjKey.hasContractID()) {
-            if (((ContractID) key.value()).hasContractNum()) {
-                return ((ContractID) key.value()).contractNum().intValue() > 0;
-            } else {
-                return ((Bytes) ((ContractID) key.value()).contract().value()).length() == EVM_ADDRESS_BYTE_LENGTH;
-            }
+        } else if (pbjKey.hasDelegatableContractId() || pbjKey.hasContractID()) {
+            return ((ContractID) key.value()).contractNumOrElse(0L) > 0
+                    || ((ContractID) key.value()).evmAddressOrElse(Bytes.EMPTY).length() == EVM_ADDRESS_BYTE_LENGTH;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
