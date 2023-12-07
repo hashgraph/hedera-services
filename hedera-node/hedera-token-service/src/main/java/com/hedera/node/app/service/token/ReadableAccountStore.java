@@ -59,6 +59,12 @@ public interface ReadableAccountStore {
     boolean containsAlias(@NonNull final Bytes alias);
 
     /**
+     * Returns true if the given account ID exists in state.
+     * @param accountID the ID to check
+     */
+    boolean contains(@NonNull final AccountID accountID);
+
+    /**
      * Returns the number of accounts in state.
      *
      * @return the number of accounts in state
