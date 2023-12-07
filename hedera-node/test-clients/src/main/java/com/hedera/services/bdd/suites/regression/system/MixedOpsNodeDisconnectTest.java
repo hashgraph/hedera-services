@@ -76,7 +76,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
     private static final String TREASURY = "treasury";
 
     public static void main(String... args) {
-        new AddressAliasIdFuzzing().runSuiteSync();
+        new MixedOpsNodeDisconnectTest().runSuiteSync();
     }
 
     @Override
