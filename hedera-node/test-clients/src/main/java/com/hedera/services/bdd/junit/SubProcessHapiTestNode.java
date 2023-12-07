@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -38,6 +39,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -225,6 +227,77 @@ final class SubProcessHapiTestNode implements HapiTestNode {
         if (handle != null) {
             handle.destroy();
             handle = null;
+        }
+    }
+
+    @Override
+    public void blockNetworkPort() {
+        if (handle != null && handle.isAlive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-A",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = new ProcessBuilder(cmd).start();
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void unblockNetworkPort() {
+        if (handle != null && handle.isAlive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = new ProcessBuilder(cmd).start();
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

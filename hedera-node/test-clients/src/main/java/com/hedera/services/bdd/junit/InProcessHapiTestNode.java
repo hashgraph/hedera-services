@@ -204,6 +204,41 @@ public class InProcessHapiTestNode implements HapiTestNode {
         }
     }
 
+    public void unblockNetworkPort() {
+        if (th != null && th.hedera.isActive()) {
+            final String[] cmd = new String[] {
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "INPUT",
+                "-p",
+                "tcp",
+                "--dport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;",
+                "sudo",
+                "-n",
+                "iptables",
+                "-D",
+                "OUTPUT",
+                "-p",
+                "tcp",
+                "--sport",
+                format("%d:%d", grpcPort, grpcPort),
+                "-j",
+                "DROP;"
+            };
+            try {
+                final Process process = new ProcessBuilder(cmd).start();
+                process.waitFor(75, TimeUnit.SECONDS);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @Override
     public void shutdown() {
         if (th != null && (th.hedera.isFrozen() || th.hedera.isActive())) {

@@ -110,7 +110,8 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.BlockNodesNetworkOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.DisconnectNodeOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ReviveNodeOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
@@ -294,8 +295,12 @@ public class UtilVerbs {
         return new WaitForBehindOp(byName(name), waitSeconds);
     }
 
-    public static BlockNodesNetworkOp blockPortOnNode(String name, int waitSeconds) {
-        return new BlockNodesNetworkOp(byName(name), waitSeconds);
+    public static DisconnectNodeOp disconnectNode(String name, int waitSeconds) {
+        return new DisconnectNodeOp(byName(name), waitSeconds);
+    }
+
+    public static ReviveNodeOp reviveNode(String name, int waitSeconds) {
+        return new ReviveNodeOp(byName(name), waitSeconds);
     }
 
     public static WaitForReconnectOp waitForNodeToFinishReconnect(String name, int waitSeconds) {

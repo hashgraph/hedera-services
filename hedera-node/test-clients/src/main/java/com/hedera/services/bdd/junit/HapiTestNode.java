@@ -67,6 +67,8 @@ public interface HapiTestNode {
      * Blocks the network port on the node so that it cannot communicate with other nodes.
      */
     void blockNetworkPort();
+
+    void unblockNetworkPort();
     /**
      * Waits for the node to shut down.
      *

@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+
 import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.utilops.lifecycle.LifecycleOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector;
@@ -26,11 +28,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * Starts the selected node or nodes specified by the {@link NodeSelector}.
  */
-public class BlockNodesNetworkOp extends LifecycleOp {
-    private static final Logger logger = LogManager.getLogger(BlockNodesNetworkOp.class);
+public class DisconnectNodeOp extends LifecycleOp {
+    private static final Logger logger = LogManager.getLogger(DisconnectNodeOp.class);
     private final int waitSeconds;
 
-    public BlockNodesNetworkOp(@NonNull final NodeSelector selector, int waitSeconds) {
+    public DisconnectNodeOp(@NonNull final NodeSelector selector, int waitSeconds) {
         super(selector);
         this.waitSeconds = waitSeconds;
     }
@@ -39,6 +41,7 @@ public class BlockNodesNetworkOp extends LifecycleOp {
     protected boolean run(@NonNull final HapiTestNode node) {
         logger.info("Blocking port on node {}, waiting for {} seconds...", node, waitSeconds);
         node.blockNetworkPort();
+        sleepFor(waitSeconds);
         return false;
     }
 }

@@ -27,11 +27,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockPortOnNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.disconnectNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reviveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
@@ -158,11 +158,11 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
-                        blockPortOnNode("Carol", 75))
+                        disconnectNode("Carol", 75))
                 .when(
                         inParallel(mixedOpsBurst.get()),
                         // start all nodes
-                        startNode("Carol"),
+                        reviveNode("Carol", 75),
                         // wait for all nodes to be ACTIVE
                         waitForNodeToBeBehind("Carol", 60),
                         waitForNodeToFinishReconnect("Carol", 60),
