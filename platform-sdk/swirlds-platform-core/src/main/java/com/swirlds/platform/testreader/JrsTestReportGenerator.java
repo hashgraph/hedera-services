@@ -710,6 +710,13 @@ public final class JrsTestReportGenerator {
             percentPassing = (int) (100.0 * testCount.passingTests() / testCount.uniqueTests());
         }
 
+        // Color the last element in the list red.
+        final String[] directoryParts = data.directory().split("/");
+        final String lastDirectory = directoryParts[directoryParts.length - 1];
+        final String formattedLastDirectory = "<font color=\"#f0524f\">" + lastDirectory + "</font>";
+        directoryParts[directoryParts.length - 1] = formattedLastDirectory;
+        final String formattedDirectory = String.join("/", directoryParts);
+
         sb.append(
                 """
                         <table id="overview_%s" style="display: %s" class="overview">
@@ -754,7 +761,7 @@ public final class JrsTestReportGenerator {
                         .formatted(
                                 owner,
                                 hidden ? "none" : "block",
-                                data.directory(),
+                                formattedDirectory,
                                 dateParts[0],
                                 dateParts[1],
                                 data.reportSpan(),
