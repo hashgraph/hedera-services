@@ -56,6 +56,8 @@ public class EventDescriptor implements SelfSerializable {
     private long generation;
     private long birthRound;
 
+    public String foo;
+
     /**
      * Zero arg constructor, required for deserialization. Do not use manually.
      */

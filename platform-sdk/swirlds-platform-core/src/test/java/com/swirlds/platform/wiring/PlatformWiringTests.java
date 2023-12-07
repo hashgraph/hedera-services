@@ -20,8 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -30,8 +31,6 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
