@@ -52,13 +52,7 @@ public class OwnerOfCall extends AbstractNftViewCall {
     protected @NonNull FullResult resultOfViewingNft(@NonNull final Token token, @NonNull final Nft nft) {
         requireNonNull(token);
         requireNonNull(nft);
-        final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
-        final long ownerNum;
-        if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
-            ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
-        } else {
-            ownerNum = explicitId.accountNumOrThrow();
-        }
+        final long ownerNum = getOwnerAccountNum(nft, token);
         final var gasRequirement = gasCalculator.viewGasRequirement();
         final var owner = nativeOperations().getAccount(ownerNum);
         if (owner == null) {
@@ -66,6 +60,15 @@ public class OwnerOfCall extends AbstractNftViewCall {
         } else {
             final var output = OwnerOfTranslator.OWNER_OF.getOutputs().encodeElements(headlongAddressOf(owner));
             return FullResult.successResult(output, gasRequirement);
+        }
+    }
+
+    public static Long getOwnerAccountNum(Nft nft, Token token) {
+        final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
+        if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
+            return token.treasuryAccountIdOrThrow().accountNumOrThrow();
+        } else {
+            return explicitId.accountNumOrThrow();
         }
     }
 }

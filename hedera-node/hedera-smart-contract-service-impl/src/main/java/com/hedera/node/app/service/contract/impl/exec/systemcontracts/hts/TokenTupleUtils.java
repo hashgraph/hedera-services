@@ -22,10 +22,12 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_FRACTION;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -60,7 +62,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                token.autoRenewSeconds());
+                (token.autoRenewSeconds() > 0 ? token.autoRenewSeconds() : 0));
     }
 
     /**
@@ -230,14 +232,15 @@ public class TokenTupleUtils {
             @NonNull final Token token,
             @NonNull final Nft nft,
             final long serialNumber,
-            @NonNull final String ledgerId) {
-
+            @NonNull final String ledgerId,
+            @NonNull final Account ownerAccount) {
+        requireNonNull(ownerAccount);
         final var nftMetaData = nft.metadata() != null ? nft.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
 
         return Tuple.of(
                 tokenInfoTupleFor(token, ledgerId),
                 serialNumber,
-                headlongAddressOf(nft.ownerIdOrElse(ZERO_ACCOUNT_ID)),
+                headlongAddressOf(ownerAccount),
                 nft.mintTimeOrElse(new Timestamp(0, 0)).seconds(),
                 nftMetaData,
                 headlongAddressOf(nft.spenderIdOrElse(ZERO_ACCOUNT_ID)));

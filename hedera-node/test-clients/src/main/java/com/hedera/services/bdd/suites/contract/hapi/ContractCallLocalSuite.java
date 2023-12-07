@@ -110,6 +110,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                 htsOwnershipCheckWorksWithAliasAddress());
     }
 
+    @HapiTest
     private HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
         final AtomicReference<AccountID> ecdsaAccountId = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdLongZeroAddress = new AtomicReference<>();
