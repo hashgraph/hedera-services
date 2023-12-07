@@ -16,15 +16,12 @@
 
 package com.hedera.node.app.spi.key;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 
@@ -37,6 +34,7 @@ public class KeyUtils {
 
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    public static final int EVM_ADDRESS_BYTE_LENGTH = 20;
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
@@ -110,7 +108,8 @@ public class KeyUtils {
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasDelegatableContractId() || pbjKey.hasContractID()) {
-            return isEmptyContractId((ContractID) key.value());
+            return ((ContractID) key.value()).contractNumOrElse(0L) == 0
+                    && ((ContractID) key.value()).evmAddressOrElse(Bytes.EMPTY).length() == 0L;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
@@ -152,21 +151,10 @@ public class KeyUtils {
             return ecKey.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
                     && (ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY);
         } else if (pbjKey.hasDelegatableContractId() || pbjKey.hasContractID()) {
-            return isPlausibleContractId((ContractID) key.value());
+            return ((ContractID) key.value()).contractNumOrElse(0L) > 0
+                    || ((ContractID) key.value()).evmAddressOrElse(Bytes.EMPTY).length() == EVM_ADDRESS_BYTE_LENGTH;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
-    }
-
-    private static boolean isPlausibleContractId(@NonNull final ContractID contractId) {
-        requireNonNull(contractId);
-        return contractId.contractNumOrElse(0L) > 0
-                || contractId.evmAddressOrElse(Bytes.EMPTY).length() == 20L;
-    }
-
-    private static boolean isEmptyContractId(@NonNull final ContractID contractId) {
-        requireNonNull(contractId);
-        return contractId.contractNumOrElse(0L) == 0
-                && contractId.evmAddressOrElse(Bytes.EMPTY).length() == 0L;
     }
 }
