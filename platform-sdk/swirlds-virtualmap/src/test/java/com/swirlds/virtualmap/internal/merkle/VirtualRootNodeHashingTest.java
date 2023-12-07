@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static com.swirlds.virtualmap.VirtualMapTestUtils.createRoot;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,8 +27,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.test.framework.TestComponentTags;
-import com.swirlds.virtualmap.TestKey;
-import com.swirlds.virtualmap.TestValue;
+import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
+import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

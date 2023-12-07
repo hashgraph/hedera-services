@@ -24,6 +24,8 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.util.Arrays;

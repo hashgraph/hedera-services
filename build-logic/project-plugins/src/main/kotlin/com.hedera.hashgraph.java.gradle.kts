@@ -158,10 +158,6 @@ testing {
             useJUnitJupiter()
             targets.all {
                 testTask {
-                    options {
-                        this as JUnitPlatformOptions
-                        excludeTags("HAMMER", "TIME_CONSUMING")
-                    }
                     maxHeapSize = "4g"
                     // Some tests overlap due to using the same temp folders within one project
                     // maxParallelForks = 4 <- set this, once tests can run in parallel
@@ -169,31 +165,30 @@ testing {
             }
         }
 
-        // The following two test tasks are running tests filtered from 'src/test'.
-        // The corresponding tests will be moved into separate source sets and then these become
-        // separate test suites.
-        tasks.register<Test>("hammer") {
-            testClassesDirs = sourceSets.test.get().output.classesDirs
-            classpath = sourceSets.test.get().runtimeClasspath
-            shouldRunAfter(tasks.test)
-
-            usesService(
-                gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
-                    maxParallelUsages = 1
+        // Tests that assert functionally correct behavior under stress/loads with many repeated
+        // iterations.
+        register<JvmTestSuite>("hammer") {
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
+                    usesService(
+                        gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
+                            maxParallelUsages = 1
+                        }
+                    )
+                    maxHeapSize = "8g"
                 }
-            )
-
-            useJUnitPlatform { includeTags("HAMMER") }
-            maxHeapSize = "8g"
+            }
         }
 
-        tasks.register<Test>("timeConsuming") {
-            testClassesDirs = sourceSets.test.get().output.classesDirs
-            classpath = sourceSets.test.get().runtimeClasspath
-            shouldRunAfter(tasks.test)
-
-            useJUnitPlatform { includeTags("TIME_CONSUMING") }
-            maxHeapSize = "16g"
+        // Tests that normally needs more than 100 ms to be executed
+        register<JvmTestSuite>("timeConsuming") {
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
+                    maxHeapSize = "16g"
+                }
+            }
         }
     }
 }

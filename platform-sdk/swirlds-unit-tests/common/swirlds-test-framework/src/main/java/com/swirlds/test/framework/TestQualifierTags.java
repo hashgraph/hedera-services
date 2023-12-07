@@ -22,12 +22,6 @@ package com.swirlds.test.framework;
 public abstract class TestQualifierTags {
 
     /**
-     * Marks a test which asserts functionally correct behavior under stress/loads with many repeated iterations.
-     * This tag will be removed, and instead all annotated tests are moved to a separate 'src/hammer' source set.
-     */
-    public static final String HAMMER = "HAMMER";
-
-    /**
      * Denotes a test that normally needs more than 100 ms to be executed
      * This tag will be removed, and instead all annotated tests are moved to a separate 'src/timeConsuming' source set.
      */

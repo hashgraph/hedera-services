@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.MerkleDbTestUtils;
+import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 

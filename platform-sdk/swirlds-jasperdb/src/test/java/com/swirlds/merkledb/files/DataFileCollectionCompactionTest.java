@@ -26,6 +26,7 @@ import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
