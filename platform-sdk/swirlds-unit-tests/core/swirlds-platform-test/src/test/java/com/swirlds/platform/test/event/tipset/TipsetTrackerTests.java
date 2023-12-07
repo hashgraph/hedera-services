@@ -27,6 +27,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.event.creation.tipset.Tipset;
@@ -81,7 +82,8 @@ class TipsetTrackerTests {
             }
 
             final EventDescriptor selfParent = latestEvents.get(creator);
-            final EventDescriptor fingerprint = new EventDescriptor(randomHash(random), creator, generation);
+            final EventDescriptor fingerprint =
+                    new EventDescriptor(randomHash(random), creator, generation, EventConstants.BIRTH_ROUND_UNDEFINED);
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
