@@ -247,6 +247,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
     requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.base;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
     requires transitive com.swirlds.fcqueue;
@@ -269,7 +270,6 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
     requires com.sun.jna;
-    requires transitive com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.logging;
     requires io.netty.handler;
