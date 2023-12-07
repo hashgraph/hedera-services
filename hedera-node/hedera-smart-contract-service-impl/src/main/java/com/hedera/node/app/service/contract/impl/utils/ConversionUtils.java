@@ -132,6 +132,10 @@ public class ConversionUtils {
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
         requireNonNull(accountID);
+        if (accountID.account().kind() == AccountID.AccountOneOfType.UNSET) {
+            return asHeadlongAddress(Bytes.EMPTY.toArray());
+        }
+
         final var integralAddress = accountID.hasAccountNum()
                 ? asEvmAddress(accountID.accountNum())
                 : accountID.alias().toByteArray();
@@ -159,6 +163,17 @@ public class ConversionUtils {
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final TokenID tokenId) {
         requireNonNull(tokenId);
         return asHeadlongAddress(asEvmAddress(tokenId.tokenNum()));
+    }
+
+    /**
+     * Given an account, returns its "priority" address as a Besu address.
+     *
+     * @param account the account
+     * @return the priority address
+     */
+    public static Address priorityAddressOf(@NonNull final Account account) {
+        requireNonNull(account);
+        return Address.wrap(Bytes.wrap(explicitAddressOf(account)));
     }
 
     /**

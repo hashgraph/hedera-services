@@ -70,7 +70,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -100,6 +100,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -131,6 +132,9 @@ public class TestHelpers {
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
 
+    public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.permittedContractCallers", Set.of(1062787L))
+            .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
@@ -169,7 +173,7 @@ public class TestHelpers {
     public static final long BESU_MAX_REFUND_QUOTIENT = 2;
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
-    public static final Bytes INITCODE = Bytes.wrap("60a06040526000600b55".getBytes());
+    public static final Bytes INITCODE = Bytes.wrap("0060a06040526000600b55".getBytes());
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     public static final Bytes CONSTRUCTOR_PARAMS = Bytes.wrap(new byte[] {2, 3, 2, 3, 2, 3, 2, 3, 2, 3});
     public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
@@ -373,6 +377,11 @@ public class TestHelpers {
     public static final AccountID OPERATOR_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(7777777L).build();
 
+    public static final Account A_NEW_ACCOUNT =
+            Account.newBuilder().accountId(A_NEW_ACCOUNT_ID).build();
+    public static final Account B_NEW_ACCOUNT =
+            Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
+
     public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
             .metadata(Bytes.wrap("Unsold"))
             .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
@@ -392,7 +401,8 @@ public class TestHelpers {
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
-
+    public static final Address PERMITTED_ADDRESS_CALLER =
+            Address.wrap((org.apache.tuweni.bytes.Bytes.wrap(asEvmAddress(1062787L))));
     public static final Account OPERATOR =
             Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
 
@@ -592,8 +602,7 @@ public class TestHelpers {
         assertEquals(expected.getGasCost(), actual.getGasCost());
     }
 
-    public static void assertSamePrecompileResult(
-            final HederaSystemContract.FullResult expected, final HederaSystemContract.FullResult actual) {
+    public static void assertSamePrecompileResult(final FullResult expected, final FullResult actual) {
         assertEquals(expected.gasRequirement(), actual.gasRequirement());
         final var expectedResult = expected.result();
         final var actualResult = actual.result();

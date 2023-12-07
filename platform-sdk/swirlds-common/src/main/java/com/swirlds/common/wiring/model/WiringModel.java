@@ -21,15 +21,12 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Set;
+import java.util.List;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
@@ -83,31 +80,6 @@ public interface WiringModel extends Startable, Stoppable {
     TaskSchedulerMetricsBuilder metricsBuilder();
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
-     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
-     *               are not supported.
-     * @return the output wire
-     * @throws IllegalStateException if the heartbeat has already started
-     */
-    @NonNull
-    OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period);
-
-    /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
-     *                  and so frequencies greater than 1000hz are not supported.
-     * @return the output wire
-     */
-    OutputWire<Instant> buildHeartbeatWire(final double frequency);
-
-    /**
      * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,
      * and so it should be avoided at all costs.
      *
@@ -144,11 +116,13 @@ public interface WiringModel extends Startable, Stoppable {
     /**
      * Generate a mermaid style wiring diagram.
      *
-     * @param groups optional groupings of vertices
+     * @param groups        optional groupings of vertices
+     * @param substitutions edges to substitute
      * @return a mermaid style wiring diagram
      */
     @NonNull
-    String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
+    String generateWiringDiagram(
+            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

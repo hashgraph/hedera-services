@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -56,6 +57,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
@@ -91,8 +96,10 @@ import java.util.List;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class CryptoTransferHTSSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
@@ -161,13 +168,17 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         final var revertingTransferFromTxn2 = "revertingTxn";
-        return defaultHapiSpec("hapiTransferFromForFungibleToken")
+        return defaultHapiSpec(
+                        "hapiTransferFromForFungibleToken",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
@@ -340,6 +351,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
         final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
         final var ADDRESS_ONE = 1L;
@@ -349,7 +361,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var TXN_TO_UPPER_BOUND_ADDRESS = "TXN_TO_UPPER_BOUND_ADDRESS";
 
         final var allowance = 10L;
-        return defaultHapiSpec("hapiTransferFromForFungibleTokenToSystemAccountsFails")
+        return defaultHapiSpec(
+                        "hapiTransferFromForFungibleTokenToSystemAccountsFails",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
@@ -437,10 +452,15 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)));
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
-        return defaultHapiSpec("hapiTransferFromForNFT")
+        return defaultHapiSpec(
+                        "hapiTransferFromForNFT",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
@@ -532,13 +552,21 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
         final var repeatedIdsPrecompileXferTxn = "repeatedIdsPrecompileXfer";
         final var senderStartBalance = 200L;
         final var receiverStartBalance = 0L;
         final var toSendEachTuple = 50L;
 
-        return defaultHapiSpec("RepeatedTokenIdsAreAutomaticallyConsolidated")
+        return defaultHapiSpec(
+                        "RepeatedTokenIdsAreAutomaticallyConsolidated",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        // For some reason mono-service calculates gas based on the unconsolidated
+                        // transfer lists, but we have no reason to keep doing that in mod-service
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .given(
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -604,10 +632,15 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple))));
     }
 
+    @HapiTest
     private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
-        return defaultHapiSpec("NonNestedCryptoTransferForFungibleTokenWithMultipleReceivers")
+        return defaultHapiSpec(
+                        "NonNestedCryptoTransferForFungibleTokenWithMultipleReceivers",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -672,10 +705,15 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .including(FUNGIBLE_TOKEN, RECEIVER2, 20))));
     }
 
+    @HapiTest
     private HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
-        return defaultHapiSpec("NonNestedCryptoTransferForNonFungibleToken")
+        return defaultHapiSpec(
+                        "NonNestedCryptoTransferForNonFungibleToken",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -737,10 +775,15 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, SENDER, RECEIVER, 1L))));
     }
 
+    @HapiTest
     private HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
-        return defaultHapiSpec("NonNestedCryptoTransferForMultipleNonFungibleTokens")
+        return defaultHapiSpec(
+                        "NonNestedCryptoTransferForMultipleNonFungibleTokens",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -819,10 +862,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, SENDER2, RECEIVER2, 2L))));
     }
 
+    @HapiTest
     private HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
-        return defaultHapiSpec("NonNestedCryptoTransferForFungibleAndNonFungibleToken")
+        return defaultHapiSpec(
+                        "NonNestedCryptoTransferForFungibleAndNonFungibleToken",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -922,11 +969,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, SENDER2, RECEIVER2, 1L))));
     }
 
+    @HapiTest
     private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
-                        "NonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens")
+                        "NonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -1045,7 +1095,11 @@ public class CryptoTransferHTSSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
-        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithoutApproveFails")
+        return defaultHapiSpec(
+                        "HapiTransferFromForNFTWithCustomFeesWithoutApproveFails",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -1191,7 +1245,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
-        return defaultHapiSpec("HapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails")
+        return defaultHapiSpec(
+                        "HapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1288,7 +1345,11 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
-        return defaultHapiSpec("HapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender")
+        return defaultHapiSpec(
+                        "HapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),

@@ -16,16 +16,21 @@
 
 package com.swirlds.common.wiring.model.internal;
 
+import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.wiring.TaskScheduler;
-import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
-import com.swirlds.common.wiring.schedulers.SequentialThreadTaskScheduler;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
+import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -108,18 +113,30 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
-     * {@inheritDoc}
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
+     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
+     *               are not supported.
+     * @return the output wire
+     * @throws IllegalStateException if start() has already been called
      */
     @NonNull
-    @Override
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
         return getHeartbeatScheduler().buildHeartbeatWire(period);
     }
 
     /**
-     * {@inheritDoc}
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
+     *                  and so frequencies greater than 1000hz are not supported.
+     * @return the output wire
      */
-    @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
@@ -153,8 +170,10 @@ public class StandardWiringModel implements WiringModel {
      */
     @NonNull
     @Override
-    public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
-        return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
+    public String generateWiringDiagram(
+            @NonNull final List<ModelGroup> groups, @NonNull final List<ModelEdgeSubstitution> substitutions) {
+        final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups);
+        return flowchart.render();
     }
 
     /**
@@ -164,7 +183,7 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
-        if (scheduler.getType() == TaskSchedulerType.SEQUENTIAL_THREAD) {
+        if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
         }
     }
@@ -182,7 +201,8 @@ public class StandardWiringModel implements WiringModel {
             final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
-        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
+        final boolean unique =
+                vertices.put(vertexName, new StandardVertex(vertexName, type, SCHEDULER, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -209,7 +229,7 @@ public class StandardWiringModel implements WiringModel {
         final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
 
         final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
-        origin.connectToEdge(edge);
+        origin.getOutgoingEdges().add(edge);
 
         final boolean unique = edges.add(edge);
         if (!unique) {
@@ -320,7 +340,7 @@ public class StandardWiringModel implements WiringModel {
         }
 
         // Create an ad hoc vertex.
-        final ModelVertex adHocVertex = new ModelVertex(vertexName, TaskSchedulerType.DIRECT, true);
+        final StandardVertex adHocVertex = new StandardVertex(vertexName, DIRECT, SCHEDULER, true);
 
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;

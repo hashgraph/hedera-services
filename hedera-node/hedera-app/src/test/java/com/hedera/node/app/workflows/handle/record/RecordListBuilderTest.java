@@ -19,17 +19,20 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,6 +51,9 @@ class RecordListBuilderTest extends AppTestBase {
             .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
             .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
             .getOrCreateConfig();
+    private static final int EXPECTED_CHILD_NANO_INCREMENT = 0;
+    private static final int EXPECTED_CHILD_NANO_INCREMENT_SCHEDULED =
+            Math.toIntExact(CONFIGURATION.getConfigData(ConsensusConfig.class).handleMaxPrecedingRecords());
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -322,7 +328,7 @@ class RecordListBuilderTest extends AppTestBase {
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         addUserTransaction(recordListBuilder);
         recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
-        final var child = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var child = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
 
         // when
         recordListBuilder.revertChildrenOf(child);
@@ -400,7 +406,7 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -422,8 +428,8 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -454,11 +460,11 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addChild(config);
-        recordListBuilder.addChild(config);
+        recordListBuilder.addChild(config, CHILD);
+        recordListBuilder.addChild(config, CHILD);
 
         // then
-        assertThatThrownBy(() -> recordListBuilder.addChild(config))
+        assertThatThrownBy(() -> recordListBuilder.addChild(config, CHILD))
                 .isInstanceOf(HandleException.class)
                 .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
     }
@@ -476,10 +482,10 @@ class RecordListBuilderTest extends AppTestBase {
         final var fourth = simpleCryptoTransferWithNonce(txnId, 3);
         final var fifth = simpleCryptoTransferWithNonce(txnId, 4);
         // mixing up preceding vs. following, but within which, in order
-        recordListBuilder.addChild(CONFIGURATION).transaction(fourth);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(fourth);
         recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(first);
         recordListBuilder.addPreceding(CONFIGURATION, LIMITED_CHILD_RECORDS).transaction(second);
-        recordListBuilder.addChild(CONFIGURATION).transaction(fifth);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(fifth);
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -515,11 +521,11 @@ class RecordListBuilderTest extends AppTestBase {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var base = addUserTransaction(recordListBuilder);
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
 
         // when
         recordListBuilder.revertChildrenOf(base);
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -558,14 +564,14 @@ class RecordListBuilderTest extends AppTestBase {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         addUserTransaction(recordListBuilder);
-        final var child1 = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
-        final var child3 = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var child1 = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
+        final var child3 = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         child3.status(ACCOUNT_ID_DOES_NOT_EXIST);
 
         // when
         recordListBuilder.revertChildrenOf(child1);
-        recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -780,14 +786,14 @@ class RecordListBuilderTest extends AppTestBase {
         final var child1Tx = simpleCryptoTransferWithNonce(baseTxnId, 1);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child1Tx);
         final var child2Tx = simpleCryptoTransferWithNonce(baseTxnId, 2);
-        recordListBuilder.addChild(CONFIGURATION).transaction(child2Tx);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child2Tx);
         final var child3Tx = simpleCryptoTransferWithNonce(baseTxnId, 3);
-        final var child3 = recordListBuilder.addChild(CONFIGURATION).transaction(child3Tx);
+        final var child3 = recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child3Tx);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
         final var child5Tx = simpleCryptoTransferWithNonce(baseTxnId, 4);
-        recordListBuilder.addChild(CONFIGURATION).transaction(child5Tx); // will revert
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child5Tx); // will revert
         final var child6Tx = simpleCryptoTransferWithNonce(baseTxnId, 5);
-        recordListBuilder.addChild(CONFIGURATION).transaction(child6Tx); // will revert
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child6Tx); // will revert
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
 
         // when
@@ -795,7 +801,7 @@ class RecordListBuilderTest extends AppTestBase {
         final var child8Tx = simpleCryptoTransferWithNonce(baseTxnId, 6);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child8Tx);
         final var child9Tx = simpleCryptoTransferWithNonce(baseTxnId, 7);
-        recordListBuilder.addChild(CONFIGURATION).transaction(child9Tx);
+        recordListBuilder.addChild(CONFIGURATION, CHILD).transaction(child9Tx);
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -826,26 +832,26 @@ class RecordListBuilderTest extends AppTestBase {
                 .hasTransaction(child3Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(4))
-                // child4 was removed, leaving a gap in consensus time.
-                .nanosAfter(5, result.userTransactionRecord())
+                // child4 was removed, but for mono-service fidelity we "smooth" the gap in consensus times
+                .nanosAfter(4, result.userTransactionRecord())
                 .hasNonce(4) // child5 gets the 4th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child5Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(5))
-                .nanosAfter(6, result.userTransactionRecord()) // immediately after child5
+                .nanosAfter(5, result.userTransactionRecord()) // immediately after child5
                 .hasNonce(5) // child6 gets the 5th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child6Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(6))
-                .nanosAfter(7, result.userTransactionRecord())
+                .nanosAfter(6, result.userTransactionRecord())
                 .hasNonce(6)
                 .hasResponseCode(OK)
                 .hasTransaction(child8Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(7))
-                .nanosAfter(8, result.userTransactionRecord())
+                .nanosAfter(7, result.userTransactionRecord())
                 .hasNonce(7)
                 .hasResponseCode(OK)
                 .hasTransaction(child9Tx)
@@ -885,10 +891,11 @@ class RecordListBuilderTest extends AppTestBase {
         }
 
         TransactionRecordAssertions nanosAfter(final int nanos, @NonNull final SingleTransactionRecord otherRecord) {
-            final var otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
-            final var expectedTimestamp = otherTimestamp
+            final Timestamp otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
+            final int actualOffset = EXPECTED_CHILD_NANO_INCREMENT + nanos;
+            final Timestamp expectedTimestamp = otherTimestamp
                     .copyBuilder()
-                    .nanos(otherTimestamp.nanos() + nanos)
+                    .nanos(otherTimestamp.nanos() + actualOffset)
                     .build();
             assertThat(record.transactionRecord().consensusTimestampOrThrow()).isEqualTo(expectedTimestamp);
             return this;

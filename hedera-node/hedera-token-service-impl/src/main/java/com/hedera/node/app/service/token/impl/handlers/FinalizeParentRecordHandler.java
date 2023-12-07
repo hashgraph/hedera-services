@@ -16,12 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -34,7 +41,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -77,52 +84,95 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             }
         }
 
-        /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
+        // Hbar changes from transaction including staking rewards
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
-        // any hbar changes listed in child records should not be recorded again in parent record, so deduct them.
-        deductChangesFromChildRecords(hbarChanges, context);
+        final var tokenChanges = tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.FUNGIBLE_COMMON);
+        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
+
+        if (nftChanges.isEmpty()) {
+            final var nonFungibleTokenChanges =
+                    tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
+            nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
+        }
+
+        if (context.hasChildRecords()) {
+            // All the above changes maps are mutable
+            deductChangesFromChildRecords(context, tokenChanges, nftChanges, hbarChanges);
+            // In the current system a parent transaction that has child transactions cannot
+            // *itself* cause any net fungible or NFT transfers; fail fast if that happens
+            validateTrue(tokenChanges.isEmpty(), FAIL_INVALID);
+            validateTrue(nftChanges.isEmpty(), FAIL_INVALID);
+        }
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(TransferList.newBuilder()
                     .accountAmounts(asAccountAmounts(hbarChanges))
                     .build());
         }
-
-        // Declare the top-level token transfer list, which list will include BOTH fungible and non-fungible token
-        // transfers
-        final ArrayList<TokenTransferList> tokenTransferLists;
-
-        // ---------- fungible token transfers
-        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
-        // any fungible token changes listed in child records should not be considered while building
-        // parent record, so don't deduct them.
-        final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
-        tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
-
-        // ---------- nft transfers
-        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
-        // any nft transfers listed in child records should not be considered while building
-        // parent record, so don't deduct them.
-        final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
-        tokenTransferLists.addAll(nftTokenTransferLists);
-
-        // Record the modified fungible and non-fungible changes so records can be written
-        if (!tokenTransferLists.isEmpty()) {
+        final var hasTokenTransferLists = !tokenChanges.isEmpty() || !nftChanges.isEmpty();
+        if (hasTokenTransferLists) {
+            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges);
+            final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
+            tokenTransferLists.addAll(nftTokenTransferLists);
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
     }
 
-    private void deductChangesFromChildRecords(final Map<AccountID, Long> hbarChanges, final FinalizeContext context) {
+    private void deductChangesFromChildRecords(
+            @NonNull final FinalizeContext context,
+            @NonNull final Map<EntityIDPair, Long> fungibleChanges,
+            @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,
+            @NonNull final Map<AccountID, Long> hbarChanges) {
+        final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
             final var childHbarChangesFromRecord = childRecord.transferList();
             for (final var childChange : childHbarChangesFromRecord.accountAmountsOrElse(List.of())) {
-                final var childHbarChangeAccountId = childChange.accountID();
-                final var childHbarChangeAmount = childChange.amount();
-                if (hbarChanges.containsKey(childHbarChangeAccountId)) {
-                    hbarChanges.merge(childHbarChangeAccountId, -childHbarChangeAmount, Long::sum);
+                final var accountId = childChange.accountID();
+                if (hbarChanges.containsKey(accountId)) {
+                    final var newAdjust = hbarChanges.merge(accountId, -childChange.amount(), Long::sum);
+                    if (newAdjust == 0) {
+                        hbarChanges.remove(accountId);
+                    }
+                }
+            }
+            for (final var tokenTransfers : childRecord.tokenTransferLists()) {
+                final var fungibleTransfers = tokenTransfers.transfersOrElse(emptyList());
+                final var tokenId = tokenTransfers.tokenOrThrow();
+                if (!fungibleTransfers.isEmpty()) {
+                    for (final var unitAdjust : fungibleTransfers) {
+                        final var accountId = unitAdjust.accountIDOrThrow();
+                        final var amount = unitAdjust.amount();
+                        final var key = new EntityIDPair(accountId, tokenId);
+                        if (fungibleChanges.containsKey(key)) {
+                            final var newAdjust = fungibleChanges.merge(key, -amount, Long::sum);
+                            if (newAdjust == 0) {
+                                fungibleChanges.remove(key);
+                            }
+                        }
+                    }
+                } else {
+                    for (final var ownershipChange : tokenTransfers.nftTransfersOrElse(emptyList())) {
+                        final var newOwnerId = ownershipChange.receiverAccountIDOrElse(ZERO_ACCOUNT_ID);
+                        final var key = new NftID(tokenId, ownershipChange.serialNumber());
+                        finalNftOwners.put(key, newOwnerId);
+                    }
                 }
             }
         });
+        for (final var iter = nftTransfers.entrySet().iterator(); iter.hasNext(); ) {
+            final var entry = iter.next();
+            final var tokenId = entry.getKey();
+            final var nftTransfersForToken = entry.getValue();
+            nftTransfersForToken.removeIf(transfer -> {
+                final var key = new NftID(tokenId, transfer.serialNumber());
+                return finalNftOwners
+                        .getOrDefault(key, ZERO_ACCOUNT_ID)
+                        .equals(transfer.receiverAccountIDOrElse(ZERO_ACCOUNT_ID));
+            });
+            if (nftTransfersForToken.isEmpty()) {
+                iter.remove();
+            }
+        }
     }
 }

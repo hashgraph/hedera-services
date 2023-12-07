@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.UNFROZEN;
+import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
+import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
+import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -36,6 +40,8 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenKycStatus;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
@@ -50,7 +56,6 @@ import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUt
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -106,7 +111,6 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(op.accountIdOrThrow());
         mustExist(account, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(!account.deleted(), ACCOUNT_DELETED);
     }
 
     @Override
@@ -148,7 +152,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
      * @param accountStore the account store
      * @return the information about the account
      */
-    private static Optional<AccountDetails> infoForAccount(
+    private Optional<AccountDetails> infoForAccount(
             @NonNull final AccountID accountID,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TokensConfig tokensConfig,
@@ -179,7 +183,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             info.grantedNftAllowances(getNftGrantedAllowancesList(account));
             info.grantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
 
-            final var tokenRels = getTokenRelationships(
+            final var tokenRels = tokenRelationshipsOf(
                     tokensConfig.maxRelsPerInfoQuery(), account, readableTokenStore, tokenRelationStore);
             if (!tokenRels.isEmpty()) {
                 info.tokenRelationships(tokenRels);
@@ -196,34 +200,28 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
      * @param tokenRelationStore the token relationship store
      * @return list of token relationships for the given account
      */
-    private static List<TokenRelationship> getTokenRelationships(
+    private List<TokenRelationship> tokenRelationshipsOf(
             final long maxRelsPerInfoQuery,
-            Account account,
-            ReadableTokenStore readableTokenStore,
-            ReadableTokenRelationStore tokenRelationStore) {
-        final var tokenRelationshipList = new ArrayList<TokenRelationship>();
+            @NonNull final Account account,
+            @NonNull final ReadableTokenStore readableTokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore) {
+        requireNonNull(account);
+        requireNonNull(tokenRelationStore);
+        requireNonNull(readableTokenStore);
+
+        final var ret = new ArrayList<TokenRelationship>();
         var tokenId = account.headTokenId();
         int count = 0;
-
-        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count <= maxRelsPerInfoQuery) {
-            final var tokenRelation = tokenRelationStore.get(account.accountId(), tokenId);
+        TokenRelation tokenRelation;
+        Token token; // token from readableToken store by tokenID
+        AccountID accountID; // build from accountNumber
+        while (tokenId != null && count < maxRelsPerInfoQuery) {
+            accountID = account.accountId();
+            tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
-                final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
+                token = readableTokenStore.get(tokenId);
                 if (token != null) {
-                    final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
-                            .tokenId(tokenId)
-                            .balance(tokenRelation.balance())
-                            .decimals(token.decimals())
-                            .symbol(token.symbol())
-                            .kycStatus(
-                                    tokenRelation.kycGranted()
-                                            ? TokenKycStatus.GRANTED
-                                            : TokenKycStatus.KYC_NOT_APPLICABLE)
-                            .freezeStatus(
-                                    tokenRelation.frozen() ? TokenFreezeStatus.FROZEN : TokenFreezeStatus.UNFROZEN)
-                            .automaticAssociation(tokenRelation.automaticAssociation())
-                            .build();
-                    tokenRelationshipList.add(tokenRelationship);
+                    addTokenRelation(ret, token, tokenRelation, tokenId);
                 }
                 tokenId = tokenRelation.nextToken();
             } else {
@@ -231,7 +229,31 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             }
             count++;
         }
-        return tokenRelationshipList;
+        return ret;
+    }
+
+    private void addTokenRelation(
+            ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
+        TokenFreezeStatus freezeStatus = FREEZE_NOT_APPLICABLE;
+        if (token.hasFreezeKey()) {
+            freezeStatus = tokenRelation.frozen() ? FROZEN : UNFROZEN;
+        }
+
+        TokenKycStatus kycStatus = KYC_NOT_APPLICABLE;
+        if (token.hasKycKey()) {
+            kycStatus = tokenRelation.kycGranted() ? GRANTED : REVOKED;
+        }
+
+        final var tokenRelationship = TokenRelationship.newBuilder()
+                .tokenId(tokenId)
+                .symbol(token.symbol())
+                .balance(tokenRelation.balance())
+                .decimals(token.decimals())
+                .kycStatus(kycStatus)
+                .freezeStatus(freezeStatus)
+                .automaticAssociation(tokenRelation.automaticAssociation())
+                .build();
+        ret.add(tokenRelationship);
     }
 
     /**

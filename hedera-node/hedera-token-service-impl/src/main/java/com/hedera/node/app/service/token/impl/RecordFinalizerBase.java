@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -41,7 +42,7 @@ import java.util.Map;
  * classes.
  */
 public class RecordFinalizerBase {
-    private static final AccountID ZERO_ACCOUNT_ID =
+    protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -78,24 +79,26 @@ public class RecordFinalizerBase {
     }
 
     /**
-     * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
+     * Gets all token tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore} depending on the given token type.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
-     * @param tokenStore
+     * @param tokenStore the {@link ReadableTokenStore} to get the token from
+     * @param tokenType the type of token to get token changes from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
-    protected Map<EntityIDPair, Long> fungibleChangesFrom(
+    protected Map<EntityIDPair, Long> tokenChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore) {
-        final var fungibleChanges = new HashMap<EntityIDPair, Long>();
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull TokenType tokenType) {
+        final var tokenChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
-            final var relAcctId = modifiedRel.accountId();
-            final var relTokenId = modifiedRel.tokenId();
-            final var token = tokenStore.get(relTokenId);
+            final var relAcctId = modifiedRel.accountIdOrThrow();
+            final var relTokenId = modifiedRel.tokenIdOrThrow();
+            final var token = requireNonNull(tokenStore.get(relTokenId));
             // Add this to fungible token transfer list only if this token is a fungible token
-            if (!token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+            if (!token.tokenType().equals(tokenType)) {
                 continue;
             }
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
@@ -113,11 +116,11 @@ public class RecordFinalizerBase {
             // If the token rel's balance has changed, add it to the list of changes
             final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
             if (netFungibleChange != 0) {
-                fungibleChanges.put(modifiedRel, netFungibleChange);
+                tokenChanges.put(modifiedRel, netFungibleChange);
             }
         }
 
-        return fungibleChanges;
+        return tokenChanges;
     }
 
     /**
@@ -188,7 +191,7 @@ public class RecordFinalizerBase {
             AccountID receiverAccountId = null;
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
-                if (modifiedNft.hasOwnerId()) {
+                if (modifiedNft.hasOwnerId() && !AccountID.DEFAULT.equals(modifiedNft.ownerId())) {
                     receiverAccountId = modifiedNft.ownerId();
                 } else {
                     receiverAccountId = token.treasuryAccountId();

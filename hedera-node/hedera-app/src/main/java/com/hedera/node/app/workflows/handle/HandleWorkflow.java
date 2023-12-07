@@ -57,6 +57,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -137,6 +138,7 @@ public class HandleWorkflow {
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
+    private final ChildRecordFinalizer childRecordFinalizer;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final DualStateUpdateFacility dualStateUpdateFacility;
@@ -160,6 +162,7 @@ public class HandleWorkflow {
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
             @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
@@ -180,6 +183,7 @@ public class HandleWorkflow {
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.childRecordFinalizer = childRecordFinalizer;
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
@@ -376,7 +380,8 @@ public class HandleWorkflow {
                     exchangeRateManager,
                     consensusNow,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -487,7 +492,8 @@ public class HandleWorkflow {
                 } catch (final HandleException e) {
                     // In case of a ContractCall when it reverts, the gas charged should not be rolled back
                     rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
-                    if (!hasWaivedFees) {
+                    if (!hasWaivedFees && e.shouldRollbackStack()) {
+                        // Only re-charge fees if we rolled back the stack
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
                 }

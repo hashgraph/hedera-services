@@ -60,6 +60,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -174,6 +175,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock
+    private ChildRecordFinalizer childRecordFinalizer;
+
+    @Mock
     private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
@@ -184,6 +188,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private static TransactionBody defaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
+    }
+
+    private static TransactionBody transactionBodyWithoutId() {
+        return TransactionBody.newBuilder()
                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                 .build();
     }
@@ -218,7 +228,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 exchangeRateManager,
                 DEFAULT_CONSENSUS_NOW,
                 authorizer,
-                solvencyPreCheck);
+                solvencyPreCheck,
+                childRecordFinalizer);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -246,7 +257,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             exchangeRateManager,
             DEFAULT_CONSENSUS_NOW,
             authorizer,
-            solvencyPreCheck
+            solvencyPreCheck,
+            childRecordFinalizer
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -311,7 +323,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         }
 
         @Test
@@ -640,6 +653,20 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
             assertSame(fees, result);
         }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void invokesComputeFeesDispatchWithNoTransactionId() {
+            given(recordBuilder.consensusNow()).willReturn(DEFAULT_CONSENSUS_NOW);
+            final var fees = new Fees(1L, 2L, 3L);
+            given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
+            final var captor = ArgumentCaptor.forClass(FeeContext.class);
+            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
+            verify(dispatcher).dispatchComputeFees(captor.capture());
+            final var feeContext = captor.getValue();
+            assertInstanceOf(ChildFeeContextImpl.class, feeContext);
+            assertSame(fees, result);
+        }
     }
 
     @Nested
@@ -713,7 +740,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
-            when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -789,7 +816,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(recordListBuilder.addPreceding(any(), eq(LIMITED_CHILD_RECORDS)))
                     .thenReturn(childRecordBuilder);
             when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
-            when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChildWithExternalizationCustomizer(any(), any()))
                     .thenReturn(childRecordBuilder);
@@ -827,7 +854,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
                     authorizer,
-                    solvencyPreCheck);
+                    solvencyPreCheck,
+                    childRecordFinalizer);
         }
 
         @SuppressWarnings("ConstantConditions")
