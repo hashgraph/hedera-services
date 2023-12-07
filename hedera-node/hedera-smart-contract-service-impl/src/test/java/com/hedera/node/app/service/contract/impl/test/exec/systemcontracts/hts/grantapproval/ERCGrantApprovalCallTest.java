@@ -28,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -53,6 +54,10 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
+
+    @Mock
+    private Nft nft;
+
 
     @Test
     void erc20approve() {
@@ -99,6 +104,8 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
+        given(nft.ownerId()).willReturn(OWNER_ID);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
