@@ -30,14 +30,14 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOpe
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperationV038;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_45;
+import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_46;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperationV038;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV038;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaPrngSeedOperator;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSLoadOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation;
-import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperationV045;
+import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperationV046;
 import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperationV038;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import dagger.Binds;
@@ -65,13 +65,13 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Module
-public interface ContractsV_0_45Module {
+public interface ContractsV_0_46Module {
 
-    String EVM_VERSION_0_45 = "v0.45";
+    String EVM_VERSION_0_46 = "v0.46";
 
     @Provides
     @Singleton
-    @V_0_45
+    @V_0_46
     static BiPredicate<Address, MessageFrame> provideAddressValidator(
             final Map<String, PrecompiledContract> precompiledContractMap) {
         final var precompiles = precompiledContractMap.keySet().stream()
@@ -84,7 +84,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation provideLog0Operation(final GasCalculator gasCalculator) {
         return new HederaLogOperation(0, gasCalculator);
     }
@@ -92,7 +92,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation provideLog1Operation(final GasCalculator gasCalculator) {
         return new HederaLogOperation(1, gasCalculator);
     }
@@ -100,7 +100,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation provideLog2Operation(final GasCalculator gasCalculator) {
         return new HederaLogOperation(2, gasCalculator);
     }
@@ -108,7 +108,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation provideLog3Operation(final GasCalculator gasCalculator) {
         return new HederaLogOperation(3, gasCalculator);
     }
@@ -116,7 +116,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation provideLog4Operation(final GasCalculator gasCalculator) {
         return new HederaLogOperation(4, gasCalculator);
     }
@@ -124,29 +124,29 @@ public interface ContractsV_0_45Module {
     @Binds
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     Operation bindChainIdOperation(HederaEvmChainIdOperation chainIdOperation);
 
     @Binds
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     Operation bindCreateOperation(HederaEvmCreateOperation createOperation);
 
     @Binds
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     Operation bindCreate2Operation(HederaEvmCreate2Operation create2Operation);
 
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindCallCodeOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
-            @V_0_45 final BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallCodeOperationV038(
@@ -156,11 +156,11 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindCallOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
-            @V_0_45 final BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallOperationV038(
@@ -170,10 +170,10 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindDelegateCallOperation(
             GasCalculator gasCalculator,
-            @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final EvmProperties evmProperties) {
         return new HederaDelegateCallOperationV038(
@@ -183,10 +183,10 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
-            @V_0_45 final BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaStaticCallOperationV038(
@@ -196,10 +196,10 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindBalanceOperation(
             GasCalculator gasCalculator,
-            @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final EvmProperties evmProperties) {
         return new HederaBalanceOperationV038(
@@ -209,10 +209,10 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindExtCodeCopyOperation(
             GasCalculator gasCalculator,
-            @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
             final EvmProperties evmProperties) {
         return new HederaExtCodeCopyOperationV038(
@@ -222,10 +222,10 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindExtCodeHashOperation(
             GasCalculator gasCalculator,
-            @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
             final EvmProperties evmProperties) {
         return new HederaExtCodeHashOperationV038(
@@ -235,10 +235,10 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindExtCodeSizeOperation(
             GasCalculator gasCalculator,
-            @V_0_45 BiPredicate<Address, MessageFrame> addressValidator,
+            @V_0_46 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector,
             final EvmProperties evmProperties) {
         return new HederaExtCodeSizeOperationV038(
@@ -248,7 +248,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation bindSelfDestructOperation(
             GasCalculator gasCalculator,
             final TransactionContext txnCtx,
@@ -257,7 +257,7 @@ public interface ContractsV_0_45Module {
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final EvmSigsVerifier sigsVerifier,
             final GlobalDynamicProperties globalDynamicProperties) {
-        return new HederaSelfDestructOperationV045(
+        return new HederaSelfDestructOperationV046(
                 gasCalculator,
                 txnCtx,
                 addressValidator,
@@ -269,7 +269,7 @@ public interface ContractsV_0_45Module {
     @Provides
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     static Operation provideSStoreOperation(
             final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
         return new HederaSStoreOperation(FRONTIER_MINIMUM, gasCalculator, dynamicProperties);
@@ -278,19 +278,19 @@ public interface ContractsV_0_45Module {
     @Binds
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     Operation bindHederaSLoadOperation(HederaSLoadOperation sLoadOperation);
 
     @Binds
     @Singleton
     @IntoSet
-    @V_0_45
+    @V_0_46
     Operation bindHederaPrngSeedOperation(HederaPrngSeedOperator prngSeedOperator);
 
     @Provides
     @Singleton
-    @V_0_45
-    static EVM provideV_0_45EVM(@V_0_45 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+    @V_0_46
+    static EVM provideV_0_46EVM(@V_0_46 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
         var operationRegistry = new OperationRegistry();
         // ChainID will be overridden
         registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
@@ -300,7 +300,7 @@ public interface ContractsV_0_45Module {
 
     @Provides
     @Singleton
-    @V_0_45
+    @V_0_46
     static PrecompileContractRegistry providePrecompiledContractRegistry(GasCalculator gasCalculator) {
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);

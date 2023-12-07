@@ -47,14 +47,14 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the
  * address being destructed
  */
-public class HederaSelfDestructOperationV045 extends SelfDestructOperation {
+public class HederaSelfDestructOperationV046 extends SelfDestructOperation {
     private final TransactionContext txnCtx;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final EvmSigsVerifier sigsVerifier;
     private final Predicate<Address> systemAccountDetector;
     private final GlobalDynamicProperties globalDynamicProperties;
 
-    public HederaSelfDestructOperationV045(
+    public HederaSelfDestructOperationV046(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,
             final BiPredicate<Address, MessageFrame> addressValidator,

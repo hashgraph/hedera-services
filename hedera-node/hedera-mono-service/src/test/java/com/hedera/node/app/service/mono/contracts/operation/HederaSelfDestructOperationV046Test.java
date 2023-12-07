@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_45Module.EVM_VERSION_0_45;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_46Module.EVM_VERSION_0_46;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaSelfDestructOperationV045Test {
+class HederaSelfDestructOperationV046Test {
     private static final EntityNum beneficiary = EntityNum.fromLong(2_345);
     private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private static final Address eip1014Address = Address.fromHexString(ethAddress);
@@ -78,11 +78,11 @@ class HederaSelfDestructOperationV045Test {
     @Mock
     private GlobalDynamicProperties globalDynamicProperties;
 
-    private HederaSelfDestructOperationV045 subject;
+    private HederaSelfDestructOperationV046 subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperationV045(
+        subject = new HederaSelfDestructOperationV046(
                 gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> false, globalDynamicProperties);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -114,7 +114,7 @@ class HederaSelfDestructOperationV045Test {
         given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                         false, beneficiaryMirror, eip1014Address, null, ContractCall))
                 .willReturn(true);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -196,7 +196,7 @@ class HederaSelfDestructOperationV045Test {
                 .willReturn(false);
         given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
         given(account.getAddress()).willReturn(beneficiaryMirror);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -219,7 +219,7 @@ class HederaSelfDestructOperationV045Test {
                 .willReturn(false);
         given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
         given(account.getAddress()).willReturn(beneficiaryMirror);
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_45);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_46);
         given(globalDynamicProperties.allowCallsToNonContractAccounts()).willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -244,7 +244,7 @@ class HederaSelfDestructOperationV045Test {
     @Test
     void haltsWhenBeneficiaryIsSystemAccount() {
         // given
-        subject = new HederaSelfDestructOperationV045(
+        subject = new HederaSelfDestructOperationV046(
                 gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> true, globalDynamicProperties);
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
