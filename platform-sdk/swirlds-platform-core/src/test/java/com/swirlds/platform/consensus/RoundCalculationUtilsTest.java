@@ -18,7 +18,7 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.event.EventConstants;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;

@@ -21,6 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,7 +73,7 @@ public class SimulatedEvent implements ChatterEvent {
         random.nextBytes(hashBytes);
         final Hash hash = new Hash(hashBytes, DigestType.SHA_384);
 
-        this.descriptor = new EventDescriptor(hash, creator, round);
+        this.descriptor = new EventDescriptor(hash, creator, EventConstants.GENERATION_UNDEFINED, round);
     }
 
     /**
