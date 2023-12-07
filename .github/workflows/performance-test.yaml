@@ -14,14 +14,11 @@
 # limitations under the License.
 ##
 
-name: "Service daily performance test"
+name: "Node: Performance Tests"
 on:
-#  schedule:
-#    - cron: '0 */12 * * *'
+  schedule:
+    - cron: '0 */12 * * *'
   workflow_dispatch:
-  push:
-    branches:
-      - 09445-D-ci-performance-testing
 defaults:
   run:
     shell: bash
@@ -45,9 +42,9 @@ permissions:
   contents: read
 
 jobs:
-  performance-test:
-    name: Performance Test
-    runs-on: ubuntu-latest
+  canonical-test:
+    name: Canonical (10 hour)
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Checkout Code
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
