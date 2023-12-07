@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -127,12 +126,17 @@ public class HtsCallAttempt {
      */
     public @NonNull VerificationStrategy defaultVerificationStrategy() {
         return verificationStrategies.activatingOnlyContractKeysFor(
-                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations(), UseTopLevelSigs.NO);
+                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
     }
 
-    public @NonNull VerificationStrategy defaultVerificationStrategyWithNoTopLevel() {
-        return verificationStrategies.activatingOnlyContractKeysFor(
-                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations(), UseTopLevelSigs.YES);
+    /**
+     * Returns the default verification strategy for this call which also uses top level signatures.
+     * (i.e., the strategy that treats contract id and delegatable contract id keys as active when they match the call's sender address as well as top level signatures)
+     * @return the default verification strategy for this call
+     */
+    public @NonNull VerificationStrategy contractVerificationStrategy() {
+        return verificationStrategies.activatingContractAndTopLevelKeys(
+                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
     }
 
     /**

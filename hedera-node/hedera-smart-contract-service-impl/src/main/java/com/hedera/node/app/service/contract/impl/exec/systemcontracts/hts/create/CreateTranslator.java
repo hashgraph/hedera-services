@@ -152,7 +152,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 nominalBodyFor(attempt),
-                attempt.defaultVerificationStrategyWithNoTopLevel(),
+                attempt.contractVerificationStrategy(),
                 attempt.senderAddress(),
                 attempt.addressIdConverter());
     }
