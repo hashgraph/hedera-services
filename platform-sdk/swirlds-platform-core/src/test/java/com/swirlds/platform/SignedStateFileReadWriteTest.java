@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -45,7 +46,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.common.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;

@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;

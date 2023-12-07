@@ -20,9 +20,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 
 public class EventMocks {
     /**

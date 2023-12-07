@@ -21,12 +21,12 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.transaction.internal.SystemTransaction;
-import com.swirlds.platform.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.platform.components.common.query.SystemTransactionSubmitter;
+import com.swirlds.platform.system.transaction.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransactionPing;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;

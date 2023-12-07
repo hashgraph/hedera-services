@@ -20,11 +20,10 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
@@ -42,6 +41,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;

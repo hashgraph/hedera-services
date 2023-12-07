@@ -26,6 +26,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.common.AutoCloseableNonThrowing;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
@@ -38,7 +39,6 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;

@@ -82,7 +82,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.internal.SwirldTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;

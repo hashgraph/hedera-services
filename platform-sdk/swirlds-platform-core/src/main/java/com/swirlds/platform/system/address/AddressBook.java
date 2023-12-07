@@ -17,11 +17,11 @@
 package com.swirlds.platform.system.address;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.NodeId;
 import com.swirlds.platform.system.address.internal.AddressBookIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

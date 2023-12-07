@@ -19,10 +19,10 @@ package com.swirlds.demo.stats.signing;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.demo.stats.signing.algorithms.ExtendedSignature;
 import com.swirlds.demo.stats.signing.algorithms.SigningAlgorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SignatureException;

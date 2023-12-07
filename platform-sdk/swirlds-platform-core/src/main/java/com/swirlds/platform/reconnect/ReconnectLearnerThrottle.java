@@ -21,15 +21,15 @@ import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
 import com.swirlds.logging.legacy.payload.UnableToReconnectPayload;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

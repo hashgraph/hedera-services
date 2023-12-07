@@ -18,8 +18,8 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.metrics.Metric;
 
 public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
     public enum Type {

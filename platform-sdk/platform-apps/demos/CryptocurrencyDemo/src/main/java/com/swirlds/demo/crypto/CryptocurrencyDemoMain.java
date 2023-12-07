@@ -30,17 +30,17 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.browser.Browser;
+import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;

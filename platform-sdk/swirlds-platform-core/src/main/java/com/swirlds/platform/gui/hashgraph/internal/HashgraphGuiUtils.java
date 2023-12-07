@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.platform.system.events.PlatformEvent;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
+import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.Color;
 
 /**

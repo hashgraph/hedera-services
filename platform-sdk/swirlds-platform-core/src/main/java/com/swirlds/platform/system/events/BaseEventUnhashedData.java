@@ -17,10 +17,10 @@
 package com.swirlds.platform.system.events;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

@@ -25,13 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.event.creation.tipset.Tipset;
+import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.platform.event.creation.tipset.Tipset;
-import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

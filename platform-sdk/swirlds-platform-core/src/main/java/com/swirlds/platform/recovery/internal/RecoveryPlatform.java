@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -27,10 +28,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -38,6 +35,9 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

@@ -18,13 +18,13 @@ package com.swirlds.common.test.fixtures;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.SerializablePublicKey;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;

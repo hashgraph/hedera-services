@@ -22,15 +22,15 @@ import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.bui
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;

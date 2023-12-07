@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.system.state.notifications;
 
-import com.swirlds.common.notification.AbstractNotification;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.notification.AbstractNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;

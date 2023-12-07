@@ -37,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -46,7 +47,6 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;

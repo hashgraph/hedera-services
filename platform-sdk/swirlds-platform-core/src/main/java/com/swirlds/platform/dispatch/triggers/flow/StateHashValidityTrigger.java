@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.dispatch.triggers.flow;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.dispatch.types.TriggerFour;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

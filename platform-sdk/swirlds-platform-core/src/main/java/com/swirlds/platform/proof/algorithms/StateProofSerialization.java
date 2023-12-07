@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.proof.algorithms;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
@@ -27,7 +28,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.platform.proof.tree.StateProofInternalNode;
 import com.swirlds.platform.proof.tree.StateProofNode;
 import com.swirlds.platform.proof.tree.StateProofPayload;
-import com.swirlds.common.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,7 +55,8 @@ public final class StateProofSerialization {
 
         // Better to fail early than to fail whenever somebody attempts to deserialize.
         if (signatures.size() > StateProofConstants.MAX_SIGNATURE_COUNT) {
-            throw new IOException("too many signatures: " + signatures.size() + ", limit: " + StateProofConstants.MAX_SIGNATURE_COUNT);
+            throw new IOException("too many signatures: " + signatures.size() + ", limit: "
+                    + StateProofConstants.MAX_SIGNATURE_COUNT);
         }
 
         out.writeInt(signatures.size());
@@ -77,7 +78,8 @@ public final class StateProofSerialization {
             throws IOException {
         final int numSignatures = in.readInt();
         if (numSignatures > StateProofConstants.MAX_SIGNATURE_COUNT) {
-            throw new IOException("too many signatures: " + numSignatures + ", limit: " + StateProofConstants.MAX_SIGNATURE_COUNT);
+            throw new IOException(
+                    "too many signatures: " + numSignatures + ", limit: " + StateProofConstants.MAX_SIGNATURE_COUNT);
         }
         final List<NodeSignature> signatures = new ArrayList<>();
         for (int i = 0; i < numSignatures; i++) {
@@ -108,8 +110,8 @@ public final class StateProofSerialization {
         // This stream will throw an IO exception if asked to read more than MAX_STATE_PROOF_TREE_SIZE bytes.
         // This check is not needed at serialization time for the sake of safety. But if this check fails, then
         // we can expect it to fail at deserialization time as well, so we might as well fail fast.
-        final SerializableDataOutputStream limitedStream = new SerializableDataOutputStream(
-                new ExtendableOutputStream(out, new MaxSizeStreamExtension(StateProofConstants.MAX_STATE_PROOF_TREE_SIZE, false)));
+        final SerializableDataOutputStream limitedStream = new SerializableDataOutputStream(new ExtendableOutputStream(
+                out, new MaxSizeStreamExtension(StateProofConstants.MAX_STATE_PROOF_TREE_SIZE, false)));
 
         // Walk the tree in BFS order.
         final Queue<StateProofNode> queue = new LinkedList<>();
@@ -123,8 +125,8 @@ public final class StateProofSerialization {
 
                 // Better to fail early than to fail whenever somebody attempts to deserialize.
                 if (internal.getChildren().size() > StateProofConstants.MAX_CHILD_COUNT) {
-                    throw new IOException(
-                            "too many children: " + internal.getChildren().size() + ", limit: " + StateProofConstants.MAX_CHILD_COUNT);
+                    throw new IOException("too many children: "
+                            + internal.getChildren().size() + ", limit: " + StateProofConstants.MAX_CHILD_COUNT);
                 }
 
                 limitedStream.writeInt(internal.getChildren().size());
@@ -175,8 +177,8 @@ public final class StateProofSerialization {
             throws IOException {
 
         // This stream will throw an IO exception if asked to read more than MAX_STATE_PROOF_TREE_SIZE bytes.
-        final SerializableDataInputStream limitedStream = new SerializableDataInputStream(
-                new ExtendableInputStream(in, new MaxSizeStreamExtension(StateProofConstants.MAX_STATE_PROOF_TREE_SIZE, false)));
+        final SerializableDataInputStream limitedStream = new SerializableDataInputStream(new ExtendableInputStream(
+                in, new MaxSizeStreamExtension(StateProofConstants.MAX_STATE_PROOF_TREE_SIZE, false)));
 
         // Tree was written in BFS order. Read it back and reconstruct it.
 
@@ -195,7 +197,8 @@ public final class StateProofSerialization {
                 }
                 final int childCount = limitedStream.readInt();
                 if (childCount > StateProofConstants.MAX_CHILD_COUNT) {
-                    throw new IOException("Child count exceeds maximum allowed value of " + StateProofConstants.MAX_CHILD_COUNT);
+                    throw new IOException(
+                            "Child count exceeds maximum allowed value of " + StateProofConstants.MAX_CHILD_COUNT);
                 }
 
                 queue.add(new ParentAwaitingChildren((StateProofInternalNode) next, childCount));

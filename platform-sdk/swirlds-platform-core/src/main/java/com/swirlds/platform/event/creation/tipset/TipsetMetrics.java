@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;

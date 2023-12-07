@@ -32,21 +32,21 @@ import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.browser.Browser;
 import com.swirlds.platform.browser.ParameterProvider;
+import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

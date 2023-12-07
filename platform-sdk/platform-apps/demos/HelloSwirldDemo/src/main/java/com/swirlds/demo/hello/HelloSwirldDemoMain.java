@@ -29,18 +29,18 @@ package com.swirlds.demo.hello;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.NodeId;
+import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.browser.Browser;
+import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.common.NodeId;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.gui.model.GuiModel;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.browser.Browser;
 import java.nio.charset.StandardCharsets;
 
 /**

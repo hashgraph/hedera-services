@@ -17,8 +17,8 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Random;

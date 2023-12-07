@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -28,7 +29,6 @@ import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

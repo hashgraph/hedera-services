@@ -20,9 +20,9 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.internal.EventImpl;
 
 @ConstructableIgnored
 public class DummyEvent extends EventImpl {

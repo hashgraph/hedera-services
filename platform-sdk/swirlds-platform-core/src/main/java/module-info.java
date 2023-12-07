@@ -34,11 +34,13 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.event.validation;
     exports com.swirlds.platform.eventhandling;
     exports com.swirlds.platform.gui;
+    exports com.swirlds.platform.gui.model;
     exports com.swirlds.platform.health;
     exports com.swirlds.platform.health.clock;
     exports com.swirlds.platform.health.entropy;
     exports com.swirlds.platform.health.filesystem;
     exports com.swirlds.platform.intake;
+    exports com.swirlds.platform.listeners;
     exports com.swirlds.platform.metrics;
     exports com.swirlds.platform.network;
     exports com.swirlds.platform.network.communication;
@@ -61,7 +63,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system.state.notifications;
     exports com.swirlds.platform.system.status;
     exports com.swirlds.platform.system.status.actions;
-
     exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
 
@@ -141,7 +142,6 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.platform.gui;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive info.picocli;
@@ -153,6 +153,7 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires java.desktop;
     requires java.management;
     requires java.scripting;
     requires jdk.management;

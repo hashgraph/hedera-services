@@ -17,10 +17,10 @@
 package com.swirlds.platform.test.chatter.simulator;
 
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

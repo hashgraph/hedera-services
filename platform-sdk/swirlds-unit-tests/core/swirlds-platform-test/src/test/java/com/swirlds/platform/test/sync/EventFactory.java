@@ -18,14 +18,14 @@ package com.swirlds.platform.test.sync;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.common.NodeId;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.Collections;
 

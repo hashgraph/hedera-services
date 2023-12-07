@@ -17,9 +17,9 @@
 package com.swirlds.platform.components.transaction.system;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

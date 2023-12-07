@@ -18,11 +18,11 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
-import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.gui.model.Reference;
+import com.swirlds.platform.system.Platform;
 import javax.swing.JTextArea;
 
 /**

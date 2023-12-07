@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.status.logic;
 
+import com.swirlds.common.utility.DurationUtils;
 import com.swirlds.platform.system.status.IllegalPlatformStatusException;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
@@ -29,7 +30,6 @@ import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusActio
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.platform.system.status.actions.TimeElapsedAction;
-import com.swirlds.common.utility.DurationUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

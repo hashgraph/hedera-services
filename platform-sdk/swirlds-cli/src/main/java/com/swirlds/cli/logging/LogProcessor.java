@@ -16,8 +16,8 @@
 
 package com.swirlds.cli.logging;
 
-import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.logging.legacy.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

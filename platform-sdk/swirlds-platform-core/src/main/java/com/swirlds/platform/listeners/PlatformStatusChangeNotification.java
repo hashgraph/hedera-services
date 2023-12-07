@@ -17,7 +17,7 @@
 package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 
 /**
  * This notification is sent when the platform status changes.

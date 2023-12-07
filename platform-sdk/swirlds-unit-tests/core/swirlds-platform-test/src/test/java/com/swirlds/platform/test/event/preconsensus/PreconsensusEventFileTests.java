@@ -31,12 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;

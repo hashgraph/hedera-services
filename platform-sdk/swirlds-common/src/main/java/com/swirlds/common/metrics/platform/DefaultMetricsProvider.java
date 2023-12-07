@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
@@ -28,7 +29,6 @@ import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
-import com.swirlds.common.NodeId;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

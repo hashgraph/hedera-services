@@ -17,7 +17,7 @@
 package com.swirlds.platform.components.transaction.system;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

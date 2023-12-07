@@ -18,14 +18,14 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.gui.GuiUtils;
-import com.swirlds.platform.gui.components.PrePaintableJPanel;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.GuiUtils;
+import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.system.Platform;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.List;

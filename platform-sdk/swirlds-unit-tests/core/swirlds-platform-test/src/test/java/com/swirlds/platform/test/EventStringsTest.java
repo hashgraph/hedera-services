@@ -18,17 +18,17 @@ package com.swirlds.platform.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;

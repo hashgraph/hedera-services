@@ -48,7 +48,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;

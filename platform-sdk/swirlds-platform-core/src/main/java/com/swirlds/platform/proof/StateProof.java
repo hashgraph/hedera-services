@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.proof;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -23,13 +24,12 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.platform.proof.algorithms.NodeSignature;
-import com.swirlds.platform.proof.tree.StateProofNode;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.platform.proof.algorithms.NodeSignature;
 import com.swirlds.platform.proof.algorithms.StateProofSerialization;
 import com.swirlds.platform.proof.algorithms.StateProofTreeBuilder;
 import com.swirlds.platform.proof.algorithms.StateProofUtils;
+import com.swirlds.platform.proof.tree.StateProofNode;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -132,7 +132,8 @@ public class StateProof implements SelfSerializable {
             // we only need to recompute the hash once
             hashBytes = StateProofUtils.computeStateProofTreeHash(cryptography, root);
         }
-        final long validWeight = StateProofUtils.computeValidSignatureWeight(addressBook, signatures, signatureVerifier, hashBytes);
+        final long validWeight =
+                StateProofUtils.computeValidSignatureWeight(addressBook, signatures, signatureVerifier, hashBytes);
         return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
 

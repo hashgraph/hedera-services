@@ -18,8 +18,8 @@ package com.swirlds.common.io.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;

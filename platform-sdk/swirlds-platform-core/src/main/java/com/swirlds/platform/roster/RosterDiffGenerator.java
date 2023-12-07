@@ -18,9 +18,9 @@ package com.swirlds.platform.roster;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;

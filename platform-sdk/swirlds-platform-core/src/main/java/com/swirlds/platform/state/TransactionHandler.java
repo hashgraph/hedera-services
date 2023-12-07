@@ -20,11 +20,11 @@ import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.Event;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;

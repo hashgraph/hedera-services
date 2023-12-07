@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
+import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
@@ -35,7 +36,6 @@ import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.platform.system.status.actions.TimeElapsedAction;
 import com.swirlds.platform.system.status.logic.PlatformStatusLogic;
 import com.swirlds.platform.system.status.logic.StartingUpStatusLogic;
-import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

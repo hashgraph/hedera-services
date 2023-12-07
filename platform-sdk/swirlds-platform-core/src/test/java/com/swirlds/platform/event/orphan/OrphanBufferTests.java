@@ -26,14 +26,14 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

@@ -19,8 +19,8 @@ package com.swirlds.platform.components.transaction.system;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -17,10 +17,10 @@
 package com.swirlds.platform.gui;
 
 import com.swirlds.common.Console;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.gui.components.ScrollableJPanel;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;

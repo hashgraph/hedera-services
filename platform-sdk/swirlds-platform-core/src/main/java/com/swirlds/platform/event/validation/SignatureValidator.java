@@ -21,14 +21,14 @@ import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;

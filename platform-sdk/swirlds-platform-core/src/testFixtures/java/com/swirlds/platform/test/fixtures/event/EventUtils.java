@@ -18,10 +18,10 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static java.lang.Integer.max;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;

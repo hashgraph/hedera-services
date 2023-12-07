@@ -17,9 +17,9 @@
 package com.swirlds.demo.platform;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
+import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

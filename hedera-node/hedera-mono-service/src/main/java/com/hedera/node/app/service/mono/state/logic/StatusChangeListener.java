@@ -21,9 +21,9 @@ import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
+import com.swirlds.common.NodeId;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
-import com.swirlds.common.NodeId;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

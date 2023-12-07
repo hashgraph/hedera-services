@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.notifications;
 
-import com.swirlds.common.notification.AbstractNotification;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.notification.AbstractNotification;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 

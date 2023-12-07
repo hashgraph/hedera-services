@@ -18,8 +18,8 @@ package com.swirlds.platform.state.iss.internal;
 
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.NodeId;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;

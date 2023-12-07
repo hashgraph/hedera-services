@@ -17,8 +17,8 @@
 package com.swirlds.platform.gui.internal;
 
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
-import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;

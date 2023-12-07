@@ -17,7 +17,6 @@
 package com.swirlds.platform.system.transaction;
 
 import com.swirlds.platform.system.ReachedConsensus;
-import com.swirlds.platform.system.transaction.internal.ConsensusTransactionImpl;
 
 /**
  * A transaction that has reached consensus.

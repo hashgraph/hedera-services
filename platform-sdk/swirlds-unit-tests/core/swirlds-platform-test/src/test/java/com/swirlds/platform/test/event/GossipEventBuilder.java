@@ -16,20 +16,20 @@
 
 package com.swirlds.platform.test.event;
 
+import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Random;

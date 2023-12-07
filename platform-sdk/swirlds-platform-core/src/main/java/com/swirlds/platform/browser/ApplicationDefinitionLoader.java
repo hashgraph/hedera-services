@@ -20,12 +20,12 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;

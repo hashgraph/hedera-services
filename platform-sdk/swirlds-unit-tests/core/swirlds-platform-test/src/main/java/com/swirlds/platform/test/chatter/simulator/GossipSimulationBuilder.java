@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.chatter.simulator;
 
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.chatter.SimulatedChatter;
 import com.swirlds.platform.test.chatter.SimulatedChatterFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
