@@ -79,24 +79,26 @@ public class RecordFinalizerBase {
     }
 
     /**
-     * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
+     * Gets all token tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore} depending on the given token type.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
      * @param tokenStore the {@link ReadableTokenStore} to get the token from
+     * @param tokenType the type of token to get token changes from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
-    protected Map<EntityIDPair, Long> fungibleChangesFrom(
+    protected Map<EntityIDPair, Long> tokenChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore) {
-        final var fungibleChanges = new HashMap<EntityIDPair, Long>();
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull TokenType tokenType) {
+        final var tokenChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
             final var relTokenId = modifiedRel.tokenIdOrThrow();
             final var token = requireNonNull(tokenStore.get(relTokenId));
             // Add this to fungible token transfer list only if this token is a fungible token
-            if (!token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+            if (!token.tokenType().equals(tokenType)) {
                 continue;
             }
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
@@ -114,11 +116,11 @@ public class RecordFinalizerBase {
             // If the token rel's balance has changed, add it to the list of changes
             final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
             if (netFungibleChange != 0) {
-                fungibleChanges.put(modifiedRel, netFungibleChange);
+                tokenChanges.put(modifiedRel, netFungibleChange);
             }
         }
 
-        return fungibleChanges;
+        return tokenChanges;
     }
 
     /**
