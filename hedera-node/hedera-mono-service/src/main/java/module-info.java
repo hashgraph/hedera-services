@@ -268,7 +268,7 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
     requires com.sun.jna;
-    requires com.swirlds.base;
+    requires transitive com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.logging;
     requires com.swirlds.platform.core;
