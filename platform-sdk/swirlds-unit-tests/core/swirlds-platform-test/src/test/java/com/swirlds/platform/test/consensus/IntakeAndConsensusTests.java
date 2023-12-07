@@ -24,7 +24,6 @@ import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConfig_;
-import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;

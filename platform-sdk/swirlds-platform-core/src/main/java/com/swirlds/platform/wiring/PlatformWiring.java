@@ -37,10 +37,10 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
-import com.swirlds.platform.eventhandling.EventConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
