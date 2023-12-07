@@ -27,7 +27,11 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +41,8 @@ import java.util.Objects;
  * schedule objects as a result of ScheduleCreate, ScheduleSign, or ScheduleDelete transactions.
  */
 public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl implements WritableScheduleStore {
+
+    private static final Logger logger = LogManager.getLogger(WritableScheduleStoreImpl.class);
     private static final String SCHEDULE_NULL_FOR_DELETE_MESSAGE =
             "Request to delete null schedule ID cannot be fulfilled.";
     private static final String SCHEDULE_MISSING_FOR_DELETE_MESSAGE =
@@ -111,12 +117,14 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         // calculated expiration time is never null...
         final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
-        List<Schedule> byExpiration = inStateExpiration != null ? inStateExpiration.schedules() : null;
+        List<Schedule> byExpiration = inStateExpiration != null ? new ArrayList<>(inStateExpiration.schedules()) : null;
         if (byExpiration == null) {
             byExpiration = new LinkedList<>();
         }
         byExpiration.add(scheduleToAdd);
-        schedulesByExpirationMutable.put(expirationSecond, new ScheduleList(byExpiration));
+        final var newScheduleList = new ScheduleList(byExpiration);
+        schedulesByExpirationMutable.put(expirationSecond, newScheduleList);
+        logger.info("Added scheduleList {} to state with expirationSecond {}.", newScheduleList, expirationSecond);
     }
 
     @NonNull
