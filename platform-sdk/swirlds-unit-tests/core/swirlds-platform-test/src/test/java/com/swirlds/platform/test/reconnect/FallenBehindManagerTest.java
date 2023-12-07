@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
@@ -41,7 +42,7 @@ class FallenBehindManagerTest {
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
     final ReconnectConfig config = new TestConfigBuilder()
-            .withValue("reconnect.fallenBehindThreshold", fallenBehindThreshold)
+            .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, fallenBehindThreshold)
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
     final FallenBehindManager manager = new FallenBehindManagerImpl(

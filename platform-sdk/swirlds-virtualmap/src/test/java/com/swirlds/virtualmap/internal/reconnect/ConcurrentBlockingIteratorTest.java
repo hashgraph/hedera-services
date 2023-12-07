@@ -61,7 +61,7 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("hasNext on non-empty, open iterator returns true")
     void hasNextOnFull() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(123, 10, MILLISECONDS);
+        itr.supply(123);
         assertTrue(itr.hasNext(), "Should be true on non-empty iterator");
     }
 
@@ -69,7 +69,7 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("hasNext twice on good element is OK")
     void hasTwice() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(123, 10, MILLISECONDS);
+        itr.supply(123);
         //noinspection ResultOfMethodCallIgnored
         itr.hasNext();
         assertTrue(itr.hasNext(), "Should be true on non-empty iterator");
@@ -79,7 +79,7 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("hasNext on non-empty, closed iterator returns true")
     void hasNextOnFullWhenClosed() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(123, 10, MILLISECONDS);
+        itr.supply(123);
         itr.close();
         assertTrue(itr.hasNext(), "Should be true on non-empty iterator");
     }
@@ -107,7 +107,7 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("next on consumed iterator throws when closed")
     void nextOnConsumedThrowsWhenClosed() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(123, 10, MILLISECONDS);
+        itr.supply(123);
         itr.close();
         itr.next();
         assertThrows(NoSuchElementException.class, itr::next, "Should throw on empty");
@@ -117,7 +117,7 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("next on consumed iterator throws if subsequently closed")
     void nextOnConsumedThrowsWhenFinallyClosed() throws InterruptedException, ExecutionException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(123, 10, MILLISECONDS);
+        itr.supply(123);
         final AtomicBoolean firstNextWasFine = new AtomicBoolean(false);
         final Future<Class<NoSuchElementException>> thrown = thrownByCall(() -> {
             itr.next(); // should be fine
@@ -135,9 +135,9 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("next on iterator with elements returns")
     void nextOnFullOk() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(1, 10, MILLISECONDS);
-        itr.supply(2, 10, MILLISECONDS);
-        itr.supply(3, 10, MILLISECONDS);
+        itr.supply(1);
+        itr.supply(2);
+        itr.supply(3);
         assertTrue(itr.hasNext(), "Should have next");
         assertEquals(1, itr.next(), "First element should be 1");
         assertTrue(itr.hasNext(), "Should have next");
@@ -151,7 +151,7 @@ public class ConcurrentBlockingIteratorTest {
     void iterateAfterClose() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
         for (int i = 0; i < 10; i++) {
-            itr.supply(i, 10, MILLISECONDS);
+            itr.supply(i);
         }
 
         itr.close();
@@ -167,20 +167,9 @@ public class ConcurrentBlockingIteratorTest {
     @DisplayName("cannot add elements after close")
     void cannotAddElementsAfterClosed() throws InterruptedException {
         final var itr = new ConcurrentBlockingIterator<Integer>(100, 1, SECONDS);
-        itr.supply(1, 10, MILLISECONDS);
+        itr.supply(1);
         itr.close();
-        assertThrows(
-                IllegalStateException.class,
-                () -> itr.supply(2, 10, MILLISECONDS),
-                "Should have thrown IllegalStateException");
-    }
-
-    @Test
-    @DisplayName("supply blocks until timeout if buffer is full")
-    void blocksUntilTimeoutIfFull() throws InterruptedException {
-        final var itr = new ConcurrentBlockingIterator<Integer>(1, 1, SECONDS);
-        itr.supply(1, 10, MILLISECONDS);
-        assertFalse(itr.supply(2, 10, MILLISECONDS), "Timeout should have happened");
+        assertThrows(IllegalStateException.class, () -> itr.supply(2), "Should have thrown IllegalStateException");
     }
 
     @Test
@@ -192,7 +181,7 @@ public class ConcurrentBlockingIteratorTest {
         final Future<?> submission = threadPool.submit(() -> {
             for (int i = 0; i < max; i++) {
                 try {
-                    itr.supply(i, 1, SECONDS);
+                    itr.supply(i);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException(e);

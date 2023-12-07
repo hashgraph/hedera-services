@@ -83,8 +83,6 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(status);
         requireNonNull(token);
 
-        final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
-        final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
         // @Future remove to revert #9074 after modularization is completed
         if (isStaticCall && (status != SUCCESS || nft == null)) {
             return revertResult(status, gasCalculator.viewGasRequirement());
@@ -92,6 +90,8 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
         final var ownerAccount = nativeOperations().getAccount(getOwnerAccountNum(nonNullNft, token));
+        final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
+        final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
         return successResult(
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
