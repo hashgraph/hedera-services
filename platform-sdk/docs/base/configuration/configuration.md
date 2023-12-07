@@ -483,7 +483,7 @@ the platform much cleaner. By doing so configuration property names will change 
 added. If the property `csvOutputFolder` is, for example, only relevant for the metrics module of the platform it should
 be migrated to a `MetricsConfig` record in the metrics module. By doing so the name of the property might change
 to `metrics.csvOutputFolder`. Since such change will affect all installations of the platform we introduced the support
-for aliases. In the `com.swirlds.platform.Browser` class a mapping can be registered. For the given example we can
+for aliases. In the `com.swirlds.platform.browser.Browser` class a mapping can be registered. For the given example we can
 create
 the mapping `metrics.csvOutputFolder<->csvOutputFolder`. By doing so the property names in the config files do not need
 to
@@ -492,5 +492,5 @@ be changed directly.
 ### Initialization of the config
 
 For the platform the config is provided by the `com.swirlds.common.context.PlatformContext`. Like the context the config
-is defined in the `com.swirlds.platform.Browser` class.
+is defined in the `com.swirlds.platform.browser.Browser` class.
 

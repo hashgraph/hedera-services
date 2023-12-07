@@ -83,13 +83,6 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring.wires.output;
 
     /* Targeted exports */
-    exports com.swirlds.common.internal to
-            com.swirlds.platform.core,
-            com.swirlds.platform.test,
-            com.swirlds.common.testing,
-            com.swirlds.jrs,
-            com.swirlds.demo.platform,
-            com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform.core,
             com.swirlds.common.test.fixtures,

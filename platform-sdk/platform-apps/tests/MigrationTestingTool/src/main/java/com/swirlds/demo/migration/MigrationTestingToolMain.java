@@ -27,7 +27,7 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
-import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.browser.ParameterProvider;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

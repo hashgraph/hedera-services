@@ -32,7 +32,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import com.swirlds.platform.Browser;
+import com.swirlds.platform.browser.Browser;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import org.apache.logging.log4j.LogManager;

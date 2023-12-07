@@ -24,7 +24,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.startup.CommandLineArgs;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Browser;
+import com.swirlds.platform.browser.Browser;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;

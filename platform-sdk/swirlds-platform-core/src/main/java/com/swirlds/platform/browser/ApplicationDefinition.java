@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.internal;
+package com.swirlds.platform.browser;
 
 import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;

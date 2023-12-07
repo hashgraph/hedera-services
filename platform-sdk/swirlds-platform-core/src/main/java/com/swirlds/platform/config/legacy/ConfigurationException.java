@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.internal;
+package com.swirlds.platform.config.legacy;
 
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.logging.legacy.LogMarker;

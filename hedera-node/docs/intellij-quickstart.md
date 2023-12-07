@@ -38,7 +38,7 @@ This will both,
 
 Now browse to `com.hedera.node.app.ServicesMain`. Its
 `main` method starts a single node network of Hedera Service by
-calling `com.swirlds.platform.Browser#main`, which is the
+calling `com.swirlds.platform.browser.Browser#main`, which is the
 entrypoint to bootstrap the Platform app named by the
 [_config.txt_](../hedera-node/config.txt) in the working
 directory.

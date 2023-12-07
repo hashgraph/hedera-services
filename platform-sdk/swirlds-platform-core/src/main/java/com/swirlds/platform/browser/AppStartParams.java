@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.browser;
 
 import java.nio.file.Path;
 

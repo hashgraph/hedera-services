@@ -16,7 +16,8 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.common.internal.ConfigurationException;
+import com.swirlds.platform.browser.ApplicationDefinitionLoader;
+import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
