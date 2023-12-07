@@ -38,7 +38,7 @@ jobs:
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: temurin
-          java-version: 17.0.3
+          java-version: 17.0.9
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
@@ -51,6 +51,9 @@ jobs:
         with:
           gradle-version: wrapper
           arguments: assemble --scan
+
+      - name: Disable Gradle Configuration Cache
+        run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties
 
       - name: Setup NodeJS
         uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
@@ -66,4 +69,4 @@ jobs:
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk monitor --all-sub-projects
+        run: snyk monitor --all-sub-projects --policy-path=.snyk --trust-policies
