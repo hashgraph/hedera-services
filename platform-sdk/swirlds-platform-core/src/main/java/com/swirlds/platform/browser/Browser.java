@@ -32,7 +32,6 @@ import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.startup.CommandLineArgs;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldMain;

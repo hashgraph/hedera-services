@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.startup;
+package com.swirlds.platform.browser;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
