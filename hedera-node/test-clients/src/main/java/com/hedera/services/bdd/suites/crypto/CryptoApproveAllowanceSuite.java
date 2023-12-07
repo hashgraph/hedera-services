@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -607,9 +606,8 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .blankMemo()
                                 .hasPrecheck(INVALID_ALLOWANCE_OWNER_ID))
                 .then(getAccountDetails(OWNER)
-                        .payingWith(GENESIS)
-                        .hasCostAnswerPrecheck(ACCOUNT_DELETED)
-                        .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        .has(accountDetailsWith().deleted(true))
+                        .payingWith(GENESIS));
     }
 
     @HapiTest
