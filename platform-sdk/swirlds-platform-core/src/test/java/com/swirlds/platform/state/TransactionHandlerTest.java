@@ -28,12 +28,15 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -76,14 +79,18 @@ class TransactionHandlerTest {
     }
 
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor = new EventDescriptor(
+                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
                         new NodeId(0L),
-                        0L,
-                        0L,
-                        CryptographyHolder.get().getNullHash(),
-                        CryptographyHolder.get().getNullHash(),
+                        selfDescriptor,
+                        Collections.singletonList(otherDescriptor),
+                        EventConstants.BIRTH_ROUND_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

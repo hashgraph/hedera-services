@@ -70,11 +70,25 @@ public class HandleHederaOperations implements HederaOperations {
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
+    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
+            CryptoUpdateTransactionBody.newBuilder()
+                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
+
+    private static final CryptoCreateTransactionBody.Builder CREATE_TXN_BODY_BUILDER =
+            CryptoCreateTransactionBody.newBuilder()
+                    .initialBalance(0)
+                    .maxAutomaticTokenAssociations(0)
+                    .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS))
+                    .key(IMMUTABILITY_SENTINEL_KEY)
+                    .memo(LAZY_MEMO);
+
     private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
     private final ContractsConfig contractsConfig;
     private final SystemContractGasCalculator gasCalculator;
     private final HederaConfig hederaConfig;
+    private final SystemContractGasCalculator gasCalculator;
+
     private final HandleContext context;
 
     @Inject
@@ -91,6 +105,7 @@ public class HandleHederaOperations implements HederaOperations {
         this.tinybarValues = requireNonNull(tinybarValues);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.hederaConfig = requireNonNull(hederaConfig);
+        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     /**
@@ -169,17 +184,14 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long lazyCreationCostInGas(@NonNull final Address recipient) {
-        // Calculate gas for a lazy create TransactionBody with an alias address
-        final var creatBuilder = CryptoCreateTransactionBody.newBuilder()
-                .initialBalance(0)
-                .maxAutomaticTokenAssociations(0)
-                .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS))
-                .key(IMMUTABILITY_SENTINEL_KEY)
-                .alias(tuweniToPbjBytes(recipient))
-                .memo(LAZY_MEMO);
-        final var createBody = TransactionBody.newBuilder().cryptoCreateAccount(creatBuilder.build());
         final var payerId = context.payer();
-        final var createFee = gasCalculator.gasRequirement(createBody.build(), DispatchType.CRYPTO_CREATE, payerId);
+        // Calculate gas for a CryptoCreateTransactionBody with an alias address
+        final var createFee = gasCalculator.gasRequirement(
+                TransactionBody.newBuilder()
+                        .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
+                        .build(),
+                DispatchType.CRYPTO_CREATE,
+                payerId);
 
         // Calculate gas for an update TransactionBody
         final var updateFee = gasCalculator.gasRequirement(
@@ -188,21 +200,8 @@ public class HandleHederaOperations implements HederaOperations {
                         .build(),
                 DispatchType.CRYPTO_UPDATE,
                 payerId);
-        return createFee + updateFee;
-    }
 
-    /**
-     * Get fees for auto creation.
-     * @param syntheticTransaction transaction body for auto creation
-     * @param syntheticPayerId payerId for the transaction
-     * @return fee for auto creation
-     */
-    private long autoCreationFeeFor(
-            @NonNull final TransactionBody.Builder syntheticTransaction, @NonNull AccountID syntheticPayerId) {
-        requireNonNull(syntheticTransaction);
-        requireNonNull(syntheticPayerId);
-        final var fees = context.dispatchComputeFees(syntheticTransaction.build(), syntheticPayerId);
-        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
+        return createFee + updateFee;
     }
 
     /**
