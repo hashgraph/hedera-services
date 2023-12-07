@@ -98,13 +98,13 @@ class AccountStoreTest {
     void isContractUsableForValidContractReturnsTrue() {
         miscMerkleAccount.setSmartContract(true);
         setupWithUnexpiredAccount(miscMerkleId, miscMerkleAccount);
-        assertTrue(subject.isContractUsable(miscId).left());
+        assertTrue(OK.equals(subject.isContractUsable(miscId)));
     }
 
     @Test
     void isContractUsableForInvalidContractReturnsFalse() {
         final Id nonExistingId = new Id(0L, 0L, 999_999_999L);
-        assertFalse(subject.isContractUsable(nonExistingId).left());
+        assertFalse(OK.equals(subject.isContractUsable(nonExistingId)));
     }
 
     @Test

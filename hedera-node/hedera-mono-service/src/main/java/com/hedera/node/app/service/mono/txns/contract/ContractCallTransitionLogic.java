@@ -310,16 +310,16 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                                 || isTokenAccount,
                         INVALID_CONTRACT_ID);
             } else {
-                if (!isUsableContract.left()) {
+                if (!OK.equals(isUsableContract)) {
                     // call to non-existing contract flow
-                    validateTrue(!EVM_VERSION_0_30.equals(properties.evmVersion()), isUsableContract.right());
-                    validateTrue(!EVM_VERSION_0_34.equals(properties.evmVersion()), isUsableContract.right());
-                    validateTrue(!EVM_VERSION_0_38.equals(properties.evmVersion()), isUsableContract.right());
-                    validateTrue(properties.allowCallsToNonContractAccounts(), isUsableContract.right());
+                    validateTrue(!EVM_VERSION_0_30.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(!EVM_VERSION_0_34.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(!EVM_VERSION_0_38.equals(properties.evmVersion()), isUsableContract);
+                    validateTrue(properties.allowCallsToNonContractAccounts(), isUsableContract);
                 }
             }
 
-            if (isUsableContract.left()) {
+            if (OK.equals(isUsableContract)) {
                 return accountStore.loadContract(unaliasedTargetId);
             } else {
                 return new Account(unaliasedTargetId);
