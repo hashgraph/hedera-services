@@ -49,27 +49,6 @@ public interface SystemContractOperations {
             @NonNull Class<T> recordBuilderClass);
 
     /**
-     * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
-     * {@link HandleHederaOperations}, performing signature verification with priority given to the included
-     * {@code VerificationStrategy}.
-     *
-     * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
-     * of this dispatch should be removed.
-     *
-     * @param syntheticBody the synthetic transaction to dispatch
-     * @param strategy             the non-cryptographic signature verification to use
-     * @param syntheticPayerId     the payer of the synthetic transaction
-     * @param recordBuilderClass  the class of the record builder to use
-     * @return the result of the dispatch
-     */
-    @NonNull
-    <T> T dispatchRemovable(
-            @NonNull TransactionBody syntheticBody,
-            @NonNull VerificationStrategy strategy,
-            @NonNull AccountID syntheticPayerId,
-            @NonNull Class<T> recordBuilderClass);
-
-    /**
      * Externalizes the preemption of the given {@code syntheticTransaction} hat would have otherwise been
      * dispatched in the context of the current {@link HandleHederaOperations}.
      *

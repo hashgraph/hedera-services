@@ -30,7 +30,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -75,28 +74,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
         return context.dispatchChildTransaction(
                 syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull <T> T dispatchRemovable(
-            @NonNull final TransactionBody syntheticBody,
-            @NonNull final VerificationStrategy strategy,
-            @NonNull final AccountID syntheticPayerId,
-            @NonNull final Class<T> recordBuilderClass) {
-        requireNonNull(syntheticBody);
-        requireNonNull(strategy);
-        requireNonNull(syntheticPayerId);
-        requireNonNull(recordBuilderClass);
-
-        return context.dispatchRemovableChildTransaction(
-                syntheticBody,
-                recordBuilderClass,
-                activeSignatureTestWith(strategy),
-                syntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     @Override

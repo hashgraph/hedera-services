@@ -59,18 +59,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public @NonNull <T> T dispatchRemovable(
-            @NonNull final TransactionBody syntheticTransaction,
-            @NonNull final VerificationStrategy strategy,
-            @NonNull AccountID syntheticPayerId,
-            @NonNull Class<T> recordBuilderClass) {
-        throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
-    }
-
     @Override
     public ContractCallRecordBuilder externalizePreemptedDispatch(
             @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
