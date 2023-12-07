@@ -53,6 +53,7 @@ import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
@@ -187,6 +188,7 @@ public final class Hedera implements SwirldMain {
     private ThrottleAccumulator backendThrottle;
     private ThrottleAccumulator frontendThrottle;
     private CongestionMultipliers congestionMultipliers;
+    private final SyntheticRecordsGenerator recordsGenerator;
 
     /**
      * The application name from the platform's perspective. This is currently locked in at the old main class name and
@@ -242,7 +244,9 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(version.getServicesVersion()),
                 () -> HapiUtils.toString(version.getHapiVersion()));
 
-        // Create a record builder for any genesis records that need to be created
+        // Create a records generator for any synthetic records that need to be CREATED
+        this.recordsGenerator = new SyntheticRecordsGenerator();
+        // Create a records builder for any genesis records that need to be RECORDED
         this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
 
         // Create all the service implementations
@@ -258,7 +262,12 @@ public final class Hedera implements SwirldMain {
                         new FreezeServiceImpl(),
                         new NetworkServiceImpl(),
                         new ScheduleServiceImpl(),
-                        new TokenServiceImpl(),
+                        new TokenServiceImpl(
+                                recordsGenerator::sysAcctRecords,
+                                recordsGenerator::stakingAcctRecords,
+                                recordsGenerator::treasuryAcctRecords,
+                                recordsGenerator::multiUseAcctRecords,
+                                recordsGenerator::blocklistAcctRecords),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
@@ -355,8 +364,34 @@ public final class Hedera implements SwirldMain {
             @NonNull final SwirldDualState dualState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
+        // Initialize the configuration from disk. We must do this BEFORE we run migration, because the various
+        // migration methods may depend on configuration to do their work. For example, the token service migration code
+        // needs to know the token treasury account, which has an account ID specified in config. The initial config
+        // file in state, created by the file service migration, will match what we have here, so we don't have to worry
+        // about re-loading config after migration.
+        logger.info("Initializing configuration with trigger {}", trigger);
+        configProvider = new ConfigProviderImpl(trigger == GENESIS);
+        logConfiguration();
 
-        // We do nothing for EVENT_STREAM_RECOVERY. This is a special case that is handled by the platform.
+        // Determine if we need to create synthetic records for system entities
+        final var blockRecordState = state.createReadableStates(BlockRecordService.NAME);
+        boolean createSynthRecords = false;
+        if (!blockRecordState.isEmpty()) {
+            final var blockInfo = blockRecordState
+                    .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
+                    .get();
+            if (blockInfo == null || blockInfo.consTimeOfLastHandledTxn() == null) {
+                createSynthRecords = true;
+            }
+        } else {
+            createSynthRecords = true;
+        }
+        if (createSynthRecords) {
+            recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
+        }
+
+        // We do nothing else for EVENT_STREAM_RECOVERY, which for now is broken. This is a special case that is handled
+        // by the platform, and we need to figure out how to make it work with the modular app.
         if (trigger == EVENT_STREAM_RECOVERY) {
             logger.debug("Skipping state initialization for trigger {}", trigger);
             return;
@@ -717,15 +752,6 @@ public final class Hedera implements SwirldMain {
      */
     private void genesis(@NonNull final MerkleHederaState state) {
         logger.debug("Genesis Initialization");
-
-        // Initialize the configuration from disk (genesis case). We must do this BEFORE we run migration, because
-        // the various migration methods may depend on configuration to do their work. For example, the token service
-        // migration code needs to know the token treasury account, which has an account ID specified in config.
-        // The initial config file in state, created by the file service migration, will match what we have here,
-        // so we don't have to worry about re-loading config after migration.
-        logger.info("Initializing genesis configuration");
-        this.configProvider = new ConfigProviderImpl(true);
-        logConfiguration();
 
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();

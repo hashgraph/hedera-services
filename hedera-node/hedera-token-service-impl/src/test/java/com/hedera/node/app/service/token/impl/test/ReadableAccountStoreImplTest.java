@@ -30,6 +30,7 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -234,5 +235,19 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
     void getSizeOfState() {
         final var store = new ReadableAccountStoreImpl(readableStates);
         assertEquals(readableStates.get(ACCOUNTS).size(), store.sizeOfAccountState());
+    }
+
+    @Test
+    void containsWorksAsExpected() {
+        // Subject is pre-populated with this ID
+        assertThat(subject.contains(id)).isTrue();
+
+        // Pass any account ID that isn't in the store
+        assertThat(subject.contains(
+                        AccountID.newBuilder().accountNum(Long.MAX_VALUE).build()))
+                .isFalse();
+
+        //noinspection DataFlowIssue
+        Assertions.assertThatThrownBy(() -> subject.contains(null)).isInstanceOf(NullPointerException.class);
     }
 }

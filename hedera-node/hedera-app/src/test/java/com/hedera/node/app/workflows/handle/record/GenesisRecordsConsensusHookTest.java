@@ -16,25 +16,21 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import java.time.Instant;
-import java.util.Map;
+import java.util.TreeSet;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,10 +49,6 @@ class GenesisRecordsConsensusHookTest {
             Account.newBuilder().accountId(ACCOUNT_ID_1).build();
     private static final Account ACCOUNT_2 =
             Account.newBuilder().accountId(ACCOUNT_ID_2).build();
-    private static final CryptoCreateTransactionBody ACCT_1_CREATE =
-            CryptoCreateTransactionBody.newBuilder().memo("builder1").build();
-    private static final CryptoCreateTransactionBody ACCT_2_CREATE =
-            CryptoCreateTransactionBody.newBuilder().memo("builder2").build();
     private static final Instant CONSENSUS_NOW = Instant.parse("2023-08-10T00:00:00Z");
 
     private static final String EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
@@ -88,102 +80,100 @@ class GenesisRecordsConsensusHookTest {
 
     @Test
     void processCreatesSystemAccounts() {
-        subject.systemAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        accts.add(ACCOUNT_2);
+        subject.systemAccounts(accts);
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
     }
 
     @Test
-    void processCreatesStakingAccountsWithImplicitExpiry() {
-        subject.stakingAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+    void processCreatesStakingAccounts() {
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        accts.add(ACCOUNT_2);
+        subject.stakingAccounts(accts);
 
         subject.process(context);
 
-        final var expectedAutoRenew = FUNDING_ACCOUNT_EXPIRY - CONSENSUS_NOW.getEpochSecond();
-        verifyBuilderInvoked(
-                ACCOUNT_ID_1,
-                ACCT_1_CREATE
-                        .copyBuilder()
-                        .autoRenewPeriod(
-                                Duration.newBuilder().seconds(expectedAutoRenew).build())
-                        .build(),
-                EXPECTED_STAKING_MEMO);
-        verifyBuilderInvoked(
-                ACCOUNT_ID_2,
-                ACCT_2_CREATE
-                        .copyBuilder()
-                        .autoRenewPeriod(
-                                Duration.newBuilder().seconds(expectedAutoRenew).build())
-                        .build(),
-                EXPECTED_STAKING_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_STAKING_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
     }
 
     @Test
     void processCreatesMultipurposeAccounts() {
-        subject.miscAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        accts.add(ACCOUNT_2);
+        subject.miscAccounts(accts);
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, null);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, null);
+        verifyBuilderInvoked(ACCOUNT_ID_1, null);
+        verifyBuilderInvoked(ACCOUNT_ID_2, null);
     }
 
     @Test
     void processCreatesTreasuryClones() {
-        subject.treasuryClones(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        accts.add(ACCOUNT_2);
+        subject.treasuryClones(accts);
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_TREASURY_CLONE_MEMO);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, EXPECTED_TREASURY_CLONE_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_TREASURY_CLONE_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_TREASURY_CLONE_MEMO);
     }
 
     @Test
     void processCreatesBlocklistAccounts() {
-        subject.blocklistAccounts(
-                Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        accts.add(ACCOUNT_2);
+        subject.blocklistAccounts(accts);
 
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, null);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, null);
+        verifyBuilderInvoked(ACCOUNT_ID_1, null);
+        verifyBuilderInvoked(ACCOUNT_ID_2, null);
     }
 
     @Test
     void processCreatesAllRecords() {
         final var acctId3 = ACCOUNT_ID_1.copyBuilder().accountNum(3).build();
         final var acct3 = ACCOUNT_1.copyBuilder().accountId(acctId3).build();
-        final var acct3Create = ACCT_1_CREATE.copyBuilder().memo("builder3").build();
         final var acctId4 = ACCOUNT_ID_1.copyBuilder().accountNum(4).build();
         final var acct4 = ACCOUNT_1.copyBuilder().accountId(acctId4).build();
-        final var acct4Create = ACCT_1_CREATE.copyBuilder().memo("builder4").build();
         final var acctId5 = ACCOUNT_ID_1.copyBuilder().accountNum(5).build();
         final var acct5 = ACCOUNT_1.copyBuilder().accountId(acctId5).build();
-        final var acct5Create = ACCT_1_CREATE.copyBuilder().memo("builder5").build();
-        subject.systemAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder()));
-        subject.stakingAccounts(Map.of(ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
-        subject.miscAccounts(Map.of(acct3, acct3Create.copyBuilder()));
-        subject.treasuryClones(Map.of(acct4, acct4Create.copyBuilder()));
-        subject.blocklistAccounts(Map.of(acct5, acct5Create.copyBuilder()));
+        final var sysAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        sysAccts.add(ACCOUNT_1);
+        subject.systemAccounts(sysAccts);
+        final var stakingAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        stakingAccts.add(ACCOUNT_2);
+        subject.stakingAccounts(stakingAccts);
+        final var miscAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        miscAccts.add(acct3);
+        subject.miscAccounts(miscAccts);
+        final var treasuryAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        treasuryAccts.add(acct4);
+        subject.treasuryClones(treasuryAccts);
+        final var blocklistAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        blocklistAccts.add(acct5);
+        subject.blocklistAccounts(blocklistAccts);
 
         // Call the first time to make sure records are generated
         subject.process(context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
-        verifyBuilderInvoked(
-                ACCOUNT_ID_2,
-                ACCT_2_CREATE
-                        .copyBuilder()
-                        .autoRenewPeriod(Duration.newBuilder()
-                                .seconds(FUNDING_ACCOUNT_EXPIRY - CONSENSUS_NOW.getEpochSecond())
-                                .build())
-                        .build(),
-                EXPECTED_STAKING_MEMO);
-        verifyBuilderInvoked(acctId3, acct3Create, null);
-        verifyBuilderInvoked(acctId4, acct4Create, EXPECTED_TREASURY_CLONE_MEMO);
-        verifyBuilderInvoked(acctId5, acct5Create, null);
+        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
+        verifyBuilderInvoked(acctId3, null);
+        verifyBuilderInvoked(acctId4, EXPECTED_TREASURY_CLONE_MEMO);
+        verifyBuilderInvoked(acctId5, null);
 
         // Call process() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
@@ -207,8 +197,9 @@ class GenesisRecordsConsensusHookTest {
                                 .nanos(CONSENSUS_NOW.getNano()))
                         .build());
         // Add a single account, so we know the subject isn't skipping processing because there's no data
-        subject.stakingAccounts(
-                Map.of(Account.newBuilder().accountId(ACCOUNT_ID_1).build(), ACCT_1_CREATE.copyBuilder()));
+        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
+        accts.add(ACCOUNT_1);
+        subject.stakingAccounts(accts);
 
         subject.process(context);
 
@@ -245,20 +236,12 @@ class GenesisRecordsConsensusHookTest {
         Assertions.assertThatThrownBy(() -> subject.blocklistAccounts(null)).isInstanceOf(NullPointerException.class);
     }
 
-    private void verifyBuilderInvoked(
-            final AccountID acctId, final CryptoCreateTransactionBody acctCreateBody, final String expectedMemo) {
+    private void verifyBuilderInvoked(final AccountID acctId, final String expectedMemo) {
         verify(genesisAccountRecordBuilder).accountID(acctId);
-        verify(genesisAccountRecordBuilder).transaction(asCryptoCreateTxn(acctCreateBody));
         if (expectedMemo != null)
             verify(genesisAccountRecordBuilder, atLeastOnce()).memo(expectedMemo);
         //noinspection DataFlowIssue
         verify(genesisAccountRecordBuilder, Mockito.never()).memo(null);
-    }
-
-    private static Transaction asCryptoCreateTxn(CryptoCreateTransactionBody body) {
-        return Transaction.newBuilder()
-                .body(TransactionBody.newBuilder().cryptoCreateAccount(body))
-                .build();
     }
 
     private static BlockInfo defaultStartupBlockInfo() {
