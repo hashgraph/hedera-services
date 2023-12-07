@@ -109,10 +109,10 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
             @NonNull final MessageFrame frame, @NonNull final Optional<ExceptionalHaltReason> haltReason) {
         requireNonNull(frame);
         requireNonNull(haltReason);
-        // It is important NOT to finalize the last action on the stack unless the creation
-        // failed, as otherwise the action could accidentally be finalized twice depending
-        // on the value returned from this tracer's isExtendedTracing()---c.f. the call in
-        // ContractCreationProcessor given both the deposit fee passing validation rules.
+        // It is important NOT to finalize the last action on the stack unless a halt reason
+        // is present, as otherwise the same action could be finalized twice depending on the
+        // value returned from this tracer's isExtendedTracing()---c.f. the call in Besu's
+        // ContractCreationProcessor given both the deposit fee and passing validation rules.
         // It is equally important that we DO finalize the last action here when a halt
         // reason is present, since that means creation failed before executing the frame's
         // code, and tracePostExecution() will never be called; so this is our only chance
