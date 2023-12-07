@@ -314,6 +314,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
     }
 
+    @HapiTest
     private HapiSpec canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
                 .given(
