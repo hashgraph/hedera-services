@@ -69,6 +69,7 @@ import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Comparator;
@@ -221,6 +222,8 @@ class ContractCallTransitionLogicTest {
                 .willReturn(true);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
+
         // when:
         subject.doStateTransition();
 
@@ -263,6 +266,8 @@ class ContractCallTransitionLogicTest {
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
+
         // when:
         subject.doStateTransitionOperation(
                 accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
@@ -304,6 +309,7 @@ class ContractCallTransitionLogicTest {
                         false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
                 .willReturn(true);
         given(entityAccess.isTokenAccount(any())).willReturn(true);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
         var results = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
         given(evmTxProcessor.executeEth(
@@ -445,6 +451,7 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
 
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(
@@ -465,6 +472,7 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
 
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(
@@ -485,6 +493,7 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_38);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
 
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(
@@ -505,6 +514,7 @@ class ContractCallTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(properties.allowCallsToNonContractAccounts()).willReturn(false);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
 
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(
@@ -678,6 +688,7 @@ class ContractCallTransitionLogicTest {
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
         // when:
         subject.doStateTransition();
 
@@ -723,6 +734,8 @@ class ContractCallTransitionLogicTest {
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.isContractUsable(any())).willReturn(Pair.of(Boolean.FALSE, INVALID_CONTRACT_ID));
+
         // when:
         subject.doStateTransition();
 

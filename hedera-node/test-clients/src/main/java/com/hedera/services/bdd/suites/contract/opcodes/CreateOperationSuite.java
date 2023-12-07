@@ -84,7 +84,6 @@ public class CreateOperationSuite extends HapiSuite {
                 resetOnFactoryFailureAfterDeploymentWorks(),
                 resetOnStackedFactoryFailureWorks(),
                 inheritanceOfNestedCreatedContracts(),
-                factoryAndSelfDestructInConstructorContract(),
                 factoryQuickSelfDestructContract(),
                 contractCreateWithNewOpInConstructorAbandoningParent(),
                 childContractStorageWorks());

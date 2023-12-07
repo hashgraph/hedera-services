@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -110,7 +111,8 @@ public class Evm38ValidationSuite extends HapiSuite {
                 verifiesExistenceForExtCodeHash(),
                 verifiesExistenceForStaticCall(),
                 canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
-                callingDestructedContractReturnsStatusDeleted());
+                callingDestructedContractReturnsStatusDeleted(),
+                factoryAndSelfDestructInConstructorContract());
     }
 
     @HapiTest
@@ -644,7 +646,24 @@ public class Evm38ValidationSuite extends HapiSuite {
                                 .gas(1_000_000L)))
                 .then(contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(15), BigInteger.valueOf(434))
                         .gas(350_000L)
-                        .hasKnownStatus(INVALID_CONTRACT_ID));
+                        .hasKnownStatus(CONTRACT_DELETED));
+    }
+
+    @HapiTest
+    private HapiSpec factoryAndSelfDestructInConstructorContract() {
+        final var contract = "FactorySelfDestructConstructor";
+
+        final var sender = "sender";
+        return propertyPreservingHapiSpec("factoryAndSelfDestructInConstructorContract")
+                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
+                .given(
+                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
+                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        uploadInitCode(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                        contractCreate(contract).balance(10).payingWith(sender))
+                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
+                .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
     @Override
