@@ -28,8 +28,7 @@ defaults:
 env:
   TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
-  VERSION_SERVICE : "v0.43.0"
-  VERSION_MIRRORNODE : "v0.90.0-rc1"
+  VERSION_MIRRORNODE : "custom"
   K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
 
   USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
@@ -125,4 +124,4 @@ jobs:
       - name: Call Test Script
         id: call-test-script
         run: |
-          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ env.VERSION_SERVICE }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
+          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ steps.check-if-exist.outputs.build-version }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
