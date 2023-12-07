@@ -832,26 +832,26 @@ class RecordListBuilderTest extends AppTestBase {
                 .hasTransaction(child3Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(4))
-                // child4 was removed, leaving a gap in consensus time.
-                .nanosAfter(5, result.userTransactionRecord())
+                // child4 was removed, but for mono-service fidelity we "smooth" the gap in consensus times
+                .nanosAfter(4, result.userTransactionRecord())
                 .hasNonce(4) // child5 gets the 4th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child5Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(5))
-                .nanosAfter(6, result.userTransactionRecord()) // immediately after child5
+                .nanosAfter(5, result.userTransactionRecord()) // immediately after child5
                 .hasNonce(5) // child6 gets the 5th nonce since child4 was removed
                 .hasResponseCode(REVERTED_SUCCESS)
                 .hasTransaction(child6Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(6))
-                .nanosAfter(7, result.userTransactionRecord())
+                .nanosAfter(6, result.userTransactionRecord())
                 .hasNonce(6)
                 .hasResponseCode(OK)
                 .hasTransaction(child8Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(7))
-                .nanosAfter(8, result.userTransactionRecord())
+                .nanosAfter(7, result.userTransactionRecord())
                 .hasNonce(7)
                 .hasResponseCode(OK)
                 .hasTransaction(child9Tx)

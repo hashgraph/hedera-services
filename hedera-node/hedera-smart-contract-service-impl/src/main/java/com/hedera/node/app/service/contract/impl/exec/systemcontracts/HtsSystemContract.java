@@ -46,6 +46,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class HtsSystemContract extends AbstractFullContract implements HederaSystemContract {
+
     private static final Logger log = LogManager.getLogger(HtsSystemContract.class);
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
@@ -83,6 +84,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         return resultOfExecuting(attempt, call, input, frame);
     }
 
+    @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.
     private static FullResult resultOfExecuting(
             @NonNull final HtsCallAttempt attempt,
             @NonNull final HtsCall call,
@@ -124,6 +126,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 }
             }
         } catch (final HandleException handleException) {
+            // TODO - this is almost certainly not the right way to handle this!
             throw handleException;
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
