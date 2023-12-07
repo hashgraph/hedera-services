@@ -80,4 +80,4 @@ public record ContractsConfig(
                 boolean evmAllowCallsToNonContractAccounts,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.45") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.46") @NetworkProperty String evmVersion) {}

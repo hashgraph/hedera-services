@@ -27,10 +27,10 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * Qualifies a binding for use with the {@code v0.45} Services EVM.
+ * Qualifies a binding for use with the {@code v0.46} Services EVM.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
 @Qualifier
-public @interface ServicesV045 {}
+public @interface ServicesV046 {}

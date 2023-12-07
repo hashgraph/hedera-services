@@ -19,12 +19,12 @@ package com.hedera.node.app.service.contract.impl;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_030;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_034;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_045;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
-import com.hedera.node.app.service.contract.impl.annotations.ServicesV045;
+import com.hedera.node.app.service.contract.impl.annotations.ServicesV046;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesVersionKey;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
@@ -78,6 +78,6 @@ public interface ContractServiceModule {
     @Binds
     @IntoMap
     @Singleton
-    @ServicesVersionKey(VERSION_045)
-    TransactionProcessor bindV045Processor(@ServicesV045 @NonNull final TransactionProcessor processor);
+    @ServicesVersionKey(VERSION_046)
+    TransactionProcessor bindV045Processor(@ServicesV046 @NonNull final TransactionProcessor processor);
 }
