@@ -72,4 +72,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "true") boolean useLegacyIntake) {}
+        @ConfigProperty(defaultValue = "false") boolean useLegacyIntake) {}
