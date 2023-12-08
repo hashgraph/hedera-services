@@ -64,11 +64,6 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 initialContractNonce);
     }
 
-    enum HaltShouldTraceAccountCreation {
-        YES,
-        NO
-    }
-
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var addressToCreate = frame.getContractAddress();
@@ -76,21 +71,22 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         try {
             contract = frame.getWorldUpdater().getOrCreate(addressToCreate);
         } catch (ResourceExhaustedException ignore) {
-            halt(frame, tracer, FAILED_CREATION_HALT_REASON, HaltShouldTraceAccountCreation.YES);
+            halt(frame, tracer, FAILED_CREATION_HALT_REASON);
             return;
         }
 
         if (alreadyCreated(contract)) {
-            halt(frame, tracer, COLLISION_HALT_REASON, HaltShouldTraceAccountCreation.YES);
+            halt(frame, tracer, COLLISION_HALT_REASON);
         } else {
             final var updater = proxyUpdaterFor(frame);
             // A contract creation is never a delegate call, hence the false argument below
             final var maybeReasonToHalt = updater.tryTransfer(
                     frame.getSenderAddress(), addressToCreate, frame.getValue().toLong(), false);
             if (maybeReasonToHalt.isPresent()) {
-                // Besu doesn't trace the creation on a modification exception, so seems
-                // like we shouldn't do it here either; but may need a bit more consideration
-                halt(frame, tracer, maybeReasonToHalt, HaltShouldTraceAccountCreation.NO);
+                // For some reason Besu doesn't trace the creation on a modification exception, but
+                // since our tracer maintains an action stack that must stay in sync with the EVM
+                // frame stack, we need to trace the failed creation here too
+                halt(frame, tracer, maybeReasonToHalt);
             } else {
                 contract.setNonce(INITIAL_CONTRACT_NONCE);
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
@@ -101,13 +97,10 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     private void halt(
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer,
-            @NonNull final Optional<ExceptionalHaltReason> reason,
-            @NonNull final HaltShouldTraceAccountCreation shouldTraceAccountCreation) {
+            @NonNull final Optional<ExceptionalHaltReason> reason) {
         frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
         frame.setExceptionalHaltReason(reason);
-        if (shouldTraceAccountCreation == HaltShouldTraceAccountCreation.YES) {
-            tracer.traceAccountCreationResult(frame, reason);
-        }
+        tracer.traceAccountCreationResult(frame, reason);
     }
 
     private boolean alreadyCreated(final MutableAccount account) {

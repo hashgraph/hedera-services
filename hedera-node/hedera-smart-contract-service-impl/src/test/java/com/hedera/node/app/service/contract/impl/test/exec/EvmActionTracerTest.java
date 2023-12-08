@@ -31,6 +31,7 @@ import java.util.Deque;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,7 +141,7 @@ class EvmActionTracerTest {
 
         subject.tracePostExecution(frame, new Operation.OperationResult(123, null));
 
-        verify(actionStack).finalizeLastAction(ActionStack.Source.POPPED_FROM_STACK, frame, ActionStack.Validation.ON);
+        verify(actionStack).finalizeLastAction(frame, ActionStack.Validation.ON);
     }
 
     @Test
@@ -172,12 +173,21 @@ class EvmActionTracerTest {
     }
 
     @Test
-    void accountCreationTraceFinalizesWithSidecars() {
+    void accountCreationTraceDoesNotFinalizesEvenWithSidecarsUnlessHaltReasonProvided() {
         givenActionSidecarsAndValidation();
 
         subject.traceAccountCreationResult(frame, Optional.empty());
 
-        verify(actionStack).finalizeLastAction(ActionStack.Source.READ_FROM_LIST_END, frame, ActionStack.Validation.ON);
+        verifyNoInteractions(actionStack);
+    }
+
+    @Test
+    void accountCreationTraceFinalizesWithSidecarsAndHaltReason() {
+        givenActionSidecarsAndValidation();
+
+        subject.traceAccountCreationResult(frame, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+
+        verify(actionStack).finalizeLastAction(frame, ActionStack.Validation.ON);
     }
 
     private void givenNoActionSidecars() {
