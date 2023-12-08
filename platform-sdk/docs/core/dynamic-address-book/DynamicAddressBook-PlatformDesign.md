@@ -18,7 +18,7 @@ This change takes effect when a node is added in the `currentEffectiveRoster` fo
 ### Remove Node
 
 Existing nodes need to stop gossiping with the removed node. Events from the removed node can still be gossiped,
-validated and come to consensus until the round this new roster takes effect becomes ancient.
+validated and come to consensus until the last roster that includes the removed node becomes ancient.
 
 This change takes effect when a node is removed from the `currentEffectiveRoster` for the `pendingConsensusRound`.
 
