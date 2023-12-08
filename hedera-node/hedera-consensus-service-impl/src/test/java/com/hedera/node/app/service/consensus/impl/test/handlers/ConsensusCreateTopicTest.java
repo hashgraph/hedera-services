@@ -256,7 +256,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -295,7 +294,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -334,7 +332,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
+        //        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
 
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -353,7 +351,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
 
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -373,7 +370,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
         given(handleContext.attributeValidator()).willReturn(validator);
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
@@ -416,8 +412,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
-
         given(handleContext.attributeValidator()).willReturn(validator);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 1L)
@@ -446,8 +440,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(1, topicStore.sizeOfState());
 
         given(handleContext.readableStore(any())).willReturn(accountStore);
-        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
-
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any(), any());
