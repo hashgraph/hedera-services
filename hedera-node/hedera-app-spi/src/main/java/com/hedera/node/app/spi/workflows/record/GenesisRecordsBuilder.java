@@ -17,9 +17,8 @@
 package com.hedera.node.app.spi.workflows.record;
 
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
+import java.util.SortedSet;
 
 /**
  * A class that stores entities created during node startup, for the purpose of creating synthetic
@@ -29,25 +28,25 @@ public interface GenesisRecordsBuilder {
     /**
      * Tracks the system accounts created during node startup
      */
-    void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+    void systemAccounts(@NonNull final SortedSet<Account> accounts);
 
     /**
      * Tracks the staking accounts created during node startup
      */
-    void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+    void stakingAccounts(@NonNull final SortedSet<Account> accounts);
 
     /**
      * Tracks miscellaneous accounts created during node startup. These accounts are typically used for testing
      */
-    void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+    void miscAccounts(@NonNull final SortedSet<Account> accounts);
 
     /**
      * Tracks the treasury clones created during node startup
      */
-    void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+    void treasuryClones(@NonNull final SortedSet<Account> accounts);
 
     /**
      * Tracks the blocklist accounts created during node startup
      */
-    void blocklistAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+    void blocklistAccounts(@NonNull final SortedSet<Account> accounts);
 }
