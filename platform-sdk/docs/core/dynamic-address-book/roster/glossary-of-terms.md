@@ -9,8 +9,8 @@ The most recent round to have reached consensus.  (equal to the pending consensu
 
 ### Pending Consensus Round
 
-The round that the consensus algorithm is currently attempting to reach consensus on. (equal to the latest 
-consensus round + 1)
+The round that the consensus algorithm is currently attempting to reach consensus on. Equal to the latest 
+consensus round + 1.
 
 ### Rounds Non-Ancient
 
