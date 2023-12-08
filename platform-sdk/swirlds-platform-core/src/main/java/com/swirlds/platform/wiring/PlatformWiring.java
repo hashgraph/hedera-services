@@ -17,13 +17,13 @@
 package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -41,7 +41,6 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +49,7 @@ import java.util.Objects;
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
-public class PlatformWiring implements Startable, Stoppable {
+public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PlatformContext platformContext;
     private final WiringModel model;
 
@@ -62,6 +61,8 @@ public class PlatformWiring implements Startable, Stoppable {
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
+
+    private final PlatformCoordinator platformCoordinator;
 
     /**
      * Constructor.
@@ -89,6 +90,14 @@ public class PlatformWiring implements Startable, Stoppable {
             linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
             eventCreationManagerWiring =
                     EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
+            platformCoordinator = new PlatformCoordinator(
+                    internalEventValidatorWiring,
+                    eventDeduplicatorWiring,
+                    eventSignatureValidatorWiring,
+                    orphanBufferWiring,
+                    inOrderLinkerWiring,
+                    linkedEventIntakeWiring,
+                    eventCreationManagerWiring);
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -97,6 +106,7 @@ public class PlatformWiring implements Startable, Stoppable {
             inOrderLinkerWiring = null;
             linkedEventIntakeWiring = null;
             eventCreationManagerWiring = null;
+            platformCoordinator = null;
         }
 
         signedStateFileManagerWiring =
@@ -303,51 +313,17 @@ public class PlatformWiring implements Startable, Stoppable {
     }
 
     /**
-     * Flush all the wiring objects
+     * Clear all the wiring objects.
      */
-    private void flushAll() {
-        internalEventValidatorWiring.flushRunnable().run();
-        eventDeduplicatorWiring.flushRunnable().run();
-        eventSignatureValidatorWiring.flushRunnable().run();
-        orphanBufferWiring.flushRunnable().run();
-        eventCreationManagerWiring.flush();
-        inOrderLinkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
-    }
+    @Override
+    public void clear() {
+        final boolean useLegacyIntake = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyIntake();
 
-    /**
-     * Clear all the wiring objects in preparation for a reconnect.
-     * <p>
-     * This doesn't guarantee that all objects will have nothing in their internal storage, but it does guarantee that
-     * the objects will no longer be emitting any events or rounds.
-     */
-    public void clear(@NonNull final PlatformStatusManager platformStatusManager) {
-        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
-
-            // Prior to clearing, we need to make sure that the proper platform status has become effective.
-            // If due to some crazy race condition we do not have the proper status when we unpause the event
-            // creator then we may accidentally create a new event after flushing out pipelines.
-            while (platformStatusManager.getCurrentStatus() != PlatformStatus.BEHIND) {
-                try {
-                    MILLISECONDS.sleep(1);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            // pause the orphan buffer to break the cycle, and flush the pause through
-            orphanBufferWiring.pauseInput().inject(true);
-            orphanBufferWiring.flushRunnable().run();
-
-            eventCreationManagerWiring.pauseInput().inject(true);
-            eventCreationManagerWiring.flush();
-
-            // now that no cycles exist, flush all the wiring objects
-            flushAll();
-
-            // once everything has been flushed through the system, it's safe to unpause the orphan buffer
-            orphanBufferWiring.pauseInput().inject(false);
-            eventCreationManagerWiring.pauseInput().inject(false);
+        if (!useLegacyIntake) {
+            platformCoordinator.clear();
         }
     }
 }

@@ -32,6 +32,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -250,5 +251,15 @@ public class InOrderLinker {
 
         parentDescriptorMap.shiftWindow(
                 minimumGenerationNonAncient, (descriptor, event) -> parentHashMap.remove(descriptor.getHash()));
+    }
+
+    /**
+     * Clear the internal state of this linker.
+     *
+     * @param ignored ignored trigger object
+     */
+    public void clear(@NonNull final ClearTrigger ignored) {
+        parentDescriptorMap.clear();
+        parentHashMap.clear();
     }
 }
