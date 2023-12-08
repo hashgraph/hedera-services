@@ -39,7 +39,7 @@ public class SimpleLogEventFactory implements LogEventFactory {
             @NonNull Level level,
             @NonNull String loggerName,
             @NonNull String threadName,
-            @NonNull long timestamp,
+            long timestamp,
             @NonNull LogMessage message,
             @Nullable Throwable throwable,
             @Nullable Marker marker,

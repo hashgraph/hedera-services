@@ -20,15 +20,36 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A handler that logs events to the console.
+ *
+ * This class extends the {@link AbstractSyncedHandler} and provides a simple way to log
+ * {@link LogEvent}s to the console using a {@link LineBasedFormat}.
+ *
+ * @see AbstractSyncedHandler
+ * @see LineBasedFormat
+ */
 public class ConsoleHandler extends AbstractSyncedHandler {
 
-    public ConsoleHandler(final Configuration configuration) {
+    /**
+     * Constructs a new ConsoleHandler with the specified configuration.
+     *
+     * @param configuration The configuration for this handler.
+     */
+    public ConsoleHandler(@NonNull final Configuration configuration) {
         super("console", configuration);
     }
 
+    /**
+     * Handles a log event by printing it to the console using the {@link LineBasedFormat},
+     * followed by flushing the console output.
+     *
+     * @param event The log event to be printed.
+     */
     @Override
-    protected void handleEvent(final LogEvent event) {
+    protected void handleEvent(@NonNull final LogEvent event) {
         LineBasedFormat.print(System.out, event);
         System.out.flush();
     }

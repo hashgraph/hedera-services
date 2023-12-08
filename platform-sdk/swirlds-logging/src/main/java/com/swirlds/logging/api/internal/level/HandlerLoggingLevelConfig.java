@@ -32,8 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A configuration that can be used to configure the logging levels of loggers. This class supports to define levels for
- * packages or classes. The configuration is read from the {@link Configuration} object.
+ * This configuration class enables the customization of logging levels for loggers, allowing users to specify levels for either packages or individual classes. The configuration is read from the {@link Configuration} object.
  * <p>
  * Like for example in spring boot a configuration like this can be used:
  * <p>
@@ -88,7 +87,7 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      * @param name        The name.
      */
-    public HandlerLoggingLevelConfig(@NonNull Configuration configuration, @Nullable String name) {
+    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration, @Nullable String name) {
         this.name = name;
         this.levelCache = new ConcurrentHashMap<>();
         this.markerConfigCache = new AtomicReference<>(new ConcurrentHashMap<>());
@@ -100,7 +99,7 @@ public class HandlerLoggingLevelConfig {
      * Creates a new root configuration based on the given configuration.
      * @param configuration The configuration.
      */
-    public HandlerLoggingLevelConfig(@NonNull Configuration configuration) {
+    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration) {
         this(configuration, null);
     }
 
@@ -192,11 +191,19 @@ public class HandlerLoggingLevelConfig {
             final ConfigLevel level =
                     configuration.getValue(configPropertyName, ConfigLevel.class, ConfigLevel.UNDEFINED);
             if (level != ConfigLevel.UNDEFINED) {
-                result.put(name, level);
+                if (containsUpperCase(name)) {
+                    result.put(name, level);
+                } else {
+                    result.put(PROPERTY_PACKAGE_LEVEL.formatted(name), level);
+                }
             }
         });
 
         return Collections.unmodifiableMap(result);
+    }
+
+    private boolean containsUpperCase(@NonNull final String name) {
+        return name.chars().anyMatch(Character::isUpperCase);
     }
 
     /**
@@ -236,11 +243,11 @@ public class HandlerLoggingLevelConfig {
     }
 
     @NonNull
-    private ConfigLevel getConfiguredLevel(@NonNull String name) {
+    private ConfigLevel getConfiguredLevel(@NonNull final String name) {
+        final String stripName = name.strip();
         final Map<String, ConfigLevel> stringConfigLevelMap = levelConfigProperties.get();
         return stringConfigLevelMap.keySet().stream()
-                .filter(n -> name.trim().startsWith(n))
-                .filter(key -> stringConfigLevelMap.get(key) != ConfigLevel.UNDEFINED)
+                .filter(stripName::startsWith)
                 .reduce((a, b) -> {
                     if (a.length() > b.length()) {
                         return a;

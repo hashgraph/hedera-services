@@ -12,8 +12,7 @@ module com.swirlds.logging {
     exports com.swirlds.logging.api.extensions.emergency;
     exports com.swirlds.logging.api.extensions.event;
     exports com.swirlds.logging.api.internal.level to
-            com.swirlds.logging.test.fixtures,
-            com.swirlds.config.impl;
+            com.swirlds.logging.test.fixtures;
     exports com.swirlds.logging.api.internal.emergency to
             com.swirlds.logging.test.fixtures;
     exports com.swirlds.logging.api.internal.format;
@@ -30,6 +29,7 @@ module com.swirlds.logging {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.datatype.jsr310;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
 
     uses LogHandlerFactory;
     uses LogProviderFactory;

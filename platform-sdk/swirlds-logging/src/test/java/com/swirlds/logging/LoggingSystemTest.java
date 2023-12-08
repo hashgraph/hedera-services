@@ -391,7 +391,7 @@ public class LoggingSystemTest {
 
     @Test
     @DisplayName(
-            "That that checks if simple log calls are forwarded correctly will all informations to the configured handler")
+            "Test that checks if simple log calls are forwarded correctly will all information to the configured handler")
     void testSimpleLoggingHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -450,7 +450,7 @@ public class LoggingSystemTest {
     }
 
     @Test
-    @DisplayName("That that accept passes events to the configured handler")
+    @DisplayName("Test that accept passes events to the configured handler")
     void testAcceptHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -485,7 +485,7 @@ public class LoggingSystemTest {
 
     @Test
     @DisplayName(
-            "That that checks if complex log calls are forwarded correctly with all informations to the configured handler")
+            "Test that checks if complex log calls are forwarded correctly with all information to the configured handler")
     void testComplexLoggingHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -566,7 +566,7 @@ public class LoggingSystemTest {
     }
 
     @Test
-    @DisplayName("That that accept passes complex log calls correctly with all informations to the configured handler")
+    @DisplayName("Test that accept passes complex log calls correctly with all informations to the configured handler")
     void testAcceptComnplexHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
