@@ -17,7 +17,7 @@
  * modular application. The {@link com.hedera.node.app.service.mono.context.properties.PropertyNames#WORKFLOWS_ENABLED}
  * flag indicates whether to use the modular workflows or to use the mono-service.
  *
- * <p>The main entry point for the application today is {@link com.swirlds.platform.browser.Browser}, which is
+ * <p>The main entry point for the application today is {@link com.swirlds.platform.Browser}, which is
  * configured to find and load {@link com.hedera.node.app.ServicesMain} as the {@link
  * com.swirlds.platform.system.SwirldMain} of the application. If the {@code WORKFLOWS_ENABLED} flag is set, then {@link
  * com.hedera.node.app.ServicesMain} will create an instance of {@link com.hedera.node.app.Hedera} and delegate to it.

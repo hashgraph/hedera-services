@@ -30,8 +30,8 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.NodeId;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.platform.browser.Browser;
-import com.swirlds.platform.browser.ParameterProvider;
+import com.swirlds.platform.Browser;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.gui.model.GuiModel;

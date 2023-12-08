@@ -95,7 +95,7 @@ shell_echo $LINENO $0 "Start backgorund bash script"
 shell_echo $LINENO $0 "current user is $USER"
 
 # find PID
-processId=$(ps -ef | grep 'com.swirlds.platform.browser.Browser' | grep -v 'grep' | awk '{ printf $2 }')
+processId=$(ps -ef | grep 'com.swirlds.platform.Browser' | grep -v 'grep' | awk '{ printf $2 }')
 shell_echo $LINENO $0 "HGCApp processID=$processId"
 
 # create new working directory
@@ -142,9 +142,9 @@ if [[ "$unamestr" == 'Linux' ]]; then
             java -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:ConcGCThreads=14 \
             -XX:+UseLargePages -Xmx98g -Xms10g -XX:ZMarkStackSpaceLimit=16g -XX:MaxDirectMemorySize=32g \
             -XX:MetaspaceSize=100M  -Xlog:gc*:gc.log  -Dlog4j.configurationFile=log4j2-services-regression.xml \
-            -cp 'data/lib/*' com.swirlds.platform.browser.Browser >>output.log 2>&1 & disown -h
+            -cp 'data/lib/*' com.swirlds.platform.Browser >>output.log 2>&1 & disown -h
         else
-            java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.browser.Browser
+            java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser
         fi
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
@@ -157,7 +157,7 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     sleep 15
 
     shell_echo $LINENO $0 "Restart HGCApp"
-    java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.browser.Browser
+    java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser
 else
     shell_echo $LINENO $0 " untested OS :$platform"
     exit

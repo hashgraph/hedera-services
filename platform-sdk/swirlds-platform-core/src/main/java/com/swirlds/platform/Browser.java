@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.browser;
+package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -37,8 +37,6 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.PlatformBuilder;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.gui.model.GuiModel;

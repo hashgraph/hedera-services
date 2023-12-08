@@ -7,7 +7,7 @@ echo "Kill java process first"
 rm -f exec.log
 
 # solution 1 find PID
-processId=$(ps -ef | grep 'com.swirlds.platform.browser.Browser' | grep -v 'grep' | awk '{ printf $2 }')
+processId=$(ps -ef | grep 'com.swirlds.platform.Browser' | grep -v 'grep' | awk '{ printf $2 }')
 echo "HGCApp processID=$processId" >> exec.log
 kill $processId
 
@@ -22,4 +22,4 @@ sleep 15
 
 echo "Restart HGCApp" >> exec.log
 
-java -Dflag=1 -cp data/lib/swirlds.jar:data/lib/* com.swirlds.platform.browser.Browser
+java -Dflag=1 -cp data/lib/swirlds.jar:data/lib/* com.swirlds.platform.Browser

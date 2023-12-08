@@ -35,7 +35,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.browser.Browser;
+import com.swirlds.platform.Browser;
 import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;

@@ -23,7 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.swirlds.common.NodeId;
-import com.swirlds.platform.browser.Browser;
+import com.swirlds.platform.Browser;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;

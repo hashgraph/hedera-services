@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.browser;
+package com.swirlds.platform;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 

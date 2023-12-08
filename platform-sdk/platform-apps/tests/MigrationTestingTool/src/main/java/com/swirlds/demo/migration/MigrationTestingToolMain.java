@@ -22,7 +22,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
-import com.swirlds.platform.browser.ParameterProvider;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;

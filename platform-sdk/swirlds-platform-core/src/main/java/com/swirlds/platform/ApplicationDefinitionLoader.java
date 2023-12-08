@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.browser;
+package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
