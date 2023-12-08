@@ -87,7 +87,7 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      * @param name        The name.
      */
-    public HandlerLoggingLevelConfig(@NonNull Configuration configuration, @Nullable String name) {
+    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration, @Nullable String name) {
         this.name = name;
         this.levelCache = new ConcurrentHashMap<>();
         this.markerConfigCache = new AtomicReference<>(new ConcurrentHashMap<>());
