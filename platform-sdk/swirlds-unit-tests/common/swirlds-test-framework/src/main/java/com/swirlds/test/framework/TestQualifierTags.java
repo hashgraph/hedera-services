@@ -16,9 +16,6 @@
 
 package com.swirlds.test.framework;
 
-/**
- * Tags that describe various features of a test's behavior or the way that a test should be run.
- */
 public abstract class TestQualifierTags {
 
     /**
@@ -34,5 +31,6 @@ public abstract class TestQualifierTags {
      * Tests in this category should be fixed to not being flaky, or moved to the 'hammer' category (that is also
      * running in isolation) if the fit that category.
      */
+    @Deprecated
     public static final String TIMING_SENSITIVE = "TIMING_SENSITIVE";
 }

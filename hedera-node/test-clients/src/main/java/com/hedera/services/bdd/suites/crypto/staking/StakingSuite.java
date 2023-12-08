@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.crypto.staking;
 
-import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -73,7 +72,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Tag(TIME_CONSUMING)
 public class StakingSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(StakingSuite.class);

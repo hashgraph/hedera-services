@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import Utils.Companion.testLogger
 import Utils.Companion.versionTxt
 import com.adarshr.gradle.testlogger.theme.ThemeType
 import com.autonomousapps.AbstractExtension
@@ -52,6 +53,10 @@ configurations.all {
 }
 
 @Suppress("UnstableApiUsage") val internal = configurations.dependencyScope("internal")
+
+javaModuleDependencies { versionsFromConsistentResolution(":app") }
+
+configurations.getByName("mainRuntimeClasspath") { extendsFrom(internal.get()) }
 
 dependencies { "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions")) }
 
@@ -154,7 +159,6 @@ testing {
     @Suppress("UnstableApiUsage")
     suites {
         named<JvmTestSuite>("test") {
-            // Configure the normal unit test suite to use JUnit Jupiter
             useJUnitJupiter()
             targets.all {
                 testTask {
@@ -165,9 +169,9 @@ testing {
             }
         }
 
-        // Tests that assert functionally correct behavior under stress/loads with many repeated
-        // iterations.
+        // Test functionally correct behavior under stress/loads with many repeated iterations.
         register<JvmTestSuite>("hammer") {
+            testType.set("hammer")
             targets.all {
                 testTask {
                     shouldRunAfter(tasks.test)
@@ -181,12 +185,47 @@ testing {
             }
         }
 
-        // Tests that normally needs more than 100 ms to be executed
+        // Tests that normally needs more than 100 ms to be executed.
         register<JvmTestSuite>("timeConsuming") {
+            testType.set("time-consuming")
             targets.all {
                 testTask {
                     shouldRunAfter(tasks.test)
                     maxHeapSize = "16g"
+                }
+            }
+        }
+
+        // integration test suite
+        register<JvmTestSuite>("itest") {
+            testType.set(TestSuiteType.INTEGRATION_TEST)
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
+                    maxHeapSize = "8g"
+                    addTestListener(testLogger())
+                }
+            }
+        }
+
+        // EET for end-to-end tests
+        register<JvmTestSuite>("eet") {
+            testType.set("end-to-end-test")
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
+                    maxHeapSize = "8g"
+                }
+            }
+        }
+
+        // "cross-service" tests (this suite will be removed)
+        register<JvmTestSuite>("xtest") {
+            testType.set("cross-service-test")
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
+                    maxHeapSize = "8g"
                 }
             }
         }
@@ -215,6 +254,11 @@ testlogger {
 tasks.assemble {
     // 'assemble' compiles all sources, including all test sources
     dependsOn(tasks.testClasses)
+    dependsOn(tasks.named("hammerClasses"))
+    dependsOn(tasks.named("timeConsumingClasses"))
+    dependsOn(tasks.named("itestClasses"))
+    dependsOn(tasks.named("eetClasses"))
+    dependsOn(tasks.named("xtestClasses"))
 }
 
 tasks.check { dependsOn(tasks.jacocoTestReport) }
@@ -237,5 +281,13 @@ tasks.withType<Checkstyle>().configureEach {
         xml.required = true
         html.required = true
         sarif.required = true
+    }
+}
+
+// Remove below configuration once all 'TIME_CONSUMING' tests are moved to 'src/timeConsuming'.
+tasks.test {
+    options {
+        this as JUnitPlatformOptions
+        excludeTags("TIME_CONSUMING")
     }
 }

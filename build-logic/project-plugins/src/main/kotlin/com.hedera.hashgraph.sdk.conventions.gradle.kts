@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import com.hedera.hashgraph.gradlebuild.service.TaskLockService
-
 plugins {
     id("java-library")
     id("com.hedera.hashgraph.java")
@@ -24,12 +22,6 @@ plugins {
 group = "com.swirlds"
 
 tasks.checkModuleInfo { moduleNamePrefix = "com.swirlds" }
-
-javaModuleDependencies { versionsFromConsistentResolution(":swirlds-platform-core") }
-
-configurations.getByName("mainRuntimeClasspath") {
-    extendsFrom(configurations.getByName("internal"))
-}
 
 // All below configuration should eventually be removed once all 'sdk' tests in 'src/test'
 // are able to run in parallel without restrictions.
@@ -48,7 +40,10 @@ val timingSensitive =
         classpath = sourceSets.test.get().runtimeClasspath
 
         usesService(
-            gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
+            gradle.sharedServices.registerIfAbsent(
+                "lock",
+                com.hedera.hashgraph.gradlebuild.service.TaskLockService::class
+            ) {
                 maxParallelUsages = 1
             }
         )
@@ -59,7 +54,7 @@ val timingSensitive =
         )
 
         useJUnitPlatform { includeTags("TIMING_SENSITIVE") }
-        maxHeapSize = "4096m"
+        maxHeapSize = "4g"
     }
 
 tasks.check { dependsOn(timingSensitive) }

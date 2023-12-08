@@ -27,7 +27,4 @@ public class TestTags {
     public static final String TOKEN = "TOKEN";
     public static final String RESTART = "RESTART";
     public static final String ND_RECONNECT = "ND_RECONNECT";
-
-    @Deprecated
-    public static final String TIME_CONSUMING = "TIME_CONSUMING";
 }
