@@ -16,7 +16,10 @@
 
 plugins { id("me.champeau.jmh") }
 
-jmh { jmhVersion.set("1.36") }
+jmh {
+    jmhVersion = "1.36"
+    includeTests = false
+}
 
 tasks.jmh { outputs.upToDateWhen { false } }
 
