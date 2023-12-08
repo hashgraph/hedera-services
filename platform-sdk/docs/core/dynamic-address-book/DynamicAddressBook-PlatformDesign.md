@@ -48,7 +48,7 @@ birth round that is less than or equal to the event creator's current round. Eve
 than the pending round need to be buffered before reaching the event creator.
 
 Buffer: To ensure that the birth round of the child created is never less than the birth round of the parent,
-Only events that have a birthRound less than or equal to the event creator's current round are let through.
+only events that have a `birthRound` less than or equal to the pending consensus round, as known by the event crator, are let through.
 
 ### Remove Node
 
