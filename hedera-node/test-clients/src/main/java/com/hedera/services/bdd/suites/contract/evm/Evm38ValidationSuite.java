@@ -125,7 +125,6 @@ public class Evm38ValidationSuite extends HapiSuite {
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         withOpContext(
                                 (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()
@@ -635,6 +634,7 @@ public class Evm38ValidationSuite extends HapiSuite {
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
@@ -661,6 +661,7 @@ public class Evm38ValidationSuite extends HapiSuite {
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         uploadInitCode(contract),
                         cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract).balance(10).payingWith(sender))
