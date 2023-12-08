@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
@@ -48,7 +49,7 @@ public abstract class HederaEvmTxProcessor {
     protected BlockMetaSource blockMetaSource;
     protected HederaEvmMutableWorldState worldState;
 
-    protected final GasCalculator gasCalculator;
+    protected GasCalculator gasCalculator;
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
@@ -222,5 +223,10 @@ public abstract class HederaEvmTxProcessor {
             case MESSAGE_CALL -> messageCallProcessor;
             case CONTRACT_CREATION -> contractCreationProcessor;
         };
+    }
+
+    @VisibleForTesting
+    public void setGasCalculator(GasCalculator gasCalculator) {
+        this.gasCalculator = gasCalculator;
     }
 }

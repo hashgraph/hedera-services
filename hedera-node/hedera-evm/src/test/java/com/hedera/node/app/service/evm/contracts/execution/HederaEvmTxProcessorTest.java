@@ -21,8 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
@@ -371,5 +374,19 @@ class HederaEvmTxProcessorTest {
     }
 
     @Test
-    void setupFieldsConsidersInputSizeWhenCalculatingIntrinsicGasCost() {}
+    void forwardsPayloadToGasCalculator() {
+        final var mockedGasCalculator = mock(GasCalculator.class);
+        evmTxProcessor.setGasCalculator(mockedGasCalculator);
+
+        Bytes empty = Bytes.EMPTY;
+        Bytes somePayload = Bytes.fromBase64String("9499rew9rwefdsfkad9cd09f0dscds0cds");
+
+        // with empty bytes
+        evmTxProcessor.setupFields(empty, true);
+        verify(mockedGasCalculator).transactionIntrinsicGasCost(argThat(x -> x.equals(empty)), eq(true));
+
+        // with actual payload
+        evmTxProcessor.setupFields(somePayload, true);
+        verify(mockedGasCalculator).transactionIntrinsicGasCost(argThat(x -> x.equals(somePayload)), eq(true));
+    }
 }
