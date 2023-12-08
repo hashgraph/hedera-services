@@ -37,7 +37,6 @@ import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -151,10 +150,10 @@ class UptimeTests {
         uptimeTracker.handleRound(roundOne, genesisUptimeData, addressBook);
 
         for (final Address address : addressBook) {
-            ConsensusEvent judge = null;
-            ConsensusEvent lastEvent = null;
+            EventImpl judge = null;
+            EventImpl lastEvent = null;
 
-            for (final ConsensusEvent event : firstRoundEvents) {
+            for (final EventImpl event : firstRoundEvents) {
                 if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
@@ -203,10 +202,10 @@ class UptimeTests {
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, addressBook);
 
         for (final Address address : addressBook) {
-            ConsensusEvent judge = null;
-            ConsensusEvent lastEvent = null;
+            EventImpl judge = null;
+            EventImpl lastEvent = null;
 
-            for (final ConsensusEvent event : secondRoundEvents) {
+            for (final EventImpl event : secondRoundEvents) {
                 if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
@@ -289,10 +288,10 @@ class UptimeTests {
         uptimeTracker.handleRound(roundOne, genesisUptimeData, addressBook);
 
         for (final Address address : addressBook) {
-            ConsensusEvent judge = null;
-            ConsensusEvent lastEvent = null;
+            EventImpl judge = null;
+            EventImpl lastEvent = null;
 
-            for (final ConsensusEvent event : firstRoundEvents) {
+            for (final EventImpl event : firstRoundEvents) {
                 if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
@@ -348,10 +347,10 @@ class UptimeTests {
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, newAddressBook);
 
         for (final Address address : newAddressBook) {
-            ConsensusEvent judge = null;
-            ConsensusEvent lastEvent = null;
+            EventImpl judge = null;
+            EventImpl lastEvent = null;
 
-            for (final ConsensusEvent event : secondRoundEvents) {
+            for (final EventImpl event : secondRoundEvents) {
                 if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }

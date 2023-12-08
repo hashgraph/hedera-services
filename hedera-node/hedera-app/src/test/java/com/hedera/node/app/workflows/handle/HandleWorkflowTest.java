@@ -78,9 +78,9 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -170,7 +170,7 @@ class HandleWorkflowTest extends AppTestBase {
     private Round round;
 
     @Mock(strictness = LENIENT)
-    private ConsensusEvent event;
+    private EventImpl event;
 
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;

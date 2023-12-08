@@ -57,7 +57,6 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -410,7 +409,7 @@ public final class EventRecoveryWorkflow {
         final RunningHashCalculatorForStream<EventImpl> hashCalculator = new RunningHashCalculatorForStream<>();
         hashCalculator.setRunningHash(previousRunningHash);
 
-        for (final ConsensusEvent event : round) {
+        for (final EventImpl event : round) {
             hashCalculator.addObject((EventImpl) event);
         }
 
@@ -430,11 +429,11 @@ public final class EventRecoveryWorkflow {
         return getLastEvent(round).getConsensusTimestamp();
     }
 
-    static ConsensusEvent getLastEvent(final Round round) {
-        final Iterator<ConsensusEvent> iterator = round.iterator();
+    static EventImpl getLastEvent(final Round round) {
+        final Iterator<EventImpl> iterator = round.iterator();
 
         while (iterator.hasNext()) {
-            final ConsensusEvent event = iterator.next();
+            final EventImpl event = iterator.next();
 
             if (!iterator.hasNext()) {
                 return event;
@@ -460,7 +459,7 @@ public final class EventRecoveryWorkflow {
 
         mutableState.throwIfImmutable();
 
-        for (final ConsensusEvent event : round) {
+        for (final EventImpl event : round) {
             immutableState.preHandle(event);
         }
 

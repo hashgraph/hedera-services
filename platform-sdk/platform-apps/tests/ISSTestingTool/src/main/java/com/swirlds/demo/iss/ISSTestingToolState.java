@@ -39,6 +39,7 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -47,7 +48,6 @@ import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -174,10 +174,10 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     @Override
     public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
         throwIfImmutable();
-        final Iterator<ConsensusEvent> eventIterator = round.iterator();
+        final Iterator<EventImpl> eventIterator = round.iterator();
 
         while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
+            final EventImpl event = eventIterator.next();
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
             if (!eventIterator.hasNext()) {
@@ -207,7 +207,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     /**
      * Save the event's timestamp, if needed.
      */
-    private void captureTimestamp(final ConsensusEvent event) {
+    private void captureTimestamp(final EventImpl event) {
         if (genesisTimestamp == null) {
             genesisTimestamp = event.getConsensusTimestamp();
         }

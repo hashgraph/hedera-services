@@ -23,7 +23,6 @@ import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -118,7 +117,7 @@ public class ConsensusRound implements Round {
 
     /** {@inheritDoc} */
     @Override
-    public @NonNull Iterator<ConsensusEvent> iterator() {
+    public @NonNull Iterator<EventImpl> iterator() {
         return new TypedIterator<>(consensusEvents.iterator());
     }
 

@@ -33,6 +33,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -40,7 +41,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
@@ -277,8 +277,8 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     @Override
     public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
         throwIfImmutable();
-        for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
-            final ConsensusEvent event = eventIt.next();
+        for (final Iterator<EventImpl> eventIt = round.iterator(); eventIt.hasNext(); ) {
+            final EventImpl event = eventIt.next();
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 final ConsensusTransaction trans = transIt.next();

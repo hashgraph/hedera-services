@@ -44,6 +44,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -53,7 +54,6 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -200,10 +200,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
         roundsHandled++;
 
-        final Iterator<ConsensusEvent> eventIterator = round.iterator();
+        final Iterator<EventImpl> eventIterator = round.iterator();
 
         while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
+            final EventImpl event = eventIterator.next();
             event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
         }
 

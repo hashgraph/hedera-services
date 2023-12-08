@@ -34,8 +34,8 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -215,7 +215,7 @@ public class EntityMapWarmer {
             return;
         }
 
-        for (final ConsensusEvent event : round) {
+        for (final EventImpl event : round) {
             event.forEachTransaction(txn -> {
                 final PlatformTxnAccessor txnAccess;
                 final TransactionBody txnBody;

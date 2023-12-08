@@ -50,7 +50,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -506,9 +505,7 @@ class EntityMapWarmerTest {
 
         final var round = mock(ConsensusRound.class);
         lenient().when(round.getRoundNum()).thenReturn(1L);
-        lenient()
-                .when(round.iterator())
-                .thenReturn(List.of((ConsensusEvent) event).iterator());
+        lenient().when(round.iterator()).thenReturn(List.of(event).iterator());
         return round;
     }
 

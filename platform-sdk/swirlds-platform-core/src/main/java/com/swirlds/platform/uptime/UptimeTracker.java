@@ -29,7 +29,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -109,8 +108,8 @@ public class UptimeTracker {
         final Instant start = time.now();
 
         addAndRemoveNodes(uptimeData, addressBook);
-        final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
-        final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
+        final Map<NodeId, EventImpl> lastEventsInRoundByCreator = new HashMap<>();
+        final Map<NodeId, EventImpl> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
         reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
@@ -175,8 +174,8 @@ public class UptimeTracker {
      */
     private void scanRound(
             @NonNull final Round round,
-            @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
-            @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
+            @NonNull final Map<NodeId, EventImpl> lastEventsInRoundByCreator,
+            @NonNull final Map<NodeId, EventImpl> judgesByCreator) {
 
         // capture previous self event consensus timestamp, so we can tell if the current round contains a
         // new self event
@@ -190,7 +189,7 @@ public class UptimeTracker {
             //            }
         });
 
-        final ConsensusEvent lastSelfEvent = lastEventsInRoundByCreator.get(selfId);
+        final EventImpl lastSelfEvent = lastEventsInRoundByCreator.get(selfId);
         if (lastSelfEvent != null) {
             final Instant lastSelfEventConsensusTimestamp = lastSelfEvent.getConsensusTimestamp();
             if (!lastSelfEventConsensusTimestamp.equals(previousSelfEventConsensusTimestamp)) {
@@ -213,17 +212,17 @@ public class UptimeTracker {
     private void updateState(
             @NonNull final AddressBook addressBook,
             @NonNull final MutableUptimeData uptimeData,
-            @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
-            @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
+            @NonNull final Map<NodeId, EventImpl> lastEventsInRoundByCreator,
+            @NonNull final Map<NodeId, EventImpl> judgesByCreator) {
 
         for (final Address address : addressBook) {
-            final ConsensusEvent lastEvent = lastEventsInRoundByCreator.get(address.getNodeId());
+            final EventImpl lastEvent = lastEventsInRoundByCreator.get(address.getNodeId());
             if (lastEvent != null) {
                 uptimeData.recordLastEvent((EventImpl) lastEvent);
             }
 
             // Temporarily disabled until we properly detect judges in a round
-            //            final ConsensusEvent judge = judgesByCreator.get(address.getNodeId());
+            //            final EventImpl judge = judgesByCreator.get(address.getNodeId());
             //            if (judge != null) {
             //                uptimeData.recordLastJudge((EventImpl) judge);
             //            }
@@ -245,11 +244,11 @@ public class UptimeTracker {
         for (final Address address : addressBook) {
             final NodeId id = address.getNodeId();
 
-            final Instant lastConsensusEventTime = uptimeData.getLastEventTime(id);
-            if (lastConsensusEventTime != null) {
-                final Duration timeSinceLastConsensusEvent = Duration.between(lastConsensusEventTime, lastRoundEndTime);
+            final Instant lastEventImplTime = uptimeData.getLastEventTime(id);
+            if (lastEventImplTime != null) {
+                final Duration timeSinceLastEventImpl = Duration.between(lastEventImplTime, lastRoundEndTime);
 
-                if (CompareTo.isLessThanOrEqualTo(timeSinceLastConsensusEvent, degradationThreshold)) {
+                if (CompareTo.isLessThanOrEqualTo(timeSinceLastEventImpl, degradationThreshold)) {
                     nonDegradedConsensusWeight += addressBook.getAddress(id).getWeight();
                 }
             }

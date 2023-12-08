@@ -32,8 +32,8 @@ import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
@@ -91,7 +91,7 @@ public final class TransactionStateLogger {
      *
      * @param event The event to log
      */
-    public static void logStartEvent(final ConsensusEvent event, final NodeInfo creator) {
+    public static void logStartEvent(final EventImpl event, final NodeInfo creator) {
         if (logger.isInfoEnabled()) {
             AtomicBoolean isAllSystem = new AtomicBoolean(true);
             event.forEachTransaction(tx -> {

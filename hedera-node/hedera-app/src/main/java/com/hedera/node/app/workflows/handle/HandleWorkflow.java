@@ -101,9 +101,9 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -211,7 +211,7 @@ public class HandleWorkflow {
         logStartRound(round);
 
         // handle each event in the round
-        for (final ConsensusEvent event : round) {
+        for (final EventImpl event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 // We were given an event for a node that *does not exist in the address book*. This will be logged as
@@ -256,7 +256,7 @@ public class HandleWorkflow {
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final SwirldDualState dualState,
-            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final EventImpl platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
         // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
@@ -271,7 +271,7 @@ public class HandleWorkflow {
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
             @NonNull final SwirldDualState dualState,
-            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final EventImpl platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list

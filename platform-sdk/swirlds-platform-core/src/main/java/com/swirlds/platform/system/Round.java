@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.system;
 
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * may be changed at any time, in any way, without notice or prior deprecation. Third parties should NOT implement this
  * interface.
  */
-public interface Round extends Iterable<ConsensusEvent> {
+public interface Round extends Iterable<EventImpl> {
 
     /**
      * An iterator for all consensus events in this round. Each invocation returns a new iterator over the same events.
@@ -44,7 +44,7 @@ public interface Round extends Iterable<ConsensusEvent> {
      */
     @Override
     @NonNull
-    Iterator<ConsensusEvent> iterator();
+    Iterator<EventImpl> iterator();
 
     /**
      * Provides the unique round number for this round. Lower numbers reach consensus before higher numbers. This method
@@ -82,8 +82,8 @@ public interface Round extends Iterable<ConsensusEvent> {
      * @param transactionConsumer a transaction consumer
      */
     default void forEachTransaction(final Consumer<ConsensusTransaction> transactionConsumer) {
-        for (final Iterator<ConsensusEvent> eventIt = iterator(); eventIt.hasNext(); ) {
-            final ConsensusEvent event = eventIt.next();
+        for (final Iterator<EventImpl> eventIt = iterator(); eventIt.hasNext(); ) {
+            final EventImpl event = eventIt.next();
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 transactionConsumer.accept(transIt.next());
@@ -97,9 +97,9 @@ public interface Round extends Iterable<ConsensusEvent> {
      *
      * @param consumer an event and transaction consumer
      */
-    default void forEachEventTransaction(final BiConsumer<ConsensusEvent, ConsensusTransaction> consumer) {
-        for (final Iterator<ConsensusEvent> eventIt = iterator(); eventIt.hasNext(); ) {
-            final ConsensusEvent event = eventIt.next();
+    default void forEachEventTransaction(final BiConsumer<EventImpl, ConsensusTransaction> consumer) {
+        for (final Iterator<EventImpl> eventIt = iterator(); eventIt.hasNext(); ) {
+            final EventImpl event = eventIt.next();
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 consumer.accept(event, transIt.next());

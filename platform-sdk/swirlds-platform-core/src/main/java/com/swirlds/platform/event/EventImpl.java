@@ -34,12 +34,13 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.system.ReachedConsensus;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventSerializationOptions;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -74,7 +75,8 @@ public class EventImpl
                 StreamAligned,
                 Timestamped,
                 Clearable,
-                ConsensusEvent {
+                Event,
+                ReachedConsensus {
 
     /**
      * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
@@ -579,9 +581,11 @@ public class EventImpl
     }
 
     /**
-     * {@inheritDoc}
+     * Returns an iterator over the application events in this transaction, which have all reached consensus. Each
+     * invocation returns a new iterator over the same transactions. This method is thread safe.
+     *
+     * @return a consensus transaction iterator
      */
-    @Override
     public Iterator<ConsensusTransaction> consensusTransactionIterator() {
         if (getTransactions() == null) {
             return Collections.emptyIterator();

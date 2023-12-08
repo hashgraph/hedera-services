@@ -70,6 +70,7 @@ import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -77,7 +78,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -1086,7 +1086,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     private void handleConsensusTransaction(
-            final ConsensusEvent event,
+            final EventImpl event,
             final ConsensusTransaction trans,
             final SwirldDualState dualState,
             final long roundNum) {

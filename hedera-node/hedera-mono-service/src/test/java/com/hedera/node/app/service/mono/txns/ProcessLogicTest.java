@@ -23,9 +23,9 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import java.time.Instant;
 import java.util.List;
@@ -78,10 +78,9 @@ class ProcessLogicTest {
     @SuppressWarnings("unchecked")
     private void givenRoundWith(Pair<Instant, Long>... metadata) {
         Mockito.doAnswer(invocationOnMock -> {
-                    final var observer =
-                            (BiConsumer<ConsensusEvent, ConsensusTransaction>) invocationOnMock.getArgument(0);
+                    final var observer = (BiConsumer<EventImpl, ConsensusTransaction>) invocationOnMock.getArgument(0);
                     for (int i = 0; i < metadata.length; i++) {
-                        final var event = mock(ConsensusEvent.class);
+                        final var event = mock(EventImpl.class);
                         given(event.getCreatorId()).willReturn(new NodeId(metadata[i].getRight()));
                         given(event.getSoftwareVersion()).willReturn(eventVersion);
                         observer.accept(event, null);

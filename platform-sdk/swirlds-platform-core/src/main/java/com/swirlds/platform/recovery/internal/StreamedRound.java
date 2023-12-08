@@ -19,7 +19,6 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
@@ -50,7 +49,7 @@ public class StreamedRound implements Round {
      */
     @Override
     @NonNull
-    public Iterator<ConsensusEvent> iterator() {
+    public Iterator<EventImpl> iterator() {
         final Iterator<EventImpl> iterator = events.iterator();
         return new Iterator<>() {
             @Override
@@ -59,7 +58,7 @@ public class StreamedRound implements Round {
             }
 
             @Override
-            public ConsensusEvent next() {
+            public EventImpl next() {
                 return iterator.next();
             }
         };

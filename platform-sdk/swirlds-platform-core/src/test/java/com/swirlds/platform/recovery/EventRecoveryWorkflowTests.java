@@ -41,7 +41,6 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -107,7 +106,7 @@ class EventRecoveryWorkflowTests {
     void applyTransactionsTest() {
         final SwirldDualState dualState = mock(SwirldDualState.class);
 
-        final List<ConsensusEvent> events = new ArrayList<>();
+        final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             events.add(mock(EventImpl.class));
         }
@@ -164,7 +163,7 @@ class EventRecoveryWorkflowTests {
     void getRoundTimestampTest() {
         final int eventCount = 100;
 
-        final List<ConsensusEvent> events = new ArrayList<>();
+        final List<EventImpl> events = new ArrayList<>();
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
             final EventImpl event = mock(EventImpl.class);
             when(event.getConsensusTimestamp()).thenReturn(Instant.ofEpochSecond(eventIndex));
@@ -192,13 +191,13 @@ class EventRecoveryWorkflowTests {
      * leaves behind metadata. To work around this, this method creates a fresh copy of an event list that does not
      * share a metadata link.
      */
-    private List<ConsensusEvent> copyRunningHashEvents(final List<ConsensusEvent> original) {
-        final List<ConsensusEvent> copy = new ArrayList<>();
+    private List<EventImpl> copyRunningHashEvents(final List<EventImpl> original) {
+        final List<EventImpl> copy = new ArrayList<>();
         original.forEach(event -> copy.add(buildEventWithRunningHash((((EventImpl) event).getHash()))));
         return copy;
     }
 
-    private Round buildMockRound(final List<ConsensusEvent> events) {
+    private Round buildMockRound(final List<EventImpl> events) {
         final Round round = mock(Round.class);
         when(round.iterator()).thenReturn(events.iterator());
         return round;
@@ -212,7 +211,7 @@ class EventRecoveryWorkflowTests {
 
         final Hash initialHash1 = randomHash(random);
 
-        final List<ConsensusEvent> events1 = new ArrayList<>();
+        final List<EventImpl> events1 = new ArrayList<>();
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
             final EventImpl event = buildEventWithRunningHash(randomHash(random));
             events1.add(event);
@@ -233,7 +232,7 @@ class EventRecoveryWorkflowTests {
                 "hash should have changed");
 
         // add another event
-        final List<ConsensusEvent> events2 = copyRunningHashEvents(events1);
+        final List<EventImpl> events2 = copyRunningHashEvents(events1);
         final EventImpl newEvent = buildEventWithRunningHash(randomHash(random));
         events2.add(newEvent);
         assertNotEquals(
@@ -242,7 +241,7 @@ class EventRecoveryWorkflowTests {
                 "hash should have changed");
 
         // remove an event
-        final List<ConsensusEvent> events3 = copyRunningHashEvents(events1);
+        final List<EventImpl> events3 = copyRunningHashEvents(events1);
         events3.remove(events3.size() - 1);
         assertNotEquals(
                 hash1,
@@ -250,7 +249,7 @@ class EventRecoveryWorkflowTests {
                 "hash should have changed");
 
         // replace an event
-        final List<ConsensusEvent> events4 = copyRunningHashEvents(events1);
+        final List<EventImpl> events4 = copyRunningHashEvents(events1);
         final EventImpl replacementEvent = buildEventWithRunningHash(randomHash(random));
         events4.set(0, replacementEvent);
         assertNotEquals(
