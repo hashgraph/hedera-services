@@ -31,7 +31,7 @@ the `pendingConsensusRound`.
 
 This has no effect on the existence of network connections.
 
-## Event Creation Effects
+## Event Creation
 
 ### Add Node
 
@@ -46,7 +46,7 @@ The event creator can build on top of any event that has a birth round that is l
 known value for the `pendingConsensusRound`. Events that have a higher birth round need to be buffered until the event
 creator's known `pendingConsensusRound` becomes equal to or higher than their birth round.
 
-Buffer: Only the latest events from each node within the same birthRound need to be buffered. 
+Buffer: Only the latest events from each node within the same birthRound need to be buffered.
 
 ### Remove Node
 
@@ -63,6 +63,35 @@ key to use for signing self events.
 Changing network weight in the `currentEffectiveRoster` for the `pendingConsensusRound` should cause the event creation
 algorithm to reset.
 
+## Gossip
+
+### Receiving Events
+
+The `futureEventHorizon` and the `pastEventHorizon` define the thresholds for receiving gossipped Events. Received
+events with `birthRound` outside of this node's Event Horizon will be rejected or discarded.
+
+### Sending Events
+
+A node will store ancient events and send them through gossip to help nodes which are behind.
+
+### Add Node
+
+When transaction handling creates a roster with a new node in it, it becomes the `greatestEffectiveRoster` for
+the `futureEventHorizon` and this node will be able to receive these events.
+
+### Remove Node
+
+When a node is removed from a roster and all rosters containing the node have become ancient, this node will no longer
+receive events from the removed node. If received, they will be discarded.
+
+### Rotate Signing Key
+
+This roster change has no effect on whether or not send or receive events through Gossip.
+
+### Node Weight Change
+
+This roster change has no effect on whether or not send or receive events through Gossip.
+
 ## Event Validation
 
 For each event, lookup the roster within the `eventHorizon` that matches the `birthRound` of the event. Events
@@ -70,7 +99,7 @@ outside the `eventHorizon` are not validatable.
 
 ## Orphan Buffer
 
-Drop events that have a birthRound outside the `eventHorizon`.
+Drop ancient events that have a birthRound less than `minRoundNonAncient`.
 
 ## ISS Detection
 
