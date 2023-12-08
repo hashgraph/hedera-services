@@ -566,7 +566,7 @@ public class LoggingSystemTest {
     }
 
     @Test
-    @DisplayName("That that accept passes complex log calls correctly with all informations to the configured handler")
+    @DisplayName("Test that accept passes complex log calls correctly with all informations to the configured handler")
     void testAcceptComnplexHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
