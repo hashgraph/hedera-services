@@ -5,7 +5,7 @@
 
 ### Latest Consensus Round
 
-The most recent round to have reached consensus.  (equal to the pending consensus round - 1)
+The most recent round to have reached consensus.  Equal to the pending consensus round - 1.
 
 ### Pending Consensus Round
 
