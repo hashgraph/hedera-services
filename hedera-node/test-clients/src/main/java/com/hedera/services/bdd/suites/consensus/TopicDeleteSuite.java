@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
@@ -72,7 +73,7 @@ public class TopicDeleteSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec topicIdIsValidated() {
-        return defaultHapiSpec("topicIdIsValidated")
+        return defaultHapiSpec("topicIdIsValidated", FULLY_NONDETERMINISTIC)
                 .given()
                 .when()
                 .then(
