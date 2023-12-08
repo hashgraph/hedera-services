@@ -73,7 +73,7 @@ public class HandlerLoggingLevelConfigTest {
     }
 
     @Test
-    void testWithConfig() {
+    void testWithConfigPerClass() {
         // given
         final Configuration configuration = getConfigBuilder()
                 .withValue("logging.level", "INFO")
@@ -81,18 +81,34 @@ public class HandlerLoggingLevelConfigTest {
                 .withValue("logging.level.com.sample.package", "ERROR")
                 .withValue("logging.level.com.sample.package.ClassB", "INFO")
                 .withValue("logging.level.com.sample.package.ClassC", "TRACE")
+                .withValue("logging.level.com.sample.package.ClassCD", "DEBUG")
                 .getOrCreateConfig();
         final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
 
         // then
         checkEnabledForLevel(config, "", Level.INFO);
         checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.INFO);
-        checkEnabledForLevel(config, "com.sample", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.Class", Level.DEBUG);
-        checkEnabledForLevel(config, "com.sample.package", Level.ERROR);
         checkEnabledForLevel(config, "com.sample.package.ClassA", Level.ERROR);
         checkEnabledForLevel(config, "com.sample.package.ClassB", Level.INFO);
         checkEnabledForLevel(config, "com.sample.package.ClassC", Level.TRACE);
+        checkEnabledForLevel(config, "com.sample.package.ClassCD", Level.DEBUG);
+    }
+
+    @Test
+    void testPackagesWithSimilarNames() {
+        // given
+        final Configuration configuration = getConfigBuilder()
+                .withValue("logging.level", "INFO")
+                .withValue("logging.level.com.sample", "DEBUG")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
+
+        // then
+        checkEnabledForLevel(config, "", Level.INFO);
+        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.INFO);
+        checkEnabledForLevel(config, "com.sample.Bla", Level.DEBUG);
+        checkEnabledForLevel(config, "com.samples.Class", Level.INFO);
     }
 
     private static void checkEnabledForLevel(HandlerLoggingLevelConfig config, String name, Level level) {
@@ -130,9 +146,7 @@ public class HandlerLoggingLevelConfigTest {
         // then
         checkEnabledForLevel(config, "", Level.ERROR);
         checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.ERROR);
-        checkEnabledForLevel(config, "com.sample", Level.ERROR);
         checkEnabledForLevel(config, "com.sample.Class", Level.ERROR);
-        checkEnabledForLevel(config, "com.sample.package", Level.WARN);
         checkEnabledForLevel(config, "com.sample.package.ClassA", Level.WARN);
         checkEnabledForLevel(config, "com.sample.package.ClassB", Level.WARN);
         checkEnabledForLevel(config, "com.sample.package.ClassC", Level.WARN);
@@ -177,7 +191,6 @@ public class HandlerLoggingLevelConfigTest {
         // then
         checkEnabledForLevel(config, "", Level.WARN);
         checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.WARN);
-        checkEnabledForLevel(config, "com.sample", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.Class", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.package", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.package.ClassA", Level.DEBUG);
@@ -196,7 +209,6 @@ public class HandlerLoggingLevelConfigTest {
         // then
         checkEnabledForLevel(config, "", Level.INFO);
         checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.INFO);
-        checkEnabledForLevel(config, "com.sample", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.Class", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.package", Level.DEBUG);
         checkEnabledForLevel(config, "com.sample.package.ClassA", Level.DEBUG);

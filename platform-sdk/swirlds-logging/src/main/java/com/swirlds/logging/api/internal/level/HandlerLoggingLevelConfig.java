@@ -191,11 +191,19 @@ public class HandlerLoggingLevelConfig {
             final ConfigLevel level =
                     configuration.getValue(configPropertyName, ConfigLevel.class, ConfigLevel.UNDEFINED);
             if (level != ConfigLevel.UNDEFINED) {
-                result.put(name, level);
+                if (containsUpperCase(name)) {
+                    result.put(name, level);
+                } else {
+                    result.put(PROPERTY_PACKAGE_LEVEL.formatted(name), level);
+                }
             }
         });
 
         return Collections.unmodifiableMap(result);
+    }
+
+    private boolean containsUpperCase(@NonNull final String name) {
+        return name.chars().anyMatch(Character::isUpperCase);
     }
 
     /**
@@ -236,10 +244,10 @@ public class HandlerLoggingLevelConfig {
 
     @NonNull
     private ConfigLevel getConfiguredLevel(@NonNull final String name) {
+        final String stripName = name.strip();
         final Map<String, ConfigLevel> stringConfigLevelMap = levelConfigProperties.get();
         return stringConfigLevelMap.keySet().stream()
-                .filter(n -> name.trim().startsWith(n))
-                .filter(key -> stringConfigLevelMap.get(key) != ConfigLevel.UNDEFINED)
+                .filter(stripName::startsWith)
                 .reduce((a, b) -> {
                     if (a.length() > b.length()) {
                         return a;
