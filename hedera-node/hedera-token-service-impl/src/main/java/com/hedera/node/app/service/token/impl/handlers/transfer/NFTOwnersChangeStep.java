@@ -87,18 +87,12 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                     validateSpenderHasAllowance(senderAccount, topLevelPayer, tokenId, nft);
                 }
 
-                final var copyNft = nft.copyBuilder();
-                // If the nft owner is not set then set it to the treasury account
-                if (!nft.hasOwnerId() || nft.ownerId().equals(AccountID.DEFAULT)) {
-                    copyNft.ownerId(treasury);
-                }
                 // owner of nft should match the sender in transfer list
                 if (nft.hasOwnerId()) {
                     validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 } else {
                     validateTrue(treasury.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 }
-                nftStore.put(copyNft.build());
 
                 // Update the ownership of the nft
                 updateOwnership(
@@ -174,14 +168,14 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var toNumPositiveBalances = receiverAccount.numberPositiveBalances();
         final var isTreasuryReturn = treasuryId.equals(receiverAccount.accountId());
 
-        // If the token is being returned back to treasury set the owner to treasury
+        // If the token is being returned back to treasury null out the owner
         if (isTreasuryReturn) {
-            nftCopy.ownerId(AccountID.DEFAULT);
+            nftCopy.ownerId((AccountID) null);
         } else {
             nftCopy.ownerId(receiverAccount.accountId());
         }
         // wipe the spender on this NFT
-        nftCopy.spenderId(AccountID.DEFAULT);
+        nftCopy.spenderId((AccountID) null);
 
         // adjust number of positive balances
         final var updatedFromPositiveBalances =

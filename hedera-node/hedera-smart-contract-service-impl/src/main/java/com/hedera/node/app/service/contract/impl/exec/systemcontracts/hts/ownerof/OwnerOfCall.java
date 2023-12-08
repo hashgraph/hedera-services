@@ -63,7 +63,7 @@ public class OwnerOfCall extends AbstractNftViewCall {
         }
     }
 
-    public static Long getOwnerAccountNum(Nft nft, Token token) {
+    private long getOwnerAccountNum(@NonNull final Nft nft, @NonNull final Token token) {
         final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
         if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
             return token.treasuryAccountIdOrThrow().accountNumOrThrow();

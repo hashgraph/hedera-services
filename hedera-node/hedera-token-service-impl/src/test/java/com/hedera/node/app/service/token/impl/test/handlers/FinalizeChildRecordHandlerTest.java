@@ -463,6 +463,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .alias(Bytes.wrap("00000000000000000003"))
                 .build());
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -499,6 +500,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .ownerId(ACCOUNT_1212_ID)
                 .build();
         writableNftStore.put(newNft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
@@ -538,6 +540,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         // Set up NFTs for token ID 246 (serials 222, 223)
         final var token246Id = asToken(246);
+        final var token246 = Token.newBuilder().tokenId(token246Id).build();
         final var nftId222 =
                 NftID.newBuilder().tokenId(token246Id).serialNumber(222).build();
         final var nft222 =
@@ -567,6 +570,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft112.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         writableNftStore.put(nft222.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         writableNftStore.put(nft223.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE, token246);
         context = mockContext();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", String.valueOf(false))
@@ -623,6 +627,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .balance(50)
                 .build();
         final var token654Id = asToken(654);
+        final var token654 = Token.newBuilder().tokenId(token654Id).build();
         final var token654Rel = givenNonFungibleTokenRelation()
                 .copyBuilder()
                 .tokenId(token654Id)
@@ -658,7 +663,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
 
         writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
-        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE, token654);
 
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
