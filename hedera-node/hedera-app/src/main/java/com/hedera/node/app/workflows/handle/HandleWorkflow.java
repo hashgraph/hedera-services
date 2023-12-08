@@ -292,12 +292,11 @@ public class HandleWorkflow {
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
-            stakingPeriodTimeHook.process(tokenServiceContext);
+            stakingPeriodTimeHook.process(stack, tokenServiceContext);
         } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
         }
-        // @future('7836'): update the exchange rate and call from here
 
         // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin handling
         // the user transaction
