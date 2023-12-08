@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import javax.imageio.IIOException;
 
 /**
  * In memory implementation of VirtualDataSource for use in testing.
@@ -289,7 +288,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
             final var hash = Objects.requireNonNull(rec.hash(), "The hash of a saved internal record cannot be null");
 
             if (path < 0) {
-                throw new IIOException("Internal record for " + path + " is bogus. It cannot be < 0");
+                throw new IOException("Internal record for " + path + " is bogus. It cannot be < 0");
             }
 
             if (path > maxValidPath) {
@@ -312,7 +311,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
             final var value = rec.getValue(); // Not sure if this can be null or not.
 
             if (path < firstLeafPath) {
-                throw new IIOException(
+                throw new IOException(
                         "Leaf record for " + path + " is bogus. It cannot be < first leaf path " + firstLeafPath);
             }
 
