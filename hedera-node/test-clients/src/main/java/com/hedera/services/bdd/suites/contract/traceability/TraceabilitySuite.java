@@ -234,6 +234,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
+                                .gas(500_000L)
                                 .via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
@@ -1007,7 +1008,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -1414,7 +1416,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -1704,7 +1707,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -2006,7 +2010,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -3081,7 +3086,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -3386,7 +3392,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
@@ -3727,7 +3734,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(
                         uploadInitCode(TRACEABILITY),
                         contractCreate(TRACEABILITY, BigInteger.TWO, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .via(FIRST_CREATE_TXN),
+                                .via(FIRST_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY)
