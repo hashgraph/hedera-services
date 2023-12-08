@@ -16,10 +16,10 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_0;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
 import static com.swirlds.logging.legacy.LogMarker.*;

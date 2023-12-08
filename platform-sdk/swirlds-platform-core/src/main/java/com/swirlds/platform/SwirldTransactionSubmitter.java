@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.config.TransactionConfig;

@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.migration;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;

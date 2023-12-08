@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.metrics;
 
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_0;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_4_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
