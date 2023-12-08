@@ -19,12 +19,8 @@ package com.swirlds.platform.state.iss;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.state.notifications.IssNotification;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.dispatch.Observer;
@@ -32,6 +28,11 @@ import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
+import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -51,7 +52,7 @@ public class IssHandler {
 
     /**
      * Allows for submitting
-     * {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusActions}
+     * {@link PlatformStatusAction PlatformStatusActions}
      */
     private final StatusActionSubmitter statusActionSubmitter;
 

@@ -19,9 +19,9 @@ package com.swirlds.platform.gossip.chatter.protocol.peer;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.system.events.EventDescriptor;
 
 /**
  * Keeps track of the state of chatter communication with a peer, including events we are sure the peer knows

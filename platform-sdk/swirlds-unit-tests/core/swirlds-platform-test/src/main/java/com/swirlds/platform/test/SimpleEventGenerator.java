@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;

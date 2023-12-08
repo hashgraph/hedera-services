@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.txns.submission.StructuralPrechec
 import com.hedera.node.app.service.mono.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.node.app.service.mono.txns.submission.annotations.MaxSignedTxnSize;
 import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;

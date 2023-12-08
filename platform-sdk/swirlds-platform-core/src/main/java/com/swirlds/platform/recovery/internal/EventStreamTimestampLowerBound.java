@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.platform.system.events.ConsensusData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;

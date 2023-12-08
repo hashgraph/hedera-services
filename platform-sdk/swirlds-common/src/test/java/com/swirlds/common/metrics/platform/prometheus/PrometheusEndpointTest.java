@@ -57,7 +57,7 @@ import com.swirlds.common.metrics.platform.DefaultStatEntry;
 import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import io.prometheus.client.Collector;

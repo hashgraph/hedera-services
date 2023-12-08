@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.throttle.Throttle;
 import com.swirlds.demo.merkle.map.FCMConfig;
@@ -31,6 +30,7 @@ import com.swirlds.merkle.map.test.lifecycle.EntityType;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.system.Platform;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

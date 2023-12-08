@@ -18,8 +18,8 @@ package com.swirlds.platform.test.system;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import org.junit.jupiter.api.Test;
 
 class SystemUtilsTest {

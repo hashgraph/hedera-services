@@ -43,7 +43,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

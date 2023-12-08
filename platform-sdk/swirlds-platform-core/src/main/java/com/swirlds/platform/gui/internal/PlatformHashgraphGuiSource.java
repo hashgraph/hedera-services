@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.gui.internal;
 
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.hashgraph.internal.ShadowgraphGuiSource;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.address.AddressBook;
 
 /**
  * A {@link ShadowgraphGuiSource} that retrieves the {@link ShadowGraph} from the platform that is being displayed by the

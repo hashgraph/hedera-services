@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.platform.system.events.PlatformEvent;
 
 /**
  * Utility types to define equality of events, sets of shadow events and hashes.

@@ -23,9 +23,9 @@ import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 import static java.time.temporal.ChronoUnit.NANOS;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.platform.system.address.AddressBook;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

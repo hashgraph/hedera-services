@@ -18,11 +18,11 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.events.EventConstants;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;

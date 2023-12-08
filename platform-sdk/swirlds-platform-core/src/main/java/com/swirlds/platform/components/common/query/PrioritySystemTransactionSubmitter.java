@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.common.query;
 
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.system.transaction.SystemTransaction;
 
 /**
  * An object or method that submits a priority system transaction to the transaction pool for inclusion in an event.

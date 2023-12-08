@@ -28,7 +28,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

@@ -21,11 +21,11 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.system.events.PlatformEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;

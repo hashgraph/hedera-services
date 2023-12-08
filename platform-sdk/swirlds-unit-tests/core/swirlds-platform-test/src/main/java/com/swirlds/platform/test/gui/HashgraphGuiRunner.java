@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.gui;
 
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.BorderLayout;

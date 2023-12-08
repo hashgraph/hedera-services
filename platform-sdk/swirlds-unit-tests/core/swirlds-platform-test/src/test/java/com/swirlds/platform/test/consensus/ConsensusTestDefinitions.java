@@ -25,7 +25,7 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShu
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;

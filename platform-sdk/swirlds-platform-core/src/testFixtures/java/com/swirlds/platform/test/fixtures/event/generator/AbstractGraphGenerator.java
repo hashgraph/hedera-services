@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.fixtures.event.generator;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventConstants;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;

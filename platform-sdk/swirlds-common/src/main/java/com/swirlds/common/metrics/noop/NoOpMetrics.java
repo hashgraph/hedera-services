@@ -21,7 +21,7 @@ import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.noop.internal.NoOpMetricsFactory;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

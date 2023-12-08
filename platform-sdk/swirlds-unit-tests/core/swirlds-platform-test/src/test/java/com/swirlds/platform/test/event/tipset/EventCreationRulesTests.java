@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
-import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,7 +30,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig_;
@@ -40,6 +39,7 @@ import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;

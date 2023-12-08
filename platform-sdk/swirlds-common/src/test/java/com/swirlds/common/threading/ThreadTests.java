@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.test.framework.TestComponentTags;

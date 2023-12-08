@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SystemExitCode;
-import com.swirlds.common.utility.PlatformVersion;
-import com.swirlds.gui.components.ScrollableJPanel;
-import com.swirlds.gui.model.GuiModel;
+import com.swirlds.platform.gui.components.ScrollableJPanel;
+import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.PlatformVersion;
+import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.BorderLayout;
 import java.awt.Color;

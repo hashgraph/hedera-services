@@ -21,7 +21,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;

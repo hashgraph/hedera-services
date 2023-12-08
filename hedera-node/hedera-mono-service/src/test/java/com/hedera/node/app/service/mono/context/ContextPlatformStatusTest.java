@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.context;
 
-import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
-import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
+import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;

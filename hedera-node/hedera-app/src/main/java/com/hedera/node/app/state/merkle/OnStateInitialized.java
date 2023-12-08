@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

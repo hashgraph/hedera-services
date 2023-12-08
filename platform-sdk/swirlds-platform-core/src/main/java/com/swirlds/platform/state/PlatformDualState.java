@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.system.DualState;
 import com.swirlds.platform.FreezePeriodChecker;
+import com.swirlds.platform.system.DualState;
 import com.swirlds.platform.uptime.MutableUptimeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

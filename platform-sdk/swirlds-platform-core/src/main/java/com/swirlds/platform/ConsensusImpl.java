@@ -21,8 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
@@ -42,6 +41,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

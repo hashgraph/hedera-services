@@ -31,7 +31,7 @@ import com.hedera.node.config.types.Profile;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;

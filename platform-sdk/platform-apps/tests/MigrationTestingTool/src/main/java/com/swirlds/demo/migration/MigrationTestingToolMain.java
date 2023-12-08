@@ -18,16 +18,16 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueueStatistics;
-import com.swirlds.gui.model.GuiModel;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

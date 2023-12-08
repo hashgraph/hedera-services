@@ -18,11 +18,11 @@ package com.hedera.node.app.service.mono.state.forensics;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.state.notifications.IssListener;
-import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.IssListener;
+import com.swirlds.platform.system.state.notifications.IssNotification;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;

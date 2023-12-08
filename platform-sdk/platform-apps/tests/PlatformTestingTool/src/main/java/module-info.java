@@ -37,7 +37,6 @@ module com.swirlds.demo.platform {
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
-    requires com.swirlds.platform.gui;
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires java.management;

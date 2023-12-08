@@ -24,7 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;

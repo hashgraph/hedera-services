@@ -28,7 +28,6 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
-import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -41,6 +40,7 @@ import com.swirlds.platform.stats.AverageAndMaxTimeStat;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
+import com.swirlds.platform.system.PlatformStatNames;
 import java.time.temporal.ChronoUnit;
 
 /**

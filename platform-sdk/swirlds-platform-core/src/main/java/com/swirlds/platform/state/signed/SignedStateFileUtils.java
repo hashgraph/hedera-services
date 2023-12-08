@@ -20,7 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -20,10 +20,10 @@ import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS
 
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 
 /**
  * Submits valid transactions received from the application to a consumer. Invalid transactions are rejected.

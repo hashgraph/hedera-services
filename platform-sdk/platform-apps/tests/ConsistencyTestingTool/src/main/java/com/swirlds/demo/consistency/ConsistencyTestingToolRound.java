@@ -18,7 +18,7 @@ package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 
-import com.swirlds.common.system.Round;
+import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.config.legacy;
 
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;

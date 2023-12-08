@@ -23,7 +23,7 @@ import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.signDigestWithE
 
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

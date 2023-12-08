@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;

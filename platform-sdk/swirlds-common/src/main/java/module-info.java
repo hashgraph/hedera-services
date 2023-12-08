@@ -30,7 +30,6 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.impl.internal;
     exports com.swirlds.common.merkle.interfaces;
     exports com.swirlds.common.merkle.iterators;
-    exports com.swirlds.common.merkle.proof;
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
@@ -45,7 +44,7 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics.platform;
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
-    exports com.swirlds.common.notification.listeners;
+    exports com.swirlds.common.platform;
     exports com.swirlds.common.scratchpad;
     exports com.swirlds.common.sequence;
     exports com.swirlds.common.sequence.map;
@@ -53,11 +52,6 @@ module com.swirlds.common {
     exports com.swirlds.common.settings;
     exports com.swirlds.common.stream;
     exports com.swirlds.common.stream.internal;
-    exports com.swirlds.common.system;
-    exports com.swirlds.common.system.address;
-    exports com.swirlds.common.system.events;
-    exports com.swirlds.common.system.transaction;
-    exports com.swirlds.common.system.state.notifications;
     exports com.swirlds.common.threading;
     exports com.swirlds.common.threading.framework;
     exports com.swirlds.common.threading.framework.config;
@@ -83,13 +77,6 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring.wires.output;
 
     /* Targeted exports */
-    exports com.swirlds.common.internal to
-            com.swirlds.platform.core,
-            com.swirlds.platform.test,
-            com.swirlds.common.testing,
-            com.swirlds.jrs,
-            com.swirlds.demo.platform,
-            com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform.core,
             com.swirlds.common.test.fixtures,
@@ -117,12 +104,6 @@ module com.swirlds.common {
             com.swirlds.platform.test;
     exports com.swirlds.common.io.extendable.extensions.internal to
             com.swirlds.common.testing;
-    exports com.swirlds.common.system.transaction.internal to
-            com.swirlds.platform.core,
-            com.swirlds.platform.test,
-            com.swirlds.platform.core.test.fixtures,
-            com.swirlds.common.testing,
-            com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.merkle.impl to
             com.fasterxml.jackson.databind;
@@ -151,8 +132,6 @@ module com.swirlds.common {
     opens com.swirlds.common.units.internal to
             com.fasterxml.jackson.databind;
 
-    exports com.swirlds.common.system.status;
-    exports com.swirlds.common.system.status.actions;
     exports com.swirlds.common.metrics.statistics;
     exports com.swirlds.common.metrics.statistics.internal to
             com.swirlds.common.testing,

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 
 /**
  * Information about a successful sync that just occurred

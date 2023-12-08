@@ -18,8 +18,8 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;

@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldDualState;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -18,11 +18,11 @@ package com.swirlds.platform.eventhandling;
 
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;

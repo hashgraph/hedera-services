@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.topology;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.RandomGraph;
 import java.util.List;
 import java.util.function.Predicate;

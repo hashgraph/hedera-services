@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.NETWORK;
 
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.io.exceptions.BadIOException;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;

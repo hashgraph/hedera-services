@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;

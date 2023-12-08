@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.crypto;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.test.framework.ResourceLoader;
 import java.time.Duration;
 import java.time.Instant;

@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.mono.context;
 
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.PlatformStatus;
 
 /**
  * Defines a type that sets and gets the status of the underlying {@link
- * com.swirlds.common.system.Platform}. Intended for use as a per-classloader singleton for all
+ * Platform}. Intended for use as a per-classloader singleton for all
  * running nodes.
  */
 public interface CurrentPlatformStatus {

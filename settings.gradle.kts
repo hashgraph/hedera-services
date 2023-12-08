@@ -103,8 +103,6 @@ include(":swirlds-merkledb", "platform-sdk/swirlds-jasperdb")
 
 include(":swirlds-virtualmap", "platform-sdk/swirlds-virtualmap")
 
-include(":swirlds-platform-gui", "platform-sdk/swirlds-platform-gui")
-
 include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
 
 include(":swirlds-cli", "platform-sdk/swirlds-cli")

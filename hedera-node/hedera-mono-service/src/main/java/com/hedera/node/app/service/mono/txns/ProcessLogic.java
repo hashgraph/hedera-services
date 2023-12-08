@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.txns;
 
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 
 /**
  * Defines a type that can delegate to the correct state transition, if any, implied by the given

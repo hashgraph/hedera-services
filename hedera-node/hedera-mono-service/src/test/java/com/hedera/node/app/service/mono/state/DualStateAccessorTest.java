@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.state;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldDualState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

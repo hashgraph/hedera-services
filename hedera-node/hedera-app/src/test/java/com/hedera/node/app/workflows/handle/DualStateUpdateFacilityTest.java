@@ -34,7 +34,7 @@ import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldDualState;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;

@@ -28,8 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.crypto.ED25519SigningProvider;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
@@ -46,6 +45,7 @@ import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.system.Platform;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Random;

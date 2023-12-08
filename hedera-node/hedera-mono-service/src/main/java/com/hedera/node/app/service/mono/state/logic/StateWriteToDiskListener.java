@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
-import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -26,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Listener that will be notified with {@link
- * com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification} when state is
+ * StateWriteToDiskCompleteNotification} when state is
  * written to disk. This writes {@code NOW_FROZEN_MARKER} to disk when upgrade is pending
  */
 @Singleton

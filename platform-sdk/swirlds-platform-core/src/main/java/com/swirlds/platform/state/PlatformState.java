@@ -18,7 +18,7 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 
 /**
  * This subtree contains state data which is managed and used exclusively by the platform.

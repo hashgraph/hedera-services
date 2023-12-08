@@ -30,9 +30,9 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldState;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the

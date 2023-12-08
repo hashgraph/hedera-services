@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.STAT_C
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.metrics.DoubleGauge;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;

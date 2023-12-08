@@ -17,10 +17,9 @@
 package com.hedera.node.app.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.swirlds.common.system.address.AddressBook;
 
 /**
- * Summarizes useful information about the nodes in the {@link AddressBook} from the Platform. In
+ * Summarizes useful information about the nodes in the AddressBook from the Platform. In
  * the future, there may be events that require re-reading the book; but at present nodes may treat
  * the initializing book as static.
  */

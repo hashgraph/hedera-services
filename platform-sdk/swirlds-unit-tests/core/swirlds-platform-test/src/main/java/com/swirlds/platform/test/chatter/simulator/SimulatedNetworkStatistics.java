@@ -24,8 +24,8 @@ import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.
 
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.formatting.UnitFormatter;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;

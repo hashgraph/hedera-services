@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

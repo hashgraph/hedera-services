@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.state;
 
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Listener invoked for each consensus round that occurs. */

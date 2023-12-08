@@ -17,7 +17,7 @@
 package com.swirlds.platform.swirldapp;
 
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
-import com.swirlds.common.system.SwirldMain;
+import com.swirlds.platform.system.SwirldMain;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;

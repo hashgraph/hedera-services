@@ -19,13 +19,13 @@ package com.swirlds.platform.test.event.tipset;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

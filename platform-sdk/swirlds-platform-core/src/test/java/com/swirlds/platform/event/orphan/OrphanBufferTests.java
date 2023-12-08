@@ -27,13 +27,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventConstants;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

@@ -18,7 +18,7 @@ package com.swirlds.platform.dispatch.triggers.transaction;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.dispatch.types.TriggerFour;
 
 /**

@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.DefaultFunctionGauge;
 import com.swirlds.common.metrics.platform.Snapshot;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;

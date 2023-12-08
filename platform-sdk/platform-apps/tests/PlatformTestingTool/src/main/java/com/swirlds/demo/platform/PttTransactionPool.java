@@ -23,8 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.crypto.ECDSASigningProvider;
 import com.swirlds.common.test.fixtures.crypto.ED25519SigningProvider;
 import com.swirlds.common.test.fixtures.crypto.SigningProvider;
@@ -45,6 +44,7 @@ import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.transaction.pool.VirtualMerkleTransactionPool;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.system.Platform;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;

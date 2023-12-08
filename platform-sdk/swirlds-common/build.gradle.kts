@@ -28,7 +28,6 @@ mainModuleInfo {
 }
 
 testModuleInfo {
-    requires("com.swirlds.common.testing")
     requires("com.swirlds.test.framework")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")

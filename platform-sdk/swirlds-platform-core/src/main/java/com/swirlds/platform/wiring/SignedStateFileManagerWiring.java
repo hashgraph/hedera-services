@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -25,6 +24,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

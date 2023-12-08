@@ -25,7 +25,7 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;

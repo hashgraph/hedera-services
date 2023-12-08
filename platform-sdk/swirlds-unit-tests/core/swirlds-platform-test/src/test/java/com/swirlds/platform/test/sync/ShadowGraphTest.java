@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
@@ -40,6 +39,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;

@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

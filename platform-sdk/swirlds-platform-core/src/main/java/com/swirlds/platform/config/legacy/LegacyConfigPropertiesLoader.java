@@ -18,12 +18,11 @@ package com.swirlds.platform.config.legacy;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.internal.ConfigurationException;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.address.AddressBookUtils;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;

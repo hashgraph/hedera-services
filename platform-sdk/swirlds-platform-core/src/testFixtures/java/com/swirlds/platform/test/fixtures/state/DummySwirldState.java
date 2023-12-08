@@ -20,10 +20,10 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;

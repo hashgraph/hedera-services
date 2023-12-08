@@ -34,7 +34,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;

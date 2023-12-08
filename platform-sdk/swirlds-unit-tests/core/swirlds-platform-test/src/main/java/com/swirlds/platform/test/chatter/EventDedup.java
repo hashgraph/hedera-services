@@ -19,9 +19,9 @@ package com.swirlds.platform.test.chatter;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.set.ConcurrentSequenceSet;
 import com.swirlds.common.sequence.set.SequenceSet;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.system.events.EventDescriptor;
 import java.util.List;
 
 public class EventDedup implements MessageHandler<ChatterEvent>, Shiftable {

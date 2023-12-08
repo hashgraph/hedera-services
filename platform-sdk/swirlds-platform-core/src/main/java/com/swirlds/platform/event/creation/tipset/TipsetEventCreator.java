@@ -16,26 +16,21 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
-import static com.swirlds.common.system.events.EventConstants.CREATOR_ID_UNDEFINED;
-import static com.swirlds.common.system.events.EventConstants.GENERATION_UNDEFINED;
+import static com.swirlds.common.platform.NodeId.UNDEFINED_NODE_ID;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.buildDescriptor;
 import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
+import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventUtils;
@@ -43,6 +38,11 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

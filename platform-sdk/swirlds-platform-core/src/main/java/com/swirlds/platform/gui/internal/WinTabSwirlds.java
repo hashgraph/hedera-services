@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 
-import com.swirlds.gui.GuiConstants;
-import com.swirlds.gui.components.PrePaintableJPanel;
-import com.swirlds.gui.model.InfoApp;
-import com.swirlds.gui.model.InfoEntity;
-import com.swirlds.gui.model.InfoMember;
-import com.swirlds.gui.model.InfoSwirld;
+import com.swirlds.platform.gui.GuiConstants;
+import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.gui.model.InfoApp;
+import com.swirlds.platform.gui.model.InfoEntity;
+import com.swirlds.platform.gui.model.InfoMember;
+import com.swirlds.platform.gui.model.InfoSwirld;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;

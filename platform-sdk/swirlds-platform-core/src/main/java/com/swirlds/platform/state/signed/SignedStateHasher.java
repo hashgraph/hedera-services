@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.system.SystemExitCode.FATAL_ERROR;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;

@@ -28,9 +28,9 @@ import com.hedera.node.app.service.mono.context.properties.GlobalStaticPropertie
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;

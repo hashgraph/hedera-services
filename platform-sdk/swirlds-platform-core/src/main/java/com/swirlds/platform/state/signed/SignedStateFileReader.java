@@ -28,7 +28,7 @@ import static java.nio.file.Files.isDirectory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
