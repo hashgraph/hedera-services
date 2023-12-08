@@ -28,7 +28,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
@@ -86,7 +85,7 @@ public class SignatureValidator implements GossipEventValidator {
      * 		the public used to validate the event signature
      * @return true iff the signature is crypto-verified to be correct
      */
-    private boolean isValidSignature(final BaseEvent event, final PublicKey publicKey) {
+    private boolean isValidSignature(final GossipEvent event, final PublicKey publicKey) {
         final boolean valid = signatureVerifier.verifySignature(
                 event.getHashedData().getHash().getValue(),
                 event.getUnhashedData().getSignature(),

@@ -20,7 +20,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -155,7 +154,7 @@ public abstract class EventUtils {
      * @return the creator ID as {@code long} of the given event, or the self-ID if the given event is {@code null}
      */
     @Nullable
-    public static NodeId getCreatorId(@Nullable final BaseEvent event) {
+    public static NodeId getCreatorId(@Nullable final EventImpl event) {
         if (event == null) {
             return EventConstants.CREATOR_ID_UNDEFINED;
         } else {
@@ -170,7 +169,7 @@ public abstract class EventUtils {
      * @param selfParent the self-parent of the event to be created
      * @return a time {@code Instant} which defines the creation time of an event
      */
-    public static Instant getChildTimeCreated(@NonNull final Instant now, @Nullable final BaseEvent selfParent) {
+    public static Instant getChildTimeCreated(@NonNull final Instant now, @Nullable final EventImpl selfParent) {
 
         Objects.requireNonNull(now);
 
@@ -236,7 +235,7 @@ public abstract class EventUtils {
      * @return the generation number of the given event, or {@value EventConstants#GENERATION_UNDEFINED} is the event is
      * {@code null}
      */
-    public static long getEventGeneration(final BaseEvent event) {
+    public static long getEventGeneration(final EventImpl event) {
         if (event == null) {
             return EventConstants.GENERATION_UNDEFINED;
         }
@@ -250,7 +249,7 @@ public abstract class EventUtils {
      * @return a {@code byte[]} which contains the hash bytes of the given event, or {@code null} if the given event is
      * {@code null}
      */
-    public static byte[] getEventHash(final BaseEvent event) {
+    public static byte[] getEventHash(final EventImpl event) {
         if (event == null) {
             return null;
         }

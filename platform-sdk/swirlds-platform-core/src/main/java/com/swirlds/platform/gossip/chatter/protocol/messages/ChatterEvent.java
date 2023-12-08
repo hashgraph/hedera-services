@@ -23,7 +23,7 @@ import java.time.Instant;
 /**
  * Describes an event, hiding interface details that are not relevant to a gossip algorithm.
  */
-public interface ChatterEvent extends SelfSerializable {
+public interface ChatterEvent extends SelfSerializable { // TODO get rid of this!
 
     /**
      * Get the descriptor of the event.

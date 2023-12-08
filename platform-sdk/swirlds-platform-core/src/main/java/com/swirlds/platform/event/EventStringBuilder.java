@@ -20,9 +20,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -37,47 +35,31 @@ public final class EventStringBuilder {
     private final StringBuilder sb = new StringBuilder();
     /** hashed data of an event */
     private final BaseEventHashedData hashedData;
-    /** unhashed data of an event */
-    private final BaseEventUnhashedData unhashedData;
 
-    private EventStringBuilder(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    private EventStringBuilder(@Nullable final BaseEventHashedData hashedData) {
         this.hashedData = hashedData;
-        this.unhashedData = unhashedData;
     }
 
-    private EventStringBuilder(final String errorString) {
-        this(null, null);
-        sb.append(errorString);
+    public static EventStringBuilder builder(@Nullable final EventImpl event) {
+        final BaseEventHashedData eventData = event == null ? null : event.getBaseEventHashedData();
+        return builder(eventData);
     }
 
-    public static EventStringBuilder builder(final EventImpl event) {
-        if (event == null) {
-            return new EventStringBuilder("(EventImpl=null)");
-        }
-        return builder(event.getBaseEvent());
+    public static EventStringBuilder builder(@Nullable final GossipEvent event) {
+        final BaseEventHashedData eventData = event == null ? null : event.getHashedData();
+        return builder(eventData);
     }
 
-    public static EventStringBuilder builder(final BaseEvent event) {
-        if (event == null) {
-            return new EventStringBuilder("(BaseEvent=null)");
-        }
-        return builder(event.getHashedData(), event.getUnhashedData());
-    }
-
-    public static EventStringBuilder builder(
-            final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    public static EventStringBuilder builder(@Nullable final BaseEventHashedData hashedData) {
         if (hashedData == null) {
-            return new EventStringBuilder("(HashedData=null)");
-        }
-        if (unhashedData == null) {
-            return new EventStringBuilder("(UnhashedData=null)");
+            return new EventStringBuilder(null);
         }
 
-        return new EventStringBuilder(hashedData, unhashedData);
+        return new EventStringBuilder(hashedData);
     }
 
     private boolean isNull() {
-        return hashedData == null || unhashedData == null;
+        return hashedData == null;
     }
 
     public EventStringBuilder appendEvent() {
@@ -102,7 +84,12 @@ public final class EventStringBuilder {
             return this;
         }
         sb.append(" op");
-        appendShortEvent(unhashedData.getOtherId(), hashedData.getOtherParentGen(), hashedData.getOtherParentHash());
+
+        final NodeId otherId = hashedData.getOtherParents().isEmpty()
+                ? null
+                : hashedData.getOtherParents().get(0).getCreator();
+
+        appendShortEvent(otherId, hashedData.getOtherParentGen(), hashedData.getOtherParentHash());
         return this;
     }
 

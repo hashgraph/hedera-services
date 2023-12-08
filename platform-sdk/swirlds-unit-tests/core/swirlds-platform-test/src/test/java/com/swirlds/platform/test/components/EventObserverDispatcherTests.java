@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.test.components;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.test.observers.ObservationType.ADDED;
 import static com.swirlds.platform.test.observers.ObservationType.PRE_CONSENSUS;
 import static com.swirlds.platform.test.observers.ObservationType.STALE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
@@ -29,7 +31,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.event.SimpleEvent;
 import com.swirlds.platform.test.observers.AddedAndStale;
 import com.swirlds.platform.test.observers.AddedObserver;
 import com.swirlds.platform.test.observers.ConsRound;
@@ -56,8 +57,13 @@ class EventObserverDispatcherTests {
 
     EventObserverDispatcher dispatcher = new EventObserverDispatcher(preCons, added, stale, consRound, addedStale);
 
-    SimpleEvent e1 = new SimpleEvent(1);
-    SimpleEvent e2 = new SimpleEvent(2);
+    EventImpl e1 = mock(EventImpl.class);
+    EventImpl e2 = mock(EventImpl.class);
+
+    {
+        when(e1.getHash()).thenReturn(randomHash());
+        when(e2.getHash()).thenReturn(randomHash());
+    }
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -88,8 +94,7 @@ class EventObserverDispatcherTests {
         dispatcher.consensusRound(consensusRound);
     }
 
-    private void dispatchAndCheck(
-            final ObservationType type, final SimpleEvent event, final SimpleEventTracker... yes) {
+    private void dispatchAndCheck(final ObservationType type, final EventImpl event, final SimpleEventTracker... yes) {
         switch (type) {
             case PRE_CONSENSUS:
                 dispatcher.preConsensusEvent(event);
@@ -111,11 +116,8 @@ class EventObserverDispatcherTests {
                     assertBool,
                     t.isObserved(type, event),
                     String.format(
-                            "%s %s have observed the %s event %d",
-                            t.getClass().getName(),
-                            assertBool ? "should" : "should not",
-                            type.toString(),
-                            event.getId()));
+                            "%s %s have observed the %s event %s",
+                            t.getClass().getName(), assertBool ? "should" : "should not", type, event.getHash()));
         }
     }
 }

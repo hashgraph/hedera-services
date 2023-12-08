@@ -42,7 +42,6 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -133,7 +132,7 @@ public class TestIntake implements LoadableFromSignedState {
      * Same as {@link #addEvent(GossipEvent)}
      *
      * <p>Note: this event won't be the one inserted, intake will create a new instance that will
-     * wrap the {@link BaseEvent}
+     * wrap the event
      */
     public void addEvent(@NonNull final EventImpl event) {
         intake.addUnlinkedEvent(event.getBaseEvent());

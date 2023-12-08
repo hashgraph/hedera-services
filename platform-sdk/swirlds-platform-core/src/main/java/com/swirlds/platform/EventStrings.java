@@ -17,11 +17,12 @@
 package com.swirlds.platform;
 
 import com.swirlds.platform.event.EventStringBuilder;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEvent;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A collection of methods for creating strings from events events.
+ * A collection of methods for creating strings from events.
  */
 public final class EventStrings {
     private EventStrings() {}
@@ -34,14 +35,14 @@ public final class EventStrings {
      * 		the event to convert to a string
      * @return A short string representation of an event
      */
-    public static String toShortString(final EventImpl event) {
+    public static String toShortString(@Nullable final EventImpl event) {
         return EventStringBuilder.builder(event).appendEvent().build();
     }
 
     /**
      * Same as {@link #toShortString(EventImpl)}
      */
-    public static String toShortString(final BaseEvent event) {
+    public static String toShortString(@Nullable final GossipEvent event) {
         return EventStringBuilder.builder(event).appendEvent().build();
     }
 
@@ -66,7 +67,7 @@ public final class EventStrings {
     /**
      * Same as {@link #toMediumString(EventImpl)}
      */
-    public static String toMediumString(final BaseEvent event) {
+    public static String toMediumString(final GossipEvent event) {
         return EventStringBuilder.builder(event)
                 .appendEvent()
                 .appendSelfParent()

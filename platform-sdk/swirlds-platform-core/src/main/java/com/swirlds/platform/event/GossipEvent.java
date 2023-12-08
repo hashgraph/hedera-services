@@ -21,7 +21,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -34,7 +33,7 @@ import java.util.Objects;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements BaseEvent, ChatterEvent {
+public class GossipEvent implements ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private static final int MAX_SIG_LENGTH = 384;
 
@@ -115,7 +114,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Get the hashed data for the event.
      */
-    @Override
     public BaseEventHashedData getHashedData() {
         return hashedData;
     }
@@ -123,7 +121,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Get the unhashed data for the event.
      */
-    @Override
     public BaseEventUnhashedData getUnhashedData() {
         return unhashedData;
     }

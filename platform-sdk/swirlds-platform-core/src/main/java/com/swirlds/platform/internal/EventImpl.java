@@ -36,7 +36,6 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
@@ -69,8 +68,7 @@ import java.util.concurrent.CountDownLatch;
  */
 @ConstructableIgnored
 public class EventImpl
-        implements BaseEvent,
-                Comparable<EventImpl>,
+        implements Comparable<EventImpl>,
                 PlatformEvent, // TODO
                 SerializableHashable,
                 OptionalSelfSerializable<EventSerializationOptions>,
@@ -617,12 +615,16 @@ public class EventImpl
         return baseEvent.getUnhashedData();
     }
 
-    @Override
+    /**
+     * Get the hashed data for the event.
+     */
     public BaseEventHashedData getHashedData() {
         return getBaseEventHashedData();
     }
 
-    @Override
+    /**
+     * Get the unhashed data for the event.
+     */
     public BaseEventUnhashedData getUnhashedData() {
         return getBaseEventUnhashedData();
     }

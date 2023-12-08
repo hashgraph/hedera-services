@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.test.observers;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.event.SimpleEvent;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class SimpleEventTracker {
-    private final Map<ObservationType, Set<Long>> simpleEventsObserved;
+    private final Map<ObservationType, Set<Hash>> simpleEventsObserved;
 
     public SimpleEventTracker() {
         this.simpleEventsObserved = new HashMap<>();
@@ -37,23 +37,15 @@ public class SimpleEventTracker {
         if (isObserved(observation, event)) {
             throw new RuntimeException("Event should not be observed twice");
         }
-        simpleEventsObserved.get(observation).add(cast(event).getId());
+        simpleEventsObserved.get(observation).add(event.getHash());
     }
 
     public boolean isObserved(ObservationType observation, EventImpl event) {
-        return simpleEventsObserved.get(observation).contains(cast(event).getId());
-    }
-
-    private SimpleEvent cast(EventImpl event) {
-        if (event instanceof SimpleEvent) {
-            return (SimpleEvent) event;
-        } else {
-            throw new RuntimeException("Only supports SimpleEvent");
-        }
+        return simpleEventsObserved.get(observation).contains(event.getHash());
     }
 
     public void clear() {
-        for (Set<Long> value : simpleEventsObserved.values()) {
+        for (Set<Hash> value : simpleEventsObserved.values()) {
             value.clear();
         }
     }
