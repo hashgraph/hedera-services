@@ -77,6 +77,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -252,7 +253,31 @@ public class ContractCallSuite extends HapiSuite {
                 depositMoreThanBalanceFailsGracefully(),
                 lowLevelEcrecCallBehavior(),
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
-                hollowCreationFailsCleanly());
+                hollowCreationFailsCleanly(),
+                repeatedCreate2FailsWithInterpretableActionSidecars());
+    }
+
+    private HapiSpec repeatedCreate2FailsWithInterpretableActionSidecars() {
+        final var contract = "Create2PrecompileUser";
+        final var salt = unhex(SALT);
+        final var firstCreation = "firstCreation";
+        final var secondCreation = "secondCreation";
+        return defaultHapiSpec("repeatedCreate2FailsWithInterpretableActionSidecars")
+                .given(
+                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(
+                        contractCall(contract, "createUser", salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(firstCreation),
+                        contractCall(contract, "createUser", salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(secondCreation)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then();
     }
 
     private HapiSpec hollowCreationFailsCleanly() {

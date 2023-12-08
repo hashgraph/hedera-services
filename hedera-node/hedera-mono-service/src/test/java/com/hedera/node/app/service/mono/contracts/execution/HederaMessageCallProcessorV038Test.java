@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
-import static com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorTest.isSameResult;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
@@ -29,7 +28,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -65,7 +63,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.AltBN128AddPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -412,12 +409,7 @@ class HederaMessageCallProcessorV038Test {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(1)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
-        verify(hederaTracer)
-                .tracePostExecution(
-                        eq(frame),
-                        argThat(result -> isSameResult(
-                                result,
-                                new Operation.OperationResult(initialGas, FAILURE_DURING_LAZY_ACCOUNT_CREATE))));
+        verify(hederaTracer).traceAccountCreationResult(eq(frame), eq(Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE)));
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
