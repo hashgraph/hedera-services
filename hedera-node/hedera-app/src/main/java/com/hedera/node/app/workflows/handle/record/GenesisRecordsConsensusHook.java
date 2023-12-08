@@ -32,7 +32,6 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.ConsensusTimeHook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;

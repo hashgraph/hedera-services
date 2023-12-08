@@ -18,28 +18,24 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownAllNodes;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startAllNodes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToBecomeActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToShutDown;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
-import static com.hedera.services.bdd.suites.regression.system.MixedOpsNodeDeathReconnectTest.mixedOps;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TOPIC;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TREASURY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -48,16 +44,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
@@ -73,12 +61,6 @@ public class MixedOpsRestartTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsRestartTest.class);
 
     private static final int NUM_SUBMISSIONS = 5;
-    private static final String SUBMIT_KEY = "submitKey";
-    private static final String TOKEN = "token";
-    private static final String SENDER = "sender";
-    private static final String RECEIVER = "receiver";
-    private static final String TOPIC = "topic";
-    private static final String TREASURY = "treasury";
 
     public static void main(String... args) {
         new AddressAliasIdFuzzing().runSuiteSync();
@@ -96,10 +78,12 @@ public class MixedOpsRestartTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec restartMixedOps() {
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = mixedOps(NUM_SUBMISSIONS);
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS).mixedOps();
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(ADMIN_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
                         cryptoCreate(TREASURY),

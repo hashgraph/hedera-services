@@ -430,7 +430,7 @@ public final class Hedera implements SwirldMain {
             switch (trigger) {
                 case GENESIS -> genesis(state);
                 case RESTART -> restart(state, deserializedVersion);
-                case RECONNECT -> reconnect(state, deserializedVersion);
+                case RECONNECT -> restart(state, deserializedVersion);
                     // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
@@ -450,25 +450,6 @@ public final class Hedera implements SwirldMain {
                 dualState.getFreezeTime(),
                 dualState.getLastFrozenTime());
     }
-
-    private void reconnect(final MerkleHederaState state,
-                           final HederaSoftwareVersion deserializedVersion) {
-        final var currentVersion = version.getServicesVersion();
-        final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
-        logger.info(
-                "Migrating from version {} to {}",
-                () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
-                () -> HapiUtils.toString(currentVersion));
-
-        final var selfId = platform.getSelfId();
-        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
-        final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
-        final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
-
-        final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
-        migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
-    }
-
     /**
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
      * than the current software version. If it is prior to the current version, then each migration between the

@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -54,13 +53,12 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
@@ -129,7 +127,6 @@ public class ReadableStoreFactory {
     public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
-        logger.info("Creating store of class {} with name {}", storeInterface, entry);
         if (entry != null) {
             final var readableStates = state.createReadableStates(entry.name);
             final var store = entry.factory.apply(readableStates);
