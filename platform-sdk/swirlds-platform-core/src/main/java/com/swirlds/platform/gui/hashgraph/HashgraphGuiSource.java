@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.hashgraph;
 
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 
 /**
  * Provides the {@code HashgraphGui} information it needs to render an image of the hashgraph
@@ -38,7 +38,7 @@ public interface HashgraphGuiSource {
      * 		the number of generations to be returned
      * @return an array of requested events
      */
-    PlatformEvent[] getEvents(final long startGeneration, final int numGenerations);
+    EventImpl[] getEvents(final long startGeneration, final int numGenerations);
 
     /**
      * Get the Address Book

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventStringBuilder;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**

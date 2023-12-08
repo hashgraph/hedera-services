@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;

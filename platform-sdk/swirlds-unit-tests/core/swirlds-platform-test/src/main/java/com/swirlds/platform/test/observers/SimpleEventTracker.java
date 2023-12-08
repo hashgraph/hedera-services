@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.observers;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;

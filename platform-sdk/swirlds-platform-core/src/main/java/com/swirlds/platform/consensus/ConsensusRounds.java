@@ -18,7 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;

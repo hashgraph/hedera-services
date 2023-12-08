@@ -23,9 +23,8 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -470,7 +469,7 @@ public class ShadowGraph implements Clearable {
      * 		The event.
      * @return the shadow event that references an event, or null is {@code e} is null
      */
-    public synchronized ShadowEvent shadow(final PlatformEvent e) {
+    public synchronized ShadowEvent shadow(final EventImpl e) {
         if (e == null) {
             return null;
         }
@@ -631,7 +630,7 @@ public class ShadowGraph implements Clearable {
      * 		The event.
      * @return true iff the given event is expired
      */
-    private boolean expired(final PlatformEvent event) {
+    private boolean expired(final EventImpl event) {
         return event.getGeneration() < oldestGeneration;
     }
 

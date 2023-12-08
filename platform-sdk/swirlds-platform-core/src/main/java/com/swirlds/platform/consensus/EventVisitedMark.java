@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 
 /**
  * When searching for events in a graph, this instance is used to mark the ones that have already

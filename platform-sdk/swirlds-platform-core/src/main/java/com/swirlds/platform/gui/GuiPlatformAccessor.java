@@ -20,9 +20,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -126,7 +125,7 @@ public final class GuiPlatformAccessor {
     /**
      * Get a sorted list of events.
      */
-    public PlatformEvent[] getAllEvents(@NonNull NodeId nodeId) {
+    public EventImpl[] getAllEvents(@NonNull NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         final EventImpl[] allEvents = getShadowGraph(nodeId).getAllEvents();

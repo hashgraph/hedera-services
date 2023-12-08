@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

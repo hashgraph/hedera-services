@@ -32,6 +32,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.gui.model.GuiModel;
@@ -43,7 +44,6 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Component;
@@ -101,7 +101,7 @@ public class HashgraphDemoMain implements SwirldMain {
     /** the JFrame with the hashgraph */
     Picture picture;
     /** a copy of the set of events at one moment, which paintComponent will draw */
-    private PlatformEvent[] eventsCache;
+    private EventImpl[] eventsCache;
     /** the number of members in the addressBook */
     private int numMembers = -1;
     /** number of columns (equals number of members) */
@@ -149,7 +149,7 @@ public class HashgraphDemoMain implements SwirldMain {
      * 		the event to color
      * @return its color
      */
-    private Color eventColor(final PlatformEvent event) {
+    private Color eventColor(final EventImpl event) {
         if (simpleColorsCheckbox.getState()) { // if checkbox checked
             return event.isConsensus() ? LIGHT_BLUE : LIGHT_GREEN;
         }
@@ -188,7 +188,7 @@ public class HashgraphDemoMain implements SwirldMain {
          * 		the event (displayed as a circle on the screen)
          * @return the x coordinate for that event
          */
-        private int xpos(final PlatformEvent event) {
+        private int xpos(final EventImpl event) {
             // To support Noncontiguous NodeId, the index of the NodeId in the address book is used.
             final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(event.getCreatorId());
             return (nodeIndex + 1) * width / (numColumns + 1);
@@ -201,7 +201,7 @@ public class HashgraphDemoMain implements SwirldMain {
          * 		the event (displayed as a circle on the screen)
          * @return the y coordinate for that event
          */
-        private int ypos(final PlatformEvent event) {
+        private int ypos(final EventImpl event) {
             return (event == null) ? -100 : (int) (ymax - r * (1 + 2 * (event.getGeneration() - minGen)));
         }
 
@@ -259,7 +259,7 @@ public class HashgraphDemoMain implements SwirldMain {
                 g.drawString(names[i], (int) (x - rect.getWidth() / 2), (int) (ymax + rect.getHeight()));
             }
 
-            PlatformEvent[] events = eventsCache;
+            EventImpl[] events = eventsCache;
             if (events == null) { // in case a screen refresh happens before any events
                 return;
             }
@@ -276,7 +276,7 @@ public class HashgraphDemoMain implements SwirldMain {
 
             minGen = Integer.MAX_VALUE;
             maxGen = Integer.MIN_VALUE;
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 minGen = Math.min(minGen, event.getGeneration());
                 maxGen = Math.max(maxGen, event.getGeneration());
             }
@@ -288,10 +288,10 @@ public class HashgraphDemoMain implements SwirldMain {
             final int d = (int) (2 * r);
 
             // for each event, draw 2 downward lines to its parents
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 g.setColor(eventColor(event));
-                final PlatformEvent e1 = event.getSelfParent();
-                final PlatformEvent e2 = event.getOtherParent();
+                final EventImpl e1 = event.getSelfParent();
+                final EventImpl e2 = event.getOtherParent();
                 if (e1 != null && e1.getGeneration() >= minGen) {
                     g.drawLine(xpos(event), ypos(event), xpos(event), ypos(e1));
                 }
@@ -301,9 +301,9 @@ public class HashgraphDemoMain implements SwirldMain {
             }
 
             // for each event, draw its circle
-            for (final PlatformEvent event : events) {
-                final PlatformEvent e1 = event.getSelfParent();
-                final PlatformEvent e2 = event.getOtherParent();
+            for (final EventImpl event : events) {
+                final EventImpl e1 = event.getSelfParent();
+                final EventImpl e2 = event.getOtherParent();
                 if (e1 == null || e2 == null) {
                     continue; // discarded events have no parents, so skip them
                 }

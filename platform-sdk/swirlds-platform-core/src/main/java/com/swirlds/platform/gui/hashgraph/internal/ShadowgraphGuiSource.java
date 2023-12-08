@@ -17,12 +17,11 @@
 package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.PlatformEvent;
 
 /**
  * A {@link HashgraphGuiSource} that retrieves events from a {@link ShadowGraph}
@@ -38,10 +37,10 @@ public interface ShadowgraphGuiSource extends HashgraphGuiSource {
     }
 
     @Override
-    default PlatformEvent[] getEvents(final long startGeneration, final int numGenerations) {
+    default EventImpl[] getEvents(final long startGeneration, final int numGenerations) {
         return getShadowGraph()
                 .findByGeneration(startGeneration, startGeneration + numGenerations, e -> true)
-                .toArray(PlatformEvent[]::new);
+                .toArray(EventImpl[]::new);
     }
 
     @Override

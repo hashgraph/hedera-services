@@ -18,8 +18,8 @@ package com.swirlds.platform.event.linking;
 
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 

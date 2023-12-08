@@ -32,8 +32,8 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.stats.AverageAndMax;

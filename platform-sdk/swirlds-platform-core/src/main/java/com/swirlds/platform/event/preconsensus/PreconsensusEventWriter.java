@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;

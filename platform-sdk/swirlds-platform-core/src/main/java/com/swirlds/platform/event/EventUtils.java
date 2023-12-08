@@ -19,9 +19,7 @@ package com.swirlds.platform.event;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -70,7 +68,7 @@ public abstract class EventUtils {
                 .collect(Collectors.joining(","));
     }
 
-    public static int generationComparator(final PlatformEvent e1, final PlatformEvent e2) {
+    public static int generationComparator(final EventImpl e1, final EventImpl e2) {
         return Long.compare(e1.getGeneration(), e2.getGeneration());
     }
 
