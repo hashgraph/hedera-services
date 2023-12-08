@@ -323,6 +323,20 @@ class TokenServiceApiImplTest {
     }
 
     @Test
+    void identicalFromToIsNoop() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .tinybarBalance(123L)
+                .smartContract(true)
+                .build());
+
+        subject.transferFromTo(CONTRACT_ACCOUNT_ID, CONTRACT_ACCOUNT_ID, 23L);
+
+        final var postTransfer = requireNonNull(accountState.get(CONTRACT_ACCOUNT_ID));
+        assertEquals(123L, postTransfer.tinybarBalance());
+    }
+
+    @Test
     void refusesToTransferNegativeAmount() {
         assertThrows(
                 IllegalArgumentException.class, () -> subject.transferFromTo(EOA_ACCOUNT_ID, CONTRACT_ACCOUNT_ID, -1L));
