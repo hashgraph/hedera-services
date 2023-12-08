@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
