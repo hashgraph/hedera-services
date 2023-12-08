@@ -61,7 +61,7 @@ class TokenCreateResourceUsageTest {
     TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
 

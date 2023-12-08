@@ -31,7 +31,7 @@ class InMemoryReadableStateTest extends MerkleTestBase {
     @DisplayName("Constructor Tests")
     final class ConstructorTest {
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitMerkleMap();
         }
 
@@ -78,7 +78,7 @@ class InMemoryReadableStateTest extends MerkleTestBase {
         private InMemoryReadableKVState<String, String> state;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitMerkleMap();
             state = new InMemoryReadableKVState<>(fruitMetadata, fruitMerkleMap);
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);

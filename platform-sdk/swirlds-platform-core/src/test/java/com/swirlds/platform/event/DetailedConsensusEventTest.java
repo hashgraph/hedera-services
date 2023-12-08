@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 
 public class DetailedConsensusEventTest {
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.common.events");

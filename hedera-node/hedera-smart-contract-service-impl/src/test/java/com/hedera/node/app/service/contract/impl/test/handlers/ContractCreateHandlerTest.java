@@ -70,7 +70,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     private ContractCreateHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ContractCreateHandler(() -> factory);
     }
 

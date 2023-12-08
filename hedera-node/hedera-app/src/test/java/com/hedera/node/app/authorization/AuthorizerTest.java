@@ -43,7 +43,7 @@ final class AuthorizerTest {
     private HederaFunctionality hapiFunction;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         configProvider = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
         accountID = AccountID.newBuilder().build();

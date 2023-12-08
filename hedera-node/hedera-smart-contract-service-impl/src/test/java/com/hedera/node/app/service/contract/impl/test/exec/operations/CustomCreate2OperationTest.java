@@ -69,7 +69,7 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
     private CustomCreate2Operation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomCreate2Operation(gasCalculator, featureFlags);
     }
 

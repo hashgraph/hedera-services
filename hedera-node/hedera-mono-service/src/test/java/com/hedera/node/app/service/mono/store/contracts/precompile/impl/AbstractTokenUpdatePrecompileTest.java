@@ -111,7 +111,7 @@ class AbstractTokenUpdatePrecompileTest {
     private SigTestingTokenUpdatePrecompile subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SigTestingTokenUpdatePrecompile(
                 keyValidator,
                 legacyKeyValidator,

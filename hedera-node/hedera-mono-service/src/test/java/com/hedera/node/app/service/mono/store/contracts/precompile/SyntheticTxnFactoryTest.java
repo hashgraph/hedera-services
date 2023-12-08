@@ -133,7 +133,7 @@ class SyntheticTxnFactoryTest {
     private SyntheticTxnFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         propertySource = new BootstrapProperties();
         propertySource.ensureProps();
         dynamicProperties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);

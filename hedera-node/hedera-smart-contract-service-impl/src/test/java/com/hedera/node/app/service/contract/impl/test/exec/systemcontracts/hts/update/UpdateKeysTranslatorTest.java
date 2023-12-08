@@ -38,7 +38,7 @@ class UpdateKeysTranslatorTest {
     private final UpdateDecoder decoder = new UpdateDecoder();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new UpdateKeysTranslator(decoder);
     }
 

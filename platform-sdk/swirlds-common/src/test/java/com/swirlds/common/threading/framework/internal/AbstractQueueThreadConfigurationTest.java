@@ -83,7 +83,7 @@ class AbstractQueueThreadConfigurationTest {
     private Metrics metrics;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();

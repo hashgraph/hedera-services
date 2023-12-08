@@ -194,7 +194,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         private HandleContext handleContext;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
             given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

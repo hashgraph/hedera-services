@@ -57,8 +57,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     private Token nonFungibleWithNoKyc;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshWritableStores();
 
         givenStoresAndConfig(handleContext);

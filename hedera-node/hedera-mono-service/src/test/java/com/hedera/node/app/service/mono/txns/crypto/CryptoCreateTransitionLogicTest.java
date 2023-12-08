@@ -148,7 +148,7 @@ class CryptoCreateTransitionLogicTest {
     private CryptoCreateChecks cryptoCreateChecks;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         txnCtx = mock(TransactionContext.class);
         usageLimits = mock(UsageLimits.class);
         aliasManager = mock(AliasManager.class);

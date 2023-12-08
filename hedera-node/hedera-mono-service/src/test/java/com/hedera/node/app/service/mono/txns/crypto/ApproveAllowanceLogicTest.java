@@ -123,7 +123,7 @@ class ApproveAllowanceLogicTest {
     private final UniqueToken nft2 = new UniqueToken(tokenId2, serial2);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ApproveAllowanceLogic(accountStore, tokenStore, dynamicProperties);
         nft1.setOwner(Id.fromGrpcAccount(ownerId));
         nft2.setOwner(Id.fromGrpcAccount(ownerId));

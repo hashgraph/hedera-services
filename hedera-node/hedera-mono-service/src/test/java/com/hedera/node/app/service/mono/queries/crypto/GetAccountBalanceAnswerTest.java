@@ -83,7 +83,7 @@ class GetAccountBalanceAnswerTest {
     private GetAccountBalanceAnswer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GetAccountBalanceAnswer(aliasManager, optionValidator);
     }
 

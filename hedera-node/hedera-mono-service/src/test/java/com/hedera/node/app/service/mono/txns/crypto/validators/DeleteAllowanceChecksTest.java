@@ -150,7 +150,7 @@ class DeleteAllowanceChecksTest {
     private CryptoDeleteAllowanceTransactionBody op;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         resetAllowances();
         nftModel.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
         nftModel.setType(TokenType.NON_FUNGIBLE_UNIQUE);

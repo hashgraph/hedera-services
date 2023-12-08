@@ -256,7 +256,7 @@ class GetTokenInfoPrecompilesTest {
     private EvmNftInfo evmNftInfo;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
 

@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
 
     @BeforeEach
-    void setUp() {}
+    void setup() {}
 
     @Test
     void createMerkleTopicFromTopic() {

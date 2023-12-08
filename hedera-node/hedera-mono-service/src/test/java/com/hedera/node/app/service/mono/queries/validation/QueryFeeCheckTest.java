@@ -81,7 +81,7 @@ class QueryFeeCheckTest {
     private QueryFeeCheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         detached = mock(MerkleAccount.class);
         given(detached.getBalance()).willReturn(0L);
         broke = mock(MerkleAccount.class);

@@ -44,7 +44,7 @@ class CryptoGetLiveHashHandlerTest {
     private CryptoGetLiveHashHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoGetLiveHashHandler();
     }
 

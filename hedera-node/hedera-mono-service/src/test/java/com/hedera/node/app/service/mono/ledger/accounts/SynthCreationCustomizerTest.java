@@ -54,7 +54,7 @@ class SynthCreationCustomizerTest {
     private SynthCreationCustomizer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SynthCreationCustomizer(accountsLedger);
     }
 

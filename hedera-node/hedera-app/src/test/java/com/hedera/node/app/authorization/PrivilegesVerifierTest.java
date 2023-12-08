@@ -104,7 +104,7 @@ class PrivilegesVerifierTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var configuration = HederaTestConfigBuilder.createConfig();
         final ConfigProvider configProvider = () -> new VersionedConfigImpl(configuration, 1L);
 

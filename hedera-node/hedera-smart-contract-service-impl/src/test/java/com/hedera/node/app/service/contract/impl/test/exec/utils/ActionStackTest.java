@@ -125,7 +125,7 @@ class ActionStackTest {
     private ActionStack subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ActionStack(helper, allActions, actionsStack, invalidActions);
     }
 

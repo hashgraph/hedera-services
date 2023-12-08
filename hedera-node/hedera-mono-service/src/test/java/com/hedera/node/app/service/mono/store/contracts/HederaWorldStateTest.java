@@ -139,7 +139,7 @@ class HederaWorldStateTest {
     private HederaWorldState subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(properties.prefetchCodeCacheTtlSecs()).willReturn(1);
         codeCache = new CodeCache(properties, entityAccess);
         subject = new HederaWorldState(

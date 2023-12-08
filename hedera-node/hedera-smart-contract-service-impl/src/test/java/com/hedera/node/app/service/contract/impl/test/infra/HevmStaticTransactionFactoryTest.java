@@ -56,7 +56,7 @@ class HevmStaticTransactionFactoryTest {
     private HevmStaticTransactionFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(context.payer()).willReturn(SENDER_ID);
         subject = new HevmStaticTransactionFactory(context, gasCalculator);

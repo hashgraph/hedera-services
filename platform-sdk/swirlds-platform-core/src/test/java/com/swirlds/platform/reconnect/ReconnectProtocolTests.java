@@ -128,7 +128,7 @@ class ReconnectProtocolTests {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         activeStatusGetter = mock(PlatformStatusGetter.class);
         when(activeStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
 

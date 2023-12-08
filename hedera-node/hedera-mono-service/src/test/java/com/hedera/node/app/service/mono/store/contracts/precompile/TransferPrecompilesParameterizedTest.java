@@ -188,7 +188,7 @@ class TransferPrecompilesParameterizedTest {
             areAllowancesEnabled);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
     }

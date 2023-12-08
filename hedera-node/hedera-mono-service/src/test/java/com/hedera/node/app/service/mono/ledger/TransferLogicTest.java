@@ -156,7 +156,7 @@ class TransferLogicTest {
     private TransferLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var backingAccounts = new HashMapBackingAccounts();
         accountsLedger = new TransactionalLedger<>(
                 AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());

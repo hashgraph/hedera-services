@@ -47,7 +47,7 @@ class StartingUpStatusLogicTests {
     private StartingUpStatusLogic logic;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         logic = new StartingUpStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));

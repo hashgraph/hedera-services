@@ -116,7 +116,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ConsensusCreateTopicHandler();
         topicStore = new WritableTopicStore(writableStates);
         final var config = HederaTestConfigBuilder.create()

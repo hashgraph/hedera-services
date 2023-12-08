@@ -77,8 +77,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     private CryptoGetAccountBalanceHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new CryptoGetAccountBalanceHandler();
     }
 

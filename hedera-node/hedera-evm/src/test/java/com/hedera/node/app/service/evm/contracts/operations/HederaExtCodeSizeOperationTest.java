@@ -62,7 +62,7 @@ class HederaExtCodeSizeOperationTest {
     HederaExtCodeSizeOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 

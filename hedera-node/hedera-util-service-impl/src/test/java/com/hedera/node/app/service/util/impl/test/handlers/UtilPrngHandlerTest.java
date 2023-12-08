@@ -73,7 +73,7 @@ class UtilPrngHandlerTest {
     private static final Bytes nMinusThreeHash = hash;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         recordBuilder = new FakePrngRecordBuilder();
         feeCalculator = new FakeFeeCalculator();
         feeAccumulator = new FakeFeeAccumulator();

@@ -74,7 +74,7 @@ class BurnLogicTest {
     private BurnLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BurnLogic(validator, store, accountStore, dynamicProperties);
     }
 

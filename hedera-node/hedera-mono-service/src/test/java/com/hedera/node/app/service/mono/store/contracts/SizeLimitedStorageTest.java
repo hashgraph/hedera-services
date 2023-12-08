@@ -99,7 +99,7 @@ class SizeLimitedStorageTest {
     private SizeLimitedStorage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         storageLike = VirtualMapLike.from(storage);
         subject = new SizeLimitedStorage(
                 storageFeeCharging,

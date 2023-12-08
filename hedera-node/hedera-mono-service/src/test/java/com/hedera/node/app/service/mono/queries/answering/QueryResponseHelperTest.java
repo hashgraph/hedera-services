@@ -48,7 +48,7 @@ class QueryResponseHelperTest {
     QueryResponseHelper subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         answerFlow = mock(AnswerFlow.class);
         opCounters = mock(HapiOpCounters.class);
         answer = mock(AnswerService.class);

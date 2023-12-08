@@ -54,8 +54,8 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     private ExpiryValidator expiryValidator;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         givenStoresAndConfig(handleContext);
         givenExpiryValidator(handleContext, expiryValidator);
 

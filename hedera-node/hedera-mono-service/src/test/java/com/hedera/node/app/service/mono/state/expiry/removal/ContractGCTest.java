@@ -65,7 +65,7 @@ class ContractGCTest {
     private ContractGC subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ContractGC(
                 expiryThrottle,
                 () -> contracts,

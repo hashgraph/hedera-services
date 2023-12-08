@@ -57,7 +57,7 @@ class ExpandHandleSpanTest {
     private ExpandHandleSpan subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExpandHandleSpan(handleSpanMap, accessorFactory);
     }
 

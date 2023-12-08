@@ -51,7 +51,7 @@ class ScheduleEqualityVirtualValueTest {
             "dog", 4L);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScheduleEqualityVirtualValue(ids, new ScheduleEqualityVirtualKey(3L));
     }
 

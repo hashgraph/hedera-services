@@ -64,7 +64,7 @@ class GasCalculatorHederaV22Test {
     HbarCentExchange hbarCentExchange;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GasCalculatorHederaV22(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 

@@ -33,7 +33,7 @@ class RentCalculatorTest {
     private RentCalculator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         subject = new RentCalculator(NOW, config);
     }

@@ -84,7 +84,7 @@ class TokenCreateHandleParityTest {
     private TokenCreateValidator tokenCreateValidator;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);

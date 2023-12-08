@@ -108,8 +108,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private FinalizeParentRecordHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new FinalizeParentRecordHandler(stakingRewardsHandler);
     }
 

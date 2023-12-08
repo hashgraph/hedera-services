@@ -67,7 +67,7 @@ class FeeAssessorTest {
     private FeeAssessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FeeAssessor(fixedFeeAssessor, royaltyFeeAssessor, fractionalFeeAssessor);
     }
 

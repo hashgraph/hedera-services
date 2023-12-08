@@ -67,7 +67,7 @@ class GetExecTimeAnswerTest {
     private GetExecTimeAnswer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GetExecTimeAnswer(executionTimeTracker);
     }
 

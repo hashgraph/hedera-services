@@ -103,7 +103,7 @@ class FileCreateTransitionLogicTest {
     FileCreateTransitionLogic subject;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         hederaWacl = waclSkeleton.asJKey();
         attr = new HFileMeta(false, hederaWacl, expiry);
 

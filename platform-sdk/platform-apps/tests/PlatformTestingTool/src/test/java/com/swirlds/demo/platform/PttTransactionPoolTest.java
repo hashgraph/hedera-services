@@ -82,7 +82,7 @@ public class PttTransactionPoolTest {
     private MapValueFCQ fcq;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         MapKey key = new MapKey(otherID, otherID, 1);
 
         final byte[] content = new byte[48];

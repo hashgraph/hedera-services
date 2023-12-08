@@ -64,7 +64,7 @@ class RoyaltyFeeAssessorTest {
     private RoyaltyFeeAssessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
     }
 

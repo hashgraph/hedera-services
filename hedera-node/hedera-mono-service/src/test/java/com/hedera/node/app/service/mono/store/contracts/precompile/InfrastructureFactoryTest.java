@@ -181,7 +181,7 @@ class InfrastructureFactoryTest {
     private InfrastructureFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new InfrastructureFactory(
                 usageLimits,
                 ids,

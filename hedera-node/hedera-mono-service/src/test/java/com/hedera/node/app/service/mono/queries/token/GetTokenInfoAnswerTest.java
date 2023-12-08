@@ -71,7 +71,7 @@ class GetTokenInfoAnswerTest {
     GetTokenInfoAnswer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         info = TokenInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setTokenId(tokenId)

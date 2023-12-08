@@ -31,7 +31,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
     @DisplayName("Constructor Tests")
     final class ConstructorTest {
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitVirtualMap();
         }
 
@@ -81,7 +81,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         private OnDiskWritableKVState<String, String> state;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitVirtualMap();
             state = new OnDiskWritableKVState<>(fruitVirtualMetadata, fruitVirtualMap);
             add(fruitVirtualMap, fruitVirtualMetadata, A_KEY, APPLE);
@@ -114,7 +114,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         private OnDiskWritableKVState<String, String> state;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitVirtualMap();
             state = new OnDiskWritableKVState<>(fruitVirtualMetadata, fruitVirtualMap);
             add(fruitVirtualMap, fruitVirtualMetadata, A_KEY, APPLE);

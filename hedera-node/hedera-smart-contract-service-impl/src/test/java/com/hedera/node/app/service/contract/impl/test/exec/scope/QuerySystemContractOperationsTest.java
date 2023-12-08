@@ -78,7 +78,7 @@ class QuerySystemContractOperationsTest {
     private QuerySystemContractOperations subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new QuerySystemContractOperations(context);
     }
 

@@ -59,7 +59,7 @@ class ScreenedSysFilePropsTest {
     private ScreenedSysFileProps subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScreenedSysFileProps();
     }
 

@@ -378,7 +378,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected VersionedConfigImpl versionedConfig;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         handlerTestBaseInternalSetUp(true);
     }
 

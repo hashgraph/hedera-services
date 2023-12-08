@@ -53,7 +53,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     private PreHandleContext realPreContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setup() throws PreCheckException, InvalidKeyException {
         subject = new ScheduleCreateHandler();
         setUpBase();
     }

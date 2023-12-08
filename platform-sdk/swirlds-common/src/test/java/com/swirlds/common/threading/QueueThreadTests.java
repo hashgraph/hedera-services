@@ -112,7 +112,7 @@ class QueueThreadTests {
     private ScheduledExecutorService executor;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();

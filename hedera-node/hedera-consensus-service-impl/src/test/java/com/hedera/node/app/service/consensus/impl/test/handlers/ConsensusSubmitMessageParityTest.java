@@ -47,7 +47,7 @@ class ConsensusSubmitMessageParityTest extends ConsensusTestBase {
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ConsensusSubmitMessageHandler();
         readableStore = mock(ReadableTopicStore.class);
         accountStore = AdapterUtils.wellKnownKeyLookupAt();

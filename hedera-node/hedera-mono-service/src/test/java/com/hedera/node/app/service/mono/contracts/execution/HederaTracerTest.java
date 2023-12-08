@@ -121,7 +121,7 @@ class HederaTracerTest {
     private HederaTracer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaTracer(EmitActionSidecars.ENABLED, ValidateActionSidecars.ENABLED);
     }
 

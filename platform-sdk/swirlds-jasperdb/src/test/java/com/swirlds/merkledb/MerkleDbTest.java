@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 public class MerkleDbTest {
 
     @BeforeAll
-    public static void setUp() throws Exception {
+    public static void setup() throws Exception {
         MerkleDb.resetDefaultInstancePath();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }

@@ -71,7 +71,7 @@ class GrpcStarterTest {
     private GrpcStarter subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GrpcStarter(
                 nodeId, grpcServerManager, nodeLocalProperties, () -> addressBook, Optional.of(console));
     }

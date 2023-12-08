@@ -119,7 +119,7 @@ class PrngSystemPrecompiledContractTest {
     private final ExpirableTxnRecord.Builder childRecord = ExpirableTxnRecord.newBuilder();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
         subject = new PrngSystemPrecompiledContract(
                 gasCalculator, logic, creator, recordsHistorian, pricingUtils, livePricesSource, dynamicProperties);

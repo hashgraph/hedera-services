@@ -51,7 +51,7 @@ class TinybarValuesTest {
     private TinybarValues subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = TinybarValues.forTransactionWith(RATE_TO_USE, resourcePrices, childResourcePrices);
     }
 

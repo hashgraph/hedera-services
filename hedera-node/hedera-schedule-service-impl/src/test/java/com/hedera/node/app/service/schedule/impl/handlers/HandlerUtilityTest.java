@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 class HandlerUtilityTest extends ScheduleHandlerTestBase {
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setup() throws PreCheckException, InvalidKeyException {
         setUpBase();
     }
 

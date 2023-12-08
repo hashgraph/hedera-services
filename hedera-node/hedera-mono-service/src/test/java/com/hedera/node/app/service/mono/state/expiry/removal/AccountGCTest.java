@@ -58,7 +58,7 @@ class AccountGCTest {
     private AccountGC subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AccountGC(aliasManager, expiryThrottle, sigImpactHistorian, treasuryReturns, backingAccounts);
     }
 

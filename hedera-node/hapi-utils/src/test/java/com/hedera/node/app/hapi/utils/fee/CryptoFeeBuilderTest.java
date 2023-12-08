@@ -38,7 +38,7 @@ class CryptoFeeBuilderTest {
     private CryptoFeeBuilder subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoFeeBuilder();
     }
 

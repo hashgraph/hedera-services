@@ -45,7 +45,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class VirtualLeafRecordSerializerTest {
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException {
+    static void setup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 

@@ -52,7 +52,7 @@ public class TreasuryClonerTest {
     private TreasuryCloner subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TreasuryCloner(nums, MerkleAccount::new, accounts);
     }
 

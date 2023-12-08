@@ -66,7 +66,7 @@ public class RecordAccessorImplTest {
     private RecordAccessorImpl<TestKey, TestValue> mutableRecords;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         DummyVirtualStateAccessor state = new DummyVirtualStateAccessor();
         VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>();
         dataSource = new BreakableDataSource();

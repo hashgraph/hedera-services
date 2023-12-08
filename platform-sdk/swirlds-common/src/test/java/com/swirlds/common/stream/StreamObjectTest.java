@@ -80,7 +80,7 @@ class StreamObjectTest {
     final int logPeriodMs = 20;
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException, IOException {
+    static void setup() throws ConstructableRegistryException, IOException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
     }
 

@@ -73,7 +73,7 @@ class WipeLogicTest {
     private WipeLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new WipeLogic(typedTokenStore, accountStore, dynamicProperties);
     }
 

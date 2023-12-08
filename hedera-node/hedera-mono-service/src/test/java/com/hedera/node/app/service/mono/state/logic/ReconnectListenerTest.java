@@ -57,7 +57,7 @@ class ReconnectListenerTest {
     private ReconnectListener subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ReconnectListener(upgradeActions);
     }
 

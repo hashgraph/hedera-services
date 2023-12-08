@@ -101,7 +101,7 @@ class FreezeTransitionLogicTest {
     private FreezeTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FreezeTransitionLogic(upgradeActions, txnCtx, () -> specialFiles, () -> networkCtx);
     }
 

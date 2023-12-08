@@ -71,7 +71,7 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     private UniqueTokensLinkManager subjectForVm;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final BootstrapProperties bootstrapProperties = Mockito.mock(BootstrapProperties.class);
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(false);

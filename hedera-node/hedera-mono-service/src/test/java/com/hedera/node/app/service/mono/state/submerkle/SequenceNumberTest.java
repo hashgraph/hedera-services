@@ -34,7 +34,7 @@ class SequenceNumberTest {
     SequenceNumber defaultSubject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         initSubject = new SequenceNumber(startNo);
         defaultSubject = new SequenceNumber();
     }

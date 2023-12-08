@@ -176,7 +176,7 @@ class StaticEntityAccessTest {
             .customizing(new MerkleAccount());
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(stateView.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(stateView.storage()).willReturn(VirtualMapLike.from(blobs));
         given(stateView.accounts()).willReturn(accounts);

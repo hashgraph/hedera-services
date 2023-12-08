@@ -47,7 +47,7 @@ class EvmInfrastructureFactoryTest {
     private EvmInfrastructureFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EvmInfrastructureFactory(evmEncoder);
     }
 

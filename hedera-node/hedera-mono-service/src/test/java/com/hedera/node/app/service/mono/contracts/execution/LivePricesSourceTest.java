@@ -73,7 +73,7 @@ class LivePricesSourceTest {
     private LivePricesSource subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new LivePricesSource(exchange, usagePrices, multiplierSources, txnCtx);
     }
 

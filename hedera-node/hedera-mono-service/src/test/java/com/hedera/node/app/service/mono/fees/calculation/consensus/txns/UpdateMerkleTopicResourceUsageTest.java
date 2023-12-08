@@ -77,7 +77,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     private static final String defaultMemo = "12345678";
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         super.setup();
         subject = new UpdateTopicResourceUsage();
     }

@@ -54,7 +54,7 @@ class HapiOpCountersTest {
     private HapiOpCounters subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         HapiOpCounters.setAllFunctions(
                 () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE});
 

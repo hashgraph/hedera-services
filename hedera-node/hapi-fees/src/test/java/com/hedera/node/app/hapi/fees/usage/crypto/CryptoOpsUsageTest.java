@@ -130,7 +130,7 @@ class CryptoOpsUsageTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setUp() {
+    void setup() {
         base = mock(TxnUsageEstimator.class);
         given(base.get()).willReturn(A_USAGES_MATRIX);
         queryBase = mock(QueryUsage.class);

@@ -39,7 +39,7 @@ class UniqueTokensMigratorTest {
     private final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyTokens = new MerkleMap<>();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         state = new ServicesState();
         state.setChild(UNIQUE_TOKENS, legacyTokens);
     }

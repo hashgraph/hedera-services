@@ -44,7 +44,7 @@ class IssEventInfoTest {
     private IssEventInfo subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new IssEventInfo(nodeLocalProperties);
     }
 

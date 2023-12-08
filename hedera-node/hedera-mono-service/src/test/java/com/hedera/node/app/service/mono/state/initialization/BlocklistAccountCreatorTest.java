@@ -84,7 +84,7 @@ class BlocklistAccountCreatorTest {
     private BlocklistAccountCreator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         ids = new EntityIdSource() {
             long nextId = FIRST_UNUSED_ID;
 

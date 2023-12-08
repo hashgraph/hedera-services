@@ -62,7 +62,7 @@ class TokenControllerTest {
     TokenController subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         answers = mock(TokenAnswers.class);
         txnObserver = mock(StreamObserver.class);
         queryObserver = mock(StreamObserver.class);

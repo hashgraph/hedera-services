@@ -72,7 +72,7 @@ class SystemPrecheckTest {
     private SystemPrecheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SystemPrecheck(systemOpPolicies, hapiOpPermissions, txnThrottling);
     }
 

@@ -36,7 +36,7 @@ class TransactionHandlingHistoryTests {
     private Path logFilePath;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         logFilePath = tempDir.resolve("logFile");
 
         try {

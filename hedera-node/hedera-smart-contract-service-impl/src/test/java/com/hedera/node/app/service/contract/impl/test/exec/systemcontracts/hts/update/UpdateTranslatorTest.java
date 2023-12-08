@@ -88,7 +88,7 @@ class UpdateTranslatorTest extends HtsCallTestBase {
             Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L));
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new UpdateTranslator(decoder);
     }
 

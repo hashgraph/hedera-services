@@ -85,7 +85,7 @@ class ScheduleSigsVerifierTest {
     private ScheduleSigsVerifier subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScheduleSigsVerifier(workingSigReqs, characteristics);
     }
 

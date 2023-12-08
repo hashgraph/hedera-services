@@ -49,7 +49,7 @@ class TokenAttributesValidatorTest {
     private TokensConfig tokensConfig;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenAttributesValidator();
         final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")

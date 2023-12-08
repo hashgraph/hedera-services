@@ -72,7 +72,7 @@ class ThrottleGaugesTest {
     private ThrottleGauges subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ThrottleGauges(handleThrottling, hapiThrottling, nodeProperties);
     }
 

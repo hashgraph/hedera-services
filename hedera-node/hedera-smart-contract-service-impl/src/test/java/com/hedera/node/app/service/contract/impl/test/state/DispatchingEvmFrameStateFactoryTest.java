@@ -44,7 +44,7 @@ class DispatchingEvmFrameStateFactoryTest {
     private ScopedEvmFrameStateFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScopedEvmFrameStateFactory(scope, extFrameScope);
     }
 

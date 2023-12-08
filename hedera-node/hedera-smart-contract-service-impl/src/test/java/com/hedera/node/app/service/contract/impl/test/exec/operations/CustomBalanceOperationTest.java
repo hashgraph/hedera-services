@@ -55,7 +55,7 @@ class CustomBalanceOperationTest {
     private CustomBalanceOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomBalanceOperation(gasCalculator, addressChecks);
     }
 

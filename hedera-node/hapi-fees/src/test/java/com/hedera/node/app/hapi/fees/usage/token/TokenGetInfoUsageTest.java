@@ -42,7 +42,7 @@ class TokenGetInfoUsageTest {
     private TokenGetInfoUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = TokenGetInfoUsage.newEstimate(tokenQuery());
     }
 

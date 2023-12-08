@@ -57,7 +57,7 @@ class DeleteTranslatorTest {
     private DeleteTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DeleteTranslator();
     }
 

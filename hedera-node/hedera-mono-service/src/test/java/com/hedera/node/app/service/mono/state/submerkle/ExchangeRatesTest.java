@@ -59,7 +59,7 @@ class ExchangeRatesTest {
     private ExchangeRates subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExchangeRates(
                 expCurrentHbarEquiv,
                 expCurrentCentEquiv,

@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
 class GossipEventTest {
 
     @BeforeAll
-    public static void setUp() throws FileNotFoundException, ConstructableRegistryException {
+    public static void setup() throws FileNotFoundException, ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
     }
 

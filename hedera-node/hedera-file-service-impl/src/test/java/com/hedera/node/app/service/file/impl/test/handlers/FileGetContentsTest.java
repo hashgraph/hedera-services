@@ -65,7 +65,7 @@ class FileGetContentsTest extends FileTestBase {
     private FileGetContentsHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FileGetContentsHandler(usageEstimator);
     }
 

@@ -117,7 +117,7 @@ class EthereumSpanMapManagerTest {
     private SpanMapManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SpanMapManager(
                 sigsFunction,
                 contractCallTransitionLogic,

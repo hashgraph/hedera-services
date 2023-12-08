@@ -83,7 +83,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
     CryptoApproveAllowanceTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoApproveAllowanceTransitionLogic(
                 txnCtx, accountStore, allowanceChecks, approveAllowanceLogic, view);
         nft1.setOwner(fromGrpcAccount(ownerId));

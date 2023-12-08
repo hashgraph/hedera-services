@@ -81,7 +81,7 @@ class CryptoDeleteTransitionLogicTest {
     private CryptoDeleteTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         txnCtx = mock(TransactionContext.class);
         ledger = mock(HederaLedger.class);
         accessor = mock(SignedTxnAccessor.class);

@@ -68,7 +68,7 @@ class TokenAssociateResourceUsageTest {
     private TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         expected = mock(FeeData.class);
 
         account = mock(MerkleAccount.class);

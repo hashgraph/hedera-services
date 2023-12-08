@@ -96,7 +96,7 @@ class HederaKeyActivationTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         sigsFn = (Function<byte[], TransactionSignature>) mock(Function.class);
     }
 

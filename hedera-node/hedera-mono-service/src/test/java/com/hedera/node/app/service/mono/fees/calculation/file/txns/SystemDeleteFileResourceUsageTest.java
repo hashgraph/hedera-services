@@ -37,7 +37,7 @@ class SystemDeleteFileResourceUsageTest {
     private TransactionBody systemDeleteFileTxn;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         systemDeleteFileTxn = mock(TransactionBody.class);
         given(systemDeleteFileTxn.hasSystemDelete()).willReturn(true);
 

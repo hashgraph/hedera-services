@@ -43,7 +43,7 @@ class AutoAccountCreatorTest extends StepsBase {
     private AutoAccountCreator subject;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         accountCreatorInternalSetup(true);
     }
 

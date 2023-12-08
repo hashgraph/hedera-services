@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
 
 class ReplaceAliasesWithIDsInOpTest extends StepsBase {
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         replaceAliasesInternalSetup(true);
     }
 

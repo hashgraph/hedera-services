@@ -45,7 +45,7 @@ class BasicHbarCentExchangeTest {
     private BasicHbarCentExchange subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BasicHbarCentExchange();
     }
 

@@ -220,7 +220,7 @@ class HRCPrecompilesTest {
     private MockedStatic<Dissociation> dissociation;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         final Map<SubType, BigDecimal> type = new HashMap<>();
         type.put(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0));

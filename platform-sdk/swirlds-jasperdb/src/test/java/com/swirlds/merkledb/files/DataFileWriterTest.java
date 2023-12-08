@@ -51,7 +51,7 @@ class DataFileWriterTest {
     private final AtomicInteger callCount = new AtomicInteger(0);
 
     @BeforeEach
-    public void setUp() throws Exception {
+    public void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
         when(dataItemSerializer.getSerializedSize()).thenReturn(1);
         when(dataItemSerializer.getCurrentDataVersion()).thenReturn(1L);

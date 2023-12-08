@@ -65,8 +65,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenMintHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());

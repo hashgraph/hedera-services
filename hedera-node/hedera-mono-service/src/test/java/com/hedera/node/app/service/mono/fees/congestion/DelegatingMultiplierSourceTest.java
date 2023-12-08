@@ -33,7 +33,7 @@ class DelegatingMultiplierSourceTest {
     private DelegatingMultiplierSource subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DelegatingMultiplierSource(delegate);
     }
 

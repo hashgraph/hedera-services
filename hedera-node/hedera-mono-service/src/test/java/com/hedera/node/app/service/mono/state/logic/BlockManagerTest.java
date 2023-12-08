@@ -68,7 +68,7 @@ class BlockManagerTest {
     private BlockManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD))
                 .willReturn(blockPeriodSecs);
         dualStateAccessor = new DualStateAccessor();

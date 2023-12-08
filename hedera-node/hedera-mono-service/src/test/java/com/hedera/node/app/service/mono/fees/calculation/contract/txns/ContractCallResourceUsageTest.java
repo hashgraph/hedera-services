@@ -37,7 +37,7 @@ class ContractCallResourceUsageTest {
     private TransactionBody contractCallTxn;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         contractCallTxn = mock(TransactionBody.class);
         given(contractCallTxn.hasContractCall()).willReturn(true);
 

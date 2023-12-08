@@ -78,7 +78,7 @@ class NodeLocalPropertiesTest {
     private static final Profile[] LEGACY_ENV_ORDER = {DEV, PROD, TEST};
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         properties = mock(PropertySource.class);
     }
 

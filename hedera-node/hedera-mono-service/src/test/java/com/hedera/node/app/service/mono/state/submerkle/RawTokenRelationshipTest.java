@@ -44,7 +44,7 @@ class RawTokenRelationshipTest {
             new RawTokenRelationship(balance, 0, 0, num, frozen, kyc, automaticAssociation);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         token = mock(MerkleToken.class);
         given(token.symbol()).willReturn("HEYMA");
     }

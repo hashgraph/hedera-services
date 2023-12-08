@@ -53,7 +53,7 @@ class IsKycTranslatorTest {
     private IsKycTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new IsKycTranslator();
     }
 

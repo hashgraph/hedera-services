@@ -136,7 +136,7 @@ public class CryptoHandlerTestBase {
     protected CryptoSignatureWaiversImpl waivers;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         account = givenValidAccount(accountNum);
         deleteAccount = givenValidAccount(deleteAccountNum)
                 .copyBuilder()

@@ -43,7 +43,7 @@ class TxnUsageEstimatorTest {
     private TxnUsageEstimator subject;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setup() throws Exception {
         utils = mock(EstimatorUtils.class);
 
         subject = new TxnUsageEstimator(sigUsage, txn, utils);

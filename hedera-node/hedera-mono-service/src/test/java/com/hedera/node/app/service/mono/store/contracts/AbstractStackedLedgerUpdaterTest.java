@@ -102,7 +102,7 @@ class AbstractStackedLedgerUpdaterTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setUp() {
+    void setup() {
         setupLedgers();
 
         wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(), customizer);

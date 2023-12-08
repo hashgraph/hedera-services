@@ -57,7 +57,7 @@ class UpdateTrackingAccountTest {
     private AbstractCodeCache codeCache;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         codeCache = new AbstractCodeCache(12, entityAccess);
     }
 

@@ -54,7 +54,7 @@ class StateWriteToDiskListenerTest {
     private StateWriteToDiskListener subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StateWriteToDiskListener(upgradeActions);
     }
 

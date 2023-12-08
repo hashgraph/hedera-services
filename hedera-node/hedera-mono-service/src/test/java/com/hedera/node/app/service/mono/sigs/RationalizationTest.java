@@ -96,7 +96,7 @@ class RationalizationTest {
     private Rationalization subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory, aliasManager);
     }
 

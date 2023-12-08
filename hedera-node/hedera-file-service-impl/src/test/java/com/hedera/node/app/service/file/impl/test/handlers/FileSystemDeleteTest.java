@@ -101,7 +101,7 @@ class FileSystemDeleteTest extends FileTestBase {
     protected Configuration testConfig;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         mockStore = mock(ReadableFileStoreImpl.class);
         subject = new FileSystemDeleteHandler(usageEstimator);
 

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 class ValueTests {
 
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.merkle.map");
         registry.registerConstructables("com.swirlds.merkle.tree");

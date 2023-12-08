@@ -145,7 +145,7 @@ class StateChildrenSigMetadataLookupTest {
     private StateChildrenSigMetadataLookup subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StateChildrenSigMetadataLookup(fileNumbers, stateChildren, tokenMetaTransform, properties);
     }
 

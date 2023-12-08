@@ -37,7 +37,7 @@ public class WritableStakingInfoStoreImplTest {
     private WritableStakingInfoStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var wrappedState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(
                         TokenServiceImpl.STAKING_INFO_KEY)
                 .value(

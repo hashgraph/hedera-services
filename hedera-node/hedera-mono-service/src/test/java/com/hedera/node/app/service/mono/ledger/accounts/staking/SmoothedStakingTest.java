@@ -68,7 +68,7 @@ class SmoothedStakingTest {
     private EndOfStakingPeriodCalculator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EndOfStakingPeriodCalculator(
                 () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 () -> MerkleMapLike.from(stakingInfos),

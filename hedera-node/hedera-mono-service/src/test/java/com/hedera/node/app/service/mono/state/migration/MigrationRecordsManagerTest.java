@@ -207,7 +207,7 @@ class MigrationRecordsManagerTest {
     private MigrationRecordsManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accounts.put(EntityNum.fromLong(1L), merkleAccount);
         accounts.put(EntityNum.fromLong(2L), merkleAccount);
 

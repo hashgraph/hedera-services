@@ -217,7 +217,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setup() throws PreCheckException {
         setupStandardStates();
 
         accountsState.put(
@@ -793,7 +793,7 @@ class HandleWorkflowTest extends AppTestBase {
     final class FullPreHandleRunTest {
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             when(preHandleWorkflow.preHandleTransaction(any(), any(), any(), eq(platformTxn)))
                     .thenReturn(OK_RESULT);
         }

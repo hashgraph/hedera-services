@@ -129,7 +129,7 @@ class EthereumTransitionLogicTest {
     private EthereumTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EthereumTransitionLogic(
                 txnCtx,
                 syntheticTxnFactory,

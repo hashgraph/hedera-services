@@ -47,7 +47,7 @@ class FcmCustomFeeSchedulesTest {
     private final MerkleToken bToken = new MerkleToken();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         // setup:
         final var tokenAFees =
                 List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector, false).asGrpc());

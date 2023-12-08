@@ -79,7 +79,7 @@ class GetTokenNftInfoAnswerTest {
     GetTokenNftInfoAnswer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         info = TokenNftInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setNftID(nftId)

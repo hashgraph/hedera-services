@@ -81,7 +81,7 @@ class NarratedLedgerChargingTest {
     private NarratedLedgerCharging subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NarratedLedgerCharging(
                 nodeInfo,
                 feeDistribution,

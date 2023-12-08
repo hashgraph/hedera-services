@@ -41,7 +41,7 @@ class PureRatesValidationTest {
     int bound = 1;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setup() {
         midnightRates = new ExchangeRates(
                 currentHbarEquiv, currentCentEquiv, ratesExpiry, nextHbarEquiv, nextCentEquiv, ratesExpiry);
     }

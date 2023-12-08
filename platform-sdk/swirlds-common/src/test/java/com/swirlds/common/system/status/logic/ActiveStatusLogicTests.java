@@ -49,7 +49,7 @@ class ActiveStatusLogicTests {
     private ActiveStatusLogic logic;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PlatformStatusConfig_.ACTIVE_STATUS_DELAY, "5s")

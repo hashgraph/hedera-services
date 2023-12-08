@@ -83,7 +83,7 @@ class TransactionPrecheckTest {
     private TransactionPrecheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var stagedPrechecks = new StagedPrechecks(
                 syntaxPrecheck, systemPrecheck, semanticPrecheck, solvencyPrecheck, structuralPrecheck);
         subject = new TransactionPrecheck(queryFeeCheck, stagedPrechecks, currentPlatformStatus);

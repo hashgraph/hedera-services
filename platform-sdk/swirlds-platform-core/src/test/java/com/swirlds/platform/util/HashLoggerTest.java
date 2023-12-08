@@ -62,7 +62,7 @@ public class HashLoggerTest {
     }
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         mockLogger = mock(Logger.class);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);

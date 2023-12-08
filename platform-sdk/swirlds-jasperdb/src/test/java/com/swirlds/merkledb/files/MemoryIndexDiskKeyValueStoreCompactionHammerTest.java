@@ -59,7 +59,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
     Path testDirectory;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setup() {
         Configurator.setRootLevel(Level.WARN);
     }
 

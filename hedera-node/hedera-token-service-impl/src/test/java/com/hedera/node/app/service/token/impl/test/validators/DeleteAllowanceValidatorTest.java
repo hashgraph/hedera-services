@@ -58,8 +58,8 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     private ExpiryValidator expiryValidator;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         givenStoresAndConfig(handleContext);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);

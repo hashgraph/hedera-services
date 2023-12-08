@@ -70,7 +70,7 @@ class CustomCallOperationTest {
     private CustomCallOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomCallOperation(featureFlags, gasCalculator, addressChecks);
     }
 

@@ -104,7 +104,7 @@ class StakeStartupHelperTest {
     private StakeStartupHelper subject;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         lenient().when(networkContext.consensusTimeOfLastHandledTxn()).thenReturn(consTime);
         stakePeriodManager = new StakePeriodManager(txnCtx, () -> networkContext, properties);
     }

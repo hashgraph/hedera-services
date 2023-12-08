@@ -71,7 +71,7 @@ class TokenDissociateTransitionLogicTest {
     private TokenDissociateTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
         subject = new TokenDissociateTransitionLogic(txnCtx, dissociateLogic);
     }

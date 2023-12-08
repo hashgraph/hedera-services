@@ -142,7 +142,7 @@ class DeterministicThrottlingTest {
     private DeterministicThrottling subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DeterministicThrottling(() -> n, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
     }
 

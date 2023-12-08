@@ -129,7 +129,7 @@ class TokenCreateTransitionLogicTest {
     private TokenCreateTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         createLogic = new CreateLogic(
                 usageLimits, accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
         createChecks = new CreateChecks(dynamicProperties, validator);

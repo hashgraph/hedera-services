@@ -98,7 +98,7 @@ class GetContractInfoAnswerTest {
     GetContractInfoAnswer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         // we don't return the token relationships data anymore, since the field it is deprecated
         info = ContractGetInfoResponse.ContractInfo.newBuilder()
                 .setLedgerId(ledgerId)

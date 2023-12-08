@@ -81,7 +81,7 @@ class HtsSystemContractTest {
     private HtsSystemContract subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         frameUtils = Mockito.mockStatic(FrameUtils.class);
         subject = new HtsSystemContract(gasCalculator, attemptFactory);
     }

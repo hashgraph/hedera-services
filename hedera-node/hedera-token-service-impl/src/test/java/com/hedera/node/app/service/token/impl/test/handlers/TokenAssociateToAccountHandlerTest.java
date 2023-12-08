@@ -89,7 +89,7 @@ class TokenAssociateToAccountHandlerTest {
     private TokenAssociateToAccountHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenAssociateToAccountHandler();
     }
 

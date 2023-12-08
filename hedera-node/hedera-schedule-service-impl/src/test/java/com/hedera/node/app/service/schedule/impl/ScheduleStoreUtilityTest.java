@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ScheduleStoreUtilityTest extends ScheduleTestBase {
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setup() throws PreCheckException, InvalidKeyException {
         setUpBase();
     }
 

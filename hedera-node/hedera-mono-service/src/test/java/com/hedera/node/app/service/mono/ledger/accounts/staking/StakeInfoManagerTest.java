@@ -58,7 +58,7 @@ class StakeInfoManagerTest {
     private final EntityNum node1Id = EntityNum.fromLong(1L);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         stakingInfo = buildsStakingInfoMap();
         subject = new StakeInfoManager(() -> MerkleMapLike.from(stakingInfo));
     }

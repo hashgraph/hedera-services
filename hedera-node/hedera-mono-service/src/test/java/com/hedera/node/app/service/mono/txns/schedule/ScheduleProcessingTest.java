@@ -109,7 +109,7 @@ class ScheduleProcessingTest {
     private ScheduleProcessing subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScheduleProcessing(
                 sigImpactHistorian,
                 store,

@@ -32,7 +32,7 @@ class BlocklistParserTest {
     private BlocklistParser subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BlocklistParser();
     }
 

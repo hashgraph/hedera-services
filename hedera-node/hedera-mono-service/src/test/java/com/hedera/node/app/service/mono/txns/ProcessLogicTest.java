@@ -51,7 +51,7 @@ class ProcessLogicTest {
     private final SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         doCallRealMethod().when(subject).incorporateConsensus(any());
     }
 

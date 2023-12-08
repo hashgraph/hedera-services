@@ -100,7 +100,7 @@ class ConfigCallbacksTest {
     private ConfigCallbacks subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ConfigCallbacks(
                 hapiOpPermissions,
                 dynamicProps,

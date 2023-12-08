@@ -54,7 +54,7 @@ class RecordStreamObjectTest {
     private static final RecordStreamObject realObject = getRecordStreamObject();
 
     @BeforeAll
-    static void setUp() {
+    static void setup() {
         when(record.toString()).thenReturn("mock record");
         when(transaction.toString()).thenReturn("mock transaction");
         when(consensusTimestamp.toString()).thenReturn("mock consensusTimestamp");

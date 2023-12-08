@@ -51,7 +51,7 @@ class HapiThrottlingTest {
     private HapiThrottling subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HapiThrottling(delegate);
     }
 

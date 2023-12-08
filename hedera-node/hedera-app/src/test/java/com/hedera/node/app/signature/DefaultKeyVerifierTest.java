@@ -229,7 +229,7 @@ class DefaultKeyVerifierTest {
         private static final Key ED25519_X2 = FAKE_ED25519_KEY_INFOS[2].publicKey();
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             when(verificationAssistant.test(any(), any())).thenAnswer(invocation -> {
                 final SignatureVerification verification = invocation.getArgument(1);
                 return verification.passed();
@@ -751,7 +751,7 @@ class DefaultKeyVerifierTest {
     final class FindingSignatureVerificationWithCompoundKeyTests {
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             lenient().when(verificationAssistant.test(any(), any())).thenAnswer(invocation -> {
                 final SignatureVerification verification = invocation.getArgument(1);
                 return verification.passed();

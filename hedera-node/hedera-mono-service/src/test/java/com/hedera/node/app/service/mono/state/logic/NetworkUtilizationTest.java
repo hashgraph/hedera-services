@@ -59,7 +59,7 @@ class NetworkUtilizationTest {
     private NetworkUtilization subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NetworkUtilization(txnCtx, multiplierSources, chargingPolicyAgent, handleThrottling);
     }
 

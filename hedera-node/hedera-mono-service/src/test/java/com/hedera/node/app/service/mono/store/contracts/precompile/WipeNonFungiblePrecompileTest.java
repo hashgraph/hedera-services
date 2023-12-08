@@ -222,7 +222,7 @@ class WipeNonFungiblePrecompileTest {
     private MockedStatic<WipeNonFungiblePrecompile> wipeNonFungiblePrecompile;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenAccountWipe, Map.of(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, BigDecimal.valueOf(0)));

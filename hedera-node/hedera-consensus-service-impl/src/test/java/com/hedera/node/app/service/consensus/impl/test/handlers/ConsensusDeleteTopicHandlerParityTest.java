@@ -50,7 +50,7 @@ class ConsensusDeleteTopicHandlerParityTest {
     private ReadableAccountStore accountStore;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ConsensusDeleteTopicHandler();
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }

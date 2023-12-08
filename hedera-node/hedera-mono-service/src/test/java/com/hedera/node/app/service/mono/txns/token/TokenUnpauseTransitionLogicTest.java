@@ -57,7 +57,7 @@ class TokenUnpauseTransitionLogicTest {
     private TokenUnpauseTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         tokenStore = mock(TypedTokenStore.class);
         accessor = mock(SignedTxnAccessor.class);
         token = mock(Token.class);

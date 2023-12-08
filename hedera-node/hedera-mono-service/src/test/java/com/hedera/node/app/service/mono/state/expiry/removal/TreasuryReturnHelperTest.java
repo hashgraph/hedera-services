@@ -72,7 +72,7 @@ class TreasuryReturnHelperTest {
     private TreasuryReturnHelper subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TreasuryReturnHelper(lookup, () -> tokenRels);
     }
 

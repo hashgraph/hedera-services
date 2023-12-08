@@ -41,7 +41,7 @@ class EntitiesInitializationFlowTest {
     private EntitiesInitializationFlow subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EntitiesInitializationFlow(expiryManager, sigImpactHistorian, networkCtxManager);
     }
 

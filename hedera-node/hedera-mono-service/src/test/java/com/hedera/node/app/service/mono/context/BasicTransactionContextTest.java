@@ -196,7 +196,7 @@ class BasicTransactionContextTest {
     private BasicTransactionContext subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BasicTransactionContext(
                 narratedCharging,
                 () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),

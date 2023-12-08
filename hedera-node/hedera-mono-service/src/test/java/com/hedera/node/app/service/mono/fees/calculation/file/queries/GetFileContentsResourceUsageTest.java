@@ -54,7 +54,7 @@ class GetFileContentsResourceUsageTest {
             .build();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         usageEstimator = mock(FileFeeBuilder.class);
         view = mock(StateView.class);
 

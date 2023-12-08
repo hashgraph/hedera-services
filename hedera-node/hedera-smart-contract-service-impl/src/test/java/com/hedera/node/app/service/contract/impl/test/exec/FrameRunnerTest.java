@@ -97,7 +97,7 @@ class FrameRunnerTest {
     private FrameRunner subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FrameRunner(gasCalculator);
     }
 

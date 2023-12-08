@@ -91,7 +91,7 @@ class QueryCheckerTest extends AppTestBase {
     private QueryChecker checker;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         checker = new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager);
     }
 
@@ -216,7 +216,7 @@ class QueryCheckerTest extends AppTestBase {
         private ReadableAccountStore store;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupStandardStates();
 
             final var storeFactory = new ReadableStoreFactory(state);

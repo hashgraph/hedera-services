@@ -52,7 +52,7 @@ class ExpiryThrottleTest {
     private ExpiryThrottle subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExpiryThrottle(resourceLoader);
     }
 

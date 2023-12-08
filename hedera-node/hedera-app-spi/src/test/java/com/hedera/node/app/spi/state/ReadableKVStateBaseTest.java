@@ -36,7 +36,7 @@ class ReadableKVStateBaseTest extends StateTestBase {
     protected Map<String, String> backingMap;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         this.backingMap = createBackingMap();
         this.state = createFruitState(this.backingMap);
     }

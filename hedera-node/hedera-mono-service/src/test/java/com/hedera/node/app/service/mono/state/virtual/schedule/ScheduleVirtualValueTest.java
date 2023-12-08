@@ -81,7 +81,7 @@ public class ScheduleVirtualValueTest {
     private ScheduleVirtualValue subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         signatories = new ArrayList<>();
         signatories.addAll(List.of(fpk, spk, tpk));
 

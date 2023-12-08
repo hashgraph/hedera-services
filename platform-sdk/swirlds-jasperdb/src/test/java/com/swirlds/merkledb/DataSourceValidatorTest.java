@@ -42,7 +42,7 @@ class DataSourceValidatorTest {
     private DataSourceValidator<VirtualLongKey, ExampleByteArrayVirtualValue> validator;
 
     @BeforeEach
-    public void setUp() throws IOException {
+    public void setup() throws IOException {
         count = 10_000;
         // check db count
         assertEventuallyEquals(

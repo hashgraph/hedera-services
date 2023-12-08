@@ -108,7 +108,7 @@ class ServicesTxnManagerTest {
     private ServicesTxnManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ServicesTxnManager(
                 processLogic,
                 triggeredProcessLogic,

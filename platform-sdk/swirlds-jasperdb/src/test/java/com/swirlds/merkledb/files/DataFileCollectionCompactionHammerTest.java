@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class DataFileCollectionCompactionHammerTest {
 
     @BeforeAll
-    public static void setUp() {
+    public static void setup() {
         Configurator.setRootLevel(Level.WARN);
     }
 

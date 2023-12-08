@@ -208,7 +208,7 @@ class PausePrecompileTest {
     private MockedStatic<PausePrecompile> pausePrecompile;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenPause, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);

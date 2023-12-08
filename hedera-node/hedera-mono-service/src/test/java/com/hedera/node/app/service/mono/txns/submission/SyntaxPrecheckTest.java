@@ -75,7 +75,7 @@ class SyntaxPrecheckTest {
     private SyntaxPrecheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SyntaxPrecheck(recordCache, validator, dynamicProperties);
 
         txn = TransactionBody.newBuilder()

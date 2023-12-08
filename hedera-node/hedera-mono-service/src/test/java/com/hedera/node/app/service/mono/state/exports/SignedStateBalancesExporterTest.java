@@ -145,7 +145,7 @@ class SignedStateBalancesExporterTest {
     private SignedStateBalancesExporter subject;
 
     @BeforeEach
-    void setUp() throws ConstructableRegistryException, NoSuchAlgorithmException {
+    void setup() throws ConstructableRegistryException, NoSuchAlgorithmException {
         tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));

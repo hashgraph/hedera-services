@@ -49,7 +49,7 @@ class RecordStreamSignCommandTest {
     private String hapiVersion;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RecordStreamSignCommand();
         hapiVersion = HAPI_VERSION;
     }

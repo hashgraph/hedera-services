@@ -123,7 +123,7 @@ class ContractCallLocalResourceUsageTest {
     private ContractCallLocalResourceUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ContractCallLocalResourceUsage(
                 usageEstimator,
                 properties,

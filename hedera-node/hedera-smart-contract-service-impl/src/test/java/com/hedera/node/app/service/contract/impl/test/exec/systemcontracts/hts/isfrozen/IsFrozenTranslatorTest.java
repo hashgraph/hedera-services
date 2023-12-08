@@ -53,7 +53,7 @@ class IsFrozenTranslatorTest {
     private IsFrozenTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new IsFrozenTranslator();
     }
 

@@ -110,7 +110,7 @@ class HederaStackedWorldStateUpdaterTest {
     private HederaStackedWorldStateUpdater subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
     }
 

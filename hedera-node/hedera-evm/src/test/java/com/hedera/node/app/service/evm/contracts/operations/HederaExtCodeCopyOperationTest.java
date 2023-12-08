@@ -68,7 +68,7 @@ class HederaExtCodeCopyOperationTest {
     private final Account account = new SimpleAccount(ETH_ADDRESS_INSTANCE, 0, Wei.ONE);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaExtCodeCopyOperation(gasCalculator, addressValidator);
     }
 

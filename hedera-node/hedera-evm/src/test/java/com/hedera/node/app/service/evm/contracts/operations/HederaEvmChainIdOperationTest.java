@@ -51,7 +51,7 @@ class HederaEvmChainIdOperationTest {
     static final long PRETEND_GAS_COST = 123L;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(gasCalculator.getBaseTierGasCost()).willReturn(PRETEND_GAS_COST);
         subject = new HederaEvmChainIdOperation(gasCalculator, evmProperties);
     }

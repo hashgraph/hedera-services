@@ -91,7 +91,7 @@ class MonoSignaturePreparerTest {
     private MonoSignaturePreparer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject =
                 new MonoSignaturePreparer(precheckVerifier, cryptoSigsCreation, keyToSigFactory, scopedFactoryProvider);
     }

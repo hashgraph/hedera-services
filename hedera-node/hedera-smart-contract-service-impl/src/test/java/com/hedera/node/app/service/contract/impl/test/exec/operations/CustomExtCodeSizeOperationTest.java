@@ -57,7 +57,7 @@ class CustomExtCodeSizeOperationTest {
     private CustomExtCodeSizeOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
     }
 

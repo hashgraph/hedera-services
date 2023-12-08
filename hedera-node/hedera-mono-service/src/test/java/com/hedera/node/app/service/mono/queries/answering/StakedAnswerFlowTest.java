@@ -121,7 +121,7 @@ class StakedAnswerFlowTest {
     private StakedAnswerFlow subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StakedAnswerFlow(
                 fees,
                 accountNumbers,

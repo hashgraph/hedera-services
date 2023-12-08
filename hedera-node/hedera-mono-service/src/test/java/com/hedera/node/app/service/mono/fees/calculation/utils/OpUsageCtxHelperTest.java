@@ -98,7 +98,7 @@ class OpUsageCtxHelperTest {
     private AliasManager aliasManager;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> MerkleMapLike.from(tokens), aliasManager);
     }
 

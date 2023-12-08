@@ -157,7 +157,7 @@ class LedgerBalanceChangesTest {
     private HederaLedger subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         MockitoAnnotations.initMocks(this);
         accountsLedger = new TransactionalLedger<>(
                 AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());

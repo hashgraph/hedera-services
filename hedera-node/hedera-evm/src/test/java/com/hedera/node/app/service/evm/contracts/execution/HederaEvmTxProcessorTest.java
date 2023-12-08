@@ -110,7 +110,7 @@ class HederaEvmTxProcessorTest {
     private String ccpVersion;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);

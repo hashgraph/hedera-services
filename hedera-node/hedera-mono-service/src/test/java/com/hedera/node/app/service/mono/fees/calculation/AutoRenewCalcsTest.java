@@ -100,7 +100,7 @@ class AutoRenewCalcsTest {
     private AutoRenewCalcs subject;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setup() throws Exception {
         accountPrices = frozenPricesFrom("fees/feeSchedules.json", CryptoAccountAutoRenew);
         contractPrices = frozenPricesFrom("fees/feeSchedules.json", ContractAutoRenew);
 

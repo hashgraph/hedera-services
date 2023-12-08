@@ -62,8 +62,8 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     private CryptoDeleteAllowanceHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         final var deleteAllowanceValidator = new DeleteAllowanceValidator();
         subject = new CryptoDeleteAllowanceHandler(deleteAllowanceValidator);
         refreshWritableStores();

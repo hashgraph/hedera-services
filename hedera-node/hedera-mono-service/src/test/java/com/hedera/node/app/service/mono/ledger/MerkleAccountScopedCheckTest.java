@@ -81,7 +81,7 @@ class MerkleAccountScopedCheckTest {
     private MerkleAccountScopedCheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new MerkleAccountScopedCheck(validator, nftsLedger);
         subject.setBalanceChange(balanceChange);
     }

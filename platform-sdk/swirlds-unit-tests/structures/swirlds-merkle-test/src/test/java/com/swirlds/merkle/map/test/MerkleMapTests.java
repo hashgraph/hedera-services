@@ -99,7 +99,7 @@ class MerkleMapTests {
     Path testDirectory;
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException {
+    static void setup() throws ConstructableRegistryException {
         MerkleMapTestUtil.loadLogging();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         cryptography = MerkleCryptoFactory.getInstance();

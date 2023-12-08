@@ -74,7 +74,7 @@ class EvmAutoCreationLogicTest {
     private EvmAutoCreationLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EvmAutoCreationLogic(
                 usageLimits, syntheticTxnFactory, creator, ids, () -> currentView, txnCtx, properties, contractAliases);
 

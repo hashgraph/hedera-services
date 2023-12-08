@@ -42,7 +42,7 @@ class TokenRelsListMutationTest {
     private TokenRelsListMutation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenRelsListMutation(accountNum, tokenRels);
     }
 

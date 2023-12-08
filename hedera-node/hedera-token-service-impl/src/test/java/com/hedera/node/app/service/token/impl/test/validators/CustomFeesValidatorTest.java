@@ -57,7 +57,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
 
     @BeforeEach
     public void commonSetUp() {
-        super.setUp();
+        super.setup();
         refreshWritableStores();
     }
 

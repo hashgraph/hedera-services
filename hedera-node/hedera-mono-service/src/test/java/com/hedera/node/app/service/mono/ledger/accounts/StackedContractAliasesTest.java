@@ -86,7 +86,7 @@ class StackedContractAliasesTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StackedContractAliases(wrappedAliases);
     }
 

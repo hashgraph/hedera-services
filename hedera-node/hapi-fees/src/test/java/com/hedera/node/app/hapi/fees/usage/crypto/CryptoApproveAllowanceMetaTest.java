@@ -61,7 +61,7 @@ class CryptoApproveAllowanceMetaTest {
     private Set<AllowanceId> nftAllowancesMap = new HashSet<>();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         cryptoAllowancesMap = convertToCryptoMap(List.of(cryptoAllowances));
         tokenAllowancesMap = convertToTokenMap(List.of(tokenAllowances));
         nftAllowancesMap = convertToNftMap(List.of(nftAllowances));

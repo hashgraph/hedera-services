@@ -46,7 +46,7 @@ class NftAdjustmentsTest {
     private NftAdjustments subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NftAdjustments();
     }
 

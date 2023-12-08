@@ -80,7 +80,7 @@ class PlatformSubmissionManagerTest {
     PlatformSubmissionManager subject;
 
     @BeforeEach
-    void setUp() throws InvalidProtocolBufferException {
+    void setup() throws InvalidProtocolBufferException {
         platform = mock(Platform.class);
         recordCache = mock(RecordCache.class);
         speedometers = mock(MiscSpeedometers.class);

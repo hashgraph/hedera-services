@@ -79,7 +79,7 @@ class MapValueSerializableTest {
     Path testDirectory;
 
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         cryptography = MerkleCryptoFactory.getInstance();
     }

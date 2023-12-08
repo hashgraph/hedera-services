@@ -60,7 +60,7 @@ class MerkleSpecialFilesTest {
     private MerkleSpecialFiles subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new MerkleSpecialFiles();
     }
 

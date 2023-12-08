@@ -44,7 +44,7 @@ class UniqueTokensListMutationTest {
     private UniqueTokensListMutation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new UniqueTokensListMutation(uniqueTokens);
     }
 

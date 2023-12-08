@@ -47,7 +47,7 @@ class MultiplierSourcesTest {
     private MultiplierSources subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new MultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
     }
 

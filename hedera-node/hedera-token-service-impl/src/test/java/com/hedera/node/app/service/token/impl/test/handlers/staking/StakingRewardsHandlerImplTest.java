@@ -74,8 +74,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private final long stakingRewardAccountNum = 800L;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshWritableStores();
 
         given(configProvider.getConfiguration()).willReturn(versionedConfig);

@@ -43,7 +43,7 @@ class PolicyBasedSigWaiversTest {
     private PolicyBasedSigWaivers subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new PolicyBasedSigWaivers(entityNumbers, opPolicies);
     }
 

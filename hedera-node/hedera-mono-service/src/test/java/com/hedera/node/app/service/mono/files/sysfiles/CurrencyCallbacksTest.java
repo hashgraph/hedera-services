@@ -48,7 +48,7 @@ class CurrencyCallbacksTest {
     CurrencyCallbacks subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CurrencyCallbacks(fees, exchange, midnightRates);
     }
 

@@ -39,7 +39,7 @@ public class ParityTestBase {
     protected Configuration configuration;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         writableAccountStore = SigReqAdapterUtils.wellKnownWritableAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();

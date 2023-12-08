@@ -71,7 +71,7 @@ class AccountStoreTest {
     private AccountStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         setupAccounts();
 
         subject = new AccountStore(validator, accounts);

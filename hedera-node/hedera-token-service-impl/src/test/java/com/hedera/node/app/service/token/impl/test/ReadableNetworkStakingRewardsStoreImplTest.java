@@ -42,7 +42,7 @@ class ReadableNetworkStakingRewardsStoreImplTest {
     private ReadableNetworkStakingRewardsStoreImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY)).willReturn(stakingRewardsState);
         given(stakingRewardsState.get()).willReturn(new NetworkStakingRewards(true, 1L, 2L, 3L));
         subject = new ReadableNetworkStakingRewardsStoreImpl(states);

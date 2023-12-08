@@ -53,7 +53,7 @@ class ExpandHandleSpanMapAccessorTest {
     private ExpandHandleSpanMapAccessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExpandHandleSpanMapAccessor();
 
         given(accessor.getSpanMap()).willReturn(span);

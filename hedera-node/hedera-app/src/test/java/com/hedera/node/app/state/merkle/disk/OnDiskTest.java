@@ -62,7 +62,7 @@ class OnDiskTest extends MerkleTestBase {
     private Configuration config;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         setupConstructableRegistry();
         storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 

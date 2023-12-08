@@ -65,7 +65,7 @@ class EvmHTSPrecompiledContractTest {
     private TokenAccessor tokenAccessor;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         evmHTSPrecompiledContract = new EvmHTSPrecompiledContract(evmInfrastructureFactory);
     }
 

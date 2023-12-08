@@ -73,8 +73,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenGetInfoHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new TokenGetInfoHandler();
     }
 

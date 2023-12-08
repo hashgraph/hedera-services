@@ -43,7 +43,7 @@ class StaticBlockMetaProviderTest {
     private StaticBlockMetaProvider subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StaticBlockMetaProvider(stateViewFactory);
     }
 

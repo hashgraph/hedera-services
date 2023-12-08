@@ -70,8 +70,8 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     private CryptoGetAccountRecordsHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new CryptoGetAccountRecordsHandler(recordCache);
     }
 

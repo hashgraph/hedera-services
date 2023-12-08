@@ -91,8 +91,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         configuration = HederaTestConfigBuilder.createConfig();
         updateReadableStore(
                 Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));

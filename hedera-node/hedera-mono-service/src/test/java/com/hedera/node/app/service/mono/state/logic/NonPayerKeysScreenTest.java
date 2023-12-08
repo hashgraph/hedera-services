@@ -49,7 +49,7 @@ class NonPayerKeysScreenTest {
     private NonPayerKeysScreen subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NonPayerKeysScreen(txnCtx, activationHelper, validityTest);
     }
 

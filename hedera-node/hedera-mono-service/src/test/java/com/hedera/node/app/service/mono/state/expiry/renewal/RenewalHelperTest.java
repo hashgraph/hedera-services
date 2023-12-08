@@ -92,7 +92,7 @@ class RenewalHelperTest {
     private RenewalHelper subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         lookup = new EntityLookup(() -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);

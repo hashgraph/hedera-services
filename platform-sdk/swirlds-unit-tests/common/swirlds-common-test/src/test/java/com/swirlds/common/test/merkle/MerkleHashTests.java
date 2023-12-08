@@ -65,7 +65,7 @@ class MerkleHashTests {
     private static MerkleCryptography cryptography;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setup() {
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

@@ -123,7 +123,7 @@ class SolvencyPrecheckTest {
     private SolvencyPrecheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SolvencyPrecheck(
                 feeExemptions, feeCalculator, validator, precheckVerifier, () -> stateView, () -> accounts);
     }

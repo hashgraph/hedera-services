@@ -35,7 +35,7 @@ class RunningHashesTranslatorTest {
     private com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         RunningHash runningHash =
                 new RunningHash(new Hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()));
         subject = new com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf(runningHash);

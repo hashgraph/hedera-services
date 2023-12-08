@@ -70,7 +70,7 @@ class SigsAndPayerKeyScreenTest {
     private SigsAndPayerKeyScreen subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SigsAndPayerKeyScreen(rationalization, payerSigValidity, txnCtx, speedometers, validityTest);
     }
 

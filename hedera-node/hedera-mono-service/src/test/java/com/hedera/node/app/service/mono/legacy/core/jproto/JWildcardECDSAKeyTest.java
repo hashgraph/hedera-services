@@ -28,7 +28,7 @@ class JWildcardECDSAKeyTest {
     byte[] bytes;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         bytes = new byte[20];
         subject = new JWildcardECDSAKey(bytes, true);
     }

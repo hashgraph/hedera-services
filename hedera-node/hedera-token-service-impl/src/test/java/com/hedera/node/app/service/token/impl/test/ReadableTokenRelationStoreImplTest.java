@@ -53,7 +53,7 @@ class ReadableTokenRelationStoreImplTest {
     private ReadableTokenRelationStoreImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(states.<EntityNumPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 

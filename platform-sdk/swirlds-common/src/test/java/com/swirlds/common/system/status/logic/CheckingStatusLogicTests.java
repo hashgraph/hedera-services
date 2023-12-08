@@ -47,7 +47,7 @@ class CheckingStatusLogicTests {
     private CheckingStatusLogic logic;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         logic = new CheckingStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));

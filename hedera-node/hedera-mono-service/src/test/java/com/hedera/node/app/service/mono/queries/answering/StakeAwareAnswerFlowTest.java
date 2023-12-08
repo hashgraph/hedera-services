@@ -49,7 +49,7 @@ class StakeAwareAnswerFlowTest {
     private StakeAwareAnswerFlow subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StakeAwareAnswerFlow(nodeInfo, stakedAnswerFlow, zeroStakeAnswerFlow);
     }
 

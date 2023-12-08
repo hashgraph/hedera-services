@@ -114,7 +114,7 @@ class ImpliedTransfersMarshalTest {
     private ImpliedTransfersMarshal subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ImpliedTransfersMarshal(
                 feeAssessor,
                 aliasManager,

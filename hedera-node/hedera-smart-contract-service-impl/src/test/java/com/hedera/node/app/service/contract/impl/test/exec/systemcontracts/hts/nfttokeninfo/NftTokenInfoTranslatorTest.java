@@ -51,7 +51,7 @@ class NftTokenInfoTranslatorTest {
     private NftTokenInfoTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NftTokenInfoTranslator();
     }
 

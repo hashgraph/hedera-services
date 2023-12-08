@@ -76,7 +76,7 @@ class TopLevelTransitionTest {
     private TopLevelTransition subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TopLevelTransition(
                 sigsAndPayerKeyScreen,
                 networkCtxManager,

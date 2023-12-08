@@ -45,7 +45,7 @@ class ServiceApiFactoryTest {
     private ServiceApiFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ServiceApiFactory(stack, DEFAULT_CONFIG);
     }
 

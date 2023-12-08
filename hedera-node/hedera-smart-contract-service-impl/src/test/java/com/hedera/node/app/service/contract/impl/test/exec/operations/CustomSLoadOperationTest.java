@@ -78,7 +78,7 @@ class CustomSLoadOperationTest {
     private CustomSLoadOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         realSLoadOperation = new SLoadOperation(gasCalculator);
         subject = new CustomSLoadOperation(featureFlags, delegate);
     }

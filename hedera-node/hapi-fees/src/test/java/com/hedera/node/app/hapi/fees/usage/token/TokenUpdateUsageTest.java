@@ -83,7 +83,7 @@ class TokenUpdateUsageTest {
     private TokenUpdateUsage subject;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setup() throws Exception {
         base = mock(TxnUsageEstimator.class);
         given(base.get()).willReturn(A_USAGES_MATRIX);
 

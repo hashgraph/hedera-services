@@ -44,7 +44,7 @@ class NetworkTransactionGetFastRecordHandlerTest {
     private NetworkTransactionGetFastRecordHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NetworkTransactionGetFastRecordHandler();
     }
 

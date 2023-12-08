@@ -63,7 +63,7 @@ class MerkleDbCompactionCoordinatorTest {
     private MerkleDbCompactionCoordinator coordinator;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         MockitoAnnotations.openMocks(this);
         coordinator = new MerkleDbCompactionCoordinator("test", objectKeyToPath, hashStoreDisk, pathToHashKeyValue);
         coordinator.enableBackgroundCompaction();

@@ -38,7 +38,7 @@ class StaticBlockMetaSourceTest {
     private StaticBlockMetaSource subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StaticBlockMetaSource(networkCtx);
     }
 

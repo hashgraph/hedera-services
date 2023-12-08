@@ -54,7 +54,7 @@ class ContractControllerTest {
     ContractController subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         txnObserver = mock(StreamObserver.class);
         queryObserver = mock(StreamObserver.class);
 

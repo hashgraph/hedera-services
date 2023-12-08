@@ -45,7 +45,7 @@ class FreezingStatusLogicTests {
     private FreezingStatusLogic logic;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         time = new FakeTime();
         logic = new FreezingStatusLogic(testFreezeRound);
     }

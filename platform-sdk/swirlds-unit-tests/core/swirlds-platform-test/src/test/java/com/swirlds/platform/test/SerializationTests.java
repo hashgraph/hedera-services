@@ -40,7 +40,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class SerializationTests {
 
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         new TestConfigBuilder().withValue("transactionMaxBytes", 1_000_000).getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");

@@ -76,7 +76,7 @@ class AnswerFunctionsTest {
     private AnswerFunctions subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AnswerFunctions(dynamicProperties);
     }
 

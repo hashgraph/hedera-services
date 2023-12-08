@@ -58,7 +58,7 @@ class ExpirableTxnRecordBuilderTest {
     private ExpirableTxnRecord.Builder subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = ExpirableTxnRecord.newBuilder();
     }
 

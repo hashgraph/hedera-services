@@ -59,7 +59,7 @@ class StatusChangeListenerTest {
     private StatusChangeListener subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StatusChangeListener(currentStatus, new NodeId(3L), recordStreamManager);
     }
 

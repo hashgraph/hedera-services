@@ -91,7 +91,7 @@ class ScheduleOpsUsageTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setUp() {
+    void setup() {
         base = mock(TxnUsageEstimator.class);
         given(base.get()).willReturn(A_USAGES_MATRIX);
         given(base.get(SCHEDULE_CREATE_CONTRACT_CALL)).willReturn(A_USAGES_MATRIX);

@@ -56,7 +56,7 @@ public class GetAllowanceTranslatorTest {
     private GetAllowanceTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GetAllowanceTranslator();
     }
 

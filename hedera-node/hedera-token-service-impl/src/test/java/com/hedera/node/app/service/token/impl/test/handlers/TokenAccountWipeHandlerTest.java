@@ -105,8 +105,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private TokenAccountWipeRecordBuilder recordBuilder;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)

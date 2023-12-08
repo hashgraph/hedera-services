@@ -92,8 +92,8 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private FinalizeChildRecordHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new FinalizeChildRecordHandler();
     }
 

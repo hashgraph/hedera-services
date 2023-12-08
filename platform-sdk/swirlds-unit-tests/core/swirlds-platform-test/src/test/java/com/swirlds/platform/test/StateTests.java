@@ -50,7 +50,7 @@ class StateTests {
     Path testDirectory;
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException {
+    static void setup() throws ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");

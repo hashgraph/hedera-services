@@ -72,7 +72,7 @@ class FCQueueTest {
     private final Random rnd = new Random();
 
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.fcqueue");
         registry.registerConstructables("com.swirlds.common.merkle");

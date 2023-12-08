@@ -196,7 +196,7 @@ class GlobalDynamicPropertiesTest {
     private GlobalDynamicProperties subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         numbers = mock(HederaNumbers.class);
         given(numbers.shard()).willReturn(1L);
         given(numbers.realm()).willReturn(2L);

@@ -83,7 +83,7 @@ class PricedUsageCalculatorTest {
     private PricedUsageCalculator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new PricedUsageCalculator(accessorBasedUsages, feeMultiplierSource, calculator);
     }
 

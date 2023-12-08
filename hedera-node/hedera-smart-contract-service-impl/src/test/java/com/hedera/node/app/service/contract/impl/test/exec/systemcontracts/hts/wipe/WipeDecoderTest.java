@@ -50,7 +50,7 @@ public class WipeDecoderTest {
     private final WipeDecoder subject = new WipeDecoder();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(OWNER_HEADLONG_ADDRESS)).willReturn(OWNER_ID);
     }

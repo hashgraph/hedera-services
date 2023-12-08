@@ -41,7 +41,7 @@ class ThrottleReqsManagerTest {
     ThrottleReqsManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subjectWithTps(aTps, bTps);
     }
 

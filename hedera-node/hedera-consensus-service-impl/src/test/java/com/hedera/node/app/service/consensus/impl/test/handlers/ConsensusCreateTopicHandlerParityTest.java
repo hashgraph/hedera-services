@@ -41,7 +41,7 @@ class ConsensusCreateTopicHandlerParityTest {
     private ReadableAccountStore accountStore;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 

@@ -63,7 +63,7 @@ class InHandleActivationHelperTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setUp() {
+    void setup() {
         scheduled.setForScheduledTxn(true);
         secp256k1Scheduled.setForScheduledTxn(true);
 

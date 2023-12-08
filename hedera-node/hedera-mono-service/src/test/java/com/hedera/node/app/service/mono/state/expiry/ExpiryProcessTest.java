@@ -130,7 +130,7 @@ class ExpiryProcessTest {
     private ExpiryProcess subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         setUpPreRequisites();
         subject = new ExpiryProcess(classifier, renewalWork, removalWork, dynamicProperties, consensusTimeTracker);
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);

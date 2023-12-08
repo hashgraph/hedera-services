@@ -46,7 +46,7 @@ class ServicesInitFlowTest {
     private ServicesInitFlow subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ServicesInitFlow(stateFlow, storeFlow, entitiesFlow);
     }
 

@@ -92,7 +92,7 @@ class HederaLogOperationTest {
     private HederaLogOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaLogOperation(numTopics, gasCalculator);
     }
 

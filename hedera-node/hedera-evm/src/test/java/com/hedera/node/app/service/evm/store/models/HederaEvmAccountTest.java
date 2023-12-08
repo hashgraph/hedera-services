@@ -34,7 +34,7 @@ class HederaEvmAccountTest {
     private Address accountAddress = Address.ALTBN128_ADD;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaEvmAccount(accountAddress);
     }
 

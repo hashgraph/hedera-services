@@ -56,7 +56,7 @@ class CodecFactoryTest {
     private Codec<String> subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = CodecFactory.newInMemoryCodec(parser, writer);
     }
 

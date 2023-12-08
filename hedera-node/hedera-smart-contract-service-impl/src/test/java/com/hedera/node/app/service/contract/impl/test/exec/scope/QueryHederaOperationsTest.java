@@ -53,7 +53,7 @@ class QueryHederaOperationsTest {
     private QueryHederaOperations subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new QueryHederaOperations(context, DEFAULT_HEDERA_CONFIG);
     }
 

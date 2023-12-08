@@ -84,7 +84,7 @@ class FileOpsUsageTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setUp() throws Exception {
+    void setup() throws Exception {
         base = mock(TxnUsageEstimator.class);
         given(base.get()).willReturn(A_USAGES_MATRIX);
         queryBase = mock(QueryUsage.class);

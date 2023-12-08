@@ -65,8 +65,8 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenGetNftInfoHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new TokenGetNftInfoHandler();
     }
 

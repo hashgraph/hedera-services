@@ -82,7 +82,7 @@ class StateInitializationFlowTest {
     private StateInitializationFlow subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StateInitializationFlow(
                 hfs, defaultNumbers, recordStreamManager, workingState, Set.of(aFileInterceptor, bFileInterceptor));
     }

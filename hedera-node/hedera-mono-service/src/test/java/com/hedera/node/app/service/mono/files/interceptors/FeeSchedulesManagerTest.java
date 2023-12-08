@@ -59,7 +59,7 @@ class FeeSchedulesManagerTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         attr = new HFileMeta(false, new JContractIDKey(1, 2, 3), Instant.now().getEpochSecond());
 
         fees = mock(FeeCalculator.class);

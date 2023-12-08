@@ -57,7 +57,7 @@ class Version030AddressChecksTest {
     private Version030AddressChecks subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new Version030AddressChecks(Map.of(
                 HTS_SYSTEM_CONTRACT_ADDRESS,
                 mockHtsPrecompile,

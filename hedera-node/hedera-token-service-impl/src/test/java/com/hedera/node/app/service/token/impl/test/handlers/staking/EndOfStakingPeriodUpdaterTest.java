@@ -66,7 +66,7 @@ class EndOfStakingPeriodUpdaterTest {
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = TestStoreFactory.newReadableStoreWithAccounts(Account.newBuilder()
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)

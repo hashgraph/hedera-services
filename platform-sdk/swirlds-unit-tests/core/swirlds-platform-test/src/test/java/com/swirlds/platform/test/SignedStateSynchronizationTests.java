@@ -36,7 +36,7 @@ public class SignedStateSynchronizationTests {
     private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException {
+    static void setup() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("");
     }

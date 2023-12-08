@@ -55,7 +55,7 @@ class SerializationTest extends MerkleTestBase {
     private HandleThrottleParser handleThrottling;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         setupConstructableRegistry();
 
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();

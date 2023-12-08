@@ -70,7 +70,7 @@ class GetBytecodeAnswerTest {
     GetBytecodeAnswer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         contracts = mock(MerkleMap.class);
 
         view = mock(StateView.class);

@@ -60,7 +60,7 @@ class DualStateUpdateFacilityTest implements TransactionFactory {
     protected WritableStates writableStates;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         freezeTimeBackingStore = new AtomicReference<>(null);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(

@@ -49,7 +49,7 @@ class ClassificationWorkTest {
     private ClassificationWork subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         lookup = new EntityLookup(() -> accounts);
         subject = new ClassificationWork(dynamicProps, lookup, expiryThrottle);
     }

@@ -69,7 +69,7 @@ class WritableStoreFactoryImplTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         lenient().when(writableStates.get(anyString())).thenReturn(writableKVState);
     }
 

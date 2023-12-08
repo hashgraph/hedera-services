@@ -109,7 +109,7 @@ class RecordedStorageFeeChargingTest {
     private final HederaAccountNumbers numbers = new MockAccountNumbers();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
         feeDistribution = new FeeDistribution(numbers, dynamicProperties);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);

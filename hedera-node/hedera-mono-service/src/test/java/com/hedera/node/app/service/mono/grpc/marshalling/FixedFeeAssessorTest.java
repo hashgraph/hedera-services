@@ -53,7 +53,7 @@ class FixedFeeAssessorTest {
     private FixedFeeAssessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FixedFeeAssessor(htsFeeAssessor, hbarFeeAssessor, customFeePayerExemptions);
     }
 

@@ -70,7 +70,7 @@ class CustomSelfDestructOperationTest {
     private CustomSelfDestructOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomSelfDestructOperation(gasCalculator, addressChecks);
     }
 

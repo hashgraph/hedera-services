@@ -48,7 +48,7 @@ class StateRegistryTests {
     Path testDirectory;
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException {
+    static void setup() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));

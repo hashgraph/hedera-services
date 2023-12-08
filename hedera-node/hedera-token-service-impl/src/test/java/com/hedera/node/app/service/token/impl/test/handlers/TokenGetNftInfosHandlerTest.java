@@ -44,7 +44,7 @@ class TokenGetNftInfosHandlerTest {
     private TokenGetNftInfosHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenGetNftInfosHandler();
     }
 

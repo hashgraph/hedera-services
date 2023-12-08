@@ -78,7 +78,7 @@ class RemovalHelperTest {
     private RemovalHelper subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accounts = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
         accounts.put(EntityNum.fromLong(expiredDeletedAccountNum), expiredDeletedAccount);
         accounts.put(EntityNum.fromLong(expiredDeletedContractNum), expiredDeletedContract);

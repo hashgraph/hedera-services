@@ -31,7 +31,7 @@ class TokenExpiryWrapperTest {
     private TokenExpiryWrapper wrapper;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         wrapper = createTokenExpiryWrapper();
     }
 

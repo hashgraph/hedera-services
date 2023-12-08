@@ -39,7 +39,7 @@ class CustomSchedulesManagerTest {
     private CustomSchedulesManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomSchedulesManager(customFeeSchedules);
     }
 

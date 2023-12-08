@@ -91,7 +91,7 @@ class TypedTokenStoreTest {
     private TypedTokenStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         setupToken();
         setupTokenRel();
 

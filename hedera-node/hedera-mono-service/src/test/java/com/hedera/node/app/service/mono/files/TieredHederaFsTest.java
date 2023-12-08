@@ -83,7 +83,7 @@ class TieredHederaFsTest {
     private TieredHederaFs subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         deadAttr = new HFileMeta(false, validKey, now.getEpochSecond() - 1);
         livingAttr = new HFileMeta(false, validKey, now.getEpochSecond() + lifetimeSecs);
         deletedAttr = new HFileMeta(true, validKey, now.getEpochSecond() + lifetimeSecs);

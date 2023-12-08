@@ -50,7 +50,7 @@ class FcBlobsBytesStoreTest {
     private FcBlobsBytesStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         pathedBlobs = mock(VirtualMap.class);
 
         givenMockBlobs();

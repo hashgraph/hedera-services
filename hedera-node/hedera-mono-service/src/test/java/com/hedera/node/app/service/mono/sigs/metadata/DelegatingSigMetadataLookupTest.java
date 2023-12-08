@@ -59,7 +59,7 @@ class DelegatingSigMetadataLookupTest {
     private Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         tokenStore = mock(TokenStore.class);
 
         subject = DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);

@@ -41,7 +41,7 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
     private ReadableUpgradeFileStoreImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
     }
 

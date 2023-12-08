@@ -86,7 +86,7 @@ class TriggeredTransitionTest {
     private TriggeredTransition subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TriggeredTransition(
                 currentView,
                 fees,

@@ -60,7 +60,7 @@ class ChatterSyncTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         resetFallenBehind();
         state.reset();
     }

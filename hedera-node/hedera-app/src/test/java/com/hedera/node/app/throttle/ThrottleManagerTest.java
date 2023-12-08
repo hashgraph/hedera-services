@@ -69,7 +69,7 @@ class ThrottleManagerTest {
     ThrottleManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ThrottleManager();
     }
 

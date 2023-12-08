@@ -47,7 +47,7 @@ class TokenExpiryTranslatorTest {
     private TokenExpiryTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenExpiryTranslator();
     }
 

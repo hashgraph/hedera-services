@@ -44,7 +44,7 @@ class VirtualMapFactoryTest {
     private VirtualMapFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new VirtualMapFactory(tempDir);
     }
 

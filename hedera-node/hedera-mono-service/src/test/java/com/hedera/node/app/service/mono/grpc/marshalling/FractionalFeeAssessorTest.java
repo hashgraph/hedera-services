@@ -56,7 +56,7 @@ class FractionalFeeAssessorTest {
     private FractionalFeeAssessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FractionalFeeAssessor(fixedFeeAssessor, customFeePayerExemptions);
     }
 

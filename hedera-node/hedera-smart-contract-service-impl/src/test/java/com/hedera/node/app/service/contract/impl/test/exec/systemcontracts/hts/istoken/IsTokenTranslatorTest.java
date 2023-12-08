@@ -47,7 +47,7 @@ class IsTokenTranslatorTest {
     private IsTokenTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new IsTokenTranslator();
     }
 

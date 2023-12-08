@@ -75,7 +75,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
     final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         commonSetup();
 
         accountsLedger = new TransactionalLedger<>(

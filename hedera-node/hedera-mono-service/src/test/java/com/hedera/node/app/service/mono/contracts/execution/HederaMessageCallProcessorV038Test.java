@@ -142,7 +142,7 @@ class HederaMessageCallProcessorV038Test {
     private InfrastructureFactory infrastructureFactory;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaMessageCallProcessorV038(
                 evm,
                 precompiles,

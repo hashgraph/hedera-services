@@ -94,7 +94,7 @@ class UpgradeActionsTest {
     private UpgradeActions subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         markerFilesLoc = TestFileUtils.toPath(tempDir, "outdated");
         noiseDirLoc = TestFileUtils.toPath(markerFilesLoc, "old-config.txt");
         noiseFileLoc = TestFileUtils.toPath(markerFilesLoc, "forgotten.cfg");

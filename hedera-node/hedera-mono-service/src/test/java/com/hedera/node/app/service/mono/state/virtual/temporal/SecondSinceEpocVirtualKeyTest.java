@@ -40,7 +40,7 @@ class SecondSinceEpocVirtualKeyTest {
     private SecondSinceEpocVirtualKey subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SecondSinceEpocVirtualKey(longKey);
     }
 

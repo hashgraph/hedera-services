@@ -77,7 +77,7 @@ class GetTokenInfoResourceUsageTest {
     private GetTokenInfoResourceUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         estimator = mock(TokenGetInfoUsage.class);

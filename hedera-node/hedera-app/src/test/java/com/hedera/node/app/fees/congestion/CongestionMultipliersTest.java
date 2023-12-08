@@ -47,7 +47,7 @@ class CongestionMultipliersTest {
     private ReadableStoreFactory storeFactory;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         entityUtilizationMultiplier = mock(EntityUtilizationMultiplier.class);
         throttleMultiplier = mock(ThrottleMultiplier.class);
         txnInfo = mock(TransactionInfo.class);

@@ -105,7 +105,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     private List<HtsCallTranslator> callTranslators;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         callTranslators = List.of(
                 new AssociationsTranslator(associationsDecoder),
                 new Erc20TransfersTranslator(),

@@ -58,7 +58,7 @@ class TxnResponseHelperTest {
     private TxnResponseHelper subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         submissionFlow = mock(SubmissionFlow.class);
         opCounters = mock(HapiOpCounters.class);
         observer = mock(StreamObserver.class);

@@ -53,7 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EnsureAliasesStepTest extends StepsBase {
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         ensureAliasesInternalSetup(true);
     }
 

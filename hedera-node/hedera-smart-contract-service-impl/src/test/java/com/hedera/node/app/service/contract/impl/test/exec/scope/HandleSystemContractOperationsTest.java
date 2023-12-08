@@ -73,7 +73,7 @@ class HandleSystemContractOperationsTest {
     private HandleSystemContractOperations subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HandleSystemContractOperations(context);
     }
 

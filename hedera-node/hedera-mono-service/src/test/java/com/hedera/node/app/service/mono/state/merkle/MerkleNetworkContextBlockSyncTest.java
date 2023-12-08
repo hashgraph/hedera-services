@@ -66,7 +66,7 @@ class MerkleNetworkContextBlockSyncTest {
     private MerkleNetworkContext subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new MerkleNetworkContext();
     }
 

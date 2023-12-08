@@ -56,7 +56,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
     private NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         networkTransactionGetRecordHandler = new NetworkTransactionGetRecordHandler();
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);

@@ -66,7 +66,7 @@ class UpdateExpiryTranslatorTest {
     private static final Tuple expiry = Tuple.of(EXPIRY_TIMESTAMP, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new UpdateExpiryTranslator(decoder);
     }
 

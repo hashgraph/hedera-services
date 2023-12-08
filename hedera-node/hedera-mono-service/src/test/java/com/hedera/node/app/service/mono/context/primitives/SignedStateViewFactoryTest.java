@@ -121,7 +121,7 @@ class SignedStateViewFactoryTest {
     private FCHashMap<ByteString, EntityNum> aliases;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         factory = new SignedStateViewFactory(platform, scheduleStore, networkInfo);
     }
 

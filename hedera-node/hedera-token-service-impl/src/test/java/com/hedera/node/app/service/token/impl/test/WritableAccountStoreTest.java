@@ -40,8 +40,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         resetStores();
     }
 

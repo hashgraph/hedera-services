@@ -38,7 +38,7 @@ class CanonicalDispatchPricesTest {
     private CanonicalDispatchPrices subject;
 
     @BeforeEach
-    void setUp() {}
+    void setup() {}
 
     @Test
     void liveAssetsContainPricesForAllDispatchTypes() {

@@ -131,7 +131,7 @@ class AutoCreationLogicTest {
     private final HashMap<ByteString, Integer> tokenAliasMap = new HashMap<>();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AutoCreationLogic(
                 usageLimits,
                 syntheticTxnFactory,

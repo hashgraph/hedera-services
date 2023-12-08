@@ -60,7 +60,7 @@ class PrngSystemContractTest {
     private PrngSystemContract subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new PrngSystemContract(gasCalculator);
     }
 

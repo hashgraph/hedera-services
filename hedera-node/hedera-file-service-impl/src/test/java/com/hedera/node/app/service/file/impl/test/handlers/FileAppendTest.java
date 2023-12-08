@@ -97,7 +97,7 @@ class FileAppendTest extends FileTestBase {
     private FileAppendHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FileAppendHandler();
         testConfig = HederaTestConfigBuilder.createConfig();
         when(preHandleContext.configuration()).thenReturn(testConfig);

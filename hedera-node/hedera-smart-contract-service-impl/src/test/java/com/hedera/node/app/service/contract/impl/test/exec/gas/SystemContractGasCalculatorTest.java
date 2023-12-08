@@ -44,7 +44,7 @@ class SystemContractGasCalculatorTest {
     private SystemContractGasCalculator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SystemContractGasCalculator(tinybarValues, canonicalDispatchPrices, feeCalculator);
     }
 

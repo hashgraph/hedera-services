@@ -41,7 +41,7 @@ class ContractStorageListMutationTest {
     private ContractStorageListMutation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ContractStorageListMutation(contractId, VirtualMapLike.from(storage));
     }
 

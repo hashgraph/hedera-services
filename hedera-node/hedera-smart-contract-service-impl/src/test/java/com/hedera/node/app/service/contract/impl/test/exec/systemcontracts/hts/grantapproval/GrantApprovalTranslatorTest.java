@@ -70,7 +70,7 @@ class GrantApprovalTranslatorTest {
     private GrantApprovalTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GrantApprovalTranslator(decoder);
     }
 

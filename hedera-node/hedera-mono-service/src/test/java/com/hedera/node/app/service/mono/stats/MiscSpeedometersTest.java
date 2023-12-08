@@ -51,7 +51,7 @@ class MiscSpeedometersTest {
     private MiscSpeedometers subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);

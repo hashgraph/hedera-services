@@ -112,7 +112,7 @@ final class TokenSchemaTest {
     private WritableEntityIdStore entityIdStore;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
                 .build();
 

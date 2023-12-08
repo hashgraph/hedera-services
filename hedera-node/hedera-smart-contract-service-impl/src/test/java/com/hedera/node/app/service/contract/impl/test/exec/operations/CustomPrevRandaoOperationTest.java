@@ -51,7 +51,7 @@ class CustomPrevRandaoOperationTest {
     private CustomPrevRandaoOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(gasCalculator.getBaseTierGasCost()).willReturn(2L);
         subject = new CustomPrevRandaoOperation(gasCalculator);
     }

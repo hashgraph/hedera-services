@@ -80,7 +80,7 @@ class FreezeUpgradeActionsTest {
     private FreezeUpgradeActions subject;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 

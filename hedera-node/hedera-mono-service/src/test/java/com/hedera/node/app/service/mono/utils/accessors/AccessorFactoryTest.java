@@ -59,7 +59,7 @@ class AccessorFactoryTest {
             .build();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AccessorFactory(properties);
     }
 

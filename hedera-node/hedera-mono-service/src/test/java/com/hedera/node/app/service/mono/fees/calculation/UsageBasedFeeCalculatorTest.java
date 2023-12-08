@@ -151,7 +151,7 @@ class UsageBasedFeeCalculatorTest {
     private UsageBasedFeeCalculator subject;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         view = mock(StateView.class);
         query = mock(Query.class);
         payerKey = complexKey.asJKey();

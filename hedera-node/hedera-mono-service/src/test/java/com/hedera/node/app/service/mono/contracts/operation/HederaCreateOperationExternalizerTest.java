@@ -118,7 +118,7 @@ class HederaCreateOperationExternalizerTest {
     private HederaCreateOperationExternalizer subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaCreateOperationExternalizer(
                 creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
     }

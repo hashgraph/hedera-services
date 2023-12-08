@@ -58,7 +58,7 @@ class WritableTokenRelationStoreTest {
     private WritableTokenRelationStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 

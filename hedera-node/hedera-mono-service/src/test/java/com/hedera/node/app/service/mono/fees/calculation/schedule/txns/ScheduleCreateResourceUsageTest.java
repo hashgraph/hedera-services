@@ -51,7 +51,7 @@ class ScheduleCreateResourceUsageTest {
     FeeData expected;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         scheduleCreateTxn = mock(TransactionBody.class);

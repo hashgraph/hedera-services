@@ -75,7 +75,7 @@ class EntityAutoExpiryTest {
     private EntityAutoExpiry subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EntityAutoExpiry(
                 expiryStats,
                 mockHederaNums,

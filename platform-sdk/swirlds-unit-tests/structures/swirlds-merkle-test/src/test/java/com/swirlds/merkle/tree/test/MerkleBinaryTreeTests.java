@@ -138,7 +138,7 @@ class MerkleBinaryTreeTests {
     public static <V extends MerkleNode> void updateCache(final V original) {}
 
     @BeforeAll
-    void setUp() throws ConstructableRegistryException {
+    void setup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 

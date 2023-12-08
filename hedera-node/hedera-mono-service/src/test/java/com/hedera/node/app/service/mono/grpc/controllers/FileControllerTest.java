@@ -50,7 +50,7 @@ class FileControllerTest {
     FileController subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         answers = mock(FileAnswers.class);
         txnObserver = mock(StreamObserver.class);
         queryObserver = mock(StreamObserver.class);

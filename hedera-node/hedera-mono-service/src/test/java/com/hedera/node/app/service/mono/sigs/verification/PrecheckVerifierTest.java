@@ -102,7 +102,7 @@ class PrecheckVerifierTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         precheckKeyReqs = mock(PrecheckKeyReqs.class);
         mockAccessor = mock(SignedTxnAccessor.class);
         given(mockAccessor.getTxn()).willReturn(realAccessor.getTxn());

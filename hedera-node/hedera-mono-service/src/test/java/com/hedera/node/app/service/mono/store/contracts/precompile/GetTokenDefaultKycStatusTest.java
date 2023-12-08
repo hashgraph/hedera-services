@@ -134,7 +134,7 @@ class GetTokenDefaultKycStatusTest {
     private MockedStatic<GetTokenDefaultKycStatus> getTokenDefaultKycStatus;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject = new HTSPrecompiledContract(

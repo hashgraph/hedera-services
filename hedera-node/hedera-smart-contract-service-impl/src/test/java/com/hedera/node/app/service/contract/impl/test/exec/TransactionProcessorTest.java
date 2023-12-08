@@ -139,7 +139,7 @@ class TransactionProcessorTest {
     private TransactionProcessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TransactionProcessor(
                 frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
     }

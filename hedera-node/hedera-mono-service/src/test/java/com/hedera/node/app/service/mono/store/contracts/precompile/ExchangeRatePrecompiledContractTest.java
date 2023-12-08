@@ -57,7 +57,7 @@ class ExchangeRatePrecompiledContractTest {
     private ExchangeRatePrecompiledContract subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExchangeRatePrecompiledContract(gasCalculator, exchange, dynamicProperties, () -> now);
     }
 

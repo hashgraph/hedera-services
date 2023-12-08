@@ -173,7 +173,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     protected abstract T getExpectedObject(final SeededPropertySource propertySource);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         registerConstructables();
     }
 

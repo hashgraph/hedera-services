@@ -53,7 +53,7 @@ class RecordsRunningHashLeafTest {
     private final RecordsRunningHashLeaf runningHashLeaf = new RecordsRunningHashLeaf(runningHash);
 
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
     }
 

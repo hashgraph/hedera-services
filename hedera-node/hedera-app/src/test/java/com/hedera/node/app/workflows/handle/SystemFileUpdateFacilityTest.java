@@ -96,7 +96,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     private ThrottleAccumulator synchronizedThrottleAccumulator;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         files = new HashMap<>();
         state = new FakeHederaState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
 

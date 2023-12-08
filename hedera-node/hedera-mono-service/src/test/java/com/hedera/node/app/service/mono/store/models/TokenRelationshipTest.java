@@ -48,7 +48,7 @@ class TokenRelationshipTest {
     private TokenRelationship subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         token = new Token(tokenId);
         account = new Account(accountId);
         int associatedTokensCount = 3;

@@ -77,7 +77,7 @@ class EventExpansionTest {
     private EventExpansion subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EventExpansion(engine, expandHandleSpan, prefetchProcessor, () -> sigReqsManager);
     }
 

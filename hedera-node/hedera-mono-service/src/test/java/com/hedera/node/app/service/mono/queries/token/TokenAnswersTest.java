@@ -29,7 +29,7 @@ class TokenAnswersTest {
     GetAccountNftInfosAnswer accountNftInfos;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         tokenInfo = mock(GetTokenInfoAnswer.class);
         nftInfo = mock(GetTokenNftInfoAnswer.class);
         tokenNftsInfo = mock(GetTokenNftInfosAnswer.class);

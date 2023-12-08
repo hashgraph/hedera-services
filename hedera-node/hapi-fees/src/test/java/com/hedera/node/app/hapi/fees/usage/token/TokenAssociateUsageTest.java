@@ -58,7 +58,7 @@ class TokenAssociateUsageTest {
     private TokenAssociateUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         base = mock(TxnUsageEstimator.class);
         given(base.get()).willReturn(A_USAGES_MATRIX);
 

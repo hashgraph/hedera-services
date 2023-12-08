@@ -37,7 +37,7 @@ class TokenGetAccountNftInfosUsageTest {
     private List<ByteString> metadata;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         metadata = List.of(ByteString.copyFromUtf8("some metadata"));
         id = AccountID.newBuilder()
                 .setShardNum(0)

@@ -95,7 +95,7 @@ class ExpiryRecordsHelperTest {
     private ExpiryRecordsHelper subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExpiryRecordsHelper(
                 recordStreaming, recordsHistorian, syntheticTxnFactory, consensusTimeTracker, sideEffectsTracker);
     }

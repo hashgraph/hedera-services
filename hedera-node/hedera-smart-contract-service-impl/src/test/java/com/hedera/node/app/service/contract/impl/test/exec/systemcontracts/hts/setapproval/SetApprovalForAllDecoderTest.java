@@ -47,7 +47,7 @@ public class SetApprovalForAllDecoderTest {
     private final SetApprovalForAllDecoder subject = new SetApprovalForAllDecoder();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(attempt.senderId()).willReturn(SENDER_ID);
         given(addressIdConverter.convert(APPROVED_HEADLONG_ADDRESS)).willReturn(APPROVED_ID);

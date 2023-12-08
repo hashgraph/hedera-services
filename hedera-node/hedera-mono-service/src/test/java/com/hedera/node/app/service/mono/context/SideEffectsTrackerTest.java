@@ -55,7 +55,7 @@ class SideEffectsTrackerTest {
     private SideEffectsTracker subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SideEffectsTracker();
     }
 

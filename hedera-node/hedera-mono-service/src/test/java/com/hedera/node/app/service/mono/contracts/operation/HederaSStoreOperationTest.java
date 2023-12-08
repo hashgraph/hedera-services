@@ -68,7 +68,7 @@ class HederaSStoreOperationTest {
     private HederaSStoreOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaSStoreOperation(EIP_1706_MINIMUM, gasCalculator, dynamicProperties);
     }
 

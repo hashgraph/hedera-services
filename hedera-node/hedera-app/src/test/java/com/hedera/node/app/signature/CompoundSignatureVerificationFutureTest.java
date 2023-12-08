@@ -50,7 +50,7 @@ final class CompoundSignatureVerificationFutureTest implements Scenarios {
     private CompoundSignatureVerificationFuture subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         Key key = Key.newBuilder()
                 .keyList(KeyList.newBuilder()
                         .keys(

@@ -63,7 +63,7 @@ class ExchangeRateManagerTest {
     ExchangeRateManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final ConfigProvider configProvider = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
         subject = new ExchangeRateManager(configProvider);
         final var state = new FakeHederaState();

@@ -69,7 +69,7 @@ class TokenGrantKycTransitionLogicTest {
     private TokenGrantKycTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = mock(AccountStore.class);
         tokenStore = mock(TypedTokenStore.class);
         accessor = mock(SignedTxnAccessor.class);

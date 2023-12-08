@@ -67,7 +67,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
     private SignatureVerifierImpl verifier;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         signedBytes = randomBytes(123);
         verifier = new SignatureVerifierImpl(cryptoEngine);
     }

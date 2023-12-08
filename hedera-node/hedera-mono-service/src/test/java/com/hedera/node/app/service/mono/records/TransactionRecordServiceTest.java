@@ -91,7 +91,7 @@ class TransactionRecordServiceTest {
     private TransactionRecordService subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TransactionRecordService(txnCtx);
     }
 

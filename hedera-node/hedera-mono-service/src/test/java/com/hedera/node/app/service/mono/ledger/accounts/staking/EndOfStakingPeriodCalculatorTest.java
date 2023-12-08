@@ -80,7 +80,7 @@ class EndOfStakingPeriodCalculatorTest {
     private final int sumOfConsensusWeights = 500;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EndOfStakingPeriodCalculator(
                 () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 () -> MerkleMapLike.from(stakingInfos),

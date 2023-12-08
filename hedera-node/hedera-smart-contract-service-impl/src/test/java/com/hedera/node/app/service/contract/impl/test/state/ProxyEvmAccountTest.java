@@ -56,7 +56,7 @@ class ProxyEvmAccountTest {
     private ProxyEvmAccount subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ProxyEvmAccount(ACCOUNT_NUM, hederaState);
     }
 

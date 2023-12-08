@@ -38,7 +38,7 @@ public class PausesTranslatorTest {
     private PausesTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new PausesTranslator(decoder);
     }
 

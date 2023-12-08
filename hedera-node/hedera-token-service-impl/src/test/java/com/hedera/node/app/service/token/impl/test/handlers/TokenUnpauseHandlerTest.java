@@ -65,7 +65,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     private HandleContext handleContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setup() throws PreCheckException {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new TokenUnpauseHandler();

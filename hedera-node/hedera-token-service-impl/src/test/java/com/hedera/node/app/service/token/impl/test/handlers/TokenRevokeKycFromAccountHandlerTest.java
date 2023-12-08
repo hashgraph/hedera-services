@@ -93,7 +93,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     private TokenRevokeKycFromAccountHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         tokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         subject = new TokenRevokeKycFromAccountHandler();
@@ -205,7 +205,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                 .build();
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
             given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

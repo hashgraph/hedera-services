@@ -49,7 +49,7 @@ class AccountsCommitInterceptorTest {
     private AccountsCommitInterceptor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AccountsCommitInterceptor(usageTracking, sideEffectsTracker);
     }
 

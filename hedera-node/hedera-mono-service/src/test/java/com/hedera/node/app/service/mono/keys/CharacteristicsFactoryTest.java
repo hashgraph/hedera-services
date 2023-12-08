@@ -49,7 +49,7 @@ class CharacteristicsFactoryTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setUp() {
+    void setup() {
         hfs = mock(HederaFs.class);
         given(hfs.exists(target)).willReturn(true);
         given(hfs.getattr(target)).willReturn(info);

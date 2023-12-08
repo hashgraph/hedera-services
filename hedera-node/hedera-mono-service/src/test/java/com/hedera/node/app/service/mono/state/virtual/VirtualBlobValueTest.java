@@ -42,7 +42,7 @@ class VirtualBlobValueTest {
     private byte[] otherData = "someOtherData".getBytes();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new VirtualBlobValue(data);
     }
 

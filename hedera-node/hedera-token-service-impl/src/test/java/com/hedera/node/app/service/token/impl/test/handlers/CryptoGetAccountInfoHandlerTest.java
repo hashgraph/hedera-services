@@ -101,8 +101,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private StakingNodeInfo stakingNodeInfo;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         cryptoOpsUsage = new CryptoOpsUsage();
         subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage);
     }

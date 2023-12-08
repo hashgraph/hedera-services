@@ -113,7 +113,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     private VersionedConfiguration configuration;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setup() throws PreCheckException {
         // The request buffer, with basically random bytes
         requestBuffer = randomBytes(10);
         transactionBody = TransactionBody.newBuilder()

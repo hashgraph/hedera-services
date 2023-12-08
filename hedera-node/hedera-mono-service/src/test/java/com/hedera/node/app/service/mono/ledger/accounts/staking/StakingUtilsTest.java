@@ -70,7 +70,7 @@ public class StakingUtilsTest {
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         stakingInfo = buildsStakingInfoMap();
     }
 

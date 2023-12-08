@@ -59,7 +59,7 @@ class CryptoCreateChecksTest {
     private CryptoCreateChecks subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoCreateChecks(dynamicProperties, validator, accounts, nodeInfo, aliasManager);
     }
 

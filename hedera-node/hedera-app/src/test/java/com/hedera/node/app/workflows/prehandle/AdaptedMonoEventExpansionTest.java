@@ -69,7 +69,7 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
     private AdaptedMonoEventExpansion subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AdaptedMonoEventExpansion(
                 eventExpansion, preHandleWorkflow, staticProperties, () -> sigReqsManager);
     }

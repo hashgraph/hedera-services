@@ -53,7 +53,7 @@ class RecordCacheFactoryTest {
     private PropertySource properties;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         properties = mock(PropertySource.class);
         given(properties.getIntProperty(CACHE_RECORDS_TTL)).willReturn(1);
 

@@ -74,7 +74,7 @@ class ExpiryValidatorImplTest {
     private ExpiryValidatorImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(context.consensusNow()).willReturn(NOW);
         final var config = HederaTestConfigBuilder.createConfig();
         given(context.configuration()).willReturn(config);

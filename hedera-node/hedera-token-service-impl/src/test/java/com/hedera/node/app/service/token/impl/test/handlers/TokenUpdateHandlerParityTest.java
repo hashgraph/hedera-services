@@ -61,8 +61,8 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     private TokenUpdateHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         final var validator = new TokenUpdateValidator(new TokenAttributesValidator());
         subject = new TokenUpdateHandler(validator);
     }

@@ -53,8 +53,8 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     private ExpiryValidator expiryValidator;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(ownerId, ownerAccount)
                 .value(payerId, account)

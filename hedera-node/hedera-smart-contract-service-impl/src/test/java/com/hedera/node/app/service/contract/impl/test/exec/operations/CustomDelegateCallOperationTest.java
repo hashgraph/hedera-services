@@ -62,7 +62,7 @@ class CustomDelegateCallOperationTest {
     private CustomDelegateCallOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomDelegateCallOperation(gasCalculator, addressChecks);
     }
 

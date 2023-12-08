@@ -85,7 +85,7 @@ class CustomSStoreOperationTest {
     private CustomSStoreOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         realSStoreOperation = new SStoreOperation(gasCalculator, FRONTIER_MINIMUM);
         subject = new CustomSStoreOperation(featureFlags, delegate);
     }

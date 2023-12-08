@@ -71,7 +71,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
     private LinkAwareTokenRelsCommitInterceptor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new LinkAwareTokenRelsCommitInterceptor(
                 usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
     }

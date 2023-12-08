@@ -57,7 +57,7 @@ class TxnAwareHandleThrottlingTest {
     private TxnAwareHandleThrottling subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TxnAwareHandleThrottling(txnCtx, delegate);
     }
 

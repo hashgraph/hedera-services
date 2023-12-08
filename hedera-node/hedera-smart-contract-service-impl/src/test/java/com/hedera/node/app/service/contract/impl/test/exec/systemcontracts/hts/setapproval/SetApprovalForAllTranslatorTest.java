@@ -41,7 +41,7 @@ public class SetApprovalForAllTranslatorTest {
     private SetApprovalForAllTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SetApprovalForAllTranslator(decoder);
     }
 

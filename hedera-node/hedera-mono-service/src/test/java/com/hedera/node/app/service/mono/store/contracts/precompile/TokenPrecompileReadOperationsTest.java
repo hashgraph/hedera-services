@@ -152,7 +152,7 @@ class TokenPrecompileReadOperationsTest {
     private MockedStatic<GetTokenTypePrecompile> getTokenTypePrecompile;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
 
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader,

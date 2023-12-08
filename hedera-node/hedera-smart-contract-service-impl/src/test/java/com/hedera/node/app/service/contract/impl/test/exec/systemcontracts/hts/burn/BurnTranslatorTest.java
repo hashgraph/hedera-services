@@ -39,7 +39,7 @@ class BurnTranslatorTest {
     private final BurnDecoder decoder = new BurnDecoder();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BurnTranslator(decoder);
     }
 

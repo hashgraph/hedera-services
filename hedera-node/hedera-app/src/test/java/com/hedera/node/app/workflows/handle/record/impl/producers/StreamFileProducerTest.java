@@ -65,7 +65,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
     @DisplayName("Initialization Tests")
     final class InitTests {
         @BeforeEach
-        void setUp() {
+        void setup() {
             subject = createStreamProducer(BlockRecordWriterDummy::new);
         }
 
@@ -116,7 +116,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
     @DisplayName("Writing Tests")
     final class WritingTests {
         @BeforeEach
-        void setUp() {
+        void setup() {
             subject = createStreamProducer(BlockRecordWriterDummy::new);
         }
 
@@ -198,7 +198,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
     @DisplayName("Switching Blocks")
     final class SwitchingTests {
         @BeforeEach
-        void setUp() {
+        void setup() {
             subject = createStreamProducer(BlockRecordWriterDummy::new);
         }
 

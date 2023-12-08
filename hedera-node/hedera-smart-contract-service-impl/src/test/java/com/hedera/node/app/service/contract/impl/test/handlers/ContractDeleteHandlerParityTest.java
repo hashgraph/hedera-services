@@ -46,7 +46,7 @@ class ContractDeleteHandlerParityTest {
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 

@@ -81,7 +81,7 @@ class MonoExpiryValidatorTest {
     private MonoExpiryValidator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject =
                 new MonoExpiryValidator(accountStore, attributeValidator, consensusSecondNow, numbers, configProvider);
         final var configuration =

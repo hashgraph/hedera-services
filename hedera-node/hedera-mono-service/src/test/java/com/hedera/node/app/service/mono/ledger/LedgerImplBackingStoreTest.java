@@ -54,7 +54,7 @@ class LedgerImplBackingStoreTest {
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         backingTestAccounts = new HashMapTestAccounts();
 
         firstOrder = new TransactionalLedger<>(

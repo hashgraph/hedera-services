@@ -111,7 +111,7 @@ class ServicesAppTest {
     private ServicesApp subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         // setup:
         final var bootstrapProps = new BootstrapProperties();
         final var props = new ChainedSources(overridingProps, bootstrapProps);

@@ -87,7 +87,7 @@ class TxnRateFeeMultiplierSourceTest {
     private TxnRateFeeMultiplierSource subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         mockProps = new MockGlobalDynamicProps();
         subject = new TxnRateFeeMultiplierSource(mockProps, throttling, usageLimits);
     }

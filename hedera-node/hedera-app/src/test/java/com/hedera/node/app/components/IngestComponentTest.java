@@ -87,7 +87,7 @@ class IngestComponentTest {
     private HederaInjectionComponent app;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);

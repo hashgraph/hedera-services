@@ -137,7 +137,7 @@ class RedirectViewExecutorTest {
     private MockedStatic<TokenURIPrecompile> tokenURIPrecompile;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         allowancePrecompile = Mockito.mockStatic(AllowancePrecompile.class);
         isApprovedForAllPrecompile = Mockito.mockStatic(IsApprovedForAllPrecompile.class);
         balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);

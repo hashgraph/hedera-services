@@ -178,7 +178,7 @@ class ViewExecutorTest {
                     + "0000000000000000000000000000000000000000000000000000000000000001");
 
     @BeforeEach
-    void setUp() {
+    void setup() {
 
         evmTokenInfo = new EvmTokenInfo(
                 fromString("0x03").toByteArray(),

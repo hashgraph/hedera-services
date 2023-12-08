@@ -89,7 +89,7 @@ class ThrottleDefsManagerTest {
     ThrottleDefsManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ThrottleDefsManager(fileNums, () -> book, postUpdateCb);
         subject.expectedOps = pretendExpectedOps;
     }

@@ -43,8 +43,8 @@ import org.junit.jupiter.api.Test;
 class AdjustHbarChangesStepTest extends StepsBase {
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token

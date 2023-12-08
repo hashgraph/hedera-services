@@ -47,7 +47,7 @@ class TokenCustomFeesTranslatorTest {
     private TokenCustomFeesTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenCustomFeesTranslator();
     }
 

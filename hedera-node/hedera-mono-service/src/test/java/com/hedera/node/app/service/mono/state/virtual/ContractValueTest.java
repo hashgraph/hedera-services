@@ -54,7 +54,7 @@ class ContractValueTest {
     private ContractValue subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ContractValue(bytesValue);
     }
 

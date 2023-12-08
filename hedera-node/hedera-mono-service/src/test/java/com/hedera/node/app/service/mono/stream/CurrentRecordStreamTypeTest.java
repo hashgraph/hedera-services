@@ -67,7 +67,7 @@ class CurrentRecordStreamTypeTest {
     private LogCaptor logCaptor;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CurrentRecordStreamType(semanticVersions, dynamicProperties);
     }
 

@@ -59,7 +59,7 @@ class NodeInfoTest {
     private NodeInfo subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NodeInfo(nodeId, () -> book);
     }
 

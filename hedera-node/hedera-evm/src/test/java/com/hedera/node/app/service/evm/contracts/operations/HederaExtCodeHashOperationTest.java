@@ -68,7 +68,7 @@ class HederaExtCodeHashOperationTest {
     private final long ACTUAL_COST = OPERATION_COST + WARM_READ_COST;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaExtCodeHashOperation(gasCalculator, addressValidator);
         given(gasCalculator.extCodeHashOperationGasCost()).willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);

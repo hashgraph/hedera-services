@@ -47,7 +47,7 @@ class TokenTypeTranslatorTest {
     private TokenTypeTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenTypeTranslator();
     }
 

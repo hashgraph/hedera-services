@@ -91,7 +91,7 @@ class AbstractEvmRecordingCreateOperationTest {
     private Subject subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new Subject(0xF0, "ħCREATE", 3, 1, gasCalculator, externalizer);
     }
 

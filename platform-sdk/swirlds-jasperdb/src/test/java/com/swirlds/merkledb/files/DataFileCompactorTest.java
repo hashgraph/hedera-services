@@ -55,7 +55,7 @@ class DataFileCompactorTest {
     DataFileReader<?> secondLevel2;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         openMocks(this);
         initReaderLevel(initialLevel1, 0);
         initReaderLevel(initialLevel2, 0);

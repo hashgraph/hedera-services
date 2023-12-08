@@ -76,7 +76,7 @@ class HtsCallFactoryTest extends HtsCallTestBase {
     private HtsCallFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HtsCallFactory(
                 syntheticIds, addressChecks, verificationStrategies, List.of(new BalanceOfTranslator()));
     }

@@ -131,7 +131,7 @@ class GetTokenDefaultFreezeStatusTest {
     private MockedStatic<GetTokenDefaultFreezeStatus> getTokenDefaultFreezeStatus;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject = new HTSPrecompiledContract(

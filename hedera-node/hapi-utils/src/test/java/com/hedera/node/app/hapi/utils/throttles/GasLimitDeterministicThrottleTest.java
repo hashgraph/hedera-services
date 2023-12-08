@@ -33,7 +33,7 @@ class GasLimitDeterministicThrottleTest {
     GasLimitDeterministicThrottle subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GasLimitDeterministicThrottle(DEFAULT_CAPACITY);
     }
 

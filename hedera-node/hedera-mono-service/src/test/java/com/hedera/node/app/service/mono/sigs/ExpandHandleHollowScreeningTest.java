@@ -109,7 +109,7 @@ class ExpandHandleHollowScreeningTest {
     private ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         miscStatic = mockStatic(MiscCryptoUtils.class);
     }
 

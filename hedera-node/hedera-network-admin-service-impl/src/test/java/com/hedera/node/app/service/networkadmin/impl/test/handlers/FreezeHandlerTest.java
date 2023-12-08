@@ -90,7 +90,7 @@ class FreezeHandlerTest {
             1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true));
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         Configuration config = HederaTestConfigBuilder.createConfig();
         given(preHandleContext.configuration()).willReturn(config);
 

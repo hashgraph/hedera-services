@@ -36,7 +36,7 @@ class BalanceChangeManagerTest {
     private BalanceChangeManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BalanceChangeManager(startingList, 2);
     }
 

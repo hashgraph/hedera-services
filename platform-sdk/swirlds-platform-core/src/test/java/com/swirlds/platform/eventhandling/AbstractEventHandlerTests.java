@@ -52,7 +52,7 @@ public abstract class AbstractEventHandlerTests {
     protected Supplier<Instant> consEstimateSupplier;
     protected Random random;
 
-    protected void setUp() {
+    protected void setup() {
         selfId = new NodeId(0L);
         metrics = new NoOpMetrics();
         ssStats = mock(SwirldStateMetrics.class);

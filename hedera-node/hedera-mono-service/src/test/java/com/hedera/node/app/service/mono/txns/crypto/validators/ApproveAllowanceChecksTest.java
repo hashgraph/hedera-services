@@ -194,7 +194,7 @@ class ApproveAllowanceChecksTest {
     private CryptoApproveAllowanceTransactionBody op;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         token1Model.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
         token1Model.setType(TokenType.FUNGIBLE_COMMON);
         token2Model.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);

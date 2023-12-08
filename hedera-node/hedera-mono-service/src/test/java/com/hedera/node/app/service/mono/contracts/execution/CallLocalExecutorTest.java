@@ -82,7 +82,7 @@ class CallLocalExecutorTest {
     private EntityAccess entityAccess;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
     }
 

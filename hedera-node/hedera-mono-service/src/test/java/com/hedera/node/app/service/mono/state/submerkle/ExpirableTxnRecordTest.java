@@ -102,7 +102,7 @@ class ExpirableTxnRecordTest {
     private ExpirableTxnRecord subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
     }
 

@@ -68,7 +68,7 @@ class TokenDissociateResourceUsageTest {
     TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         expected = mock(FeeData.class);
         account = mock(MerkleAccount.class);
         given(account.getExpiry()).willReturn(expiry);

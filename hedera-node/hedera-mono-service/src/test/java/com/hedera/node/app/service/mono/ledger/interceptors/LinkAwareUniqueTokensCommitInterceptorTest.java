@@ -54,7 +54,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     private LinkAwareUniqueTokensCommitInterceptor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
     }
 

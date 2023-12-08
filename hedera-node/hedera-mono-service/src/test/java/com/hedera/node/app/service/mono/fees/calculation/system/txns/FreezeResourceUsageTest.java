@@ -33,7 +33,7 @@ class FreezeResourceUsageTest {
     private FreezeResourceUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FreezeResourceUsage();
     }
 

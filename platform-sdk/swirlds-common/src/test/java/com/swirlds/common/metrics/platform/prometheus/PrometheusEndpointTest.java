@@ -99,7 +99,7 @@ class PrometheusEndpointTest {
             new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         this.httpServer = HttpServer.create(ADDRESS, 1);
     }
 

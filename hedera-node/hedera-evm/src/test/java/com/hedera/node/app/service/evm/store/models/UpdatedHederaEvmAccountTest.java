@@ -47,7 +47,7 @@ class UpdatedHederaEvmAccountTest {
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new UpdateTrackingAccount<>(address, null);
         subject.setBalance(Wei.ONE);
         subject.setNonce(1L);

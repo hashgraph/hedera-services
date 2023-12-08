@@ -79,7 +79,7 @@ class MerkleSerializationTests {
     Path testDirectory;
 
     @BeforeAll
-    static void setUp() throws ConstructableRegistryException {
+    static void setup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
     }
 

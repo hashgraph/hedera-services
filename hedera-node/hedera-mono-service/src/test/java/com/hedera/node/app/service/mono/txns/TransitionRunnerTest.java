@@ -79,7 +79,7 @@ class TransitionRunnerTest {
     private TransitionRunner subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TransitionRunner(ids, txnCtx, lookup);
     }
 

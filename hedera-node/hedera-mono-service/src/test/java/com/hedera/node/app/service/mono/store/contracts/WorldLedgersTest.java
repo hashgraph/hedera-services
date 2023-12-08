@@ -213,7 +213,7 @@ class WorldLedgersTest {
             List.of(customFixedFeeInHbar, customFixedFeeInHts, customFixedFeeSameToken, customFractionalFee);
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         worldLedgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
         tokenAccessor();
         token = new MerkleToken(

@@ -71,7 +71,7 @@ class MerkleStakingInfoTest {
     private final int weight = 5;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new MerkleStakingInfo(
                 minStake,
                 maxStake,

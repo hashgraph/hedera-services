@@ -46,7 +46,7 @@ class ThrottleMultiplierTest {
     private ThrottleMultiplier subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         congestionMultipliers = mock(CongestionMultipliers.class);
         throttle = mock(CongestibleThrottle.class);
 

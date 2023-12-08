@@ -37,7 +37,7 @@ class EthereumTransactionResourceUsageTest {
     private TransactionBody ethTxn;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         ethTxn = mock(TransactionBody.class);
         given(ethTxn.hasEthereumTransaction()).willReturn(true);
 

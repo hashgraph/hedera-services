@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 public class SignatureTest {
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common.crypto");
     }
 

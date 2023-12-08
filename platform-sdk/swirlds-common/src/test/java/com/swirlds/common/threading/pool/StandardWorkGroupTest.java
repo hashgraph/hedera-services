@@ -34,7 +34,7 @@ class StandardWorkGroupTest {
     AtomicInteger abortCount;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         abortCount = new AtomicInteger();
         subject = new StandardWorkGroup(getStaticThreadManager(), "groupName", abortCount::incrementAndGet);
     }

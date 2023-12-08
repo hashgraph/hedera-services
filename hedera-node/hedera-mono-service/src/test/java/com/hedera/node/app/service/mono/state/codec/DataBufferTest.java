@@ -38,7 +38,7 @@ class DataBufferTest {
     private BufferedData subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = BufferedData.wrap(buffer);
     }
 

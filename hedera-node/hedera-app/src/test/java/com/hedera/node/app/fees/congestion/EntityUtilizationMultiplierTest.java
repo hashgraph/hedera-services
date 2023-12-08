@@ -124,7 +124,7 @@ class EntityUtilizationMultiplierTest {
     private FakeHederaState state;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         entityUtilizationMultiplier = new EntityUtilizationMultiplier(delegate, configProvider);
     }
 

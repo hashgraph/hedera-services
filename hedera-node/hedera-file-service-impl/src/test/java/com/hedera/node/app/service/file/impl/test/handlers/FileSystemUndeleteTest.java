@@ -101,7 +101,7 @@ class FileSystemUndeleteTest extends FileTestBase {
     protected Configuration testConfig;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         mockStore = mock(ReadableFileStoreImpl.class);
         subject = new FileSystemUndeleteHandler(usageEstimator);
 

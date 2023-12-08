@@ -140,8 +140,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private static final long stakeNodeId = 3L;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshStoresWithCurrentTokenInWritable();
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);

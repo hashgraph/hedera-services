@@ -130,7 +130,7 @@ class HederaScheduleStoreTest {
     private HederaScheduleStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         schedule = mock(ScheduleVirtualValue.class);
         anotherSchedule = mock(ScheduleVirtualValue.class);
 

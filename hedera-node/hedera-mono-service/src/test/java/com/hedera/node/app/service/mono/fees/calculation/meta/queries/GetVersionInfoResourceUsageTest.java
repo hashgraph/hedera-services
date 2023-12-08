@@ -35,7 +35,7 @@ class GetVersionInfoResourceUsageTest {
     private GetVersionInfoResourceUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GetVersionInfoResourceUsage();
     }
 

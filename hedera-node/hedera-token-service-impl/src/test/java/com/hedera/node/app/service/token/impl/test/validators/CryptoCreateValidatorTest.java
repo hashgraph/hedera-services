@@ -52,7 +52,7 @@ class CryptoCreateValidatorTest {
     private TestConfigBuilder testConfigBuilder;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoCreateValidator();
         testConfigBuilder = HederaTestConfigBuilder.create()
                 .withValue("cryptoCreateWithAlias.enabled", true)

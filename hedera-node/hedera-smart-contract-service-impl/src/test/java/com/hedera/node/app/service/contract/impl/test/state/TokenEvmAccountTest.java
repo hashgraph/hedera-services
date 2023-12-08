@@ -50,7 +50,7 @@ class TokenEvmAccountTest {
     private TokenEvmAccount subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenEvmAccount(TOKEN_ADDRESS, state);
     }
 

@@ -56,7 +56,7 @@ class WritableContractStateStoreTest {
     private WritableContractStateStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
         given(states.<EntityNumber, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
 

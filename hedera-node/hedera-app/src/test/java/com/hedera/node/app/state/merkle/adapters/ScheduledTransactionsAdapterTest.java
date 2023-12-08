@@ -52,7 +52,7 @@ class ScheduledTransactionsAdapterTest {
     private ScheduledTransactionsAdapter subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScheduledTransactionsAdapter(state, byId, byExpirySec, byEquality);
     }
 

@@ -57,7 +57,7 @@ class RecoveryRecordsWriterTest {
     private RecoveryRecordsWriter subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RecoveryRecordsWriter(2_000L, ON_DISK_FILES_LOC);
     }
 

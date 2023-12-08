@@ -133,7 +133,7 @@ class AccessorBasedUsagesTest {
     private AccessorBasedUsages subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new AccessorBasedUsages(
                 fileOpsUsage,
                 tokenOpsUsage,

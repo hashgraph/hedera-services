@@ -45,7 +45,7 @@ class AutoAssocTokenRelsCommitInterceptorTest {
     private AutoAssocTokenRelsCommitInterceptor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp(sideEffectsTracker);
     }
 

@@ -75,7 +75,7 @@ class EventStreamSigningUtilsTests {
      * Sets up for each test
      */
     @BeforeEach
-    void setUp() {
+    void setup() {
         destinationDirectory = testDirectoryPath.resolve("signatureFiles");
 
         // the utility method being leveraged saves stream files to a directory "events_test"

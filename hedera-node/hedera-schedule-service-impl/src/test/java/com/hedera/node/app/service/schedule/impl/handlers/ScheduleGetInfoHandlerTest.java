@@ -64,7 +64,7 @@ class ScheduleGetInfoHandlerTest extends ScheduleHandlerTestBase {
     private ScheduleGetInfoHandler subject;
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setup() throws PreCheckException, InvalidKeyException {
         setUpBase();
         subject = new ScheduleGetInfoHandler(new ScheduleOpsUsage());
     }

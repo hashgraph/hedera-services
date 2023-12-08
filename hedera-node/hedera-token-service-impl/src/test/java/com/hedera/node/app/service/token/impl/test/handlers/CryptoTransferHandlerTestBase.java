@@ -63,8 +63,8 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     protected CryptoTransferValidator validator;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         validator = new CryptoTransferValidator();
         subject = new CryptoTransferHandler(validator);
     }

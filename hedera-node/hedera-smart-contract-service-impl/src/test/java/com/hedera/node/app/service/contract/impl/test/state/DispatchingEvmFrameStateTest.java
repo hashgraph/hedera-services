@@ -122,7 +122,7 @@ class DispatchingEvmFrameStateTest {
     private DispatchingEvmFrameState subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DispatchingEvmFrameState(nativeOperations, contractStateStore);
     }
 

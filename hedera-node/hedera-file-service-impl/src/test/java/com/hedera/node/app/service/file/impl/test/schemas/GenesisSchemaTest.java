@@ -49,7 +49,7 @@ final class GenesisSchemaTest {
     private final HandleThrottleParser handleThrottleParser = new FakeHandleThrottleParser();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         newStates = MapWritableStates.builder()
                 .state(MapWritableKVState.builder(FileServiceImpl.BLOBS_KEY).build())
                 .build();

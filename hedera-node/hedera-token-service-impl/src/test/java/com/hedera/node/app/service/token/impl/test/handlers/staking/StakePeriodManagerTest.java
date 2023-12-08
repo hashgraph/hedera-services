@@ -60,7 +60,7 @@ class StakePeriodManagerTest {
             new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         given(configProvider.getConfiguration()).willReturn(versionConfig);
         subject = new StakePeriodManager(configProvider);
     }

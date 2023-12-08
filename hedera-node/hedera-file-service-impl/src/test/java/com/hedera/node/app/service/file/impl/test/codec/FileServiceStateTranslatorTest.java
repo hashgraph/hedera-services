@@ -42,7 +42,7 @@ class FileServiceStateTranslatorTest extends FileTestBase {
     private com.hedera.node.app.service.mono.files.HederaFs hederaFs;
 
     @BeforeEach
-    void setUp() {}
+    void setup() {}
 
     @Test
     void createFileMetadataAndContentFromFile() throws InvalidKeyException {

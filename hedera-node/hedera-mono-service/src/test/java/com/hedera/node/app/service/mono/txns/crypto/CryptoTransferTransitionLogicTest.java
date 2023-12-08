@@ -123,7 +123,7 @@ class CryptoTransferTransitionLogicTest {
     private CryptoTransferTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoTransferTransitionLogic(
                 ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
     }

@@ -115,7 +115,7 @@ class MutableEntityAccessTest {
     private MutableEntityAccess subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(ledger.getNftsLedger()).willReturn(nftsLedger);

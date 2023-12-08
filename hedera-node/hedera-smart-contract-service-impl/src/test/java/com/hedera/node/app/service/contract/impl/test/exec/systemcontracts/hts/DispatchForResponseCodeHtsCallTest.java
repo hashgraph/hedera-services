@@ -55,7 +55,7 @@ class DispatchForResponseCodeHtsCallTest extends HtsCallTestBase {
     private DispatchForResponseCodeHtsCall<SingleTransactionRecordBuilder> subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DispatchForResponseCodeHtsCall<>(
                 mockEnhancement(),
                 gasCalculator,

@@ -75,8 +75,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Override
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshWritableStores();
         final var validator = new ApproveAllowanceValidator();
         givenStoresAndConfig(handleContext);

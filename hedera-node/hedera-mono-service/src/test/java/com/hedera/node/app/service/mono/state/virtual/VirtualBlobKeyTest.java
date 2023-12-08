@@ -44,7 +44,7 @@ class VirtualBlobKeyTest {
     private VirtualBlobKey subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new VirtualBlobKey(FILE_DATA, entityNum);
     }
 

@@ -87,7 +87,7 @@ class SigReqsManagerTest {
     private SigReqsManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SigReqsManager(
                 fileNumbers, expansionHelper, signatureWaivers, workingState, dynamicProperties, aliasManager);
         given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);

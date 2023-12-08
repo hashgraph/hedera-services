@@ -140,7 +140,7 @@ class HevmTransactionFactoryTest {
     private HevmTransactionFactory subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 DEFAULT_LEDGER_CONFIG,

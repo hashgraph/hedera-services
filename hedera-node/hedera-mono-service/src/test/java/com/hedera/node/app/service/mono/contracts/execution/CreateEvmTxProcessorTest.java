@@ -116,7 +116,7 @@ class CreateEvmTxProcessorTest {
     private final long GAS_LIMIT = 300_000L;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
         var operationRegistry = new OperationRegistry();

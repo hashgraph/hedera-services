@@ -34,7 +34,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
     private VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMap;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         md = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
@@ -88,7 +88,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         private OnDiskReadableKVState<String, String> state;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             state = new OnDiskReadableKVState<>(md, virtualMap);
             add(virtualMap, md, A_KEY, APPLE);
             add(virtualMap, md, B_KEY, BANANA);

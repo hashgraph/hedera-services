@@ -81,7 +81,7 @@ class ToStringAccountsExporterTest {
     private NodeLocalProperties nodeLocalProperties;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ToStringAccountsExporter(nodeLocalProperties);
     }
 

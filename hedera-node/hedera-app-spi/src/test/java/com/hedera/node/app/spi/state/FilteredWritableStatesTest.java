@@ -35,7 +35,7 @@ class FilteredWritableStatesTest {
         private FilteredWritableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             final var delegate = MapWritableStates.builder().build();
             states = new FilteredWritableStates(delegate, Collections.emptySet());
         }
@@ -84,7 +84,7 @@ class FilteredWritableStatesTest {
         private FilteredWritableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             states = new FilteredWritableStates(allWritableStates(), Collections.emptySet());
         }
 
@@ -132,7 +132,7 @@ class FilteredWritableStatesTest {
         private FilteredWritableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             final var delegate = MapWritableStates.builder()
                     .state(writableFruitState())
                     .state(writableCountryState()) // <-- singleton state
@@ -187,7 +187,7 @@ class FilteredWritableStatesTest {
         private FilteredWritableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             final var delegate = MapWritableStates.builder()
                     .state(writableFruitState())
                     .state(writableCountryState())
@@ -239,7 +239,7 @@ class FilteredWritableStatesTest {
         private WritableStates delegate;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             delegate = MapWritableStates.builder()
                     .state(writableFruitState())
                     .state(writableAnimalState())

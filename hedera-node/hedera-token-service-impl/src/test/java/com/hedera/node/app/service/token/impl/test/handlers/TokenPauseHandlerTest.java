@@ -66,7 +66,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private HandleContext handleContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setup() throws PreCheckException {
         given(accountStore.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
                 .willReturn(account);
         given(account.key()).willReturn(payerKey);

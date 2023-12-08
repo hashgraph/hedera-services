@@ -73,8 +73,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Override
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new CryptoTransferHandler(validator);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }

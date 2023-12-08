@@ -117,7 +117,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     //
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
 
         standardizedAttributeValidator =

@@ -39,7 +39,7 @@ class BlockInfoTranslatorTest {
     private com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final FCQueue<BytesElement> hashes = new FCQueue<>();
         hashes.add(new BytesElement("hash1".getBytes()));
         hashes.add(new BytesElement("hash2".getBytes()));

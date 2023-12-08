@@ -83,7 +83,7 @@ class GasCalculatorHederaV19Test {
     private MerkleNetworkContext merkleNetworkContext;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GasCalculatorHederaV19(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 

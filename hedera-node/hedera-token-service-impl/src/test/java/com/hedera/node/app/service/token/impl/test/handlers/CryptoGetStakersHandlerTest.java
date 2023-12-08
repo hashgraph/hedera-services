@@ -44,7 +44,7 @@ class CryptoGetStakersHandlerTest {
     private CryptoGetStakersHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CryptoGetStakersHandler();
     }
 

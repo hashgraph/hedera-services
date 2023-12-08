@@ -34,8 +34,8 @@ class TokenUnpauseHandlerParityTest extends ParityTestBase {
     private TokenUnpauseHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         subject = new TokenUnpauseHandler();
     }
 

@@ -315,7 +315,7 @@ class HTSPrecompiledContractTest {
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         evmHTSPrecompiledContract = new EvmHTSPrecompiledContract(evmInfrastructureFactory);

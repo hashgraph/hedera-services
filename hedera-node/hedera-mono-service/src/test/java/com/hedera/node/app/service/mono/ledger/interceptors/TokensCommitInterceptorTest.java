@@ -44,7 +44,7 @@ class TokensCommitInterceptorTest {
     private TokensCommitInterceptor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokensCommitInterceptor(usageLimits);
     }
 

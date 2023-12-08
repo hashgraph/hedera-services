@@ -202,7 +202,7 @@ class ContractCreateTransitionLogicTest {
     private MockedStatic<SidecarUtils> sidecarUtilsMockedStatic;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
         subject = new ContractCreateTransitionLogic(
                 hfs,

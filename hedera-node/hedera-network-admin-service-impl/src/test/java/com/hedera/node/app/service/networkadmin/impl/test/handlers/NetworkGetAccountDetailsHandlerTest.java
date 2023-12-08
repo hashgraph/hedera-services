@@ -76,7 +76,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     private CryptoOpsUsage cryptoOpsUsage;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         this.cryptoOpsUsage = new CryptoOpsUsage();
         networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler(cryptoOpsUsage);
         final var configuration = HederaTestConfigBuilder.createConfig();

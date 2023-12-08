@@ -140,7 +140,7 @@ class IngestCheckerTest extends AppTestBase {
     private IngestChecker subject;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setup() throws PreCheckException {
         setupStandardStates();
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
 

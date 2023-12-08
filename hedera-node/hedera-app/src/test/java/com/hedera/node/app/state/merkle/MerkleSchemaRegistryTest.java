@@ -63,7 +63,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
     private HandleThrottleParser handleThrottling;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         // We don't need a real registry, and the unit tests are much
         // faster if we use a mocked one
         registry = mock(ConstructableRegistry.class);
@@ -180,7 +180,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         private SemanticVersion[] versions;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             merkleTree = new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {});
 
             // Let the first version[0] be null, and all others have a number
@@ -391,7 +391,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("Migration State Impact Tests")
         class StateImpactTest {
             @BeforeEach
-            void setUp() {}
+            void setup() {}
 
             Schema createV1Schema() {
                 return new TestSchema(versions[1]) {

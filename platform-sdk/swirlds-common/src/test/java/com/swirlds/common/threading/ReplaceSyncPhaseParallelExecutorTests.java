@@ -44,7 +44,7 @@ class ReplaceSyncPhaseParallelExecutorTests {
     }
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         for (final PhaseTask phaseTask : PhaseTask.values()) {
             phaseTask.reset();
         }

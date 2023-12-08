@@ -75,7 +75,7 @@ class TreasuryReturnsTest {
     private TreasuryReturns subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TreasuryReturns(
                 entityLookup,
                 () -> MerkleMapLike.from(tokens),

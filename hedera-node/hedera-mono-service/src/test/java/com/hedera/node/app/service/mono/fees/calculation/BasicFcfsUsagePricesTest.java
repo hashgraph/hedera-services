@@ -119,7 +119,7 @@ class BasicFcfsUsagePricesTest {
     PlatformTxnAccessor accessor;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         nextFeeSchedule = FeeSchedule.newBuilder()
                 .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
                 .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()

@@ -54,7 +54,7 @@ class SemanticPrecheckTest {
     private SemanticPrecheck subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SemanticPrecheck(transitionLogicLookup);
     }
 

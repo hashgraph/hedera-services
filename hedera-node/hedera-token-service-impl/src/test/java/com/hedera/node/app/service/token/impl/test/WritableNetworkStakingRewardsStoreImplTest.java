@@ -42,7 +42,7 @@ class WritableNetworkStakingRewardsStoreImplTest {
     private WritableNetworkStakingRewardsStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final AtomicReference<NetworkStakingRewards> backingValue =
                 new AtomicReference<>(new NetworkStakingRewards(true, 1L, 2L, 3L));
         stakingRewardsState =

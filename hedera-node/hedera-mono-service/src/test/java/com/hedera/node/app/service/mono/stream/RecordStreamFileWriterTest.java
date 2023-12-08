@@ -100,7 +100,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class RecordStreamFileWriterTest {
     @BeforeEach
-    void setUp() throws NoSuchAlgorithmException {
+    void setup() throws NoSuchAlgorithmException {
         subject = new RecordStreamFileWriter(
                 expectedExportDir(),
                 signer,

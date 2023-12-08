@@ -50,7 +50,7 @@ class ExportingRecoveredStateListenerTest {
     private ExportingRecoveredStateListener subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExportingRecoveredStateListener(recordStreamManager, balancesExporter, nodeId);
     }
 

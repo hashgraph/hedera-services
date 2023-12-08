@@ -42,7 +42,7 @@ class RecordStreamFileParsingTest {
     private static final Hash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
     @BeforeAll
-    public static void setUp() throws ConstructableRegistryException {
+    public static void setup() throws ConstructableRegistryException {
         // this register is needed so that the Hash objects can be de-serialized
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
         // this register is needed so that RecordStreamObject can be de-serialized

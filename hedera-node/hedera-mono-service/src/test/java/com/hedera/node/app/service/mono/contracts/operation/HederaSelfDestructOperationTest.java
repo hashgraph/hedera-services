@@ -76,7 +76,7 @@ class HederaSelfDestructOperationTest {
     private HederaSelfDestructOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);

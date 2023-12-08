@@ -38,7 +38,7 @@ class UniqueTokenAdapterTest {
     public UniqueTokenAdapter virtualSubject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         merkleSubject = new UniqueTokenAdapter(
                 new MerkleUniqueToken(EntityId.fromNum(123L), "hello".getBytes(), RichInstant.MISSING_INSTANT));
         merkleSubject.setSpender(EntityId.fromNum(456L));

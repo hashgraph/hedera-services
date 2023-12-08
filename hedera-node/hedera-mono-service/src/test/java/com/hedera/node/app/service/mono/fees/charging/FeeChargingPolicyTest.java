@@ -44,7 +44,7 @@ class FeeChargingPolicyTest {
     private FeeChargingPolicy subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FeeChargingPolicy(narratedCharging);
     }
 

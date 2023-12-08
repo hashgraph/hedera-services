@@ -41,7 +41,7 @@ class InHandleBlockMetaSourceTest {
     private InHandleBlockMetaSource subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new InHandleBlockMetaSource(blockManager, txnCtx);
     }
 

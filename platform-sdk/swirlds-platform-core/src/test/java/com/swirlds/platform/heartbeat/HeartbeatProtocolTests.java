@@ -51,7 +51,7 @@ class HeartbeatProtocolTests {
     private final int ackDelayMillis = 33;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         peerId = new NodeId(1);
         heartbeatPeriod = Duration.ofMillis(1000);
         networkMetrics = mock(NetworkMetrics.class);

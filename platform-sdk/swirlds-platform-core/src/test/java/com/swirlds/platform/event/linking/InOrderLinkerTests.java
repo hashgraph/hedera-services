@@ -111,7 +111,7 @@ class InOrderLinkerTests {
      * This method creates 2 genesis events and submits them to the linker, as a foundation for the tests.
      */
     @BeforeEach
-    void setUp() {
+    void setup() {
         random = getRandomPrintSeed();
 
         exitedIntakePipelineCount = new AtomicLong(0);

@@ -83,7 +83,7 @@ class ExpansionTest {
     private Expansion subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
         given(cryptoSigsCreation.createFrom(any(), any(), any())).willReturn(new PlatformSigsCreationResult());
     }

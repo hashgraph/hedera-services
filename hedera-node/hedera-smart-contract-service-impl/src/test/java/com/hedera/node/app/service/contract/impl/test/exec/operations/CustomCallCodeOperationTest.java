@@ -63,7 +63,7 @@ class CustomCallCodeOperationTest {
     private CustomCallCodeOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomCallCodeOperation(gasCalculator, addressChecks);
     }
 

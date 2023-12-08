@@ -135,7 +135,7 @@ class StakingAccountsCommitInterceptorTest {
     private final long stakingRewardAccountNum = 800L;
 
     @BeforeEach
-    void setUp() throws NegativeAccountBalanceException {
+    void setup() throws NegativeAccountBalanceException {
         stakingInfo = buildsStakingInfoMap();
         stakeInfoManager = new StakeInfoManager(() -> MerkleMapLike.from(stakingInfo));
         subject = new StakingAccountsCommitInterceptor(

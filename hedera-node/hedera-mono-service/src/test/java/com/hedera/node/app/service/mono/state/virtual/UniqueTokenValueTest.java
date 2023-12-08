@@ -45,7 +45,7 @@ class UniqueTokenValueTest {
     private UniqueTokenValue example2;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         example1 = new UniqueTokenValue(
                 1234L, 5678L, "hello world".getBytes(), RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
         example1.setPrev(NftNumPair.fromLongs(111L, 333L));

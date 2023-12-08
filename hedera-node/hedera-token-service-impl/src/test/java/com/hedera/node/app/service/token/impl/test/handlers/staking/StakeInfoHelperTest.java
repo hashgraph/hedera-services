@@ -36,7 +36,7 @@ class StakeInfoHelperTest {
     private WritableStakingInfoStore store;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,

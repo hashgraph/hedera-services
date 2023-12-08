@@ -62,7 +62,7 @@ class StandardizedAttributeValidatorTest {
     private StandardizedAttributeValidator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
 
         subject = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);

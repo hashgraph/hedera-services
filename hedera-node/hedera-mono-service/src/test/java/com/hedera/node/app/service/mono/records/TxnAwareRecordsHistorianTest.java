@@ -152,7 +152,7 @@ class TxnAwareRecordsHistorianTest {
     private TxnAwareRecordsHistorian subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker, handleThrottling);
         subject.setCreator(creator);
     }

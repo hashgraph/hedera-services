@@ -37,7 +37,7 @@ class GrantRevokeKycTranslatorTest {
     private GrantRevokeKycTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GrantRevokeKycTranslator(decoder);
     }
 

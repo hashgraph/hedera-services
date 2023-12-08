@@ -29,7 +29,7 @@ class JECDSASecp256K1KeyTest {
     byte[] bytes;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         bytes = new byte[33];
         bytes[0] = 0x03;
         subject = new JECDSASecp256k1Key(bytes);

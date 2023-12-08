@@ -95,7 +95,7 @@ class TxnChargingPolicyAgentTest {
     TxnChargingPolicyAgentTest() throws InvalidProtocolBufferException {}
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TxnChargingPolicyAgent(
                 fees, chargingPolicy, txnCtx, () -> currentView, nodeDiligenceScreen, txnHistories);
     }

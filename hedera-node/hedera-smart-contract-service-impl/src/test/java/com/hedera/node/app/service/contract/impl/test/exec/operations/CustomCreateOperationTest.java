@@ -66,7 +66,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
     private CustomCreateOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomCreateOperation(gasCalculator);
     }
 

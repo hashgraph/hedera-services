@@ -37,7 +37,7 @@ class TokenGetNftInfoUsageTest {
     private TokenGetNftInfoUsage subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = TokenGetNftInfoUsage.newEstimate(query());
     }
 

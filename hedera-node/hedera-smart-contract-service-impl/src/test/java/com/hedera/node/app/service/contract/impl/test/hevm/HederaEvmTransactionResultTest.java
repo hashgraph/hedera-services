@@ -78,7 +78,7 @@ class HederaEvmTransactionResultTest {
     private StorageAccessTracker accessTracker;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(stack.isEmpty()).willReturn(true);
     }

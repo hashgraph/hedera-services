@@ -76,7 +76,7 @@ final class BlockRecordWriterV6Test extends AppTestBase {
     private Path sigPath;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         final var tempDir = fileSystem.getPath("/temp");
 

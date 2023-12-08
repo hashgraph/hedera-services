@@ -35,7 +35,7 @@ class TxnReceiptBuilderTest {
     private TxnReceipt.Builder subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = TxnReceipt.newBuilder();
     }
 

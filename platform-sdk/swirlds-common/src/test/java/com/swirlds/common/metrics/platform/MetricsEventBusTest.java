@@ -43,7 +43,7 @@ class MetricsEventBusTest {
     private Consumer<Object> subscriber;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         doAnswer(invocation -> {
                     invocation.getArgument(0, Runnable.class).run();
                     return null;

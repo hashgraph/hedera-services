@@ -48,7 +48,7 @@ class ReadableStakingInfoStoreImplTest {
     private ReadableStakingInfoStoreImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
                 .value(NODE_ID_10, stakingNodeInfo)
                 .build();

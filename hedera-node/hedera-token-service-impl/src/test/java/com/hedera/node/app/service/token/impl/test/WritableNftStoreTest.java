@@ -37,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         writableNftState = emptyWritableNftStateBuilder().build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);

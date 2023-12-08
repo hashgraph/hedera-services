@@ -60,7 +60,7 @@ class UnzipUtilityTest {
     private final String FILENAME_2 = "subdirectory/subdirectoryFileToZip.txt";
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
 
         // set up test zip with one file in it

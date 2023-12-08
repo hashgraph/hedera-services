@@ -48,7 +48,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private PreHandleContext realPreContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setup() throws PreCheckException, InvalidKeyException {
         setUpBase();
         subject = new ScheduleDeleteHandler();
         reset(accountById);

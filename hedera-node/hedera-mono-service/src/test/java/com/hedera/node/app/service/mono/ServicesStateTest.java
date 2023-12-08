@@ -241,7 +241,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
                 .setProto(SemanticVersion.newBuilder().setMinor(32).build());

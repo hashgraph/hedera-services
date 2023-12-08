@@ -51,7 +51,7 @@ class HapiOpPermissionsTest {
     private HapiOpPermissions subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HapiOpPermissions(new MockAccountNumbers());
     }
 

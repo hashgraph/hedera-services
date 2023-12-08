@@ -51,7 +51,7 @@ class RecordStreamSigningUtilsTest {
     private String hapiVersion;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         hapiVersion = HAPI_VERSION;
     }
 

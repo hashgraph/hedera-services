@@ -95,7 +95,7 @@ class DeleteAllowanceLogicTest {
     private static final UniqueToken uniqueToken2 = new UniqueToken(Id.fromGrpcToken(token2), 10L);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DeleteAllowanceLogic(accountStore, tokenStore);
     }
 

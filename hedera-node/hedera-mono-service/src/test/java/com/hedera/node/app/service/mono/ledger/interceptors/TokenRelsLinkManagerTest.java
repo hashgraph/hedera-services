@@ -39,7 +39,7 @@ class TokenRelsLinkManagerTest {
     private TokenRelsLinkManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenRelsLinkManager(
                 () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 () -> TokenRelStorageAdapter.fromInMemory(tokenRels));

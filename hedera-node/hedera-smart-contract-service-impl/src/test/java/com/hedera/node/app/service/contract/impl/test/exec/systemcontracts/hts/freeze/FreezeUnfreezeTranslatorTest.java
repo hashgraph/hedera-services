@@ -40,7 +40,7 @@ class FreezeUnfreezeTranslatorTest {
     private FreezeUnfreezeTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FreezeUnfreezeTranslator(decoder);
     }
 

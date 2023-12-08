@@ -58,7 +58,7 @@ class SavepointStackImplTest extends StateTestBase {
     private HederaState baseState;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, new HashMap<>(BASE_DATA));
         final var writableStates =
                 MapWritableStates.builder().state(baseKVState).build();

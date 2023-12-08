@@ -46,7 +46,7 @@ class ThrottlesCallbackTest {
     ThrottlesCallback subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ThrottlesCallback(multiplierSources, hapiThrottling, handleThrottling, scheduleThrottling);
     }
 

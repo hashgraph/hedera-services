@@ -126,7 +126,7 @@ class FileUpdateTest extends FileTestBase {
     private FilesConfig config;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FileUpdateHandler(fileOpsUsage);
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);

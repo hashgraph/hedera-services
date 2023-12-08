@@ -35,7 +35,7 @@ class ExpiringEntityTest {
     private ExpiringEntity subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         consumer = mock(Consumer.class);
         otherConsumer = mock(Consumer.class);
         subject = new ExpiringEntity(id, consumer, expiry);

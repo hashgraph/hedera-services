@@ -44,7 +44,7 @@ class StateMetadataTest extends MerkleTestBase {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         setupSpaceMerkleMap();
         schema = new TestSchema(1);
         def = spaceMetadata.stateDefinition();

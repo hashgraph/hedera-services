@@ -71,7 +71,7 @@ class BackingTokenRelsTest {
     private BackingTokenRels subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         rels = new MerkleMap<>();
         rels.put(aKey, aValue);
         rels.put(bKey, bValue);

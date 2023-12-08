@@ -76,7 +76,7 @@ class AccountTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new Account(subjectId);
         subject.setAutoAssociationMetadata(autoAssociationMetadata);
         subject.setOwnedNfts(ownedNfts);

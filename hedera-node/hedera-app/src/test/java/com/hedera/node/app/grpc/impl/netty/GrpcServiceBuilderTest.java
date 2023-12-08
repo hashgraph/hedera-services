@@ -44,7 +44,7 @@ final class GrpcServiceBuilderTest {
     private final Metrics metrics = TestUtils.metrics();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         builder = new GrpcServiceBuilder(SERVICE_NAME, ingestWorkflow, queryWorkflow);
     }
 

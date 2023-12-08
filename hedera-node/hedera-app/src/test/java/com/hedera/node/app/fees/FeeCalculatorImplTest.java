@@ -48,7 +48,7 @@ public class FeeCalculatorImplTest {
     private TransactionBody txnBody;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         feeData = new FeeData(FeeComponents.DEFAULT, FeeComponents.DEFAULT, FeeComponents.DEFAULT, SubType.DEFAULT);
     }
 

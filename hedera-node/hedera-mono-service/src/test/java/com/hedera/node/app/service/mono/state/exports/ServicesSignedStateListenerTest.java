@@ -51,7 +51,7 @@ class ServicesSignedStateListenerTest {
     private ServicesSignedStateListener subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ServicesSignedStateListener(currentPlatformStatus, balancesExporter, selfId);
     }
 

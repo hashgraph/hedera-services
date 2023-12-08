@@ -54,7 +54,7 @@ class CustomChainIdOperationTest {
     private CustomChainIdOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(gasCalculator.getBaseTierGasCost()).willReturn(123L);
         subject = new CustomChainIdOperation(gasCalculator);
     }

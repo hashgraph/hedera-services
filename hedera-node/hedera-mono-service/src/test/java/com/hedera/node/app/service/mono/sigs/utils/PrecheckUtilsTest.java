@@ -45,7 +45,7 @@ class PrecheckUtilsTest {
     private Predicate<TransactionBody> subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = PrecheckUtils.queryPaymentTestFor(nodeInfo);
     }
 

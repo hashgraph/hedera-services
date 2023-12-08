@@ -101,7 +101,7 @@ class NetworkUtilizationManagerImplTest {
     private WritableSingletonState writableCongestionLevelsStartsState;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new NetworkUtilizationManagerImpl(throttleAccumulator, congestionMultipliers);
     }
 

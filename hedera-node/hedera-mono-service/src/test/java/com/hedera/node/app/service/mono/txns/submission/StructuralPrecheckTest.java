@@ -87,7 +87,7 @@ class StructuralPrecheckTest {
     private Transaction txn;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StructuralPrecheck(
                 pretendSizeLimit, pretendMaxMessageDepth, counters, viewFactory, accessorFactory);
     }

@@ -44,7 +44,7 @@ class NetworkControllerTest {
     NetworkController subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         answers = mock(MetaAnswers.class);
         txnObserver = mock(StreamObserver.class);
         queryObserver = mock(StreamObserver.class);

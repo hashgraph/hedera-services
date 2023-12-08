@@ -125,8 +125,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private CryptoUpdateHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         updateAccount =
                 givenValidAccount(updateAccountNum).copyBuilder().key(otherKey).build();
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));

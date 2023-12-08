@@ -55,7 +55,7 @@ class AttributeValidatorImplTest {
     private AttributeValidatorImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("entities.maxLifetime", maxLifetime)
                 .getOrCreateConfig();

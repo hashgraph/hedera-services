@@ -51,7 +51,7 @@ class ContractCreateHandlerParityTest {
     private ContractCreateHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
         subject = new ContractCreateHandler(provider);
     }

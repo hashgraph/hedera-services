@@ -33,7 +33,7 @@ class BlobKeyTest {
     private BlobKey subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new BlobKey(FILE_DATA, 2);
     }
 

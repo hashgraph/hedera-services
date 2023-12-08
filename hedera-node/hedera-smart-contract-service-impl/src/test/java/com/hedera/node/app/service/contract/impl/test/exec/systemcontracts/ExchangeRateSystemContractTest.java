@@ -68,7 +68,7 @@ class ExchangeRateSystemContractTest {
     private MockedStatic<FrameUtils> frameUtils;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExchangeRateSystemContract(gasCalculator);
         frameUtils = Mockito.mockStatic(FrameUtils.class);
     }

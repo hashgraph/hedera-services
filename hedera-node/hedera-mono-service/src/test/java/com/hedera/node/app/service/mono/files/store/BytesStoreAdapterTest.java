@@ -49,7 +49,7 @@ class BytesStoreAdapterTest {
     BytesStoreAdapter<Integer, StringBuilder> subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         delegate = new HashMap<>();
         delegate.put(fromInteger.apply(0), bytes("ALREADY HERE"));
         subject = new BytesStoreAdapter<>(Integer.class, toSb, fromSb, toInteger, fromInteger, delegate);

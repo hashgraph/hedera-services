@@ -64,7 +64,7 @@ class UpdateDecoderTest {
             expiry);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(OWNER_HEADLONG_ADDRESS)).willReturn(OWNER_ID);
     }

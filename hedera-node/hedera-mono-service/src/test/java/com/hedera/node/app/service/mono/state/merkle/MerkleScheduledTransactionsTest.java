@@ -51,7 +51,7 @@ class MerkleScheduledTransactionsTest {
     private MerkleScheduledTransactions subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         byEquality = mock(MerkleMap.class);
         given(byEquality.copy()).willReturn(byEquality);
 

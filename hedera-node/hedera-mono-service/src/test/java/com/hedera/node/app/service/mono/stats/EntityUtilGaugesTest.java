@@ -51,7 +51,7 @@ class EntityUtilGaugesTest {
     private EntityUtilGauges subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EntityUtilGauges(usageLimits);
     }
 

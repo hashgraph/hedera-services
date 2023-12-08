@@ -32,7 +32,7 @@ class InMemoryWritableStateTest extends MerkleTestBase {
     final class ConstructorTest {
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitMerkleMap();
         }
 
@@ -78,7 +78,7 @@ class InMemoryWritableStateTest extends MerkleTestBase {
         private InMemoryWritableKVState<String, String> state;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitMerkleMap();
             state = new InMemoryWritableKVState<>(fruitMetadata, fruitMerkleMap);
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
@@ -111,7 +111,7 @@ class InMemoryWritableStateTest extends MerkleTestBase {
         private InMemoryWritableKVState<String, String> state;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             setupFruitMerkleMap();
             state = new InMemoryWritableKVState<>(fruitMetadata, fruitMerkleMap);
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);

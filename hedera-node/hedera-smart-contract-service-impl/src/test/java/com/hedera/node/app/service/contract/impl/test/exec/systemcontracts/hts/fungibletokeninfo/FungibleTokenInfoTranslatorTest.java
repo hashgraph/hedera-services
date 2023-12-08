@@ -51,7 +51,7 @@ class FungibleTokenInfoTranslatorTest {
     private FungibleTokenInfoTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FungibleTokenInfoTranslator();
     }
 

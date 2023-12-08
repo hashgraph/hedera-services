@@ -106,7 +106,7 @@ class GetAccountDetailsResourceUsageTest {
             .build();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GetAccountDetailsResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
     }
 

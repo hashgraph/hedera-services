@@ -47,7 +47,7 @@ class BehindStatusLogicTests {
     private BehindStatusLogic logic;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         logic = new BehindStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));

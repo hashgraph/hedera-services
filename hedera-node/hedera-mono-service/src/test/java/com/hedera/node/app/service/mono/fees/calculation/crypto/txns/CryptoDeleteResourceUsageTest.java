@@ -37,7 +37,7 @@ class CryptoDeleteResourceUsageTest {
     private TransactionBody cryptoDeleteTxn;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         cryptoDeleteTxn = mock(TransactionBody.class);
         given(cryptoDeleteTxn.hasCryptoDelete()).willReturn(true);
 

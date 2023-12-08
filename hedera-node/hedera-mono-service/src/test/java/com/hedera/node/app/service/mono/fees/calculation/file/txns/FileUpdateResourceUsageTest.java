@@ -70,7 +70,7 @@ class FileUpdateResourceUsageTest {
     private TransactionBody fileUpdateTxn;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         fileOpsUsage = mock(FileOpsUsage.class);
 
         view = mock(StateView.class);

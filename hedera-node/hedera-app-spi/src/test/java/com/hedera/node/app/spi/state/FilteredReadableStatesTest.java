@@ -35,7 +35,7 @@ class FilteredReadableStatesTest {
         private FilteredReadableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             final var delegate = MapReadableStates.builder().build();
             states = new FilteredReadableStates(delegate, Collections.emptySet());
         }
@@ -90,7 +90,7 @@ class FilteredReadableStatesTest {
         private FilteredReadableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             states = new FilteredReadableStates(allReadableStates(), Collections.emptySet());
         }
 
@@ -144,7 +144,7 @@ class FilteredReadableStatesTest {
         private FilteredReadableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             final var delegate = MapReadableStates.builder()
                     .state(readableFruitState())
                     .state(readableCountryState()) // <-- singleton state
@@ -199,7 +199,7 @@ class FilteredReadableStatesTest {
         private FilteredReadableStates states;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             final var delegate = MapReadableStates.builder()
                     .state(readableFruitState())
                     .state(readableCountryState())
@@ -251,7 +251,7 @@ class FilteredReadableStatesTest {
         private ReadableStates delegate;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             delegate = MapReadableStates.builder()
                     .state(readableFruitState())
                     .state(readableAnimalState())

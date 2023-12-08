@@ -44,7 +44,7 @@ class HybridResouceLoaderTest {
     private HybridResouceLoader subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HybridResouceLoader(hfs);
     }
 

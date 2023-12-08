@@ -108,7 +108,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected TransferContextImpl transferContext;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         baseInternalSetUp(true);
     }
 

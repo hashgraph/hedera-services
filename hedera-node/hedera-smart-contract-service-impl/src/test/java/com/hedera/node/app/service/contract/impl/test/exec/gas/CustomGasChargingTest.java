@@ -78,7 +78,7 @@ class CustomGasChargingTest {
     private CustomGasCharging subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomGasCharging(gasCalculator);
     }
 

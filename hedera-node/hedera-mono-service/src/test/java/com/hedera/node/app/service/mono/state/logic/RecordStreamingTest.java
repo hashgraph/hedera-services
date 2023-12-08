@@ -106,7 +106,7 @@ class RecordStreamingTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RecordStreaming(blockManager, recordsHistorian, nonBlockingHandoff);
     }
 

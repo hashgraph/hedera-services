@@ -51,7 +51,7 @@ class SystemTaskManagerTest {
     private SystemTaskManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SystemTaskManager(Map.of("C", cTask, "B", bTask, "A", aTask));
     }
 

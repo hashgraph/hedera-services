@@ -34,7 +34,7 @@ class HFileMetaTest {
     HFileMeta subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HFileMeta(deleted, wacl, expiry, memo);
     }
 

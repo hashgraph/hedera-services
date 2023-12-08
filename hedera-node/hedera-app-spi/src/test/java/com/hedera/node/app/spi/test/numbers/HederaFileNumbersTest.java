@@ -27,7 +27,7 @@ class HederaFileNumbersTest {
     private HederaFileNumbers subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaFileNumbers() {
             @Override
             public long addressBook() {

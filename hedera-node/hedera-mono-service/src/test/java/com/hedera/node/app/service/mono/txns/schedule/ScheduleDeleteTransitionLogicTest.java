@@ -67,7 +67,7 @@ class ScheduleDeleteTransitionLogicTest {
     private ScheduleDeleteTransitionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         store = mock(ScheduleStore.class);
         accessor = mock(SignedTxnAccessor.class);
         txnCtx = mock(TransactionContext.class);

@@ -66,7 +66,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     private ConsensusGetTopicInfoHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ConsensusGetTopicInfoHandler();
     }
 

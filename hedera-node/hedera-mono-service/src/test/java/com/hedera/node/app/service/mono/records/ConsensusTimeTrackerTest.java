@@ -53,7 +53,7 @@ class ConsensusTimeTrackerTest {
     private ConsensusTimeTracker subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(merkleNetworkContext.areMigrationRecordsStreamed()).willReturn(true);
         given(dynamicProperties.maxPrecedingRecords()).willReturn(3L);
         given(dynamicProperties.maxFollowingRecords()).willReturn(50L);

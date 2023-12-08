@@ -32,7 +32,7 @@ class ReadableFileStoreImplTest extends FileTestBase {
     private ReadableFileStoreImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ReadableFileStoreImpl(readableStates);
     }
 

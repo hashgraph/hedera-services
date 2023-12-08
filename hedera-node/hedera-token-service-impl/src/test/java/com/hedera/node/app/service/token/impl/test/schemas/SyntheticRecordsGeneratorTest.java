@@ -73,7 +73,7 @@ final class SyntheticRecordsGeneratorTest {
     private Configuration config;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
     }
 

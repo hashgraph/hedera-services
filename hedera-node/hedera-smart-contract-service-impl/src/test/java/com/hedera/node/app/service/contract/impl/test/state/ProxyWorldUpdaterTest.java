@@ -122,7 +122,7 @@ class ProxyWorldUpdaterTest {
     private ProxyWorldUpdater subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var enhancement =
                 new HederaWorldUpdater.Enhancement(hederaOperations, nativeOperations, systemContractOperations);
         subject = new ProxyWorldUpdater(enhancement, () -> evmFrameState, null);

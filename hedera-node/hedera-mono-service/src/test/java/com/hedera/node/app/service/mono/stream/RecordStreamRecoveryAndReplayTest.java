@@ -151,7 +151,7 @@ class RecordStreamRecoveryAndReplayTest {
     private RecordStreamManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(platform.getSelfId()).willReturn(new NodeId(0L));
 
         given(nodeLocalProperties.isRecordStreamEnabled()).willReturn(true);

@@ -62,7 +62,7 @@ class RedirectPrecompileTest {
     RedirectPrecompile subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RedirectPrecompile(wrappedPrecompile, worldLedgers, tokenID);
     }
 

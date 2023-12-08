@@ -45,7 +45,7 @@ class AbstractCodeCacheTest {
     MockAbstractCodeCache codeCache;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         codeCache = new MockAbstractCodeCache(100, entityAccess);
     }
 

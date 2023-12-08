@@ -116,7 +116,7 @@ class NetworkCtxManagerTest {
     private NetworkCtxManager subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 

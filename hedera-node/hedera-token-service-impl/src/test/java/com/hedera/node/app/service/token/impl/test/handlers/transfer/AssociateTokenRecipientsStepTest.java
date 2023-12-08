@@ -55,8 +55,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private TransferContextImpl transferContext;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         givenValidTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);

@@ -47,7 +47,7 @@ class DefaultFreezeStatusTranslatorTest {
     private DefaultFreezeStatusTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DefaultFreezeStatusTranslator();
     }
 

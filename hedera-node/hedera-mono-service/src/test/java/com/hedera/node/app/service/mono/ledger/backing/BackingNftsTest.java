@@ -58,7 +58,7 @@ class BackingNftsTest extends ResponsibleVMapUser {
     private BackingNfts subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         delegate = new MerkleMap<>();
 
         delegate.put(aKey, theToken);

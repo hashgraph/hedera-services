@@ -62,7 +62,7 @@ class StakeChangeManagerTest {
     private final EntityNum node0Id = EntityNum.fromLong(0L);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         stakingInfo = buildsStakingInfoMap();
         subject = new StakeChangeManager(
                 stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));

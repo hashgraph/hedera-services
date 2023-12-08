@@ -100,7 +100,7 @@ class MerkleAccountTest {
     private MerkleAccount subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         payerRecords = mock(FCQueue.class);
         given(payerRecords.copy()).willReturn(payerRecords);
         given(payerRecords.isImmutable()).willReturn(false);

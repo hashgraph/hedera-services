@@ -120,8 +120,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenUpdateHandler subject;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshWritableStores();
         final TokenUpdateValidator validator = new TokenUpdateValidator(new TokenAttributesValidator());
         subject = new TokenUpdateHandler(validator);

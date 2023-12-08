@@ -77,7 +77,7 @@ class ReadOnlyTokenStoreTest {
     private ReadOnlyTokenStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         setupToken();
         setupTokenRel();
 

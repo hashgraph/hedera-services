@@ -27,7 +27,7 @@ class HederaAccountNumbersTest {
     private HederaAccountNumbers subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaAccountNumbers() {
             @Override
             public long treasury() {

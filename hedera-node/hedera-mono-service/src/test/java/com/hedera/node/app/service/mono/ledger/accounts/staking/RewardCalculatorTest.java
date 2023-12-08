@@ -63,7 +63,7 @@ class RewardCalculatorTest {
     private static final long[] rewardHistory = new long[366];
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RewardCalculator(stakePeriodManager, stakeInfoManager);
         rewardHistory[0] = 5;
     }

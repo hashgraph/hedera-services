@@ -41,7 +41,7 @@ class SysFileCallbacksTest {
     SysFileCallbacks subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new SysFileCallbacks(configCallbacks, throttlesCallback, currencyCallbacks);
     }
 

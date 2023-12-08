@@ -84,7 +84,7 @@ class TokenTest {
     private TokenRelationship nonTreasuryRel;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new Token(tokenId);
         subject.initTotalSupply(initialSupply);
         subject.setTreasury(treasuryAccount);

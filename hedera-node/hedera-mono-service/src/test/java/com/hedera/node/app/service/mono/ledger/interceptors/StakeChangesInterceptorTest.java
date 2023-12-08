@@ -84,7 +84,7 @@ class StakeChangesInterceptorTest {
     private StakingAccountsCommitInterceptor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         changes = new EntityChangeSet<>();
         subject = new StakingAccountsCommitInterceptor(
                 sideEffectsTracker,

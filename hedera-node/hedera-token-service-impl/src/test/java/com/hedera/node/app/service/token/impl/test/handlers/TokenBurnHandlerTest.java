@@ -102,8 +102,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
     private Configuration configuration;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeBurn", 100)

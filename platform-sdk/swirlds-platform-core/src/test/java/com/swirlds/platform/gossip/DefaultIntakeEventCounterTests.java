@@ -36,7 +36,7 @@ class DefaultIntakeEventCounterTests {
     final NodeId nodeId2 = new NodeId(2);
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final AddressBook addressBook = mock(AddressBook.class);
         Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId1, nodeId2));
 

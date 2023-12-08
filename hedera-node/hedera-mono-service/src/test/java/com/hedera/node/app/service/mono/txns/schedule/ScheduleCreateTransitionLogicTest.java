@@ -123,7 +123,7 @@ class ScheduleCreateTransitionLogicTest {
     private ScheduleCreateTransitionLogic subject;
 
     @BeforeEach
-    void setUp() throws InvalidProtocolBufferException {
+    void setup() throws InvalidProtocolBufferException {
         validator = mock(OptionValidator.class);
         store = mock(ScheduleStore.class);
         accessor = mock(SignedTxnAccessor.class);

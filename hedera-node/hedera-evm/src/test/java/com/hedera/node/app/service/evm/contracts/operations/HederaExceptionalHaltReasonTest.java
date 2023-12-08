@@ -28,7 +28,7 @@ class HederaExceptionalHaltReasonTest {
     HederaExceptionalHaltReason subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaExceptionalHaltReason();
     }
 

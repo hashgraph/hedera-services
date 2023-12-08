@@ -64,7 +64,7 @@ class RequestedTransitionTest {
     private RequestedTransition subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new RequestedTransition(lastStep, opPolicies, txnCtx, networkCtxManager, hapiOpPermissions);
     }
 

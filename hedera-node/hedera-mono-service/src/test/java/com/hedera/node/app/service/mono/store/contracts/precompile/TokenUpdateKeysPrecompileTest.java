@@ -199,7 +199,7 @@ class TokenUpdateKeysPrecompileTest {
     private MockedStatic<TokenUpdateKeysPrecompile> tokenUpdateKeysPrecompile;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject = new HTSPrecompiledContract(

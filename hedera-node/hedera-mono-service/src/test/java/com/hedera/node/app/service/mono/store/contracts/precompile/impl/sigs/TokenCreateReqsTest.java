@@ -73,7 +73,7 @@ class TokenCreateReqsTest {
     private TokenCreateReqs subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenCreateReqs(frame, legacyKeyValidator, aliases, sigsVerifier, ledgers);
     }
 

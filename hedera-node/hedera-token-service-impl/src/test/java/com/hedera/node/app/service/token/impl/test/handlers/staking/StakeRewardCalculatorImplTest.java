@@ -69,7 +69,7 @@ class StakeRewardCalculatorImplTest {
     private StakeRewardCalculatorImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         rewardHistory = newRewardHistory();
         subject = new StakeRewardCalculatorImpl(stakePeriodManager);
     }

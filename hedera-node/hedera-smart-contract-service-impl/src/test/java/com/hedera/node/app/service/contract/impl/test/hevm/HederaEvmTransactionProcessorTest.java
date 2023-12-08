@@ -69,7 +69,7 @@ class HederaEvmTransactionProcessorTest {
     private HederaEvmTransactionProcessor subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaEvmTransactionProcessor(Map.of(
                 VERSION_030, v30processor,
                 VERSION_034, v34processor,

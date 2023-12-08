@@ -46,7 +46,7 @@ class UsageLimitsTest {
     private UsageLimits subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new UsageLimits(stateChildren, dynamicProperties);
     }
 

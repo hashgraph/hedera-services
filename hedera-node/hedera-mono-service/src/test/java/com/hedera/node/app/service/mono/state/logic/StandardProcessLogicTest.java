@@ -124,7 +124,7 @@ class StandardProcessLogicTest {
     private SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StandardProcessLogic(
                 expiries,
                 invariantChecks,

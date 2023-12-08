@@ -125,7 +125,7 @@ class FileCreateTest extends FileTestBase {
     }
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new FileCreateHandler(fileOpsUsage);
         fileStore = new WritableFileStore(writableStates);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);

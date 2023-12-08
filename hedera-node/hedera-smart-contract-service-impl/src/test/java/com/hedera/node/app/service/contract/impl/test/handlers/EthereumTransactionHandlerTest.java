@@ -87,7 +87,7 @@ class EthereumTransactionHandlerTest {
     private EthereumTransactionHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EthereumTransactionHandler(ethereumSignatures, callDataHydration, () -> factory);
     }
 

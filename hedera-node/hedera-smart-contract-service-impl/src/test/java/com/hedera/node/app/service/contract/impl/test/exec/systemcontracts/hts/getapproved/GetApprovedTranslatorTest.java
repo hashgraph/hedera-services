@@ -53,7 +53,7 @@ public class GetApprovedTranslatorTest {
     private GetApprovedTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new GetApprovedTranslator();
     }
 

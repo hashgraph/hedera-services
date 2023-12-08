@@ -79,7 +79,7 @@ class HederaToPlatformSigOpsTest {
     }
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         allSigBytes = mock(PubKeyToSigBytes.class);
         keyOrdering = mock(SigRequirements.class);
         platformTxn = PlatformTxnAccessor.from(newSignedSystemDelete().get());

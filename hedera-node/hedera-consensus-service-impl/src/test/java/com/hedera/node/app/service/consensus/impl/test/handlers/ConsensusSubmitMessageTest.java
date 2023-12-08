@@ -93,7 +93,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
 

@@ -48,7 +48,7 @@ class HFileMetaSerdeTest {
     private HFileMeta known;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         known = new HFileMeta(deleted, wacl, expiry, memo);
     }
 

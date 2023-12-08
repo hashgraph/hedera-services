@@ -121,7 +121,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     private PreHandleWorkflow workflow;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var fakeHederaState = new FakeHederaState();
         fakeHederaState.addService(
                 TokenService.NAME,
@@ -230,7 +230,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         private AccountID creator;
 
         @BeforeEach
-        void setUp() throws PreCheckException {
+        void setup() throws PreCheckException {
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
             platformTx = new SwirldTransaction(txBytes);

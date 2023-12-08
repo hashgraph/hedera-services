@@ -59,7 +59,7 @@ class CustomExtCodeCopyOperationTest {
     private CustomExtCodeCopyOperation subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
     }
 

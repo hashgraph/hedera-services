@@ -45,7 +45,7 @@ class StateMetadataTest {
     private StateMetadata subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StateMetadata(app, aliases);
     }
 

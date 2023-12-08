@@ -76,7 +76,7 @@ class HederaSelfDestructOperationV038Test {
     private HederaSelfDestructOperationV038 subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HederaSelfDestructOperationV038(
                 gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> false);
 

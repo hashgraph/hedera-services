@@ -53,7 +53,7 @@ class InternalEventValidatorTests {
     private InternalEventValidator singleNodeValidator;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         random = getRandomPrintSeed();
 
         exitedIntakePipelineCount = new AtomicLong(0);

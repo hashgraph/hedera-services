@@ -38,7 +38,7 @@ class MintTranslatorTest {
     private final MintDecoder decoder = new MintDecoder();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new MintTranslator(decoder);
     }
 

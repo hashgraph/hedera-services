@@ -56,7 +56,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     private ReadableTokenStoreImpl subject;
 
     @BeforeEach
-    public void setUp() {
+    public void setup() {
         initializeToken();
         subject = new ReadableTokenStoreImpl(states);
     }

@@ -76,7 +76,7 @@ class StoreInitializationFlowTest {
     private StoreInitializationFlow subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new StoreInitializationFlow(
                 usageLimits, aliasManager, workingState, backingAccounts, backingTokens, backingNfts, backingTokenRels);
     }

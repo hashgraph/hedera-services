@@ -123,8 +123,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private final AccountID autoRenewAccountId = ownerId;
 
     @BeforeEach
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
         refreshWritableStores();
         recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
         tokenFieldsValidator = new TokenAttributesValidator();

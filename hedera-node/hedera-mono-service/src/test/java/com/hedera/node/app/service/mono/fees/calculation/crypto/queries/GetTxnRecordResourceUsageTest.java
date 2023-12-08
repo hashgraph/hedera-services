@@ -79,7 +79,7 @@ class GetTxnRecordResourceUsageTest {
     private AnswerFunctions answerFunctions;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         desiredRecord = mock(TransactionRecord.class);
 
         usageEstimator = mock(CryptoFeeBuilder.class);

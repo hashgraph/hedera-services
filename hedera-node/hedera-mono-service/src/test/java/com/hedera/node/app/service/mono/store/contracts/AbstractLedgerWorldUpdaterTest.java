@@ -149,7 +149,7 @@ class AbstractLedgerWorldUpdaterTest {
     private MockLedgerWorldUpdater subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         setupLedgers();
 
         subject = new MockLedgerWorldUpdater(worldState, ledgers, customizer);

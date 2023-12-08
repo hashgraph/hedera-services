@@ -71,7 +71,7 @@ class ServicesIssListenerTest {
     private ServicesIssListener subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ServicesIssListener(issEventInfo, platform);
     }
 

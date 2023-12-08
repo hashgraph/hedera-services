@@ -51,7 +51,7 @@ class CryptoSignatureWaiversImplTest {
     private CryptoSignatureWaiversImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         final var versionedConfig =
                 new VersionedConfigImpl(HederaTestConfigBuilder.create().getOrCreateConfig(), 1);
 

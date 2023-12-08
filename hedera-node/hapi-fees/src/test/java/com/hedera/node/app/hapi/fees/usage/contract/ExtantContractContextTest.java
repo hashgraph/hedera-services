@@ -39,7 +39,7 @@ class ExtantContractContextTest {
     private ExtantContractContext subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ExtantContractContext(kvPairs, currentCryptoContext);
     }
 

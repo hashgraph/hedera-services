@@ -156,7 +156,7 @@ class InvalidDelegateTest {
     private HTSPrecompiledContract subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,

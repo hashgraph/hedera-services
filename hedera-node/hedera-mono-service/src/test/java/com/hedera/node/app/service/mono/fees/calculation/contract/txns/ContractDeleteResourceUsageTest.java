@@ -37,7 +37,7 @@ class ContractDeleteResourceUsageTest {
     private TransactionBody contractDeleteTxn;
 
     @BeforeEach
-    void setUp() throws Throwable {
+    void setup() throws Throwable {
         contractDeleteTxn = mock(TransactionBody.class);
         given(contractDeleteTxn.hasContractDeleteInstance()).willReturn(true);
 

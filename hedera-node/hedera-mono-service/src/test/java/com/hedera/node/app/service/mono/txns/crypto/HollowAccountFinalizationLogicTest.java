@@ -118,7 +118,7 @@ class HollowAccountFinalizationLogicTest {
     private HollowAccountFinalizationLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
 
         subject = new HollowAccountFinalizationLogic(

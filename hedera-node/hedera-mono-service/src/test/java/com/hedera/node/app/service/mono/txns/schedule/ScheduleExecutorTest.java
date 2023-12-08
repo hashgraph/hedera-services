@@ -62,7 +62,7 @@ class ScheduleExecutorTest {
     AccessorFactory factory;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ScheduleExecutor(factory);
     }
 

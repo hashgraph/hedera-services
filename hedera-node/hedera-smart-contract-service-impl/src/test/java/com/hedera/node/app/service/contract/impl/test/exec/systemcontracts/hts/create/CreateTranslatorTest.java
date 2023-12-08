@@ -39,7 +39,7 @@ public class CreateTranslatorTest {
     private CreateTranslator subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new CreateTranslator(decoder);
     }
 

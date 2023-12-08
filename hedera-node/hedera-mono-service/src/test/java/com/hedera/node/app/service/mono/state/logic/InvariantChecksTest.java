@@ -64,7 +64,7 @@ class InvariantChecksTest {
     private InvariantChecks subject;
 
     @BeforeEach
-    void setUp() throws InvalidProtocolBufferException {
+    void setup() throws InvalidProtocolBufferException {
         accessor = PlatformTxnAccessor.from(mockTxn.toByteArray());
         subject = new InvariantChecks(() -> networkCtx);
     }

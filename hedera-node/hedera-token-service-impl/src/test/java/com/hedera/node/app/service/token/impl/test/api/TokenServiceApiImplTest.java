@@ -108,7 +108,7 @@ class TokenServiceApiImplTest {
     private TokenServiceApiImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new TokenServiceApiImpl(DEFAULT_CONFIG, stakingValidator, writableStates, customFeeTest);
     }
 
@@ -418,7 +418,7 @@ class TokenServiceApiImplTest {
         private FakeFeeRecordBuilder rb;
 
         @BeforeEach
-        void setUp() {
+        void setup() {
             configBuilder = HederaTestConfigBuilder.create()
                     .withValue("staking.isEnabled", true)
                     .withValue("staking.fees.nodeRewardPercentage", 10)

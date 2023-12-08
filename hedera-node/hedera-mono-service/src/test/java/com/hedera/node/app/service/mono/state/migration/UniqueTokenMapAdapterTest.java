@@ -52,7 +52,7 @@ class UniqueTokenMapAdapterTest {
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         merkleMapAdapter = UniqueTokenMapAdapter.wrap(merkleMap);
         virtualMapAdapter = UniqueTokenMapAdapter.wrap(VirtualMapLike.from(virtualMap));
     }

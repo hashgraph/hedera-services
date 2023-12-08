@@ -78,7 +78,7 @@ class DeletionLogicTest {
     private DeletionLogic subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new DeletionLogic(ledger, aliasManager, validator, sigImpactHistorian, () -> contracts);
     }
 

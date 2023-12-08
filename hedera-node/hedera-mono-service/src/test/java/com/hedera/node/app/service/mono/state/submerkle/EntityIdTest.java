@@ -88,7 +88,7 @@ class EntityIdTest {
     private EntityId subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new EntityId(shard, realm, num);
     }
 

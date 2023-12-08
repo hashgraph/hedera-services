@@ -86,7 +86,7 @@ class ChildFeeContextImplTest {
     private ChildFeeContextImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, PAYER_ID);
     }
 

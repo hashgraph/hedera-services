@@ -49,7 +49,7 @@ class ContractUpdateHandlerParityTest {
     private final ContractUpdateHandler subject = new ContractUpdateHandler();
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 

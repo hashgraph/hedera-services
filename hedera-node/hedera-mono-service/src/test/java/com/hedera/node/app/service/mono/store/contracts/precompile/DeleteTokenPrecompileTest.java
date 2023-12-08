@@ -196,7 +196,7 @@ class DeleteTokenPrecompileTest {
             Bytes.fromHexString("0xf069f712000000000000000000000000000000000000000000000000000000000000046d");
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setup() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
