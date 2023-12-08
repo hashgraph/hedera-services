@@ -73,7 +73,7 @@ public class FCQueueStatistics {
     private FCQueueStatistics() {}
 
     /**
-     * Registers the {@link FCQueue} statistics with the specified {Platform instance.
+     * Registers the {@link FCQueue} statistics with the specified Platform instance.
      *
      * @param metrics
      * 		the metrics-system
