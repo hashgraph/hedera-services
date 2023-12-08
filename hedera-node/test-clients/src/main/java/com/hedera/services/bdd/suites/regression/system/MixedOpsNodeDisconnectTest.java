@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecome
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToFinishReconnect;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
+import static com.hedera.services.bdd.suites.regression.system.MixedOpsNodeDeathReconnectTest.mixedOps;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -91,64 +92,7 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec reconnectMixedOps() {
-        AtomicInteger tokenId = new AtomicInteger(0);
-        AtomicInteger scheduleId = new AtomicInteger(0);
-        Random r = new Random(38582L);
-
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
-            // Submit some mixed operations
-            fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
-                            .payingWith(SENDER)
-                            .logging()
-                            .signedBy(SENDER))
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
-                            .supplyType(TokenSupplyType.FINITE)
-                            .treasury(TREASURY)
-                            .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                            .maxSupply(1000)
-                            .initialSupply(500)
-                            .decimals(1)
-                            .adminKey("adminKey")
-                            .freezeKey("freezeKey")
-                            .kycKey("kycKey")
-                            .supplyKey(SUPPLY_KEY)
-                            .wipeKey("wipeKey")
-                            .feeScheduleKey("feeScheduleKey")
-                            .pauseKey("pauseKey")
-                            .logging())
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
-                            .logging()
-                            .payingWith(SENDER)
-                            .signedBy(SENDER))
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            submitMessageTo(TOPIC)
-                    .message(ArrayUtils.addAll(
-                            ByteBuffer.allocate(8)
-                                    .putLong(Instant.now().toEpochMilli())
-                                    .array(),
-                            randomUtf8Bytes(1000)))
-                    .payingWith(SENDER)
-                    .signedBy(SENDER, SUBMIT_KEY),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(ignore -> scheduleCreate(
-                                    "schedule" + scheduleId.incrementAndGet(),
-                                    cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, r.nextInt(1000))))
-                            .payingWith(SENDER)
-                            .signedBy(SENDER)
-                            .adminKey(SENDER)
-                            .logging())
-                    .toArray(HapiSpecOperation[]::new)),
-        };
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = mixedOps(NUM_SUBMISSIONS);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),

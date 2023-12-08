@@ -279,6 +279,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @NonNull
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
         final var stateMetadata = services.get(serviceName);
+        logger.info("All services {}", services);
+        logger.info("Creating readable states for service {} with metadata {}", serviceName, stateMetadata);
         return stateMetadata == null ? EMPTY_READABLE_STATES : new MerkleReadableStates(stateMetadata);
     }
 
