@@ -391,7 +391,7 @@ public class LoggingSystemTest {
 
     @Test
     @DisplayName(
-            "That that checks if simple log calls are forwarded correctly will all informations to the configured handler")
+            "Test that checks if simple log calls are forwarded correctly will all information to the configured handler")
     void testSimpleLoggingHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
