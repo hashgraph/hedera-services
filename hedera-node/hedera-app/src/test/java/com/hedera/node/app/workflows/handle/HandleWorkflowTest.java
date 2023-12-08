@@ -1698,7 +1698,7 @@ class HandleWorkflowTest extends AppTestBase {
     void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, dualState, round);
         verify(genesisRecordsTimeHook).process(notNull());
-        verify(stakingPeriodTimeHook).process(notNull());
+        verify(stakingPeriodTimeHook).process(notNull(), notNull());
     }
 
     private SingleTransactionRecord getRecordFromStream() {

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -27,9 +26,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -49,11 +50,17 @@ class StakingPeriodTimeHookTest {
     @Mock
     private EndOfStakingPeriodUpdater stakingPeriodCalculator;
 
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private TokenContext context;
 
     @Mock
     private ReadableBlockRecordStore blockStore;
+
+    @Mock
+    private SavepointStackImpl stack;
 
     private StakingPeriodTimeHook subject;
 
@@ -61,18 +68,22 @@ class StakingPeriodTimeHookTest {
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject = new StakingPeriodTimeHook(stakingPeriodCalculator);
+        subject = new StakingPeriodTimeHook(stakingPeriodCalculator, exchangeRateManager);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new StakingPeriodTimeHook(null)).isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> new StakingPeriodTimeHook(null, exchangeRateManager))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> new StakingPeriodTimeHook(stakingPeriodCalculator, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void processUpdateSkippedForPreviousPeriod() {
         verifyNoInteractions(stakingPeriodCalculator);
+        verifyNoInteractions(exchangeRateManager);
     }
 
     @Test
@@ -83,9 +94,10 @@ class StakingPeriodTimeHookTest {
                         .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
 
-        subject.process(context);
+        subject.process(stack, context);
 
-        verify(stakingPeriodCalculator).updateNodes(notNull());
+        verify(stakingPeriodCalculator).updateNodes(context);
+        verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
     @Test
@@ -99,9 +111,10 @@ class StakingPeriodTimeHookTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
 
-        subject.process(context);
+        subject.process(stack, context);
 
         verifyNoInteractions(stakingPeriodCalculator);
+        verifyNoInteractions(exchangeRateManager);
     }
 
     @Test
@@ -122,10 +135,11 @@ class StakingPeriodTimeHookTest {
                         currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
-        subject.process(context);
+        subject.process(stack, context);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())));
+        verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
     @Test
@@ -139,8 +153,9 @@ class StakingPeriodTimeHookTest {
                         .consTimeOfLastHandledTxn((Timestamp) null)
                         .build());
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(context));
-        verify(stakingPeriodCalculator).updateNodes(any());
+        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context));
+        verify(stakingPeriodCalculator).updateNodes(context);
+        verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
     @Test
