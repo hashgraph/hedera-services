@@ -17,6 +17,7 @@
 package com.hedera.node.app.records;
 
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.NAME;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.records.RecordTestData.BLOCK_NUM;
@@ -103,7 +104,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         RUNNING_HASHES_STATE_KEY, new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null))
                 .withSingletonState(
                         BLOCK_INFO_STATE_KEY,
-                        new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash(), null, false))
+                        new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash(), null, false, EPOCH))
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
@@ -145,7 +146,8 @@ final class BlockRecordManagerTest extends AppTestBase {
                                             0),
                                     STARTING_RUNNING_HASH_OBJ.hash(),
                                     CONSENSUS_TIME,
-                                    true))
+                                    true,
+                                    EPOCH))
                     .commit();
         }
 
@@ -232,7 +234,8 @@ final class BlockRecordManagerTest extends AppTestBase {
                                         0),
                                 STARTING_RUNNING_HASH_OBJ.hash(),
                                 CONSENSUS_TIME,
-                                true))
+                                true,
+                                EPOCH))
                 .commit();
 
         final Random random = new Random(82792874);

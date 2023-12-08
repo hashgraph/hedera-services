@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records.impl;
 
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static java.util.Objects.requireNonNull;
 
@@ -35,10 +36,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,15 +79,13 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * time we finish a provisional block.
      */
     private BlockInfo lastBlockInfo;
-    /** The number of the current provisional block. "provisional" because the block is not yet complete. */
+    /**
+     * The number of the current provisional block. "provisional" because the block is not yet complete.
+     */
     private long provisionalCurrentBlockNumber;
     /**
-     * The consensus time of the first transaction in the current block. "provisional" because the block is not yet
-     * complete.
+     * True when we have completed event recovery. This is not yet implemented properly.
      */
-    // TODO : Verify this is safe during reconnect
-    private Instant provisionalCurrentBlockFirstTransactionTime = null;
-    /** True when we have completed event recovery. This is not yet implemented properly. */
     private boolean eventRecoveryCompleted = false;
 
     /**
@@ -121,7 +122,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         this.lastBlockInfo = blockInfoState.get();
         assert this.lastBlockInfo != null : "Cannot be null, because this state is created at genesis";
         this.provisionalCurrentBlockNumber = lastBlockInfo.lastBlockNumber() + 1; // We know what this will be
-        this.provisionalCurrentBlockFirstTransactionTime = null; // We do not know what this will be yet
 
         // Initialize the stream file producer. NOTE, if the producer cannot be initialized, and a random exception is
         // thrown here, then startup of the node will fail. This is the intended behavior. We MUST be able to produce
@@ -135,7 +135,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     // =================================================================================================================
     // AutoCloseable implementation
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() {
         try {
@@ -151,60 +153,66 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     // =================================================================================================================
     // BlockRecordManager implementation
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public void startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
-        // Is this the very first transaction since the node was started?
-        final var restarted = provisionalCurrentBlockFirstTransactionTime == null;
-        // We did just restart. So we will need to create a new block, but we don't need to close out the old one.
-        // This also works for genesis, since the state was prepopulated with a lastBlockInfo.
-        if (restarted) {
-            final var lastBlockNo = lastBlockInfo.lastBlockNumber();
-            provisionalCurrentBlockNumber = lastBlockNo + 1;
-            provisionalCurrentBlockFirstTransactionTime = consensusTime;
-            streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
-        } else {
-            // Check to see if we are at the boundary between blocks and should create a new one. Each block is covered
-            // by some period. We'll compute the period of the current provisional block and the period covered by the
-            // given consensus time, and if they are different, we'll close out the current block and start a new one.
-            final var currentBlockPeriod = getBlockPeriod(provisionalCurrentBlockFirstTransactionTime);
-            final var newBlockPeriod = getBlockPeriod(consensusTime);
-            if (newBlockPeriod > currentBlockPeriod) {
-                // Compute the state for the newly completed block. The `lastBlockHashBytes` is the running hash after
-                // the last transaction
-                final var lastBlockNo = provisionalCurrentBlockNumber;
-                final var lastBlockFirstTransactionTime = provisionalCurrentBlockFirstTransactionTime;
-                final var lastBlockHashBytes = streamFileProducer.getRunningHash();
-                lastBlockInfo =
-                        updateBlockInfo(lastBlockInfo, lastBlockNo, lastBlockFirstTransactionTime, lastBlockHashBytes);
+        if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
+            // This is the first transaction of the first block. We need to set the firstConsTimeOfCurrentBlock to the
+            // consensus time of this transaction. We also need to set the lastBlockHashBytes to the genesis hash.
+            final var now = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
+            lastBlockInfo = lastBlockInfo.copyBuilder()
+                    .consTimeOfLastHandledTxn(now)
+                    .firstConsTimeOfCurrentBlock(now)
+                    .build();
+            return;
+        }
 
-                // Update BlockInfo state
-                final var states = state.createWritableStates(BlockRecordService.NAME);
-                final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
-                blockInfoState.put(lastBlockInfo);
-
-                // log end of block if needed
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            """
-                                    --- BLOCK UPDATE ---
-                                      Finished: #{} @ {} with hash {}
-                                      Starting: #{} @ {}""",
-                            lastBlockNo,
-                            provisionalCurrentBlockFirstTransactionTime,
-                            new Hash(lastBlockHashBytes.toByteArray(), DigestType.SHA_384),
-                            lastBlockNo + 1,
+        // Check to see if we are at the boundary between blocks and should create a new one. Each block is covered
+        // by some period. We'll compute the period of the current provisional block and the period covered by the
+        // given consensus time, and if they are different, we'll close out the current block and start a new one.
+        final var currentBlockPeriod = getBlockPeriod(lastBlockInfo.firstConsTimeOfCurrentBlock());
+        final var newBlockPeriod = getBlockPeriod(consensusTime);
+        if (newBlockPeriod > currentBlockPeriod) {
+            // Compute the state for the newly completed block. The `lastBlockHashBytes` is the running hash after
+            // the last transaction
+            final var lastBlockHashBytes = streamFileProducer.getRunningHash();
+            lastBlockInfo =
+                    saveJustFinishedBlockInfoToState(
+                            lastBlockInfo,
+                            provisionalCurrentBlockNumber,
+                            lastBlockHashBytes,
                             consensusTime);
-                }
 
-                // close all stream files for end of block and create signature files, then open new block record file
-                provisionalCurrentBlockNumber = lastBlockNo + 1;
-                provisionalCurrentBlockFirstTransactionTime = consensusTime;
-                streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
+            // Update BlockInfo state
+            final var states = state.createWritableStates(BlockRecordService.NAME);
+            final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+            blockInfoState.put(lastBlockInfo);
+
+            // log end of block if needed
+            if (logger.isDebugEnabled()) {
+                logger.debug(
+                        """
+                                --- BLOCK UPDATE ---
+                                  Finished: #{} (started @ {}) with hash {}
+                                  Starting: #{} @ {}""",
+                        provisionalCurrentBlockNumber,
+                        lastBlockInfo.firstConsTimeOfCurrentBlock(),
+                        new Hash(lastBlockHashBytes.toByteArray(), DigestType.SHA_384),
+                        provisionalCurrentBlockNumber + 1,
+                        consensusTime);
             }
+
+            // close all stream files for end of block and create signature files, then open new block record file
+            final var lastBlockNo = provisionalCurrentBlockNumber;
+            provisionalCurrentBlockNumber++;
+            streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public void endUserTransaction(
             @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final HederaState state) {
         // check if we need to run event recovery before we can write any new records to stream
@@ -216,7 +224,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         streamFileProducer.writeRecordStreamItems(recordStreamItems);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void endRound(@NonNull final HederaState state) {
         // We get the latest running hash from the StreamFileProducer blocking if needed for it to be computed.
@@ -238,14 +248,18 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     // ========================================================================================================
     // Running Hash Getter Methods
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public Bytes getRunningHash() {
         return streamFileProducer.getRunningHash();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Bytes getNMinus3RunningHash() {
@@ -255,34 +269,44 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     // ========================================================================================================
     // BlockRecordInfo Implementation
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long lastBlockNo() {
         return lastBlockInfo.lastBlockNumber();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Instant firstConsTimeOfLastBlock() {
         return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Bytes lastBlockHash() {
         return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Bytes blockHashByBlockNumber(final long blockNo) {
         return BlockRecordInfoUtils.blockHashByBlockNumber(lastBlockInfo, blockNo);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
         final var builder = this.lastBlockInfo
@@ -323,37 +347,45 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return consensusTimestamp.getEpochSecond() / blockPeriodInSeconds;
     }
 
+    private long getBlockPeriod(@Nullable final Timestamp consensusTimestamp) {
+        if (consensusTimestamp == null) return 0;
+        return consensusTimestamp.seconds() / blockPeriodInSeconds;
+    }
+
     /**
      * Create a new updated BlockInfo from existing BlockInfo and new block information. BlockInfo stores block hashes as a single
      * byte array, so we need to append or if full shift left and insert new block hash.
      *
-     * @param currentBlockInfo The current block info
-     * @param newBlockNumber The new block number
-     * @param blockFirstTransactionTime The new block first transaction time
-     * @param blockHash The new block hash
+     * @param lastBlockInfo The current block info
+     * @param justFinishedBlockNumber The new block number
+     * @param hashOfJustFinishedBlock The new block hash
      */
-    private BlockInfo updateBlockInfo(
-            BlockInfo currentBlockInfo, long newBlockNumber, Instant blockFirstTransactionTime, Bytes blockHash) {
+    private BlockInfo saveJustFinishedBlockInfoToState(
+            @NonNull final BlockInfo lastBlockInfo,
+            @NonNull final long justFinishedBlockNumber,
+            @NonNull final Bytes hashOfJustFinishedBlock,
+            @NonNull final Instant currentBlockFirstTransactionTime) {
         // compute new block hashes bytes
-        final byte[] blockHashesBytes = currentBlockInfo.blockHashes().toByteArray();
+        final byte[] blockHashesBytes = lastBlockInfo.blockHashes().toByteArray();
         byte[] newBlockHashesBytes;
         if (blockHashesBytes.length < numBlockHashesToKeepBytes) {
             // append new hash bytes to end
             newBlockHashesBytes = new byte[blockHashesBytes.length + HASH_SIZE];
             System.arraycopy(blockHashesBytes, 0, newBlockHashesBytes, 0, blockHashesBytes.length);
-            blockHash.getBytes(0, newBlockHashesBytes, newBlockHashesBytes.length - HASH_SIZE, HASH_SIZE);
+            hashOfJustFinishedBlock.getBytes(0, newBlockHashesBytes, newBlockHashesBytes.length - HASH_SIZE, HASH_SIZE);
         } else {
             // shift bytes left by HASH_SIZE and then set new hash bytes to at end HASH_SIZE bytes
             newBlockHashesBytes = blockHashesBytes;
             System.arraycopy(
                     newBlockHashesBytes, HASH_SIZE, newBlockHashesBytes, 0, newBlockHashesBytes.length - HASH_SIZE);
-            blockHash.getBytes(0, newBlockHashesBytes, newBlockHashesBytes.length - HASH_SIZE, HASH_SIZE);
+            hashOfJustFinishedBlock.getBytes(0, newBlockHashesBytes, newBlockHashesBytes.length - HASH_SIZE, HASH_SIZE);
         }
         return new BlockInfo(
-                newBlockNumber,
-                new Timestamp(blockFirstTransactionTime.getEpochSecond(), blockFirstTransactionTime.getNano()),
+                justFinishedBlockNumber,
+                lastBlockInfo.firstConsTimeOfCurrentBlock(),
                 Bytes.wrap(newBlockHashesBytes),
                 lastBlockInfo.consTimeOfLastHandledTxn(),
-                lastBlockInfo.migrationRecordsStreamed());
+                lastBlockInfo.migrationRecordsStreamed(),
+                new Timestamp(currentBlockFirstTransactionTime.getEpochSecond(), currentBlockFirstTransactionTime.getNano()));
     }
 }
