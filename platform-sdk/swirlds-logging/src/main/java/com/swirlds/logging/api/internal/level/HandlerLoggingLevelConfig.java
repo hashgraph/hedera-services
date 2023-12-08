@@ -235,7 +235,7 @@ public class HandlerLoggingLevelConfig {
     }
 
     @NonNull
-    private ConfigLevel getConfiguredLevel(@NonNull String name) {
+    private ConfigLevel getConfiguredLevel(@NonNull final String name) {
         final Map<String, ConfigLevel> stringConfigLevelMap = levelConfigProperties.get();
         return stringConfigLevelMap.keySet().stream()
                 .filter(n -> name.trim().startsWith(n))
