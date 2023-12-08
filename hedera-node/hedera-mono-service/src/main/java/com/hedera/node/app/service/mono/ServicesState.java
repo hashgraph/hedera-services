@@ -84,6 +84,7 @@ import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.system.InitTrigger;
@@ -93,7 +94,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -303,7 +303,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(final EventImpl event) {
         metadata.app().eventExpansion().expandAllSigs(event, this);
     }
 

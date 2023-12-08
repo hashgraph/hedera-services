@@ -31,13 +31,13 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -88,7 +88,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(final EventImpl event) {
         busyWait(config.preHandleTime());
     }
 

@@ -78,7 +78,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1636,7 +1635,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(final EventImpl event) {
         event.forEachTransaction(this::preHandleTransaction);
     }
 }

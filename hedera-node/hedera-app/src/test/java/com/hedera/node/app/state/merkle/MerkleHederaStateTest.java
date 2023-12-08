@@ -31,9 +31,9 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
-import com.swirlds.platform.system.events.Event;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -676,7 +676,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @DisplayName("The onPreHandle handler is called when a pre-handle happens")
         void onPreHandleCalled() {
             assertThat(onPreHandleCalled).isFalse();
-            hederaMerkle.preHandle(Mockito.mock(Event.class));
+            hederaMerkle.preHandle(Mockito.mock(EventImpl.class));
             assertThat(onPreHandleCalled).isTrue();
         }
     }

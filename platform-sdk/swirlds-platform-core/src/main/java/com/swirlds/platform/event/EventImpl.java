@@ -40,7 +40,6 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventSerializationOptions;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -61,6 +60,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+
+// TODO rename.
+// Ideas:
+//  - WrappedEvent
+//  - EventWithMetadata
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -75,7 +80,6 @@ public class EventImpl
                 StreamAligned,
                 Timestamped,
                 Clearable,
-                Event,
                 ReachedConsensus {
 
     /**
@@ -408,6 +412,18 @@ public class EventImpl
     }
 
     /**
+     * A convenience method that supplies every transaction in this event to a consumer.
+     *
+     * @param consumer
+     * 		a transaction consumer
+     */
+    public void forEachTransaction(@NonNull final Consumer<Transaction> consumer) {
+        for (final Iterator<Transaction> transIt = transactionIterator(); transIt.hasNext(); ) {
+            consumer.accept(transIt.next());
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -444,11 +460,6 @@ public class EventImpl
     public synchronized int compareTo(final EventImpl other) {
         return Long.compare(getGeneration(), other.getGeneration());
     }
-
-    //////////////////////////////////////////
-    // Serialization methods
-    // Note: this class serializes itself as a com.swirlds.common.event.ConsensusEvent object
-    //////////////////////////////////////////
 
     /**
      * This class serializes itself as a {@link DetailedConsensusEvent} object
@@ -570,9 +581,10 @@ public class EventImpl
     }
 
     /**
-     * {@inheritDoc}
+     * Returns an iterator over the application events in this transaction.
+     *
+     * @return a transaction iterator
      */
-    @Override
     public Iterator<Transaction> transactionIterator() {
         if (getTransactions() == null) {
             return Collections.emptyIterator();
@@ -592,10 +604,6 @@ public class EventImpl
         }
         return new SkippingIterator<>(getTransactions(), systemTransactionIndices);
     }
-
-    //////////////////////////////////////////
-    // Getters for the objects contained
-    //////////////////////////////////////////
 
     /**
      * @return the base event
@@ -639,14 +647,11 @@ public class EventImpl
         return consensusData;
     }
 
-    //////////////////////////////////////////
-    // Convenience methods for nested objects
-    //////////////////////////////////////////
-
-    //////////////////////////////////////////
-    // BaseEventHashedData
-    //////////////////////////////////////////
-
+    /**
+     * Returns the time this event was created as claimed by its creator.
+     *
+     * @return the created time
+     */
     public Instant getTimeCreated() {
         return baseEvent.getHashedData().getTimeCreated();
     }
@@ -689,17 +694,9 @@ public class EventImpl
         return Objects.equals(getCreatorId(), id);
     }
 
-    //////////////////////////////////////////
-    // BaseEventUnhashedData
-    //////////////////////////////////////////
-
     public byte[] getSignature() {
         return baseEvent.getUnhashedData().getSignature();
     }
-
-    //////////////////////////////////////////
-    // ConsensusData
-    //////////////////////////////////////////
 
     public void setConsensusTimestamp(final Instant consensusTimestamp) {
         consensusData.setConsensusTimestamp(consensusTimestamp);
@@ -730,9 +727,10 @@ public class EventImpl
     }
 
     /**
-     * {@inheritDoc}
+     * Returns an estimate of what the consensus timestamp will be (could be a very bad guess).
+     *
+     * @return the estimated consensus timestamp
      */
-    @Override
     public @NonNull Instant getEstimatedTime() {
         // Return the real thing if we have it
         if (getConsensusTimestamp() != null) {
@@ -770,18 +768,19 @@ public class EventImpl
     }
 
     /**
-     * {@inheritDoc}
+     * Returns the software version of the node that created this event.
+     *
+     * @return the software version
      */
-    @Override
     @Nullable
     public SoftwareVersion getSoftwareVersion() {
         return baseEvent.getHashedData().getSoftwareVersion();
     }
 
     /**
-     * ID of this event's creator.
+     * Returns the creator of this event.
      *
-     * @return ID of this event's creator
+     * @return the creator id
      */
     @NonNull
     public NodeId getCreatorId() {

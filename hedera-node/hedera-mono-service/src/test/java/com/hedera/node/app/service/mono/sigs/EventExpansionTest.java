@@ -36,7 +36,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -50,7 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class EventExpansionTest {
     @Mock
-    private Event event;
+    private EventImpl event;
 
     @Mock
     private ServicesState sourceState;

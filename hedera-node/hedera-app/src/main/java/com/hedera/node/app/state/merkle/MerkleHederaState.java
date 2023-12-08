@@ -52,6 +52,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -59,7 +60,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -318,7 +318,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(@NonNull final Event event) {
+    public void preHandle(@NonNull final EventImpl event) {
         if (onPreHandle != null) {
             onPreHandle.onPreHandle(event, this);
         }

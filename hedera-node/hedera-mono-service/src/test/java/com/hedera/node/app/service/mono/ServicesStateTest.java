@@ -93,6 +93,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -103,7 +104,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
@@ -166,7 +166,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private Round round;
 
     @Mock
-    private Event event;
+    private EventImpl event;
 
     @Mock
     private EventExpansion eventExpansion;

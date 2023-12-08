@@ -26,7 +26,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldDualState;
-import com.swirlds.platform.system.events.Event;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;

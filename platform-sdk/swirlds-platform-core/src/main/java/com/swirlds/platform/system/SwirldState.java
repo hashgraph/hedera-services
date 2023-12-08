@@ -19,8 +19,8 @@ package com.swirlds.platform.system;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -61,7 +61,7 @@ public interface SwirldState extends MerkleNode {
 
     /**
      * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
-     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify the
+     * Called against a given {@link com.swirlds.platform.event.EventImpl} only once, globally (not once per state instance) This method may modify the
      * {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing signatures,
      * replacing signatures with versions that expand the public key from an application specific identifier to an
      * actual public key, or attaching metadata. Additional signatures extracted from the transaction payload can also
@@ -80,7 +80,7 @@ public interface SwirldState extends MerkleNode {
      * @param event the event to perform pre-handling on
      * @see #handleConsensusRound(Round, SwirldDualState)
      */
-    default void preHandle(final Event event) {}
+    default void preHandle(final EventImpl event) {}
 
     /**
      * {@inheritDoc}
@@ -93,7 +93,7 @@ public interface SwirldState extends MerkleNode {
      *     <li>{@link #handleConsensusRound(Round, SwirldDualState)}</li>
      *  </ul>
      * <p>
-     * If signature verification was started on a background thread in {@link #preHandle(Event)}, the process
+     * If signature verification was started on a background thread in {@link #preHandle(EventImpl)}, the process
      * should be checked for completion. Accessing {@link TransactionSignature#getSignatureStatus()} before this
      * process is complete will cause it to return {@code null}:
      *

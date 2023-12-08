@@ -36,7 +36,6 @@ import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.events.Event;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;

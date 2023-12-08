@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ public class AdaptedMonoEventExpansion {
         this.sigReqsManagerProvider = sigReqsManagerProvider;
     }
 
-    public void expand(final Event event, final HederaState state, final NodeInfo nodeInfo) {
+    public void expand(final EventImpl event, final HederaState state, final NodeInfo nodeInfo) {
         final var typesForWorkflows = staticProperties.workflowsEnabled();
         final List<Transaction> forWorkflows = new ArrayList<>();
         event.forEachTransaction(txn -> {

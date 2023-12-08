@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalStaticPropertie
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Set;
@@ -52,7 +52,7 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
     private GlobalStaticProperties staticProperties;
 
     @Mock
-    private Event event;
+    private EventImpl event;
 
     @Mock
     private ConsensusTransactionImpl nonsenseTxn;

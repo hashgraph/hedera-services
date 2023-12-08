@@ -24,7 +24,6 @@ import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;

@@ -82,6 +82,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -90,7 +91,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -693,7 +693,7 @@ public final class Hedera implements SwirldMain {
     /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
-    private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
+    private void onPreHandle(@NonNull final EventImpl event, @NonNull final HederaState state) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());

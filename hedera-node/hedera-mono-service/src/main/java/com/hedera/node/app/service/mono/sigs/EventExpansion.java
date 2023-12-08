@@ -22,7 +22,7 @@ import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -51,7 +51,7 @@ public class EventExpansion {
         this.sigReqsManagerProvider = sigReqsManagerProvider;
     }
 
-    public void expandAllSigs(final Event event, final StateChildrenProvider provider) {
+    public void expandAllSigs(final EventImpl event, final StateChildrenProvider provider) {
         final var eventSigReqsManager = sigReqsManagerProvider.get();
         event.forEachTransaction(txn -> expandSingle(txn, eventSigReqsManager, provider));
     }
