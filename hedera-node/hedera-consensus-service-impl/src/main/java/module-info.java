@@ -10,7 +10,6 @@ module com.hedera.node.app.service.consensus.impl {
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app.service.token;
     requires com.hedera.node.config;
     requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
