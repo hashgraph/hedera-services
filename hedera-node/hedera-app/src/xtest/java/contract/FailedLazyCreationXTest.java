@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.XTestConstants.COINBASE_ID;
 import static contract.XTestConstants.LAZY_CREATE_TARGET_1_HEADLONG_ADDRESS;
@@ -56,7 +57,8 @@ public class FailedLazyCreationXTest extends AbstractContractXTest {
     @Override
     protected void doScenarioOperations() {
         handleAndCommitSingleTransaction(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
-        handleAndCommitSingleTransaction(CONTRACT_SERVICE.handlers().contractCallHandler(), synthCallTxn());
+        handleAndCommitSingleTransaction(
+                CONTRACT_SERVICE.handlers().contractCallHandler(), synthCallTxn(), MAX_CHILD_RECORDS_EXCEEDED);
     }
 
     private TransactionBody synthCallTxn() {
