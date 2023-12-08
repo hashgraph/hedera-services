@@ -67,7 +67,13 @@ if [[ "${CI_WAIT_FOR_PEERS}" = true && -n "${NODE_ID}" ]]; then
   echo "============================= Peers Found ============================="
 fi
 
-java -cp 'data/lib/*' -Dflag=1 -Dfile.encoding='utf-8' \
+/usr/bin/env java -cp 'data/lib/*' -Dflag=1 -Dfile.encoding='utf-8' \
+  -XX:+UnlockExperimentalVMOptions \
+  -XX:+UseZGC \
+  -XX:ZAllocationSpikeTolerance=2 \
+  -XX:ConcGCThreads=14 \
+  -XX:MetaspaceSize=100M \
+  -XX:+ZGenerational \
   --add-opens java.base/jdk.internal.misc=ALL-UNNAMED \
   --add-opens java.base/java.nio=ALL-UNNAMED \
   -Dio.netty.tryReflectionSetAccessible=true \
