@@ -62,7 +62,7 @@ window are non-ancient and can be validated.
 
 The collection of nodes which create events and participate in consensus.  Prior to the dynamic address book effort, 
 this was called the `AddressBook` in the platform's code.  The name was changed to `Roster` to disambiguate it from 
-Hedera's concept of an address book.  Hedera's address book contains the consensus roster.  
+the application's concept of an address book.  The application's address book contains the consensus roster.  
 
 ### Effective Roster (for a round) 
 
