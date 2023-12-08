@@ -59,6 +59,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
 
+    private final PlatformCoordinator platformCoordinator;
+
     /**
      * Constructor.
      *
@@ -82,6 +84,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
             inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
             linkedEventIntakeWiring = LinkedEventIntakeWiring.create(schedulers.linkedEventIntakeScheduler());
+
+            platformCoordinator = new PlatformCoordinator(
+                    internalEventValidatorWiring,
+                    eventDeduplicatorWiring,
+                    eventSignatureValidatorWiring,
+                    orphanBufferWiring,
+                    inOrderLinkerWiring,
+                    linkedEventIntakeWiring);
         } else {
             internalEventValidatorWiring = null;
             eventDeduplicatorWiring = null;
@@ -89,6 +99,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             orphanBufferWiring = null;
             inOrderLinkerWiring = null;
             linkedEventIntakeWiring = null;
+
+            platformCoordinator = null;
         }
 
         signedStateFileManagerWiring =
@@ -288,35 +300,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Flush all the wiring objects
-     */
-    private void flushAll() {
-        internalEventValidatorWiring.flushRunnable().run();
-        eventDeduplicatorWiring.flushRunnable().run();
-        eventSignatureValidatorWiring.flushRunnable().run();
-        orphanBufferWiring.flushRunnable().run();
-        inOrderLinkerWiring.flushRunnable().run();
-        linkedEventIntakeWiring.flushRunnable().run();
-    }
-
-    /**
      * Clear all the wiring objects.
-     * <p>
-     * This doesn't guarantee that all objects will have nothing in their internal storage, but it does guarantee
-     * that the objects will no longer be emitting any events or rounds.
      */
     @Override
     public void clear() {
-        if (!platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
-            // pause the orphan buffer to break the cycle, and flush the pause through
-            orphanBufferWiring.pauseInput().inject(true);
-            orphanBufferWiring.flushRunnable().run();
+        final boolean useLegacyIntake = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useLegacyIntake();
 
-            // now that no cycles exist, flush all the wiring objects
-            flushAll();
-
-            // once everything has been flushed through the system, it's safe to unpause the orphan buffer
-            orphanBufferWiring.pauseInput().inject(false);
+        if (!useLegacyIntake) {
+            platformCoordinator.clear();
         }
     }
 }

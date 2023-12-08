@@ -197,12 +197,18 @@ public class SyncGossip extends AbstractGossip {
                 false,
                 () -> {});
 
-        clearAllInternalPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
-                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-                        Pair.of(shadowGraph, "shadowGraph")));
+        if (eventConfig.useLegacyIntake()) {
+            // legacy intake clears these things as part of gossip
+            clearAllInternalPipelines = new LoggingClearables(
+                    RECONNECT.getMarker(),
+                    List.of(
+                            Pair.of(intakeQueue, "intakeQueue"),
+                            Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
+                            Pair.of(shadowGraph, "shadowGraph")));
+        } else {
+            // the new intake pipeline clears everything from the top level, rather than delegating to gossip
+            clearAllInternalPipelines = null;
+        }
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
@@ -358,7 +364,10 @@ public class SyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllInternalPipelines.clear();
+        // this will be null if the new intake pipeline is being used
+        if (clearAllInternalPipelines != null) {
+            clearAllInternalPipelines.clear();
+        }
     }
 
     /**

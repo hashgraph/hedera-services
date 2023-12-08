@@ -26,6 +26,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -144,5 +145,14 @@ public class EventDeduplicator {
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
         observedEvents.shiftWindow(minimumGenerationNonAncient);
+    }
+
+    /**
+     * Clear the internal state of this deduplicator.
+     *
+     * @param ignored ignored trigger object
+     */
+    public void clear(@NonNull final ClearTrigger ignored) {
+        observedEvents.clear();
     }
 }

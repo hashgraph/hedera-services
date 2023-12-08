@@ -30,14 +30,14 @@ import java.util.List;
  *
  * @param eventInput                       the input wire for unordered events
  * @param minimumGenerationNonAncientInput the input wire for the minimum generation non-ancient
- * @param pauseInput                       the input wire for pausing the buffer
+ * @param clearInput                       the input wire to clear the internal state of the orphan buffer
  * @param eventOutput                      the output wire for topologically ordered events
  * @param flushRunnable                    the runnable to flush the buffer
  */
 public record OrphanBufferWiring(
         @NonNull InputWire<GossipEvent> eventInput,
         @NonNull InputWire<Long> minimumGenerationNonAncientInput,
-        @NonNull InputWire<Boolean> pauseInput,
+        @NonNull InputWire<ClearTrigger> clearInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -51,7 +51,7 @@ public record OrphanBufferWiring(
         return new OrphanBufferWiring(
                 taskScheduler.buildInputWire("unordered events"),
                 taskScheduler.buildInputWire("minimum generation non ancient"),
-                taskScheduler.buildInputWire("pause"),
+                taskScheduler.buildInputWire("clear"),
                 taskScheduler.getOutputWire().buildSplitter(),
                 taskScheduler::flush);
     }
@@ -65,6 +65,6 @@ public record OrphanBufferWiring(
         ((BindableInputWire<GossipEvent, List<GossipEvent>>) eventInput).bind(orphanBuffer::handleEvent);
         ((BindableInputWire<Long, List<GossipEvent>>) minimumGenerationNonAncientInput)
                 .bind(orphanBuffer::setMinimumGenerationNonAncient);
-        ((BindableInputWire<Boolean, List<GossipEvent>>) pauseInput).bind(orphanBuffer::setPaused);
+        ((BindableInputWire<ClearTrigger, List<GossipEvent>>) clearInput).bind(orphanBuffer::clear);
     }
 }

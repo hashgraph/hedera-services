@@ -840,15 +840,27 @@ public class SwirldsPlatform implements Platform {
 
         final Clearable pauseEventCreation = eventCreator::pauseEventCreation;
 
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(pauseEventCreation, "eventCreator"),
-                        Pair.of(gossip, "gossip"),
-                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(transactionPool, "transactionPool"),
-                        Pair.of(platformWiring, "platformWiring")));
+        if (eventConfig.useLegacyIntake()) {
+            clearAllPipelines = new LoggingClearables(
+                    RECONNECT.getMarker(),
+                    List.of(
+                            Pair.of(pauseEventCreation, "eventCreator"),
+                            Pair.of(gossip, "gossip"),
+                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                            Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                            Pair.of(transactionPool, "transactionPool")));
+        } else {
+            clearAllPipelines = new LoggingClearables(
+                    RECONNECT.getMarker(),
+                    List.of(
+                            Pair.of(pauseEventCreation, "eventCreator"),
+                            Pair.of(intakeQueue, "intakeQueue"),
+                            Pair.of(platformWiring, "platformWiring"),
+                            Pair.of(shadowGraph, "shadowGraph"),
+                            Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                            Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                            Pair.of(transactionPool, "transactionPool")));
+        }
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
             components.add(new JvmAnchor(threadManager));
