@@ -79,7 +79,8 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm38ValidationSuite.class);
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS = "evm.allowCallsToNonContractAccounts";
+    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
+            "contracts.evm.allowCallsToNonContractAccounts";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_038 = "v0.38";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
