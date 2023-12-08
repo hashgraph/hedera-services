@@ -33,7 +33,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -180,7 +180,7 @@ public class CustomFractionalFeeAssessor {
             @NonNull final Map<AccountID, Long> creditsForToken,
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final CustomFee fee) {
-        final var filteredCredits = new HashMap<AccountID, Long>();
+        final var filteredCredits = new LinkedHashMap<AccountID, Long>();
         for (final var entry : creditsForToken.entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
