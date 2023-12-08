@@ -89,6 +89,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String REVERT_WITHOUT_REVERT_REASON_FUNCTION = "revertWithoutRevertReason";
     private static final String CALL_NON_EXISTING_FUNCTION = "callNonExisting";
     private static final String CALL_EXTERNAL_FUNCTION = "callExternalFunction";
+    private static final String DELEGATE_CALL_EXTERNAL_FUNCTION = "delegateCallExternalFunction";
     private static final String STATIC_CALL_EXTERNAL_FUNCTION = "staticCallExternalFunction";
     private static final String CALL_REVERT_WITH_REVERT_REASON_FUNCTION = "callRevertWithRevertReason";
     private static final String CALL_REVERT_WITHOUT_REVERT_REASON_FUNCTION = "callRevertWithoutRevertReason";
@@ -210,7 +211,17 @@ public class Evm46ValidationSuite extends HapiSuite {
                 // EOA -calls-> InternalCaller -staticcall-> NonExistingNonMirror, expect success noop
                 internalStaticCallNonExistingNonMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -staticcall-> ExistingNonMirror, expect success noop
-                internalStaticCallExistingNonMirrorAddressResultsInSuccess()
+                internalStaticCallExistingNonMirrorAddressResultsInSuccess(),
+
+                // Internal delegate calls:
+                // EOA -calls-> InternalCaller -delegatecall-> NonExistingMirror, expect success noop
+                internalDelegateCallNonExistingMirrorAddressResultsInSuccess(),
+                // EOA -calls-> InternalCaller -delegatecall-> ExistingMirror, expect success noop
+                internalDelegateCallExistingMirrorAddressResultsInSuccess(),
+                // EOA -calls-> InternalCaller -delegatecall-> NonExistingNonMirror, expect success noop
+                internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess(),
+                // EOA -calls-> InternalCaller -delegatecall-> ExistingNonMirror, expect success noop
+                internalDelegateCallExistingNonMirrorAddressResultsInSuccess()
 
                 // todo
                 // add grandfathered contract scenario
@@ -607,6 +618,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                         CALL_REVERT_WITH_REVERT_REASON_FUNCTION,
                                         mirrorAddrWith(calleeNum.get()))
                                 .gas(GAS_LIMIT_FOR_CALL * 8)
+                                .hasKnownStatus(SUCCESS)
                                 .via(INNER_TXN))))
                 .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)));
     }
@@ -953,7 +965,8 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 STATIC_CALL_EXTERNAL_FUNCTION,
                                 mirrorAddrWith(new Random().nextLong()))
                         .gas(GAS_LIMIT_FOR_CALL)
-                        .via(INNER_TXN))
+                        .via(INNER_TXN)
+                        .hasKnownStatus(SUCCESS))
                 .then(getTxnRecord(INNER_TXN)
                         .logged()
                         .hasPriority(
@@ -1035,6 +1048,110 @@ public class Evm46ValidationSuite extends HapiSuite {
                             contractCall(
                                             INTERNAL_CALLER_CONTRACT,
                                             STATIC_CALL_EXTERNAL_FUNCTION,
+                                            asHeadlongAddress(addressBytes))
+                                    .gas(GAS_LIMIT_FOR_CALL)
+                                    .via(INNER_TXN));
+                }))
+                .then(
+                        getTxnRecord(INNER_TXN)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                        getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
+    }
+
+    private HapiSpec internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
+        return defaultHapiSpec("internalDelegateCallNonExistingMirrorAddressResultsInSuccess")
+                .given(
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(contractCall(
+                                INTERNAL_CALLER_CONTRACT,
+                                DELEGATE_CALL_EXTERNAL_FUNCTION,
+                                mirrorAddrWith(new Random().nextLong()))
+                        .gas(GAS_LIMIT_FOR_CALL)
+                        .via(INNER_TXN)
+                        .hasKnownStatus(SUCCESS))
+                .then(getTxnRecord(INNER_TXN)
+                        .logged()
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))));
+    }
+
+    private HapiSpec internalDelegateCallExistingMirrorAddressResultsInSuccess() {
+        AtomicReference<AccountID> receiverId = new AtomicReference<>();
+        return defaultHapiSpec("internalDelegateCallExistingMirrorAddressResultsInSuccess")
+                .given(
+                        cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        balanceSnapshot("initialBalance", asAccountString(receiverId.get())),
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        DELEGATE_CALL_EXTERNAL_FUNCTION,
+                                        mirrorAddrWith(receiverId.get().getAccountNum()))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via(INNER_TXN))))
+                .then(
+                        getTxnRecord(INNER_TXN)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                        getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
+    private HapiSpec internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
+        AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
+        return defaultHapiSpec("internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess")
+                .given(
+                        cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        withOpContext((spec, op) -> {
+                            final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            nonExistingNonMirrorAddress.set(Bytes.of(addressBytes));
+                        }),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> allRunFor(
+                        spec,
+                        balanceSnapshot("contractBalance", INTERNAL_CALLER_CONTRACT),
+                        contractCall(
+                                        INTERNAL_CALLER_CONTRACT,
+                                        DELEGATE_CALL_EXTERNAL_FUNCTION,
+                                        asHeadlongAddress(nonExistingNonMirrorAddress
+                                                .get()
+                                                .toArray()))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .payingWith(CUSTOM_PAYER)
+                                .via(INNER_TXN))))
+                .then(
+                        getTxnRecord(INNER_TXN)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(bigIntResult(0)))),
+                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
+                                .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
+    }
+
+    private HapiSpec internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
+        return defaultHapiSpec("internalDelegateCallExistingNonMirrorAddressResultsInSuccess")
+                .given(
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ECDSA_KEY)),
+                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
+                .when(withOpContext((spec, op) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    allRunFor(
+                            spec,
+                            balanceSnapshot("targetSnapshot", ECDSA_KEY).accountIsAlias(),
+                            contractCall(
+                                            INTERNAL_CALLER_CONTRACT,
+                                            DELEGATE_CALL_EXTERNAL_FUNCTION,
                                             asHeadlongAddress(addressBytes))
                                     .gas(GAS_LIMIT_FOR_CALL)
                                     .via(INNER_TXN));
