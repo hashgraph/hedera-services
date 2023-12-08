@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -65,10 +66,12 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
 @TestMethodOrder(OrderAnnotation.class)
+@Tag(TIME_CONSUMING)
 public class SteadyStateThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
