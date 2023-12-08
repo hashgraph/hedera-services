@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
@@ -126,6 +127,13 @@ public class HederaTracer implements HederaOperationTracer {
                 allActions.removeAll(invalidActions);
                 invalidActions.clear();
             }
+        }
+    }
+
+    @Override
+    public void traceAccountCreationResult(MessageFrame frame, Optional<ExceptionalHaltReason> haltReason) {
+        if (areActionSidecarsEnabled() && haltReason.isPresent()) {
+            popActionStack(frame).ifPresent(action -> finalizeActionFor(action, frame, frame.getState()));
         }
     }
 

@@ -18,9 +18,9 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
-import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.transaction.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
