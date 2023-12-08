@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.context;
 
-import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
+import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

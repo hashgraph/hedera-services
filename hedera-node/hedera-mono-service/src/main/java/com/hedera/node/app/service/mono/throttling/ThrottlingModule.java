@@ -23,7 +23,7 @@ import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 import dagger.Module;
 import dagger.Provides;
 import java.util.function.Supplier;

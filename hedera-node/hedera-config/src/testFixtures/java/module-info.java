@@ -7,6 +7,7 @@ module com.hedera.node.config.test.fixtures {
     requires com.swirlds.common;
     requires com.swirlds.fchashmap;
     requires com.swirlds.merkledb;
+    requires com.swirlds.platform.core;
     requires com.swirlds.virtualmap;
     requires static com.github.spotbugs.annotations;
 }

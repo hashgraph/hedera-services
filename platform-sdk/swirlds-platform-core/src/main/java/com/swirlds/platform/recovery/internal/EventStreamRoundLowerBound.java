@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.platform.system.events.ConsensusData;
 
 /**
  * A round based lower bound on an event stream.

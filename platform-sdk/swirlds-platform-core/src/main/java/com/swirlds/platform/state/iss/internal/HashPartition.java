@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.iss.internal;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.Objects;
