@@ -29,9 +29,11 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.consensus.CandidateWitness;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEvent;
@@ -52,6 +54,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -65,15 +68,17 @@ import java.util.concurrent.CountDownLatch;
  * which is a public-facing form of an event.
  */
 @ConstructableIgnored
-public class EventImpl extends EventMetadata
+public class EventImpl
         implements BaseEvent,
                 Comparable<EventImpl>,
-                PlatformEvent,
+                PlatformEvent, // TODO
                 SerializableHashable,
                 OptionalSelfSerializable<EventSerializationOptions>,
                 RunningHashable,
                 StreamAligned,
-                Timestamped {
+                Timestamped,
+                Clearable {
+
     /**
      * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
      * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a
@@ -81,10 +86,16 @@ public class EventImpl extends EventMetadata
      */
     public static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
 
-    /** The base event information, including some gossip specific information */
+    /**
+     * The base event information, including some gossip specific information
+     */
     private GossipEvent baseEvent;
-    /** Consensus data calculated for an event */
+
+    /**
+     * Consensus data calculated for an event
+     */
     private ConsensusData consensusData;
+
     /**
      * The consensus hash of this event. This hash includes all information for an event that was a result of it
      * reaching consensus. So the hash includes the consensus timestamp, the consensus order and other consensus info.
@@ -106,10 +117,14 @@ public class EventImpl extends EventMetadata
      */
     private Set<Integer> systemTransactionIndices;
 
-    /** A list of references to the system transactions in the array of all transactions */
+    /**
+     * A list of references to the system transactions in the array of all transactions
+     */
     private List<SystemTransaction> systemTransactions;
 
-    /** The number of application transactions in this round */
+    /**
+     * The number of application transactions in this round
+     */
     private int numAppTransactions = 0;
 
     /**
@@ -132,6 +147,100 @@ public class EventImpl extends EventMetadata
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
     private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
+
+    /**
+     * the self parent of this
+     */
+    private EventImpl selfParent;
+
+    /**
+     * the other parent of this
+     */
+    private EventImpl otherParent;
+
+    /**
+     * an estimate of what the consensus timestamp will be (could be a very bad guess)
+     */
+    private Instant estimatedTime;
+
+    /**
+     * has this event been cleared (because it was old and should be discarded)?
+     */
+    private boolean cleared = false;
+
+    /**
+     * is this a witness? (is round > selfParent's round, or there is no self parent?)
+     */
+    private boolean isWitness;
+
+    /**
+     * has this witness decided as famous?
+     */
+    private boolean isFamous;
+
+    /**
+     * is this both a witness and the fame election is over?
+     */
+    private boolean isFameDecided;
+
+    /**
+     * is this event a judge?
+     */
+    private boolean isJudge;
+
+    /**
+     * is this part of the consensus order yet?
+     */
+    private boolean isConsensus;
+
+    /**
+     * the local time (not consensus time) at which the event reached consensus
+     */
+    private Instant reachedConsTimestamp;
+
+    /**
+     * lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01)
+     */
+    private EventImpl[] lastSee;
+
+    /**
+     * stronglySeeP[m] is strongly-seen witness in parent round by m (memoizes function from Swirlds-TR-2020-01)
+     */
+    private EventImpl[] stronglySeeP;
+
+    /**
+     * The first witness that's a self-ancestor in the self round (memoizes function from Swirlds-TR-2020-01)
+     */
+    private EventImpl firstSelfWitnessS;
+
+    /**
+     * the first witness that's an ancestor in the self round (memoizes function from Swirlds-TR-2020-01)
+     */
+    private EventImpl firstWitnessS;
+
+    /**
+     * temporarily used during any graph algorithm that needs to mark vertices (events) already visited
+     */
+    private int mark;
+
+    /**
+     * the time at which each unique famous witness in the received round first received this event
+     */
+    private List<Instant> recTimes;
+
+    /**
+     * the created round of this event (max of parents', plus either 0 or 1. 1 if no parents. 0 if neg infinity)
+     */
+    private long roundCreated = ConsensusConstants.ROUND_UNDEFINED;
+
+    /** is there a consensus that this event is stale (no order, transactions ignored) */
+    private boolean stale;
+
+    /**
+     * an array that holds votes for witness elections. the index for each vote matches the index of the witness in the
+     * current election
+     */
+    private boolean[] votes;
 
     public EventImpl() {}
 
@@ -172,7 +281,14 @@ public class EventImpl extends EventMetadata
             final ConsensusData consensusData,
             final EventImpl selfParent,
             final EventImpl otherParent) {
-        super(selfParent, otherParent);
+
+        this.estimatedTime = Instant.now(); // until a better estimate is found, just guess the time it is now
+        // ConsensusImpl.currMark starts at 1 and counts up, so all events initially count as
+        // unmarked
+        this.mark = ConsensusConstants.EVENT_UNMARKED;
+        this.selfParent = selfParent;
+        this.otherParent = otherParent;
+
         Objects.requireNonNull(baseEvent, "baseEvent");
         Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
         Objects.requireNonNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");
@@ -238,18 +354,16 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even
-     * if it has already reached consensus. Callers are responsible for checking the consensus
-     * systemIndicesStatus of this event and using the consensus time or estimated time
-     * appropriately.
+     * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even if it has already
+     * reached consensus. Callers are responsible for checking the consensus systemIndicesStatus of this event and using
+     * the consensus time or estimated time appropriately.
      *
      * <p>Estimated consensus times are predicted only here and in Platform.estimateTime().
      *
-     * @param selfId the ID of this platform
-     * @param avgSelfCreatedTimestamp self event consensus timestamp minus time created
+     * @param selfId                    the ID of this platform
+     * @param avgSelfCreatedTimestamp   self event consensus timestamp minus time created
      * @param avgOtherReceivedTimestamp other event consensus timestamp minus time received
-     * @deprecated this is only used for SwirldState1 which we no longer support, and it did not do
-     *     any estimates
+     * @deprecated this is only used for SwirldState1 which we no longer support, and it did not do any estimates
      */
     @SuppressWarnings("unused")
     @Deprecated(forRemoval = true)
@@ -372,7 +486,7 @@ public class EventImpl extends EventMetadata
         baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getBaseEventUnhashedData());
         consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
-        super.clear();
+        clear();
 
         setDefaultValues();
         findSystemTransactions();
@@ -593,8 +707,8 @@ public class EventImpl extends EventMetadata
      * is this event the last in consensus order of all those with the same received round
      *
      * @return is this event the last in consensus order of all those with the same received round
-     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one
-     *     can be determined by looking at its position within the round
+     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one can be determined by
+     * looking at its position within the round
      */
     @Deprecated(forRemoval = true)
     public boolean isLastInRoundReceived() {
@@ -614,12 +728,8 @@ public class EventImpl extends EventMetadata
         if (getConsensusTimestamp() != null) {
             return getConsensusTimestamp();
         }
-        return super.getEstimatedTime();
+        return estimatedTime;
     }
-
-    //////////////////////////////////////////
-    //	Event interface methods
-    //////////////////////////////////////////
 
     /** {@inheritDoc} */
     @Override
@@ -763,5 +873,339 @@ public class EventImpl extends EventMetadata
             return "unhashed-event";
         }
         return getHash().toMnemonic();
+    }
+
+    /**
+     * Erase all references to other events within this event. This can be used so other events can
+     * be garbage collected, even if this one still has things pointing to it. The numEventsInMemory
+     * count is decremented here, and incremented when the event is instantiated, so it is important
+     * to ensure that this is eventually called on every event.
+     */
+    @Override
+    public void clear() {
+        if (cleared) {
+            return;
+        }
+        cleared = true;
+        EventCounter.eventCleared();
+        selfParent = null;
+        otherParent = null;
+        clearMetadata();
+    }
+
+    /**
+     * @return the self parent of this
+     */
+    public @Nullable EventImpl getSelfParent() {
+        return selfParent;
+    }
+
+    /**
+     * @param selfParent the self parent of this
+     */
+    public void setSelfParent(@Nullable final EventImpl selfParent) {
+        this.selfParent = selfParent;
+    }
+
+    /**
+     * @return the other parent of this
+     */
+    public @Nullable EventImpl getOtherParent() {
+        return otherParent;
+    }
+
+    /**
+     * @param otherParent the other parent of this
+     */
+    public void setOtherParent(@Nullable final EventImpl otherParent) {
+        this.otherParent = otherParent;
+    }
+
+    /**
+     * @param estimatedTime an estimate of what the consensus timestamp will be (could be a very bad
+     *     guess)
+     */
+    public void setEstimatedTime(@NonNull final Instant estimatedTime) {
+        this.estimatedTime = estimatedTime;
+    }
+
+    public boolean isWitness() {
+        return isWitness;
+    }
+
+    public void setWitness(final boolean witness) {
+        isWitness = witness;
+    }
+
+    public boolean isFamous() {
+        return isFamous;
+    }
+
+    public void setFamous(final boolean famous) {
+        isFamous = famous;
+    }
+
+    /**
+     * @return is this both a witness and the fame election is over?
+     */
+    public boolean isFameDecided() {
+        return isFameDecided;
+    }
+
+    /**
+     * @param fameDecided is this both a witness and the fame election is over?
+     */
+    public void setFameDecided(final boolean fameDecided) {
+        isFameDecided = fameDecided;
+    }
+
+    /**
+     * @return true if this event is a judge
+     */
+    public boolean isJudge() {
+        return isJudge;
+    }
+
+    /** Mark this event as a judge */
+    public void setJudgeTrue() {
+        isJudge = true;
+    }
+
+    /**
+     * @return is this part of the consensus order yet?
+     */
+    public boolean isConsensus() {
+        return isConsensus;
+    }
+
+    /**
+     * @param consensus is this part of the consensus order yet?
+     */
+    public void setConsensus(final boolean consensus) {
+        isConsensus = consensus;
+    }
+
+    /**
+     * @return the local time (not consensus time) at which the event reached consensus
+     */
+    public @Nullable Instant getReachedConsTimestamp() {
+        return reachedConsTimestamp;
+    }
+
+    /**
+     * @param reachedConsTimestamp the local time (not consensus time) at which the event reached
+     *     consensus
+     */
+    public void setReachedConsTimestamp(@NonNull final Instant reachedConsTimestamp) {
+        this.reachedConsTimestamp = reachedConsTimestamp;
+    }
+
+    /**
+     * @param m the member ID
+     * @return last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
+     */
+    public @Nullable EventImpl getLastSee(final int m) {
+        return lastSee[m];
+    }
+
+    /**
+     * remember event, the last ancestor created by m (memoizes lastSee function from
+     * Swirlds-TR-2020-01)
+     *
+     * @param m the member ID
+     * @param event the last seen {@link EventImpl} object created by m
+     */
+    public void setLastSee(final int m, @Nullable final EventImpl event) {
+        lastSee[m] = event;
+    }
+
+    /**
+     * Initialize the lastSee array to hold n elements (for n &ge; 0) (memoizes lastSee function
+     * from Swirlds-TR-2020-01)
+     *
+     * @param n number of members in the initial address book
+     */
+    public void initLastSee(final int n) {
+        lastSee = n == 0 ? null : new EventImpl[n];
+    }
+
+    /**
+     * @return the number of elements lastSee holds (memoizes lastSee function from
+     *     Swirlds-TR-2020-01)
+     */
+    public int sizeLastSee() {
+        return lastSee == null ? 0 : lastSee.length;
+    }
+
+    /**
+     * @param m the member ID
+     * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from
+     *     Swirlds-TR-2020-01)
+     */
+    public @Nullable EventImpl getStronglySeeP(final int m) {
+        return stronglySeeP[m];
+    }
+
+    /**
+     * remember event, the strongly-seen witness in parent round by m (memoizes stronglySeeP
+     * function from Swirlds-TR-2020-01)
+     *
+     * @param m the member ID
+     * @param event the strongly-seen witness in parent round created by m
+     */
+    public void setStronglySeeP(final int m, @Nullable final EventImpl event) {
+        stronglySeeP[m] = event;
+    }
+
+    /**
+     * Initialize the stronglySeeP array to hold n elements (for n &ge; 0) (memoizes stronglySeeP
+     * function from Swirlds-TR-2020-01)
+     *
+     * @param n number of members in AddressBook
+     */
+    public void initStronglySeeP(final int n) {
+        stronglySeeP = n == 0 ? null : new EventImpl[n];
+    }
+
+    /**
+     * @return the number of elements stronglySeeP holds (memoizes stronglySeeP function from
+     *     Swirlds-TR-2020-01)
+     */
+    public int sizeStronglySeeP() {
+        return stronglySeeP == null ? 0 : stronglySeeP.length;
+    }
+
+    /**
+     * @return The first witness that's a self-ancestor in the self round (memoizes function from
+     *     Swirlds-TR-2020-01)
+     */
+    public @Nullable EventImpl getFirstSelfWitnessS() {
+        return firstSelfWitnessS;
+    }
+
+    /**
+     * @param firstSelfWitnessS The first witness that's a self-ancestor in the self round (memoizes
+     *     function from Swirlds-TR-2020-01)
+     */
+    public void setFirstSelfWitnessS(@Nullable final EventImpl firstSelfWitnessS) {
+        this.firstSelfWitnessS = firstSelfWitnessS;
+    }
+
+    /**
+     * @return the first witness that's an ancestor in the self round (memoizes function from
+     *     Swirlds-TR-2020-01)
+     */
+    public @Nullable EventImpl getFirstWitnessS() {
+        return firstWitnessS;
+    }
+
+    /**
+     * @param firstWitnessS the first witness that's an ancestor in the self round (memoizes
+     *     function from Swirlds-TR-2020-01)
+     */
+    public void setFirstWitnessS(@Nullable final EventImpl firstWitnessS) {
+        this.firstWitnessS = firstWitnessS;
+    }
+
+    /**
+     * @return temporarily used during any graph algorithm that needs to mark vertices (events)
+     *     already visited
+     */
+    public int getMark() {
+        return mark;
+    }
+
+    /**
+     * @param mark temporarily used during any graph algorithm that needs to mark vertices (events)
+     *     already visited
+     */
+    public void setMark(final int mark) {
+        this.mark = mark;
+    }
+
+    /**
+     * @return the time at which each unique famous witness in the received round first received
+     *     this event
+     */
+    public @Nullable List<Instant> getRecTimes() {
+        return recTimes;
+    }
+
+    /**
+     * @param recTimes the time at which each unique famous witness in the received round first
+     *     received this event
+     */
+    public void setRecTimes(@Nullable final List<Instant> recTimes) {
+        this.recTimes = recTimes;
+    }
+
+    public long getRoundCreated() {
+        return roundCreated;
+    }
+
+    public void setRoundCreated(final long roundCreated) {
+        this.roundCreated = roundCreated;
+    }
+
+    public boolean isStale() {
+        return stale;
+    }
+
+    public void setStale(final boolean stale) {
+        this.stale = stale;
+    }
+
+    /**
+     * Initialize the voting array
+     *
+     * @param numWitnesses the number of witnesses we are voting on
+     */
+    public void initVoting(final int numWitnesses) {
+        if (votes == null || votes.length < numWitnesses) {
+            votes = new boolean[numWitnesses];
+            return;
+        }
+        Arrays.fill(votes, false);
+    }
+
+    /**
+     * Get this witness' vote on the witness provided
+     *
+     * @param witness the witness being voted on
+     * @return true if it's a YES vote, false if it's a NO vote
+     */
+    public boolean getVote(@NonNull final CandidateWitness witness) {
+        return votes != null && votes.length > witness.getElectionIndex() && votes[witness.getElectionIndex()];
+    }
+
+    /**
+     * Set this witness' vote on the witness provided
+     *
+     * @param witness the witness being voted on
+     * @param vote true if it's a YES vote, false if it's a NO vote
+     */
+    public void setVote(@NonNull final CandidateWitness witness, final boolean vote) {
+        this.votes[witness.getElectionIndex()] = vote;
+    }
+
+    /** Clear all metadata used to calculate consensus, this metadata changes with every round */
+    public void clearMetadata() {
+        clearJudgeFlags();
+        clearNonJudgeMetadata();
+    }
+
+    private void clearJudgeFlags() {
+        setWitness(false);
+        setFamous(false);
+        setFameDecided(false);
+        isJudge = false;
+    }
+
+    private void clearNonJudgeMetadata() {
+        initLastSee(0);
+        initStronglySeeP(0);
+        setFirstSelfWitnessS(null);
+        setFirstWitnessS(null);
+        setRecTimes(null);
     }
 }
