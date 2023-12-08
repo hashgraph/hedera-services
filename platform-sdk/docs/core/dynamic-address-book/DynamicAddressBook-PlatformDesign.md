@@ -58,7 +58,7 @@ the event creation algorithm is reset.
 ### Rotate Signing Key
 
 The `currentEffectiveRoster` contains the key used to sign the event. Rotation of the roster will update the signing
-key to use.
+key to use for signing self events.
 
 ### Node Weight Change
 
