@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.PrepareChatterEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

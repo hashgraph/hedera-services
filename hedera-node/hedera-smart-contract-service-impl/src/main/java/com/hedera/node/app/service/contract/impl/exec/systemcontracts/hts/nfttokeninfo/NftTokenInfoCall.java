@@ -90,11 +90,9 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
+        final var nftTokenInfo = nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, nativeOperations());
         return successResult(
-                NON_FUNGIBLE_TOKEN_INFO
-                        .getOutputs()
-                        .encodeElements(
-                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId)),
+                NON_FUNGIBLE_TOKEN_INFO.getOutputs().encodeElements(status.protoOrdinal(), nftTokenInfo),
                 gasRequirement);
     }
 }

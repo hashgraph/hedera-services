@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.dispatch.triggers.control;
 
-import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.platform.dispatch.types.TriggerTwo;
+import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

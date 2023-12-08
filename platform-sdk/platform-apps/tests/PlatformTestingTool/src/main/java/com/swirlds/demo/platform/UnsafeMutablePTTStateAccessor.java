@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.util.HashMap;
 import java.util.Map;

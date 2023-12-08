@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.report;
 
-import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.time.Instant;
 
 /**

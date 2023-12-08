@@ -26,9 +26,8 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,9 +55,9 @@ public class AssessmentResult {
 
         inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
 
-        htsAdjustments = new HashMap<>();
-        hbarAdjustments = new HashMap<>();
-        royaltiesPaid = new HashSet<>();
+        htsAdjustments = new LinkedHashMap<>();
+        hbarAdjustments = new LinkedHashMap<>();
+        royaltiesPaid = new LinkedHashSet<>();
         assessedCustomFees = new ArrayList<>();
     }
 
@@ -104,7 +103,7 @@ public class AssessmentResult {
 
     private Map<TokenID, Map<AccountID, Long>> buildFungibleTokenTransferMap(
             final List<TokenTransferList> tokenTransfers) {
-        final var fungibleTransfersMap = new HashMap<TokenID, Map<AccountID, Long>>();
+        final var fungibleTransfersMap = new LinkedHashMap<TokenID, Map<AccountID, Long>>();
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
@@ -121,7 +120,7 @@ public class AssessmentResult {
     }
 
     private Map<AccountID, Long> buildHbarTransferMap(@NonNull final List<AccountAmount> hbarTransfers) {
-        final var adjustments = new HashMap<AccountID, Long>();
+        final var adjustments = new LinkedHashMap<AccountID, Long>();
         for (final var aa : hbarTransfers) {
             adjustments.put(aa.accountID(), aa.amount());
         }

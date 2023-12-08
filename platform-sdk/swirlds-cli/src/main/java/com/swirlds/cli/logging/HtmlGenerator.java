@@ -25,7 +25,7 @@ import static com.swirlds.cli.logging.LogLine.TIMESTAMP_COLOR;
 import static com.swirlds.cli.logging.LogProcessingUtils.getLogLevelColor;
 import static com.swirlds.cli.logging.PlatformStatusLog.STATUS_HTML_CLASS;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
