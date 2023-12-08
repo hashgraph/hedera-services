@@ -377,6 +377,11 @@ public class TestHelpers {
     public static final AccountID OPERATOR_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(7777777L).build();
 
+    public static final Account A_NEW_ACCOUNT =
+            Account.newBuilder().accountId(A_NEW_ACCOUNT_ID).build();
+    public static final Account B_NEW_ACCOUNT =
+            Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
+
     public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
             .metadata(Bytes.wrap("Unsold"))
             .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))

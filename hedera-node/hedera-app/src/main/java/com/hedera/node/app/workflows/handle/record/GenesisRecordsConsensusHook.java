@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
@@ -33,8 +34,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,12 +50,14 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
+    private static final Comparator<Account> ACCOUNT_COMPARATOR =
+            Comparator.comparing(Account::accountId, ACCOUNT_ID_COMPARATOR);
 
-    private Map<Account, CryptoCreateTransactionBody.Builder> systemAccounts = new HashMap<>();
-    private Map<Account, CryptoCreateTransactionBody.Builder> stakingAccounts = new HashMap<>();
-    private Map<Account, CryptoCreateTransactionBody.Builder> miscAccounts = new HashMap<>();
-    private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
-    private Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccounts = new HashMap<>();
+    private SortedSet<Account> systemAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
+    private SortedSet<Account> stakingAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
+    private SortedSet<Account> miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
+    private SortedSet<Account> treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
+    private SortedSet<Account> blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
 
     /**
      * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,
@@ -75,83 +78,84 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
 
         if (!systemAccounts.isEmpty()) {
             createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
-            systemAccounts = Collections.emptyMap();
+            systemAccounts = Collections.emptySortedSet();
         }
+        log.info("Queued {} system account records with consTime {}", systemAccounts.size(), consensusTime);
 
         if (!stakingAccounts.isEmpty()) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - consensusTime.getEpochSecond();
             createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
-            stakingAccounts = Collections.emptyMap();
+            stakingAccounts = Collections.emptySortedSet();
         }
+        log.info("Queued {} staking account records with consTime {}", stakingAccounts.size(), consensusTime);
 
         if (!miscAccounts.isEmpty()) {
             createAccountRecordBuilders(miscAccounts, context, null);
-            miscAccounts = Collections.emptyMap();
+            miscAccounts = Collections.emptySortedSet();
         }
+        log.info("Queued {} misc account records with consTime {}", miscAccounts.size(), consensusTime);
 
         if (!treasuryClones.isEmpty()) {
             createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
-            treasuryClones = Collections.emptyMap();
+            treasuryClones = Collections.emptySortedSet();
         }
+        log.info("Queued {} treasury clone account records with consTime {}", treasuryClones.size(), consensusTime);
 
         if (!blocklistAccounts.isEmpty()) {
             createAccountRecordBuilders(blocklistAccounts, context, null);
-            blocklistAccounts = Collections.emptyMap();
+            blocklistAccounts = Collections.emptySortedSet();
         }
+        log.info("Queued {} blocklist account records with consTime {}", blocklistAccounts.size(), consensusTime);
     }
 
     @Override
-    public void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-        systemAccounts.putAll(requireNonNull(accounts));
+    public void systemAccounts(@NonNull final SortedSet<Account> accounts) {
+        systemAccounts.addAll(requireNonNull(accounts));
     }
 
     @Override
-    public void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-        stakingAccounts.putAll(requireNonNull(accounts));
+    public void stakingAccounts(@NonNull final SortedSet<Account> accounts) {
+        stakingAccounts.addAll(requireNonNull(accounts));
     }
 
     @Override
-    public void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-        miscAccounts.putAll(requireNonNull(accounts));
+    public void miscAccounts(@NonNull final SortedSet<Account> accounts) {
+        miscAccounts.addAll(requireNonNull(accounts));
     }
 
     @Override
-    public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-        treasuryClones.putAll(requireNonNull(accounts));
+    public void treasuryClones(@NonNull final SortedSet<Account> accounts) {
+        treasuryClones.addAll(requireNonNull(accounts));
     }
 
     @Override
-    public void blocklistAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-        blocklistAccounts.putAll(requireNonNull(accounts));
+    public void blocklistAccounts(@NonNull final SortedSet<Account> accounts) {
+        blocklistAccounts.addAll(requireNonNull(accounts));
     }
 
     private void createAccountRecordBuilders(
-            @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
+            @NonNull final SortedSet<Account> map,
             @NonNull final TokenContext context,
             @Nullable final String recordMemo) {
         createAccountRecordBuilders(map, context, recordMemo, null);
     }
 
     private void createAccountRecordBuilders(
-            @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
+            @NonNull final SortedSet<Account> accts,
             @NonNull final TokenContext context,
             @Nullable final String recordMemo,
             @Nullable final Long overrideAutoRenewPeriod) {
-        final var orderedAccts = map.keySet().stream()
-                .sorted(Comparator.comparingLong(acct -> acct.accountId().accountNum()))
-                .toList();
-        for (final Account key : orderedAccts) {
+        for (final Account account : accts) {
             // we create preceding records on genesis for each system account created.
             // This is an exception and should not fail with MAX_CHILD_RECORDS_EXCEEDED
             final var recordBuilder =
                     context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
-            final var accountId = requireNonNull(key.accountId());
-            recordBuilder.accountID(accountId);
+            recordBuilder.accountID(account.accountId());
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);
             }
 
-            var txnBody = map.get(key);
+            var txnBody = newCryptoCreate(account);
             if (overrideAutoRenewPeriod != null) {
                 txnBody.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
             }
@@ -159,7 +163,20 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
                     Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
             recordBuilder.transaction(txnBuilder.build());
 
-            log.debug("Queued synthetic CryptoCreate for {} account {}", recordMemo, accountId);
+            log.debug("Queued synthetic CryptoCreate for {} account {}", recordMemo, account);
         }
+    }
+
+    private static CryptoCreateTransactionBody.Builder newCryptoCreate(@NonNull final Account account) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .key(account.key())
+                .memo(account.memo())
+                .declineReward(account.declineReward())
+                .receiverSigRequired(account.receiverSigRequired())
+                .autoRenewPeriod(Duration.newBuilder()
+                        .seconds(account.autoRenewSeconds())
+                        .build())
+                .initialBalance(account.tinybarBalance())
+                .alias(account.alias());
     }
 }
