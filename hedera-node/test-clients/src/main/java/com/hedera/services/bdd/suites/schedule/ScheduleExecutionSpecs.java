@@ -1681,7 +1681,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    // @todo('9974') Need to work out why this generates INVALID_SIGNATURE
+    @HapiTest
     private HapiSpec executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
         long noBalance = 0L;
         long transferAmount = 1;

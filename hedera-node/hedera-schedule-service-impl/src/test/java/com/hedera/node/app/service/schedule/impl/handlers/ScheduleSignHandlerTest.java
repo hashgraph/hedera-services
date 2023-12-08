@@ -176,7 +176,6 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final Set<Key> combinedSet = new LinkedHashSet<>(5);
         combinedSet.addAll(expectedKeys.requiredNonPayerKeys());
         combinedSet.addAll(expectedKeys.optionalNonPayerKeys());
-        combinedSet.add(expectedKeys.payerKey());
         verifySignatorySet(original, combinedSet);
     }
 
@@ -200,8 +199,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.body()).willReturn(signTransaction);
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
         // for signature verification to be in-between, the "Answer" needs to be "valid" for only some required keys
-        // We leave out admin key and scheduler key from the "valid" keys for that reason.
-        final Set<Key> acceptedKeys = Set.of(payerKey, optionKey, otherKey);
+        // We leave out "other" key from the "valid" keys for that reason.
+        final Set<Key> acceptedKeys = Set.of(payerKey, optionKey);
         final TestTransactionKeys accepted = new TestTransactionKeys(payerKey, acceptedKeys, Collections.emptySet());
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
         given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
