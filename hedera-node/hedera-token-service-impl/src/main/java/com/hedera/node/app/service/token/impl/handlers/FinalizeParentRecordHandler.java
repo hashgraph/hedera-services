@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -85,14 +86,21 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
         // Hbar changes from transaction including staking rewards
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
-        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
+        final var tokenChanges = tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.FUNGIBLE_COMMON);
         final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
+
+        if (nftChanges.isEmpty()) {
+            final var nonFungibleTokenChanges =
+                    tokenChangesFrom(writableTokenRelStore, tokenStore, TokenType.NON_FUNGIBLE_UNIQUE);
+            nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
+        }
+
         if (context.hasChildRecords()) {
             // All the above changes maps are mutable
-            deductChangesFromChildRecords(context, fungibleChanges, nftChanges, hbarChanges);
+            deductChangesFromChildRecords(context, tokenChanges, nftChanges, hbarChanges);
             // In the current system a parent transaction that has child transactions cannot
             // *itself* cause any net fungible or NFT transfers; fail fast if that happens
-            validateTrue(fungibleChanges.isEmpty(), FAIL_INVALID);
+            validateTrue(tokenChanges.isEmpty(), FAIL_INVALID);
             validateTrue(nftChanges.isEmpty(), FAIL_INVALID);
         }
         if (!hbarChanges.isEmpty()) {
@@ -101,9 +109,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                     .accountAmounts(asAccountAmounts(hbarChanges))
                     .build());
         }
-        final var hasTokenTransferLists = !fungibleChanges.isEmpty() || !nftChanges.isEmpty();
+        final var hasTokenTransferLists = !tokenChanges.isEmpty() || !nftChanges.isEmpty();
         if (hasTokenTransferLists) {
-            final var tokenTransferLists = asTokenTransferListFrom(fungibleChanges);
+            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges);
             final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
             tokenTransferLists.addAll(nftTokenTransferLists);
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
