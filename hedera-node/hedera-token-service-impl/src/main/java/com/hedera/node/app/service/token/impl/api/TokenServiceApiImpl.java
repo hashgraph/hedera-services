@@ -274,11 +274,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             throw new IllegalArgumentException(
                     "Overflow on transfer of " + amount + " tinybars from " + fromId + " to " + toId);
         }
-        accountStore.put(from.copyBuilder()
-                .tinybarBalance(from.tinybarBalance() - amount)
-                .build());
-        accountStore.put(
-                to.copyBuilder().tinybarBalance(to.tinybarBalance() + amount).build());
+        if (!from.accountIdOrThrow().equals(to.accountIdOrThrow())) {
+            accountStore.put(from.copyBuilder()
+                    .tinybarBalance(from.tinybarBalance() - amount)
+                    .build());
+            accountStore.put(to.copyBuilder()
+                    .tinybarBalance(to.tinybarBalance() + amount)
+                    .build());
+        }
     }
 
     @Override
