@@ -79,6 +79,7 @@ public class Evm38ValidationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm38ValidationSuite.class);
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
+    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS = "evm.allowCallsToNonContractAccounts";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_038 = "v0.38";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
@@ -124,6 +125,7 @@ public class Evm38ValidationSuite extends HapiSuite {
                 .given(
                         overriding(DYNAMIC_EVM_PROPERTY, "true"),
                         overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
+                        overriding(EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS, "false"),
                         withOpContext(
                                 (spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.5555"))))
                 .when()

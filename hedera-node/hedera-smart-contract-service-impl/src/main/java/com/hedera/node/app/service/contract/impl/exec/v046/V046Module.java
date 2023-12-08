@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.v045;
+package com.hedera.node.app.service.contract.impl.exec.v046;
 
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.REQUIRE_CODE_DEPOSIT_TO_SUCCEED;
@@ -73,13 +73,13 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
- * Provides the Services 0.45 EVM implementation, which consists of Shanghai operations and
+ * Provides the Services 0.46 EVM implementation, which consists of Shanghai operations and
  * Instanbul precompiles plus the Hedera gas calculator, system contracts, and operations
- * as they were configured in the 0.45 release (with treatment of calls to non-existing addresses
+ * as they were configured in the 0.46 release (with treatment of calls to non-existing addresses
  * returning successful results in order to enhance EVM equivalence).
  */
 @Module
-public interface V045Module {
+public interface V046Module {
     @Provides
     @Singleton
     @ServicesV046
@@ -144,7 +144,7 @@ public interface V045Module {
 
     @Binds
     @ServicesV046
-    FeatureFlags bindFeatureFlags(Version045FeatureFlags featureFlags);
+    FeatureFlags bindFeatureFlags(Version046FeatureFlags featureFlags);
 
     @Binds
     @ServicesV046

@@ -34,7 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule
 import com.hedera.node.app.service.contract.impl.exec.v030.V030Module;
 import com.hedera.node.app.service.contract.impl.exec.v034.V034Module;
 import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
-import com.hedera.node.app.service.contract.impl.exec.v045.V045Module;
+import com.hedera.node.app.service.contract.impl.exec.v046.V046Module;
 import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
@@ -50,7 +50,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * first EVM version we explicitly support (which is {@code v0.30}).
  */
 @Module(
-        includes = {V030Module.class, V034Module.class, V038Module.class, V045Module.class, ProcessorModule.class},
+        includes = {V030Module.class, V034Module.class, V038Module.class, V046Module.class, ProcessorModule.class},
         subcomponents = {TransactionComponent.class, QueryComponent.class})
 public interface ContractServiceModule {
     @Binds
@@ -79,5 +79,5 @@ public interface ContractServiceModule {
     @IntoMap
     @Singleton
     @ServicesVersionKey(VERSION_046)
-    TransactionProcessor bindV045Processor(@ServicesV046 @NonNull final TransactionProcessor processor);
+    TransactionProcessor bindV046Processor(@ServicesV046 @NonNull final TransactionProcessor processor);
 }

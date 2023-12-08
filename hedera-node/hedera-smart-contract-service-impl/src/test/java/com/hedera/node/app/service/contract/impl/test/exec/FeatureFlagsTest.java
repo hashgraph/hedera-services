@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.exec.v045.Version045FeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.v046.Version046FeatureFlags;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -66,7 +66,7 @@ class FeatureFlagsTest {
 
     @Test
     void isAllowCallsToNonContractAccountsEnabledGrandfatherTest() {
-        final var subject = new Version045FeatureFlags();
+        final var subject = new Version046FeatureFlags();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("contracts.evm.nonExtantContractsFail", 1000L)
                 .getOrCreateConfig();

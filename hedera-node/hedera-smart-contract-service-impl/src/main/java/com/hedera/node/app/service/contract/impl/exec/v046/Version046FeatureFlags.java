@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.v045;
+package com.hedera.node.app.service.contract.impl.exec.v046;
 
 import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
 import com.hedera.node.config.data.ContractsConfig;
@@ -25,9 +25,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class Version045FeatureFlags extends Version034FeatureFlags {
+public class Version046FeatureFlags extends Version034FeatureFlags {
     @Inject
-    public Version045FeatureFlags() {
+    public Version046FeatureFlags() {
         // Dagger2
     }
 
