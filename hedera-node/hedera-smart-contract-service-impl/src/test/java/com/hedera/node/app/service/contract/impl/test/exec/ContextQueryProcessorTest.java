@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -67,9 +66,6 @@ class ContextQueryProcessorTest {
 
     @Mock
     private Supplier<HederaWorldUpdater> feesOnlyUpdater;
-
-    @Mock
-    private Map<HederaEvmVersion, TransactionProcessor> processors;
 
     @Test
     void callsComponentInfraAsExpectedForValidQuery() {
