@@ -17,7 +17,11 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -26,23 +30,38 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,6 +79,8 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
     private static final String CLIENT_2 = "Client2";
     private static final String TREASURY = "treasury";
     private static final String UNIQUE_TOKEN_A = "TokenA";
+    public static final String TOKENS = " tokens";
+    public static final String CREATION = "creation";
 
     public static void main(String... args) {
         new Hip17UnhappyAccountsSuite().runSuiteSync();
@@ -71,7 +92,9 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
             /* Expired Account */
             uniqueTokenOperationsFailForExpiredAccount(),
             /* AutoRemoved Account */
-            uniqueTokenOperationsFailForAutoRemovedAccount()
+            uniqueTokenOperationsFailForAutoRemovedAccount(),
+            /* Expired Token */
+            dissociationFromExpiredTokensAsExpected()
         });
     }
 
@@ -159,6 +182,90 @@ public class TokenUnhappyAccountsSuite extends HapiSuite {
                         revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L))
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+    }
+
+    // Enable when token expiration is implemented
+    // @HapiTest
+    public HapiSpec dissociationFromExpiredTokensAsExpected() {
+        final String treasury = "accountA";
+        final String frozenAccount = "frozen";
+        final String unfrozenAccount = "unfrozen";
+        final String expiringToken = "expiringToken";
+        long lifetimeSecs = 10;
+
+        AtomicLong now = new AtomicLong();
+        return defaultHapiSpec("DissociationFromExpiredTokensAsExpected")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        cryptoCreate(treasury),
+                        cryptoCreate(frozenAccount).via(CREATION),
+                        cryptoCreate(unfrozenAccount).via(CREATION),
+                        withOpContext((spec, opLog) -> {
+                            var subOp = getTxnRecord(CREATION);
+                            allRunFor(spec, subOp);
+                            var record = subOp.getResponseRecord();
+                            now.set(record.getConsensusTimestamp().getSeconds());
+                        }),
+                        sourcing(() -> tokenCreate(expiringToken)
+                                .freezeKey(FREEZE_KEY)
+                                .freezeDefault(true)
+                                .treasury(treasury)
+                                .initialSupply(1000L)
+                                .expiry(now.get() + lifetimeSecs)))
+                .when(
+                        tokenAssociate(unfrozenAccount, expiringToken),
+                        tokenAssociate(frozenAccount, expiringToken),
+                        tokenUnfreeze(expiringToken, unfrozenAccount),
+                        cryptoTransfer(moving(100L, expiringToken).between(treasury, unfrozenAccount)))
+                .then(
+                        getAccountBalance(treasury).hasTokenBalance(expiringToken, 900L),
+                        sleepFor(lifetimeSecs * 1_000L),
+                        tokenDissociate(treasury, expiringToken).hasKnownStatus(ACCOUNT_IS_TREASURY),
+                        tokenDissociate(unfrozenAccount, expiringToken).via("dissociateTxn"),
+                        getTxnRecord("dissociateTxn")
+                                .hasPriority(recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
+                                    @Override
+                                    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
+                                        return tokenXfers -> {
+                                            try {
+                                                assertEquals(
+                                                        1,
+                                                        tokenXfers.size(),
+                                                        "Wrong number of" + TOKENS + " transferred!");
+                                                TokenTransferList xfers = tokenXfers.get(0);
+                                                assertEquals(
+                                                        spec.registry().getTokenID(expiringToken),
+                                                        xfers.getToken(),
+                                                        "Wrong token" + " transferred!");
+                                                AccountAmount toTreasury = xfers.getTransfers(0);
+                                                assertEquals(
+                                                        spec.registry().getAccountID(treasury),
+                                                        toTreasury.getAccountID(),
+                                                        "Treasury should" + " come" + " first!");
+                                                assertEquals(
+                                                        100L,
+                                                        toTreasury.getAmount(),
+                                                        "Treasury should" + " get 100" + TOKENS + " back!");
+                                                AccountAmount fromAccount = xfers.getTransfers(1);
+                                                assertEquals(
+                                                        spec.registry().getAccountID(unfrozenAccount),
+                                                        fromAccount.getAccountID(),
+                                                        "Account should" + " come" + " second!");
+                                                assertEquals(
+                                                        -100L,
+                                                        fromAccount.getAmount(),
+                                                        "Account should" + " send 100" + TOKENS + " back!");
+                                            } catch (Exception error) {
+                                                return List.of(error);
+                                            }
+                                            return Collections.emptyList();
+                                        };
+                                    }
+                                })),
+                        getAccountBalance(treasury).hasTokenBalance(expiringToken, 1000L),
+                        getAccountInfo(frozenAccount)
+                                .hasToken(relationshipWith(expiringToken).freeze(Frozen)),
+                        tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
     @Override

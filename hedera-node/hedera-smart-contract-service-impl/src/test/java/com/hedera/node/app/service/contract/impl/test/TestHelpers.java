@@ -173,7 +173,7 @@ public class TestHelpers {
     public static final long BESU_MAX_REFUND_QUOTIENT = 2;
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
-    public static final Bytes INITCODE = Bytes.wrap("60a06040526000600b55".getBytes());
+    public static final Bytes INITCODE = Bytes.wrap("0060a06040526000600b55".getBytes());
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     public static final Bytes CONSTRUCTOR_PARAMS = Bytes.wrap(new byte[] {2, 3, 2, 3, 2, 3, 2, 3, 2, 3});
     public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
@@ -376,6 +376,11 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(919191L).build();
     public static final AccountID OPERATOR_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(7777777L).build();
+
+    public static final Account A_NEW_ACCOUNT =
+            Account.newBuilder().accountId(A_NEW_ACCOUNT_ID).build();
+    public static final Account B_NEW_ACCOUNT =
+            Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).build();
 
     public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
             .metadata(Bytes.wrap("Unsold"))

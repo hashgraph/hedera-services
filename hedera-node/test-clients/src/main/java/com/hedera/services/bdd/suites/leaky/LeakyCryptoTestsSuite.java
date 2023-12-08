@@ -303,6 +303,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .gas(gasToOffer)
                                 .payingWith(civilian)
                                 .balance(maxSendable.get())
+                                // because this fails depending on the previous operation reaching
+                                // consensus before the current operation or after, since we have added
+                                // deferStatusResolution
+                                .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE)
                                 .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)));
     }
 

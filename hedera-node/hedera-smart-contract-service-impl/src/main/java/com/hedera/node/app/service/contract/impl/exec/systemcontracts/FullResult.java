@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
@@ -52,6 +53,12 @@ public record FullResult(
 
     public boolean isRefundGas() {
         return result.isRefundGas();
+    }
+
+    public void recordInsufficientGas() {
+        if (recordBuilder != null) {
+            recordBuilder.status(INSUFFICIENT_GAS);
+        }
     }
 
     public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
@@ -115,5 +122,10 @@ public record FullResult(
                 PrecompiledContract.PrecompileContractResult.success(Bytes.wrap(encoded.array())),
                 gasRequirement,
                 null);
+    }
+
+    public static FullResult haltResult(final long gasRequirement) {
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.empty()), gasRequirement, null);
     }
 }
