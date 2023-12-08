@@ -242,6 +242,8 @@ public class EventImpl
      */
     private boolean[] votes;
 
+    // TODO can the constructors be simplified at all?
+
     public EventImpl() {}
 
     public EventImpl(final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
