@@ -74,7 +74,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
  * Provides the Services 0.38 EVM implementation, which consists of Shanghai operations and
- * Instanbul precompiles plus the Hedera gas calculator, system contracts, and operations as they
+ * Istanbul precompiles plus the Hedera gas calculator, system contracts, and operations as they
  * were configured in the 0.38 release (with both the option for lazy creation, and with special
  * treatment to treat system addresses in a more legible way across a few types of operations).
  */

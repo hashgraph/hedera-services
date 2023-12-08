@@ -71,7 +71,7 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
- * Provides the Services 0.30 EVM implementation, which consists of London operations and Instanbul
+ * Provides the Services 0.30 EVM implementation, which consists of London operations and Istanbul
  * precompiles plus the Hedera gas calculator, system contracts, and operations as they were
  * configured in the 0.30 release (in particular, without lazy creation and without special
  * treatment to make system addresses "invisible").
