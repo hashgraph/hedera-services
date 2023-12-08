@@ -179,8 +179,8 @@ public abstract class HederaEvmTxProcessor {
         }
     }
 
-    public void setupFields(final boolean contractCreation) {
-        this.intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+    public void setupFields(final Bytes payload, final boolean contractCreation) {
+        this.intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         this.updater = worldState.updater();
         this.coinbase = dynamicProperties.fundingAccountAddress();
     }
