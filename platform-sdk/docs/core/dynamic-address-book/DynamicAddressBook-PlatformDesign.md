@@ -45,7 +45,7 @@ This change will modify consensus weight for the network and the event creation 
 
 Need to buffer the latest events in each round. The event creator can build on top of any event that has a
 birth round that is less than or equal to the event creator's current round. Events that have a birth round higher
-than the current round need to be buffered before reaching the event creator.
+than the pending round need to be buffered before reaching the event creator.
 
 Buffer: To ensure that the birth round of the child created is never less than the birth round of the parent,
 Only events that have a birthRound less than or equal to the event creator's current round are let through.
