@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
@@ -386,7 +387,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             }
         }
         final var status = nativeOperations.createHollowAccount(tuweniToPbjBytes(address));
-        if (status != OK) {
+        if (status != SUCCESS) {
             return Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
         }
         return Optional.empty();
