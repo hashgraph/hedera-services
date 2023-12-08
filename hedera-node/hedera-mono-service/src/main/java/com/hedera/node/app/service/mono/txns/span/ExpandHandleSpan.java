@@ -22,10 +22,10 @@ import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.Transaction;
 
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
