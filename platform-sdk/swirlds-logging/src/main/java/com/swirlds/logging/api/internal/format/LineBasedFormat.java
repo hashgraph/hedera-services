@@ -42,7 +42,7 @@ public class LineBasedFormat {
     /**
      * The formatter for the timestamp.
      */
-    private static final DateTimeFormatter formatter =
+    private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
 
     /**
@@ -151,7 +151,7 @@ public class LineBasedFormat {
      */
     private static String timestampAsString(long timestamp) {
         try {
-            return "%-26s".formatted(formatter.format(Instant.ofEpochMilli(timestamp)));
+            return "%-26s".formatted(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
             return "BROKEN-TIMESTAMP          ";

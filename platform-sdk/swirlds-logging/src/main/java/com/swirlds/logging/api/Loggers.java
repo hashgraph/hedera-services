@@ -23,8 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class provides access to the {@link Logger} instances. The class is the entry point to the logging system. It is
- * a factory for {@link Logger} instances. Do not mix this class up with factories for other logging libraries it does
- * not have {@code factory} in the name.
+ * a factory for {@link Logger} instances. To not mix it up with other logger factories we decided to use Loggers as a
+ * name that is not used in any other logging framework.
  */
 public final class Loggers {
 
