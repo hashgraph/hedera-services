@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event;
+package com.swirlds.common.system.events;
 
 import com.swirlds.common.system.NodeId;
 
@@ -35,4 +35,6 @@ public final class EventConstants {
     public static final NodeId CREATOR_ID_UNDEFINED = NodeId.UNDEFINED_NODE_ID;
     /** the smallest round an event can belong to */
     public static final long MINIMUM_ROUND_CREATED = 1;
+    /** the round number to represent that the birth round is undefined */
+    public static final long BIRTH_ROUND_UNDEFINED = -1;
 }
