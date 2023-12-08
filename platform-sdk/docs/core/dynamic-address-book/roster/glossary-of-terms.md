@@ -28,7 +28,7 @@ round` - `rounds non-ancient`.
 
 ### Non-Ancient Event Window
 
-Specifies the window of events that are being considered in consensus.  The window specified the following:
+Specifies the window of events that are being considered in consensus.  The window specifies the following:
 * `latestConsensusRound` - the latest round that has reached consensus.
 * `minRoundNonAncient` - the minimum round that is considered non-ancient. 
 
