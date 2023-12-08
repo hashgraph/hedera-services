@@ -32,8 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A configuration that can be used to configure the logging levels of loggers. This class supports to define levels for
- * packages or classes. The configuration is read from the {@link Configuration} object.
+ * This configuration class enables the customization of logging levels for loggers, allowing users to specify levels for either packages or individual classes. The configuration is read from the {@link Configuration} object.
  * <p>
  * Like for example in spring boot a configuration like this can be used:
  * <p>
