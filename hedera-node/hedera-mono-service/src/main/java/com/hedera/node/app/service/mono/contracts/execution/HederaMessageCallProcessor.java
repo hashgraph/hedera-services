@@ -43,7 +43,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -155,7 +154,5 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
         final var wrappedHaltReason = Optional.of(haltReason);
         frame.setExceptionalHaltReason(wrappedHaltReason);
         operationTracer.traceAccountCreationResult(frame, wrappedHaltReason);
-        final var result = new Operation.OperationResult(frame.getRemainingGas(), haltReason);
-        operationTracer.tracePostExecution(frame, result);
     }
 }
