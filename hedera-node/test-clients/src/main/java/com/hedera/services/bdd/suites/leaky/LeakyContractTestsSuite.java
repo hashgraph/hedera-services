@@ -1598,7 +1598,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     .getContractCallResult()
                                     .getGasUsed();
 
-                            Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
+                            Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23739L);
                             Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
                         }),
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));

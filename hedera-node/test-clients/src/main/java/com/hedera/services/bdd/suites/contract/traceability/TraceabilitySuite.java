@@ -1748,7 +1748,8 @@ public class TraceabilitySuite extends HapiSuite {
                                 BigInteger.TWO),
                         contractCustomCreate(
                                         TRACEABILITY, SECOND, BigInteger.ZERO, BigInteger.ZERO, BigInteger.valueOf(12))
-                                .via(SECOND_CREATE_TXN),
+                                .via(SECOND_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 SECOND_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY + SECOND)
@@ -1788,7 +1789,8 @@ public class TraceabilitySuite extends HapiSuite {
                                 BigInteger.valueOf(12)),
                         contractCustomCreate(
                                         TRACEABILITY, THIRD, BigInteger.valueOf(4), BigInteger.ONE, BigInteger.ZERO)
-                                .via(THIRD_CREATE_TXN),
+                                .via(THIRD_CREATE_TXN)
+                                .gas(500_000L),
                         expectContractStateChangesSidecarFor(
                                 THIRD_CREATE_TXN,
                                 List.of(StateChange.stateChangeFor(TRACEABILITY + THIRD)
