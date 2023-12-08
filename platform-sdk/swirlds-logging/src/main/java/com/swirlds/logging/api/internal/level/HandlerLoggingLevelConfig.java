@@ -99,7 +99,7 @@ public class HandlerLoggingLevelConfig {
      * Creates a new root configuration based on the given configuration.
      * @param configuration The configuration.
      */
-    public HandlerLoggingLevelConfig(@NonNull Configuration configuration) {
+    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration) {
         this(configuration, null);
     }
 
