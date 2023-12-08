@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.crypto;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.system.address.AddressBook;

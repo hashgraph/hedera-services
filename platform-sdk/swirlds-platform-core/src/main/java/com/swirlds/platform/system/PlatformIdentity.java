@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 

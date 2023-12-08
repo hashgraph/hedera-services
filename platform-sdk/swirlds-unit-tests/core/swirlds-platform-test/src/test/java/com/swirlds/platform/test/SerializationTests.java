@@ -19,10 +19,10 @@ package com.swirlds.platform.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;

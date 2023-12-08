@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common;
+package com.swirlds.common.platform;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

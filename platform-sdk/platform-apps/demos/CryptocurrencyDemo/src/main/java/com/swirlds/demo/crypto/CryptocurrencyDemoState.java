@@ -26,11 +26,11 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;

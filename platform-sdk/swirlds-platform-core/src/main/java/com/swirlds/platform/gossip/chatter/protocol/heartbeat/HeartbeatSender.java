@@ -17,8 +17,8 @@
 package com.swirlds.platform.gossip.chatter.protocol.heartbeat;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.events;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 
 public final class EventConstants {
 

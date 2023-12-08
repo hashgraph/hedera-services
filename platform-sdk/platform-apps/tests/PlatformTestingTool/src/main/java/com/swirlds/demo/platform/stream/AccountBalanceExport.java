@@ -16,9 +16,9 @@
 
 package com.swirlds.demo.platform.stream;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;

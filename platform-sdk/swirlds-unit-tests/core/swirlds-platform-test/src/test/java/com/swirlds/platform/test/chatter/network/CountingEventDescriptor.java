@@ -18,10 +18,10 @@ package com.swirlds.platform.test.chatter.network;
 
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

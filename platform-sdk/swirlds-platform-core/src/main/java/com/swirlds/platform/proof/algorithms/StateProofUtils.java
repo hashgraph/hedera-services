@@ -18,8 +18,8 @@ package com.swirlds.platform.proof.algorithms;
 
 import static com.swirlds.common.crypto.DigestType.SHA_384;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.proof.SignatureVerifier;
 import com.swirlds.platform.proof.tree.StateProofInternalNode;
 import com.swirlds.platform.proof.tree.StateProofNode;

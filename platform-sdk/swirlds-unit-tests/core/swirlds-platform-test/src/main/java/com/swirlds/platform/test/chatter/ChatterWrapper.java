@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.chatter;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;

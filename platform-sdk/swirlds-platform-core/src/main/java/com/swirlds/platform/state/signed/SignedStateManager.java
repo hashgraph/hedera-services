@@ -18,9 +18,9 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;

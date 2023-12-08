@@ -20,10 +20,10 @@ import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;

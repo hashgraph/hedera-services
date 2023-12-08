@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gossip;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;

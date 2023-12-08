@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.chatter;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

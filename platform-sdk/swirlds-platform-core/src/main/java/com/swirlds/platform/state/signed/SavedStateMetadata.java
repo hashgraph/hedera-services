@@ -36,9 +36,9 @@ import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_WEIGHT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;

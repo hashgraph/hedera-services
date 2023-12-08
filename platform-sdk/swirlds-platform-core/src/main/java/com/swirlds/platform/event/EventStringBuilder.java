@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEvent;

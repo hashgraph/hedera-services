@@ -22,8 +22,8 @@ import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.printHeader;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.formatting.TextTable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.platform.system.events.EventDescriptor;

@@ -18,8 +18,8 @@ package com.swirlds.platform.test.components;
 
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;

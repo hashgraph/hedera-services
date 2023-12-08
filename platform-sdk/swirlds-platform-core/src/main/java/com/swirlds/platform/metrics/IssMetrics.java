@@ -18,11 +18,11 @@ package com.swirlds.platform.metrics;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;

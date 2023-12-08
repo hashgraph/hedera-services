@@ -35,10 +35,10 @@ import static com.swirlds.cli.logging.LogProcessingUtils.parseTimestamp;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.formatting.TextEffect;
 import com.swirlds.common.formatting.UnitFormat;
 import com.swirlds.common.formatting.UnitFormatter;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

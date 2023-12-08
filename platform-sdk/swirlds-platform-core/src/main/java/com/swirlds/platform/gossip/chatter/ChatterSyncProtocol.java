@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gossip.chatter;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.FallenBehindManager;

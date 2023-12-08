@@ -20,7 +20,7 @@ import com.hedera.node.app.annotations.CommonExecutor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.platform.system.Platform;
 import dagger.Binds;

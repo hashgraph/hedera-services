@@ -18,7 +18,7 @@ package com.swirlds.platform.test.sync;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;

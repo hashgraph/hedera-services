@@ -19,11 +19,11 @@ package com.swirlds.platform.system.events;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;

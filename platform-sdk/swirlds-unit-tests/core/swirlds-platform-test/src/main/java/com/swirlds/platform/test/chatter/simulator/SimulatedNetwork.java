@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;

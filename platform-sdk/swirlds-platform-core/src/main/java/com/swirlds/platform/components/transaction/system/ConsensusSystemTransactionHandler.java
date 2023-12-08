@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.SystemTransaction;

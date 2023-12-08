@@ -18,10 +18,10 @@ package com.swirlds.common.test.fixtures;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;

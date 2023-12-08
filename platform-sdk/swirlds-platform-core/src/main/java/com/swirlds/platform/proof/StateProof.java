@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.proof;
 
-import com.swirlds.common.NodeId;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -24,6 +23,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.proof.algorithms.NodeSignature;
 import com.swirlds.platform.proof.algorithms.StateProofSerialization;

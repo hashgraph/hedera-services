@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.state.forensics;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.state.notifications.IssListener;

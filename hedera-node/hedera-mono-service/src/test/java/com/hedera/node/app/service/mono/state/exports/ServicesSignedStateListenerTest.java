@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.state.notifications.NewSignedStateNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Instant;

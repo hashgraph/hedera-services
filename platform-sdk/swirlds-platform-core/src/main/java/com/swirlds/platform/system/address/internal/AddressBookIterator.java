@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.address.internal;
 
-import com.swirlds.common.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
