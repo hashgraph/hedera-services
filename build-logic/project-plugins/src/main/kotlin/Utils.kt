@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.tasks.testing.TestDescriptor
@@ -56,7 +56,7 @@ class Utils {
         }
 
         @JvmStatic
-        fun Project.testLogger() = object : TestListener {
+        fun Task.testLogger() = object : TestListener {
             override fun beforeSuite(suite: TestDescriptor) {
                 logger.lifecycle(
                     "=====> Starting Suite: " + suite.displayName + " <====="
