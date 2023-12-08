@@ -65,6 +65,7 @@ public class StakingPeriodTimeHook {
      * to catch up on updates and distributions when first coming online.
      */
     void process(@NonNull final SavepointStackImpl stack, @NonNull final TokenContext tokenContext) {
+        requireNonNull(stack, "stack must not be null");
         requireNonNull(tokenContext, "tokenContext must not be null");
         final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
         final var consensusTimeOfLastHandledTxn = blockStore.getLastBlockInfo().consTimeOfLastHandledTxn();
@@ -83,7 +84,7 @@ public class StakingPeriodTimeHook {
                 stack.commitFullStack();
             } catch (final Exception e) {
                 // If anything goes wrong, we log the error and continue
-                logger.error("Failed to process staking period time hook", e);
+                logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
 
@@ -93,7 +94,7 @@ public class StakingPeriodTimeHook {
                 stack.commitFullStack();
             } catch (final Exception e) {
                 // If anything goes wrong, we log the error and continue
-                logger.error("Failed to update midnight rates", e);
+                logger.error("CATASTROPHIC failure updating midnight rates", e);
                 stack.rollbackFullStack();
             }
         }
