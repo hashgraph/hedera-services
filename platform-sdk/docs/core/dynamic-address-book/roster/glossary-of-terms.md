@@ -14,8 +14,7 @@ consensus round + 1)
 
 ### Rounds Non-Ancient
 
-A setting. The number of rounds that have reached consensus that are not ancient.  Currently set to 26 in all 
-environments. 
+A setting. The number of rounds that have reached consensus that are not ancient.
 
 ### Ancient
 
