@@ -46,4 +46,3 @@ prometheus.endpointEnabled,               false
                                           #############################
 
 loadKeysFromPfxFiles,                     false
-event.useLegacyIntake,                    true
