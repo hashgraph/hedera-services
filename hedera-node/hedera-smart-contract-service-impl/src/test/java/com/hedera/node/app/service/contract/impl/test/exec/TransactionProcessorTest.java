@@ -55,10 +55,10 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import com.hedera.hapi.node.state.token.Account;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
@@ -287,7 +287,8 @@ class TransactionProcessorTest {
         given(worldUpdater.enhancement()).willReturn(enhancement);
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
-        final var parsedAccount = Account.newBuilder().accountId(senderAccount.hederaId()).build();
+        final var parsedAccount =
+                Account.newBuilder().accountId(senderAccount.hederaId()).build();
         given(readableAccountStore.getAccountById(SENDER_ID)).willReturn(parsedAccount);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
