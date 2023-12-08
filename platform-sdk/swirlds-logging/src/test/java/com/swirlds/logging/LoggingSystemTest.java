@@ -450,7 +450,7 @@ public class LoggingSystemTest {
     }
 
     @Test
-    @DisplayName("That that accept passes events to the configured handler")
+    @DisplayName("Test that accept passes events to the configured handler")
     void testAcceptHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
