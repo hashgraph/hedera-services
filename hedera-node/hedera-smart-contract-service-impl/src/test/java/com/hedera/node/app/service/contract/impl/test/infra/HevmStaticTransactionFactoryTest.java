@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.test.infra;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
@@ -35,6 +37,7 @@ import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
@@ -53,6 +56,9 @@ class HevmStaticTransactionFactoryTest {
     @Mock
     private QueryContext context;
 
+    @Mock
+    private ReadableAccountStore accountStore;
+
     private HevmStaticTransactionFactory subject;
 
     @BeforeEach
@@ -63,7 +69,7 @@ class HevmStaticTransactionFactoryTest {
     }
 
     @Test
-    void fromQueryWorkWithSender() {
+    void fromQueryWorkWithSenderAndUsesPriorityAddress() {
         final var query = Query.newBuilder()
                 .contractCallLocal(callLocalWith(b -> {
                     b.gas(21_000L);
@@ -72,10 +78,12 @@ class HevmStaticTransactionFactoryTest {
                     b.functionParameters(CALL_DATA);
                 }))
                 .build();
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(ALIASED_SOMEBODY);
         var transaction = subject.fromHapiQuery(query);
         assertThat(transaction.senderId()).isEqualTo(SENDER_ID);
         assertThat(transaction.relayerId()).isNull();
-        assertThat(transaction.contractId()).isEqualTo(CALLED_CONTRACT_ID);
+        assertThat(transaction.contractId()).isEqualTo(CALLED_CONTRACT_EVM_ADDRESS);
         assertThat(transaction.nonce()).isEqualTo(-1);
         assertThat(transaction.payload()).isEqualTo(CALL_DATA);
         assertThat(transaction.chainId()).isNull();
@@ -94,6 +102,7 @@ class HevmStaticTransactionFactoryTest {
                 TransactionBody.newBuilder().transactionID(transactionID).build();
         final var payment = Transaction.newBuilder().body(txBody).build();
         final var queryHeader = QueryHeader.newBuilder().payment(payment).build();
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         final var query = Query.newBuilder()
                 .contractCallLocal(callLocalWith(b -> {

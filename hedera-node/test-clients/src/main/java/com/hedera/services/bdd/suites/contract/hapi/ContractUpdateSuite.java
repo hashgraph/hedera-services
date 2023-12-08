@@ -314,6 +314,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
     }
 
+    @HapiTest
     private HapiSpec canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
                 .given(
@@ -339,6 +340,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     HapiSpec fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";

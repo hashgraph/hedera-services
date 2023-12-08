@@ -127,15 +127,11 @@ public class ConversionUtils {
 
     /**
      * Given a {@link AccountID}, returns its address as a headlong address.
-     * @param accountID
-     * @return
+     * @param accountID the account id
+     * @return the headlong address
      */
     public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
         requireNonNull(accountID);
-        if (accountID.account().kind() == AccountID.AccountOneOfType.UNSET) {
-            return asHeadlongAddress(Bytes.EMPTY.toArray());
-        }
-
         final var integralAddress = accountID.hasAccountNum()
                 ? asEvmAddress(accountID.accountNum())
                 : accountID.alias().toByteArray();
