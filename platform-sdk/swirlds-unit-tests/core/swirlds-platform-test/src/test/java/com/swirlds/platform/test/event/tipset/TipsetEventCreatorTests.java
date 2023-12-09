@@ -34,17 +34,8 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
@@ -55,6 +46,16 @@ import com.swirlds.platform.event.creation.tipset.TipsetTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetUtils;
 import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -79,7 +80,7 @@ class TipsetEventCreatorTests {
     /**
      * @param nodeId                 the node ID of the simulated node
      * @param tipsetTracker          tracks tipsets of events
-     * @param eventCreator     the event creator for the simulated node
+     * @param eventCreator           the event creator for the simulated node
      * @param tipsetWeightCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(
@@ -152,9 +153,11 @@ class TipsetEventCreatorTests {
             final boolean slowNode) {
 
         final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
-        final long selfParentGeneration = selfParent == null ? -1 : selfParent.getGeneration();
+        final long selfParentGeneration =
+                selfParent == null ? EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
         final EventImpl otherParent = events.get(newEvent.getHashedData().getOtherParentHash());
-        final long otherParentGeneration = otherParent == null ? -1 : otherParent.getGeneration();
+        final long otherParentGeneration =
+                otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();
 
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
@@ -709,7 +712,11 @@ class TipsetEventCreatorTests {
         when(hashedData.getHash()).thenReturn(hash);
         when(event.getBaseHash()).thenReturn(hash);
 
+        when(hashedData.createEventDescriptor())
+                .thenReturn(new EventDescriptor(hash, creator, generation, -EventConstants.BIRTH_ROUND_UNDEFINED));
+
         when(event.getHashedData()).thenReturn(hashedData);
+        when(event.getBaseEventHashedData()).thenReturn(hashedData);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getOtherId()).thenReturn(otherParentId);
@@ -750,9 +757,12 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final EventImpl eventB1 = createMockEvent(random, nodeB, -1, null, -1);
-        final EventImpl eventC1 = createMockEvent(random, nodeC, -1, null, -1);
-        final EventImpl eventD1 = createMockEvent(random, nodeD, -1, null, -1);
+        final EventImpl eventB1 = createMockEvent(
+                random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventC1 = createMockEvent(
+                random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventD1 = createMockEvent(
+                random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
         eventCreator.registerEvent(eventC1);
@@ -820,10 +830,14 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final EventImpl eventB1 = createMockEvent(random, nodeB, -1, null, -1);
-        final EventImpl eventC1 = createMockEvent(random, nodeC, -1, null, -1);
-        final EventImpl eventD1 = createMockEvent(random, nodeD, -1, null, -1);
-        final EventImpl eventE1 = createMockEvent(random, nodeE, -1, null, -1);
+        final EventImpl eventB1 = createMockEvent(
+                random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventC1 = createMockEvent(
+                random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventD1 = createMockEvent(
+                random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventE1 = createMockEvent(
+                random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
         eventCreator.registerEvent(eventC1);
