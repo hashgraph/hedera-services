@@ -1,0 +1,126 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Node: Performance Tests"
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
+  CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
+  VERSION_MIRRORNODE : "custom"
+  K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
+
+  USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
+  PASSWORD: ${{ secrets.TESTING_JENKINS_API_PASSWORD }}
+  SERVER: ${{ secrets.TESTING_JENKINS_API_SERVER }}
+
+  LOKI_ADDR: ${{ secrets.LOKI_ADDR }}
+  LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
+  LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  canonical-test:
+    name: Canonical (10 hour)
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        with:
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "hedera-artifact-builds@devops-1-254919.iam.gserviceaccount.com"
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
+
+      - name: Verify Workflow Parameters
+        id: parameters
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+          BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
+
+          echo "branch-name-lower=${BRANCH_NAME_LOWER}" >>"${GITHUB_OUTPUT}"
+          echo "commit-id-short=$(echo "${{ github.sha }}" | cut -c1-8)" >>"${GITHUB_OUTPUT}"
+
+      - name: Check If Release Artifact Exist in Bucket
+        id: check-if-exist
+        run: |
+          set +e
+          ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
+          ARTIFACT_PATH="gs://${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}/${ARTIFACT_NAME}.zip"
+          echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
+
+          while true
+          do
+            gsutil -q stat "${ARTIFACT_PATH}"
+            PATH_EXIST=$?
+            if [ ${PATH_EXIST} -eq 0 ]; then
+              echo "Artifact Ready"
+              break
+            else
+              echo "Artifact not ready, wait 2 minutes"
+              sleep 2m
+            fi
+          done
+          echo "build-version=${ARTIFACT_NAME}" >>"${GITHUB_OUTPUT}"
+
+      - name: Reset Network
+        id: reset-network
+        run: |
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ steps.check-if-exist.outputs.build-version }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 10 minutes for network reset"
+          sleep 10m
+
+      - name: Run LogCLI to Wait for Network Active
+        id: run-logcli-wait-network-active
+        run: |
+          curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
+          unzip logcli-linux-amd64.zip
+          chmod a+x logcli-linux-amd64
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+          echo "Sleep 10 minutes for network reset completed"
+          sleep 10m
+
+      - name: Restore Old Signed State
+        id: restore-old-signed-state
+        run: |
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fperformance6-state-backups%2Fperformance6-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 10 minutes for network to load"
+          sleep 10m
+      - name: Run LogCLI to Wait for Network Active Again
+        id: run-logcli-wait-network-active-again
+        run: |
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+
+      - name: Call Test Script
+        id: call-test-script
+        run: |
+          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ steps.check-if-exist.outputs.build-version }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
