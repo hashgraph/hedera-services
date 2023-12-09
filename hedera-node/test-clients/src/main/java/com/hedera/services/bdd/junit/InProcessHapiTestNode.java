@@ -18,6 +18,9 @@ package com.hedera.services.bdd.junit;
 
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -26,11 +29,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -292,11 +295,11 @@ public class InProcessHapiTestNode implements HapiTestNode {
     }
 
     public void waitForBehind(long seconds) throws TimeoutException {
-        waitFor(PlatformStatus.BEHIND, seconds);
+        waitFor(BEHIND, seconds);
     }
 
     public void waitForReconnectComplete(long seconds) throws TimeoutException {
-        waitFor(PlatformStatus.RECONNECT_COMPLETE, seconds);
+        waitFor(RECONNECT_COMPLETE, seconds);
     }
 
     @Override
@@ -320,7 +323,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void waitForFreeze(long seconds) throws TimeoutException {
-        waitFor(PlatformStatus.FREEZE_COMPLETE, seconds);
+        waitFor(FREEZE_COMPLETE, seconds);
     }
 
     private void waitFor(PlatformStatus status, long seconds) throws TimeoutException {

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.unqualifiedDelegateDetected;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
@@ -73,8 +72,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             attempt = callFactory.createCallAttemptFrom(input, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
-                return revertResult(
-                        STATIC_CALL_REVERT_REASON, contractsConfigOf(frame).precompileHtsDefaultGasCost());
+                // FUTURE - we should really set an explicit halt reason here; instead we just halt the frame
+                // without setting a halt reason to simulate mono-service for differential testing
+                return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
         } catch (final RuntimeException e) {
             log.debug("Failed to create HTS call from input {}", input, e);

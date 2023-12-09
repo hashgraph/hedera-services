@@ -17,12 +17,12 @@
 package com.swirlds.platform.gui;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

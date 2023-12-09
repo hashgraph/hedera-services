@@ -19,7 +19,7 @@ package com.swirlds.platform.test.fixtures.event.source;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;

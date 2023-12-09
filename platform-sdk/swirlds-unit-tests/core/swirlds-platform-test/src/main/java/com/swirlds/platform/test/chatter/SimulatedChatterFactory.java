@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Supplier;

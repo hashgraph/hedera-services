@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;

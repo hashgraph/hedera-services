@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.mono.state.exports;
 
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
-import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
+import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
