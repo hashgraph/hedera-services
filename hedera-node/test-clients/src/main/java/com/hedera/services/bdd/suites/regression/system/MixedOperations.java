@@ -57,13 +57,12 @@ public class MixedOperations {
         this.numSubmissions = numSubmissions;
     }
 
-    Supplier<HapiSpecOperation[]> mixedOps(final AtomicInteger tokenId,
-                                           final AtomicInteger scheduleId,
-                                           final Random r) {
+    Supplier<HapiSpecOperation[]> mixedOps(
+            final AtomicInteger tokenId, final AtomicInteger scheduleId, final Random r) {
         return () -> new HapiSpecOperation[] {
             // Submit some mixed operations
             fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),
-            inParallel(IntStream.range(0, numSubmissions)
+            inParallel(IntStream.range(0, 2 * numSubmissions)
                     .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                             .logging()
                             .signedBy(SENDER))
@@ -98,7 +97,7 @@ public class MixedOperations {
                     .payingWith(SENDER)
                     .signedBy(SENDER, SUBMIT_KEY),
             sleepFor(10000),
-            inParallel(IntStream.range(0, numSubmissions)
+            inParallel(IntStream.range(0, 100)
                     .mapToObj(ignore -> scheduleCreate(
                                     "schedule" + scheduleId.incrementAndGet(),
                                     cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, r.nextInt(100000000))))

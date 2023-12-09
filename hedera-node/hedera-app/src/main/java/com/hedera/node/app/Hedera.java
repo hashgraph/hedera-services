@@ -884,7 +884,8 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void reconnect( @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
+    private void reconnect(
+            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
         logger.debug("Reconnect Initialization");
 
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
@@ -939,39 +940,36 @@ public final class Hedera implements SwirldMain {
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
-        if (daggerApp == null) {
-            final var nodeAddress = platform.getAddressBook().getAddress(selfId);
-            // Fully qualified so as to not confuse javadoc
-            daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
-                    .initTrigger(trigger)
-                    .configuration(configProvider)
-                    .throttleManager(throttleManager)
-                    .exchangeRateManager(exchangeRateManager)
-                    .feeManager(feeManager)
-                    .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                            configProvider,
-                            throttleManager,
-                            exchangeRateManager,
-                            feeManager,
-                            congestionMultipliers,
-                            backendThrottle,
-                            frontendThrottle))
-                    .networkUtilizationManager(
-                            new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
-                    .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(frontendThrottle))
-                    .self(SelfNodeInfoImpl.of(nodeAddress, version))
-                    .platform(platform)
-                    .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
-                    .crypto(CryptographyHolder.get())
-                    .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
-                    .servicesRegistry(servicesRegistry)
-                    .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
-                    .instantSource(InstantSource.system())
-                    .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
-                    .build();
+        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        // Fully qualified so as to not confuse javadoc
+        daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
+                .initTrigger(trigger)
+                .configuration(configProvider)
+                .throttleManager(throttleManager)
+                .exchangeRateManager(exchangeRateManager)
+                .feeManager(feeManager)
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        feeManager,
+                        congestionMultipliers,
+                        backendThrottle,
+                        frontendThrottle))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
+                .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(frontendThrottle))
+                .self(SelfNodeInfoImpl.of(nodeAddress, version))
+                .platform(platform)
+                .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
+                .crypto(CryptographyHolder.get())
+                .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
+                .servicesRegistry(servicesRegistry)
+                .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
+                .instantSource(InstantSource.system())
+                .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
+                .build();
 
-            daggerApp.workingStateAccessor().setHederaState(state);
-        }
+        daggerApp.workingStateAccessor().setHederaState(state);
     }
 
     private boolean isDowngrade(

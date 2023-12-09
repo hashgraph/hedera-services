@@ -17,20 +17,11 @@
 package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutDownNode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBeBehind;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodeToBecomeActive;
@@ -42,7 +33,6 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.A
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.RECEIVER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SENDER;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.SUBMIT_KEY;
-import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TOKEN;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TOPIC;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.TREASURY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
@@ -52,16 +42,10 @@ import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -95,57 +79,8 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         Random r = new Random(38582L);
-//        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS)
-//                .mixedOps(tokenId, scheduleId, r);
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
-            // Submit some mixed operations
-            fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),
-            inParallel(IntStream.range(0, 2 * NUM_SUBMISSIONS)
-                    .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
-                            .payingWith(SENDER)
-                            .logging()
-                            .signedBy(SENDER))
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
-                            .supplyType(TokenSupplyType.FINITE)
-                            .treasury(TREASURY)
-                            .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                            .maxSupply(1000)
-                            .initialSupply(500)
-                            .decimals(1)
-                            .adminKey(ADMIN_KEY)
-                            .supplyKey(SUPPLY_KEY)
-                            .logging())
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                    .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
-                            .logging()
-                            .payingWith(SENDER)
-                            .signedBy(SENDER))
-                    .toArray(HapiSpecOperation[]::new)),
-            sleepFor(10000),
-            submitMessageTo(TOPIC)
-                    .message(ArrayUtils.addAll(
-                            ByteBuffer.allocate(8)
-                                    .putLong(Instant.now().toEpochMilli())
-                                    .array(),
-                            randomUtf8Bytes(1000)))
-                    .payingWith(SENDER)
-                    .signedBy(SENDER, SUBMIT_KEY),
-            sleepFor(10000),
-            inParallel(IntStream.range(0, 100)
-                    .mapToObj(ignore -> scheduleCreate(
-                                    "schedule" + scheduleId.incrementAndGet(),
-                                    cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, r.nextInt(100000000))))
-                            .payingWith(SENDER)
-                            .signedBy(SENDER)
-                            .adminKey(SENDER)
-                            .logging())
-                    .toArray(HapiSpecOperation[]::new)),
-        };
+        Supplier<HapiSpecOperation[]> mixedOpsBurst =
+                new MixedOperations(NUM_SUBMISSIONS).mixedOps(tokenId, scheduleId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),
