@@ -20,6 +20,7 @@ import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -36,12 +37,10 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -158,13 +157,16 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     public void startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
-            // This is the first transaction of the first block. We need to set the firstConsTimeOfCurrentBlock to the
-            // consensus time of this transaction. We also need to set the lastBlockHashBytes to the genesis hash.
+            // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
+            // and the current consensus time to now
             final var now = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-            lastBlockInfo = lastBlockInfo.copyBuilder()
+            lastBlockInfo = lastBlockInfo
+                    .copyBuilder()
                     .consTimeOfLastHandledTxn(now)
                     .firstConsTimeOfCurrentBlock(now)
                     .build();
+            persistLastBlockInfo(state);
+            streamFileProducer.switchBlocks(-1, 0, consensusTime);
             return;
         }
 
@@ -178,16 +180,10 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             // the last transaction
             final var lastBlockHashBytes = streamFileProducer.getRunningHash();
             lastBlockInfo =
-                    saveJustFinishedBlockInfoToState(
-                            lastBlockInfo,
-                            provisionalCurrentBlockNumber,
-                            lastBlockHashBytes,
-                            consensusTime);
+                    infoOfJustFinished(lastBlockInfo, provisionalCurrentBlockNumber, lastBlockHashBytes, consensusTime);
 
             // Update BlockInfo state
-            final var states = state.createWritableStates(BlockRecordService.NAME);
-            final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
-            blockInfoState.put(lastBlockInfo);
+            persistLastBlockInfo(state);
 
             // log end of block if needed
             if (logger.isDebugEnabled()) {
@@ -203,11 +199,32 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                         consensusTime);
             }
 
-            // close all stream files for end of block and create signature files, then open new block record file
-            final var lastBlockNo = provisionalCurrentBlockNumber;
-            provisionalCurrentBlockNumber++;
-            streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
+            switchBlocksAt(consensusTime);
         }
+    }
+
+    /**
+     * We need this to preserve unit test expectations written that assumed a bug in the original implementation,
+     * in which the first consensus time of the current block was not in state.
+     *
+     * @param consensusTime the consensus time at which to switch to the current block
+     */
+    @VisibleForTesting
+    public void switchBlockAt(@NonNull final Instant consensusTime) {
+        streamFileProducer.switchBlocks(lastBlockInfo.lastBlockNumber(), provisionalCurrentBlockNumber, consensusTime);
+    }
+
+    private void switchBlocksAt(@NonNull final Instant consensusTime) {
+        // close all stream files for end of block and create signature files, then open new block record file
+        final var lastBlockNo = provisionalCurrentBlockNumber;
+        provisionalCurrentBlockNumber++;
+        streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
+    }
+
+    private void persistLastBlockInfo(@NonNull final HederaState state) {
+        final var states = state.createWritableStates(BlockRecordService.NAME);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        blockInfoState.put(lastBlockInfo);
     }
 
     /**
@@ -360,7 +377,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * @param justFinishedBlockNumber The new block number
      * @param hashOfJustFinishedBlock The new block hash
      */
-    private BlockInfo saveJustFinishedBlockInfoToState(
+    private BlockInfo infoOfJustFinished(
             @NonNull final BlockInfo lastBlockInfo,
             @NonNull final long justFinishedBlockNumber,
             @NonNull final Bytes hashOfJustFinishedBlock,
@@ -386,6 +403,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 Bytes.wrap(newBlockHashesBytes),
                 lastBlockInfo.consTimeOfLastHandledTxn(),
                 lastBlockInfo.migrationRecordsStreamed(),
-                new Timestamp(currentBlockFirstTransactionTime.getEpochSecond(), currentBlockFirstTransactionTime.getNano()));
+                new Timestamp(
+                        currentBlockFirstTransactionTime.getEpochSecond(), currentBlockFirstTransactionTime.getNano()));
     }
 }
