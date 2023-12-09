@@ -4498,7 +4498,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(contractCreate(REVERTING_CONTRACT, BigInteger.valueOf(6))
                         .via(FIRST_CREATE_TXN)
-                        .gas(53050)
+                        .gas(64774)
                         .hasKnownStatus(INSUFFICIENT_GAS))
                 .then(
                         withOpContext((spec, opLog) -> allRunFor(
@@ -4532,10 +4532,10 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CREATE)
                                                 .setCallOperationType(CallOperationType.OP_CREATE)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                .setGas(978936)
+                                                .setGas(185276)
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
-                                                .setGasUsed(963748)
+                                                .setGasUsed(345)
                                                 .setOutput(EMPTY)
                                                 .build())))),
                         expectContractBytecodeSidecarFor(
@@ -4555,8 +4555,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallType(CALL)
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
-                                                .setGas(979000)
-                                                .setGasUsed(963811)
+                                                .setGas(978936)
+                                                .setGasUsed(963748)
                                                 .setOutput(EMPTY)
                                                 /*
                                                    For EVM v0.34 use this code block instead:
@@ -4616,7 +4616,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(EMPTY_CONSTRUCTOR_CONTRACT))
-                                                    .setGas(184672)
+                                                    .setGas(195600)
                                                     .setGasUsed(66)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4648,7 +4648,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(contract))
-                                                    .setGas(183856)
+                                                    .setGas(184672)
                                                     .setGasUsed(214)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4689,7 +4689,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             spec.registry().getAccountID(GENESIS))
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(APPROVE_BY_DELEGATE))
-                                                    .setGas(179000)
+                                                    .setGas(433856)
                                                     .setGasUsed(214)
                                                     .setOutput(EMPTY)
                                                     .build())));
@@ -4754,8 +4754,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                                             spec.registry()
                                                                                     .getAccountID(somebodyElse))),
                                                             serialNumberId))
-                                                    .setGas(979000)
-                                                    .setGasUsed(948950)
+                                                    .setGas(978120)
+                                                    .setGasUsed(948098)
                                                     .setRevertReason(ByteString.EMPTY)
                                                     .build(),
                                             ContractAction.newBuilder()
@@ -4769,8 +4769,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                                             .getTokenID(tokenInQuestion)
                                                                             .getTokenNum())
                                                             .build())
-                                                    .setGas(959347)
-                                                    .setGasUsed(944446)
+                                                    .setGas(958481)
+                                                    .setGasUsed(943594)
                                                     .setInput(ByteStringUtils.wrapUnsafely(Function.parse(
                                                                     "approve(address,uint256)")
                                                             .encodeCallWithArgs(
@@ -4796,8 +4796,8 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setRecipientContract(ContractID.newBuilder()
                                                             .setContractNum(359L)
                                                             .build())
-                                                    .setGas(941693)
-                                                    .setGasUsed(941693)
+                                                    .setGas(940841)
+                                                    .setGasUsed(940841)
                                                     .setInput(ByteStringUtils.wrapUnsafely(ArrayUtils.addAll(
                                                             ArrayUtils.addAll(
                                                                     Arrays.copyOfRange(
@@ -5051,7 +5051,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             .setCallType(CALL)
                                                             .setCallOperationType(CallOperationType.OP_CALL)
                                                             .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                                            .setGas(3979000)
+                                                            .setGas(3965516)
                                                             .setValue(tcValue)
                                                             .setRecipientContract(
                                                                     spec.registry()
@@ -5071,7 +5071,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                             .setCallingContract(
                                                                     spec.registry()
                                                                             .getContractId(create2Factory))
-                                                            .setGas(3883883)
+                                                            .setGas(3870609)
                                                             // recipient should be the
                                                             // original hollow account id as
                                                             // a contract
