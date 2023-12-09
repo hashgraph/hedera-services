@@ -100,7 +100,7 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
             // Submit some mixed operations
             fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+            inParallel(IntStream.range(0, 2 * NUM_SUBMISSIONS)
                     .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                             .payingWith(SENDER)
                             .logging()
@@ -136,7 +136,7 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                     .payingWith(SENDER)
                     .signedBy(SENDER, SUBMIT_KEY),
             sleepFor(10000),
-            inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+            inParallel(IntStream.range(0, 100)
                     .mapToObj(ignore -> scheduleCreate(
                                     "schedule" + scheduleId.incrementAndGet(),
                                     cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, r.nextInt(100000000))))
