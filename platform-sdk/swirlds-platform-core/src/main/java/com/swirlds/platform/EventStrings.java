@@ -16,9 +16,9 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.platform.event.EventStringBuilder;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.BaseEvent;
 
 /**
  * A collection of methods for creating strings from events events.

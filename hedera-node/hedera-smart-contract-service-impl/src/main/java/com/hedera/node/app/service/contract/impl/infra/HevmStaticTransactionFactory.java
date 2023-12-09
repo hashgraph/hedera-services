@@ -19,18 +19,21 @@ package com.hedera.node.app.service.contract.impl.infra;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -44,14 +47,16 @@ public class HevmStaticTransactionFactory {
     private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractsConfig contractsConfig;
     private final GasCalculator gasCalculator;
+    private final QueryContext context;
     private final AccountID payerId;
 
     @Inject
     public HevmStaticTransactionFactory(
             @NonNull final QueryContext context, @NonNull final GasCalculator gasCalculator) {
-        this.contractsConfig = Objects.requireNonNull(context).configuration().getConfigData(ContractsConfig.class);
-        this.gasCalculator = gasCalculator;
-        this.payerId = Objects.requireNonNull(context.payer());
+        this.context = requireNonNull(context);
+        this.contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
+        this.gasCalculator = requireNonNull(gasCalculator);
+        this.payerId = requireNonNull(context.payer());
     }
 
     /**
@@ -65,18 +70,15 @@ public class HevmStaticTransactionFactory {
         final var op = query.contractCallLocalOrThrow();
         assertValidCall(op);
         final var senderId = op.hasSenderId() ? op.senderIdOrThrow() : payerId;
+        var targetId = op.contractIDOrThrow();
+        // For mono-service fidelity, allow calls using 0.0.X id even to contracts with a priority EVM address
+        final var maybeContract =
+                context.createStore(ReadableAccountStore.class).getContractById(targetId);
+        if (maybeContract != null && maybeContract.alias().length() == EVM_ADDRESS_LENGTH_AS_LONG) {
+            targetId = ContractID.newBuilder().evmAddress(maybeContract.alias()).build();
+        }
         return new HederaEvmTransaction(
-                senderId,
-                null,
-                op.contractIDOrThrow(),
-                NOT_APPLICABLE,
-                op.functionParameters(),
-                null,
-                0L,
-                op.gas(),
-                1L,
-                0L,
-                null);
+                senderId, null, targetId, NOT_APPLICABLE, op.functionParameters(), null, 0L, op.gas(), 1L, 0L, null);
     }
 
     private void assertValidCall(@NonNull final ContractCallLocalQuery body) {

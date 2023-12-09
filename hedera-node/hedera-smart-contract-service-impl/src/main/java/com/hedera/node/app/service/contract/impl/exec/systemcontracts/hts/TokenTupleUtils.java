@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_FIXED_FEE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_FRACTION;
@@ -24,16 +25,18 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,7 +65,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                (token.autoRenewSeconds() > 0 ? token.autoRenewSeconds() : 0));
+                token.autoRenewSeconds());
     }
 
     /**
@@ -233,17 +236,30 @@ public class TokenTupleUtils {
             @NonNull final Nft nft,
             final long serialNumber,
             @NonNull final String ledgerId,
-            @NonNull final Account ownerAccount) {
-        requireNonNull(ownerAccount);
-        final var nftMetaData = nft.metadata() != null ? nft.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
+            @NonNull final HederaNativeOperations nativeOperations) {
+        requireNonNull(nft);
+        requireNonNull(token);
+        requireNonNull(ledgerId);
+        requireNonNull(nativeOperations);
 
+        final var nftMetaData = nft.metadata() != null ? nft.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
         return Tuple.of(
                 tokenInfoTupleFor(token, ledgerId),
                 serialNumber,
-                headlongAddressOf(ownerAccount),
+                // The odd construct allowing a token to not have a treasury account set is to accommodate
+                // Token.DEFAULT being passed into this method, which a few HtsCall implementations do
+                priorityAddressOf(nft.ownerIdOrElse(token.treasuryAccountIdOrElse(ZERO_ACCOUNT_ID)), nativeOperations),
                 nft.mintTimeOrElse(new Timestamp(0, 0)).seconds(),
                 nftMetaData,
-                headlongAddressOf(nft.spenderIdOrElse(ZERO_ACCOUNT_ID)));
+                priorityAddressOf(nft.spenderIdOrElse(ZERO_ACCOUNT_ID), nativeOperations));
+    }
+
+    private static Address priorityAddressOf(
+            @NonNull final AccountID accountId, @NonNull final HederaNativeOperations nativeOperations) {
+        requireNonNull(accountId);
+        return (ZERO_ACCOUNT_ID == accountId)
+                ? ZERO_ADDRESS
+                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId.accountNumOrThrow())));
     }
 
     /**

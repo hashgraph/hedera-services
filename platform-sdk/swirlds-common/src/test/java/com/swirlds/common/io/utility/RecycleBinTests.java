@@ -28,7 +28,7 @@ import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
