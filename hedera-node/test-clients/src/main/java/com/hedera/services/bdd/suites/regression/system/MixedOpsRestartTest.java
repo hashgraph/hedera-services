@@ -45,6 +45,8 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +80,11 @@ public class MixedOpsRestartTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec restartMixedOps() {
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS).mixedOps();
+        AtomicInteger tokenId = new AtomicInteger(0);
+        AtomicInteger scheduleId = new AtomicInteger(0);
+        Random r = new Random(38582L);
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS)
+                .mixedOps(tokenId, scheduleId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),

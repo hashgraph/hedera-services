@@ -42,6 +42,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,7 +57,7 @@ import org.apache.logging.log4j.Logger;
 public class MixedOpsNodeDisconnectTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsNodeDisconnectTest.class);
 
-    private static final int NUM_SUBMISSIONS = 15;
+    private static final int NUM_SUBMISSIONS = 700;
 
     public static void main(String... args) {
         new MixedOpsNodeDisconnectTest().runSuiteSync();
@@ -73,7 +75,11 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
 
     @HapiTest
     private HapiSpec reconnectMixedOps() {
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS).mixedOps();
+        AtomicInteger tokenId = new AtomicInteger(0);
+        AtomicInteger scheduleId = new AtomicInteger(0);
+        Random r = new Random(38582L);
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS)
+                .mixedOps(tokenId, scheduleId, r);
         return defaultHapiSpec("RestartMixedOps")
                 .given(
                         newKeyNamed(SUBMIT_KEY),

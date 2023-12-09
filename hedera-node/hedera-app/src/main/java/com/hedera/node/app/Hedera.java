@@ -24,6 +24,7 @@ import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRON
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
+import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -430,7 +431,7 @@ public final class Hedera implements SwirldMain {
             switch (trigger) {
                 case GENESIS -> genesis(state);
                 case RESTART -> restart(state, deserializedVersion);
-                case RECONNECT -> restart(state, deserializedVersion);
+                case RECONNECT -> reconnect(state, deserializedVersion);
                     // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
@@ -460,13 +461,16 @@ public final class Hedera implements SwirldMain {
      * and thus all schemas will be executed.
      */
     private void onMigrate(
-            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
+            final InitTrigger trigger) {
         final var currentVersion = version.getServicesVersion();
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
         logger.info(
-                "Migrating from version {} to {}",
+                "Migrating from version {} to {} with trigger {}",
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
-                () -> HapiUtils.toString(currentVersion));
+                () -> HapiUtils.toString(currentVersion),
+                () -> trigger);
 
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
@@ -477,7 +481,7 @@ public final class Hedera implements SwirldMain {
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
-        if (isUpgrade) {
+        if (isUpgrade && !trigger.equals(RECONNECT)) {
             // When we upgrade to a higher version, after migrations are complete, we need to update
             // migrationRecordsStreamed flag to false
             // Now that the migrations have happened, we need to give the node a chance to publish any records that need
@@ -771,7 +775,7 @@ public final class Hedera implements SwirldMain {
         feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
         // Create all the nodes in the merkle tree for all the services
-        onMigrate(state, null);
+        onMigrate(state, null, GENESIS);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
@@ -860,7 +864,7 @@ public final class Hedera implements SwirldMain {
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
-        onMigrate(state, deserializedVersion);
+        onMigrate(state, deserializedVersion, RESTART);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, RESTART);
@@ -880,8 +884,50 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void reconnect() {
-        // No-op
+    private void reconnect( @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
+        logger.debug("Reconnect Initialization");
+
+        // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
+        if (deserializedVersion == null) {
+            logger.fatal("Fatal error, previous software version not found in saved state!");
+            System.exit(1);
+        }
+
+        // Initialize the configuration from disk (restart case). We must do this BEFORE we run migration, because
+        // the various migration methods may depend on configuration to do their work
+        logger.info("Initializing Reconnect configuration");
+        this.configProvider = new ConfigProviderImpl(false);
+        logConfiguration();
+
+        logger.info("Initializing ThrottleManager");
+        this.throttleManager = new ThrottleManager();
+
+        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
+        this.frontendThrottle =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
+        this.congestionMultipliers = createCongestionMultipliers(state);
+
+        logger.info("Initializing ExchangeRateManager");
+        exchangeRateManager = new ExchangeRateManager(configProvider);
+
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
+
+        // Create all the nodes in the merkle tree for all the services
+        // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
+        //       the config provider to the migration code and let it get the right version of config as it goes.
+        onMigrate(state, deserializedVersion, RECONNECT);
+
+        // Now that we have the state created, we are ready to create the dependency graph with Dagger
+        initializeDagger(state, RECONNECT);
+
+        // And now that the entire dependency graph has been initialized, and we have config, and all migration has
+        // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
+        // from information held in state (especially those in special files).
+        initializeExchangeRateManager(state);
+        initializeFeeManager(state);
+        initializeThrottles(state);
+        // TODO We may need to update the config with the latest version in file 121
     }
 
     /*==================================================================================================================

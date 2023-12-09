@@ -95,6 +95,8 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
         Random r = new Random(38582L);
+//        Supplier<HapiSpecOperation[]> mixedOpsBurst = new MixedOperations(NUM_SUBMISSIONS)
+//                .mixedOps(tokenId, scheduleId, r);
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
             // Submit some mixed operations
             fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(Map.of("tokens.maxPerAccount", "10000000")),

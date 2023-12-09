@@ -123,7 +123,6 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         byExpiration.add(scheduleToAdd);
         final var newScheduleList = new ScheduleList(byExpiration);
         schedulesByExpirationMutable.put(expirationSecond, newScheduleList);
-        logger.info("Added scheduleList {} to state with expirationSecond {}.", newScheduleList, expirationSecond);
     }
 
     @NonNull
