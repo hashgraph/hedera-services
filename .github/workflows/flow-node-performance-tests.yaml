@@ -123,4 +123,4 @@ jobs:
       - name: Call Test Script
         id: call-test-script
         run: |
-          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ steps.check-if-exist.outputs.build-version }}" "${{ env.VERSION_MIRRORNODE }}" "${{ env.K8S_CLUSTER }}"
+          bash "${{ github.workspace }}/${{ env.TEST_SCRIPT }}" "${{ env.USERNAME }}" "${{ env.PASSWORD }}" "${{ env.SERVER }}" "${{ env.K8S_CLUSTER }}" "${{ steps.check-if-exist.outputs.build-version }}" "${{ env.VERSION_MIRRORNODE }}"
