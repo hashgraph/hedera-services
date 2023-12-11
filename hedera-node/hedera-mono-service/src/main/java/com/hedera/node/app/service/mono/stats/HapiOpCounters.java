@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Counter.Config;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
