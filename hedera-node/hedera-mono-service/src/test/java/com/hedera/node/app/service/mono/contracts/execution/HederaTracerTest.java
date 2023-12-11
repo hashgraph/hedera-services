@@ -97,6 +97,7 @@ class HederaTracerTest {
     private static final Bytes output = Bytes.wrap("output".getBytes(StandardCharsets.UTF_8));
     private static final Address originator = Address.fromHexString("0x1");
     private static final Address contract = Address.fromHexString("0x2");
+    private static final Address badContractAddress = Address.fromHexString("0x12345678901234567890");
     private static final Address accountReceiver = Address.fromHexString("0x3");
     private static final Address sender = Address.fromHexString("0x4");
 
@@ -323,6 +324,33 @@ class HederaTracerTest {
     }
 
     @Test
+    void initializesActionsWhenBadRecipientAddress() {
+        Operation mockOperation = mock(Operation.class);
+
+        // mock out top level frame
+        final var topLevelMessageFrame = mock(MessageFrame.class);
+        given(topLevelMessageFrame.getCode()).willReturn(code);
+        given(topLevelMessageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(topLevelMessageFrame.getOriginatorAddress()).willReturn(originator);
+        given(topLevelMessageFrame.getContractAddress()).willReturn(badContractAddress);
+        given(topLevelMessageFrame.getRemainingGas()).willReturn(initialGas);
+        given(topLevelMessageFrame.getInputData()).willReturn(input);
+        given(topLevelMessageFrame.getValue()).willReturn(value);
+        given(topLevelMessageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(badContractAddress)).willReturn(badContractAddress);
+        given(worldUpdater.getAccount(badContractAddress)).willReturn(mock(MutableAccount.class));
+
+        // trace top level frame
+        subject.init(topLevelMessageFrame);
+        final var actions = subject.getActions();
+        final var solidityAction = actions.get(0);
+        assertThat(solidityAction.getRecipientAccount()).isNull();
+        assertThat(solidityAction.getInvalidSolidityAddress()).isEqualTo(badContractAddress.toArray());
+    }
+
+    @Test
     void finalizesCodeSuccessfulCallMessageFrameAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
@@ -469,6 +497,56 @@ class HederaTracerTest {
         given(messageFrame.getCurrentOperation()).willReturn(operation);
         given(operation.getOpcode()).willReturn(0xF1);
         subject.tracePostExecution(messageFrame, operationResult);
+        // then
+        final var topLevelAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(topLevelAction);
+        assertEquals(initialGas, topLevelAction.getGasUsed());
+        assertArrayEquals(
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
+        assertEquals(EntityId.fromAddress(accountReceiver), topLevelAction.getRecipientAccount());
+        assertNull(topLevelAction.getRecipientContract());
+        assertNull(topLevelAction.getInvalidSolidityAddress());
+        final var syntheticInvalidAddressAction = subject.getActions().get(1);
+        validateAllActionFieldsAreSet(syntheticInvalidAddressAction);
+        assertEquals(CALL, syntheticInvalidAddressAction.getCallType());
+        assertEquals(OP_CALL, syntheticInvalidAddressAction.getCallOperationType());
+        assertEquals(0, syntheticInvalidAddressAction.getValue());
+        assertArrayEquals(new byte[0], syntheticInvalidAddressAction.getInput());
+        assertEquals(messageFrame.getDepth() + 1, syntheticInvalidAddressAction.getCallDepth());
+        assertEquals(EntityId.fromAddress(accountReceiver), syntheticInvalidAddressAction.getCallingContract());
+        assertArrayEquals(contract.toArrayUnsafe(), syntheticInvalidAddressAction.getInvalidSolidityAddress());
+        assertArrayEquals(
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
+        assertEquals(messageFrame.getRemainingGas(), syntheticInvalidAddressAction.getGas());
+    }
+
+    @Test
+    void finalizesFailedCreationAttemptAddressRecipientAsExpected() {
+        // given
+        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
+        given(messageFrame.getOriginatorAddress()).willReturn(originator);
+        given(messageFrame.getContractAddress()).willReturn(accountReceiver);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getValue()).willReturn(value);
+        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
+        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(MutableAccount.class));
+
+        subject.init(messageFrame);
+        // when
+        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
+        given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
+        given(messageFrame.getStackItem(1)).willReturn(Bytes.of(contract.toArrayUnsafe()));
+        final Operation operation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(operation);
+        given(operation.getOpcode()).willReturn(0xF1);
+        subject.traceAccountCreationResult(messageFrame, invalidSolidityAddress);
         // then
         final var topLevelAction = subject.getActions().get(0);
         validateAllActionFieldsAreSet(topLevelAction);
