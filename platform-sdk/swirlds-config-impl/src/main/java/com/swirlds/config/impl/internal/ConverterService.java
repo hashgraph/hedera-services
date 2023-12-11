@@ -130,7 +130,7 @@ class ConverterService implements ConfigLifecycle {
         }
         // FUTURE WORK: remove this once ConfigurationHolder is removed
         // this is a workaround that is needed because of ConfigurationHolder which scans all types when invoked and
-        // throws if it encounters an enum. This breaks all unit tests that use it.
+        // throws if it encounters anything it does not have a converter for. This breaks all unit tests that use it.
         if (targetClass.isEnum()) {
             return (T) Enum.valueOf((Class<Enum>) targetClass, value);
         }
