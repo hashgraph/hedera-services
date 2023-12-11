@@ -28,7 +28,6 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.SignedStateManagerTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
 import java.util.HashMap;
