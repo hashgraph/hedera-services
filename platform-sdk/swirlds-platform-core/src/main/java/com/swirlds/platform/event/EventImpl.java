@@ -62,11 +62,6 @@ import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
-// TODO rename.
-// Ideas:
-//  - WrappedEvent
-//  - EventWithMetadata
-
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.
@@ -244,8 +239,6 @@ public class EventImpl
      * current election
      */
     private boolean[] votes;
-
-    // TODO can the constructors be simplified at all?
 
     public EventImpl() {}
 
