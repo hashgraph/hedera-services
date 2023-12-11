@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.demo.merkle.map.FCMTransactionPool.DEMO_TRANSACTION_INFO;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
