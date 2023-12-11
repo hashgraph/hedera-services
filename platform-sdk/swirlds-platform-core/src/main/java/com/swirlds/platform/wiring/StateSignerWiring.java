@@ -25,6 +25,12 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * The wiring for the {@link com.swirlds.platform.StateSigner}
+ *
+ * @param signState      the input wire for signing a state
+ * @param stateSignature the output wire for the state signature
+ */
 public record StateSignerWiring(
         @NonNull InputWire<ReservedSignedState> signState,
         @NonNull OutputWire<StateSignatureTransaction> stateSignature) {

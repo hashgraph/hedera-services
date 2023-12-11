@@ -171,6 +171,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param preconsensusEventWriter   the preconsensus event writer to wire
      * @param statusManager             the status manager to wire
      * @param appCommunicationComponent the app communication component to wire
+     * @param transactionPool           the transaction pool to wire
      */
     public void wireExternalComponents(
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
@@ -228,6 +229,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Bind components to the wiring.
      *
      * @param signedStateFileManager the signed state file manager to bind
+     * @param stateSigner            the state signer to bind
      */
     public void bind(
             @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
@@ -288,6 +290,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         return signedStateFileManagerWiring.dumpStateToDisk();
     }
 
+    /**
+     * Get the input wire for signing a state
+     * <p>
+     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole
+     * system being migrated to the new framework.
+     *
+     * @return the input wire for signing a state
+     */
     @NonNull
     public InputWire<ReservedSignedState> getSignStateInput() {
         return stateSignerWiring.signState();
