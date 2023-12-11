@@ -211,42 +211,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         reset();
         final PlatformData platformData =
                 signedState.getState().getPlatformState().getPlatformData();
-        if (platformData.getEvents() != null) {
-            loadLegacyState(platformData);
-        } else {
-            loadSnapshot(platformData.getSnapshot());
-        }
-    }
-
-    private void loadLegacyState(@NonNull final PlatformData platformData) {
-        migrationMode = true;
-
-        // create all the rounds that we have events for
-        rounds.loadFromMinGen(platformData.getMinGenInfo());
-        updateRoundGenerations(rounds.getFameDecidedBelow());
-
-        for (final EventImpl event : platformData.getEvents()) {
-            event.setRoundCreated(
-                    // this is where round created used to be stored, only needed for migration
-                    event.getConsensusData().getRoundCreated());
-            calculateMetadata(event);
-            event.setConsensus(true);
-            // events are stored in consensus order, so the last event in consensus order should be
-            // incremented by 1 to get the numConsensus
-            numConsensus = event.getConsensusOrder() + 1;
-        }
-
-        // The lastConsensusTime is equal to the last transaction that has been handled
-        lastConsensusTime = platformData.getConsensusTimestamp();
-
-        logger.debug(
-                STARTUP.getMarker(),
-                "ConsensusImpl is initialized from signed state. minRound: {}(min gen = {}),"
-                        + " maxRound: {}(max gen = {})",
-                this::getMinRound,
-                this::getMinRoundGeneration,
-                this::getMaxRound,
-                this::getMaxRoundGeneration);
+        loadSnapshot(platformData.getSnapshot());
     }
 
     /**

@@ -17,8 +17,6 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,13 +25,13 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.uptime.UptimeDataImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -42,6 +40,9 @@ import java.util.Objects;
  * A collection of miscellaneous platform data.
  */
 public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
+
+    // TODO refactor platform code to not directly call into this class
+    // TODO does this deserve to have an interface for getters and setters?
 
     private static final long CLASS_ID = 0x1f89d0c43a8c08bdL;
 
@@ -54,20 +55,23 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         public static final int EPOCH_HASH = 2;
         public static final int ROUNDS_NON_ANCIENT = 3;
         /**
-         * - Events are no longer serialized, the field is kept for migration purposes
-         * - Mingen is no longer stored directly, its part of the snapshot
-         * - restart/reconnect now uses a snapshot
-         * - lastTransactionTimestamp is no longer stored directly, its part of the snapshot
-         * - numEventsCons is no longer stored directly, its part of the snapshot
-         * */
+         * - Events are no longer serialized, the field is kept for migration purposes - Mingen is no longer stored
+         * directly, its part of the snapshot - restart/reconnect now uses a snapshot - lastTransactionTimestamp is no
+         * longer stored directly, its part of the snapshot - numEventsCons is no longer stored directly, its part of
+         * the snapshot
+         */
         public static final int CONSENSUS_SNAPSHOT = 4;
+        /**
+         * Move data from the dual state to this location.
+         */
+        public static final int ABSORB_DUAL_STATE = 5;
     }
 
     /**
      * The round of this state. This state represents the handling of all transactions that have reached consensus in
      * all previous rounds. All transactions from this round will eventually be applied to this state. The first state
-     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is
-     * before any transactions are handled.
+     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is before
+     * any transactions are handled.
      */
     private long round = GENESIS_ROUND;
 
@@ -76,11 +80,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * round received that this SignedState represents.
      */
     private Hash hashEventsCons;
-
-    /**
-     * contains events for the round that is being signed and the preceding rounds
-     */
-    private EventImpl[] events;
 
     /**
      * the consensus timestamp for this signed state
@@ -116,6 +115,21 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /** A snapshot of the consensus state at the end of the round, used for restart/reconnect */
     private ConsensusSnapshot snapshot;
 
+    /**
+     * the time when the freeze starts
+     */
+    private Instant freezeTime;
+
+    /**
+     * the last freezeTime based on which the nodes were frozen
+     */
+    private Instant lastFrozenTime;
+
+    /**
+     * Data on node uptime.
+     */
+    private UptimeDataImpl uptimeData = new UptimeDataImpl();
+
     public PlatformData() {}
 
     /**
@@ -127,9 +141,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         super(that);
         this.round = that.round;
         this.hashEventsCons = that.hashEventsCons;
-        if (that.events != null) {
-            this.events = Arrays.copyOf(that.events, that.events.length);
-        }
         this.consensusTimestamp = that.consensusTimestamp;
         if (that.minGenInfo != null) {
             this.minGenInfo = new ArrayList<>(that.minGenInfo);
@@ -179,6 +190,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
         out.writeSerializable(snapshot, false);
+        out.writeInstant(freezeTime);
+        out.writeInstant(lastFrozenTime);
+        out.writeSerializable(uptimeData, false);
     }
 
     /**
@@ -186,51 +200,23 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            throw new IOException("Unsupported version " + version);
+        }
+
         round = in.readLong();
-        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            // numEventsCons
-            in.readLong();
-        }
-
         hashEventsCons = in.readSerializable(false, Hash::new);
-
-        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            int eventNum = in.readInt();
-            events = new EventImpl[eventNum];
-            for (int i = 0; i < eventNum; i++) {
-                events[i] = in.readSerializable(false, EventImpl::new);
-                events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
-                events[i].markAsSignedStateEvent();
-            }
-            State.linkParents(events);
-        }
-
         consensusTimestamp = in.readInstant();
-
-        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            minGenInfo = MinGenInfo.deserializeList(in);
-
-            // previously this was the last transaction timestamp
-            in.readInstant();
-        }
-
         creationSoftwareVersion = in.readSerializable();
+        epochHash = in.readSerializable(false, Hash::new);
+        roundsNonAncient = in.readInt();
+        snapshot = in.readSerializable(false, ConsensusSnapshot::new);
 
-        if (version >= ClassVersion.EPOCH_HASH) {
-            epochHash = in.readSerializable(false, Hash::new);
-        }
-
-        if (version < ClassVersion.ROUNDS_NON_ANCIENT) {
-            roundsNonAncient = ConfigurationHolder.getInstance()
-                    .get()
-                    .getConfigData(ConsensusConfig.class)
-                    .roundsNonAncient();
-        } else {
-            roundsNonAncient = in.readInt();
-        }
-
-        if (version >= ClassVersion.CONSENSUS_SNAPSHOT) {
-            snapshot = in.readSerializable(false, ConsensusSnapshot::new);
+        if (version >= ClassVersion.ABSORB_DUAL_STATE) {
+            freezeTime = in.readInstant();
+            lastFrozenTime = in.readInstant();
+            uptimeData = in.readSerializable(false, UptimeDataImpl::new);
         }
     }
 
@@ -239,7 +225,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.CONSENSUS_SNAPSHOT;
+        return ClassVersion.ABSORB_DUAL_STATE;
     }
 
     /**
@@ -311,15 +297,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the events stored in this state.
-     *
-     * @return an array of events
-     */
-    public EventImpl[] getEvents() {
-        return events;
-    }
-
-    /**
      * Get the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
      * the round that created the state.
      *
@@ -340,6 +317,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         this.consensusTimestamp = consensusTimestamp;
         return this;
     }
+
+    // TODO remove methods that are not simple getters and setters
 
     /**
      * Get the minimum event generation for each node within this state.
@@ -469,6 +448,72 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
+     * Gets the time when the next freeze is scheduled to start. If null then there is no freeze scheduled.
+     *
+     * @return the time when the freeze starts
+     */
+    @Nullable
+    public Instant getFreezeTime() {
+        return freezeTime;
+    }
+
+    /**
+     * Sets the instant after which the platform will enter FREEZING status. When consensus timestamp of a signed state
+     * is after this instant, the platform will stop creating events and accepting transactions. This is used to safely
+     * shut down the platform for maintenance.
+     *
+     * @param freezeTime an Instant in UTC
+     */
+    public void setFreezeTime(@Nullable final Instant freezeTime) {
+        this.freezeTime = freezeTime;
+    }
+
+    /**
+     * Gets the last freezeTime based on which the nodes were frozen. If null then there has never been a freeze.
+     *
+     * @return the last freezeTime based on which the nodes were frozen
+     */
+    @Nullable
+    public Instant getLastFrozenTime() {
+        return lastFrozenTime;
+    }
+
+    /**
+     * Sets the last freezeTime based on which the nodes were frozen.
+     *
+     * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
+     * @return this object
+     */
+    @Nullable
+    public PlatformData setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
+        this.lastFrozenTime = lastFrozenTime;
+        return this;
+    }
+
+    /**
+     * Gets the uptime data.
+     *
+     * @return the uptime data
+     */
+    @NonNull
+    public UptimeDataImpl getUptimeData() {
+        return uptimeData;
+    }
+
+    /**
+     * Sets the uptime data.
+     *
+     * @param uptimeData the uptime data
+     * @return this object
+     */
+    public PlatformData setUptimeData(@NonNull final UptimeDataImpl uptimeData) {
+        this.uptimeData = Objects.requireNonNull(uptimeData);
+        return this;
+    }
+
+    // TODO get rid of equals, hashCode, and toString
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -482,7 +527,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         final PlatformData that = (PlatformData) other;
         return round == that.round
                 && Objects.equals(hashEventsCons, that.hashEventsCons)
-                && Arrays.equals(events, that.events)
                 && Objects.equals(consensusTimestamp, that.consensusTimestamp)
                 && Objects.equals(minGenInfo, that.minGenInfo)
                 && Objects.equals(epochHash, that.epochHash)
@@ -506,7 +550,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         return new ToStringBuilder(this)
                 .append("round", round)
                 .append("hashEventsCons", hashEventsCons)
-                .append("events", events)
                 .append("consensusTimestamp", consensusTimestamp)
                 .append("minGenInfo", minGenInfo)
                 .append("epochHash", epochHash)

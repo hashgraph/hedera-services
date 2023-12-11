@@ -31,7 +31,6 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
@@ -162,7 +161,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking {@link
-     * SwirldState#handleConsensusRound(Round, SwirldDualState)}.
+     * SwirldState#handleConsensusRound(Round, PlatformState)}.
      *
      * @param round
      * 		the round to handle
@@ -172,7 +171,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
 
         uptimeTracker.handleRound(
                 round,
-                state.getPlatformDualState().getMutableUptimeData(),
+                state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
         consensusSystemTransactionManager.handleRound(state, round);
@@ -196,7 +195,9 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
-        stateRef.get().getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
+        stateRef.get()
+                .getPlatformState()
+                .setLastFrozenTime(stateRef.get().getPlatformState().getFreezeTime());
     }
 
     /**
@@ -270,7 +271,11 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        return SwirldStateManagerUtils.isInFreezePeriod(timestamp, getConsensusState());
+        final PlatformState platformState = getConsensusState().getPlatformState();
+        return SwirldStateManagerUtils.isInFreezePeriod(
+                platformState.getConsensusTimestamp(),
+                platformState.getFreezeTime(),
+                platformState.getLastFrozenTime());
     }
 
     /**

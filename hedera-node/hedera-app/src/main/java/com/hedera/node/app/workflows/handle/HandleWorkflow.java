@@ -101,8 +101,8 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldDualState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -141,7 +141,7 @@ public class HandleWorkflow {
     private final ChildRecordFinalizer childRecordFinalizer;
     private final ParentRecordFinalizer transactionFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
-    private final DualStateUpdateFacility dualStateUpdateFacility;
+    private final PlatformStateUpdateFacility platformStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
     private final NetworkUtilizationManager networkUtilizationManager;
@@ -165,7 +165,7 @@ public class HandleWorkflow {
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
+            @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
@@ -187,8 +187,8 @@ public class HandleWorkflow {
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
         this.systemFileUpdateFacility =
                 requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
-        this.dualStateUpdateFacility =
-                requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
+        this.platformStateUpdateFacility =
+                requireNonNull(platformStateUpdateFacility, "platformStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.networkUtilizationManager =
@@ -202,7 +202,7 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(
-            @NonNull final HederaState state, @NonNull final SwirldDualState dualState, @NonNull final Round round) {
+            @NonNull final HederaState state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
@@ -233,7 +233,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, dualState, event, creator, platformTxn);
+                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -255,7 +255,7 @@ public class HandleWorkflow {
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -264,13 +264,13 @@ public class HandleWorkflow {
         final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
         // handle user transaction
-        handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
+        handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
     }
 
     private void handleUserTransaction(
             @NonNull final Instant consensusNow,
             @NonNull final HederaState state,
-            @NonNull final SwirldDualState dualState,
+            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
@@ -485,8 +485,8 @@ public class HandleWorkflow {
                     final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack, txBody);
                     recordBuilder.status(fileUpdateResult);
 
-                    // Notify if dual state was updated
-                    dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
+                    // Notify if platform state was updated
+                    platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
 
                 } catch (final HandleException e) {
                     // In case of a ContractCall when it reverts, the gas charged should not be rolled back

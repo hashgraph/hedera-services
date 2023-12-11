@@ -49,9 +49,6 @@ public class SwirldStateManagerUtilsTests {
         final SwirldState swirldState = new DummySwirldState();
         state.setSwirldState(swirldState);
 
-        final DualStateImpl dualState = new DualStateImpl();
-        state.setDualState(dualState);
-
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
         final State result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));

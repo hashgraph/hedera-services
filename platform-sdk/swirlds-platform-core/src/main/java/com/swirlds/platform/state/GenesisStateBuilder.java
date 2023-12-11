@@ -56,23 +56,6 @@ public final class GenesisStateBuilder {
     }
 
     /**
-     * Construct a genesis dual state.
-     *
-     * @param configuration configuration for the platform
-     * @return a genesis dual state
-     */
-    private static DualStateImpl buildGenesisDualState(final BasicConfig configuration) {
-        final DualStateImpl dualState = new DualStateImpl();
-
-        final long genesisFreezeTime = configuration.genesisFreezeTime();
-        if (genesisFreezeTime > 0) {
-            dualState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-        }
-
-        return dualState;
-    }
-
-    /**
      * Build and initialize a genesis state.
      *
      * @param platformContext the platform context
@@ -91,7 +74,11 @@ public final class GenesisStateBuilder {
         final State state = new State();
         state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
         state.setSwirldState(swirldState);
-        state.setDualState(buildGenesisDualState(basicConfig));
+
+        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+        if (genesisFreezeTime > 0) {
+            state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+        }
 
         final SignedState signedState = new SignedState(platformContext, state, "genesis state", false);
         return signedState.reserve("initial reservation on genesis state");

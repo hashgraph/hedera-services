@@ -23,7 +23,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
-import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +67,7 @@ public class UpgradeActions {
 
     private final UnzipAction unzipAction;
     private final GlobalDynamicProperties dynamicProperties;
-    private final Supplier<SwirldDualState> dualState;
+    private final Supplier<PlatformState> platformState;
     private final Supplier<MerkleSpecialFiles> specialFiles;
     private final Supplier<MerkleNetworkContext> networkCtx;
 
@@ -75,10 +75,10 @@ public class UpgradeActions {
     public UpgradeActions(
             final UnzipAction unzipAction,
             final GlobalDynamicProperties dynamicProperties,
-            final Supplier<SwirldDualState> dualState,
+            final Supplier<PlatformState> platformState,
             final Supplier<MerkleSpecialFiles> specialFiles,
             final Supplier<MerkleNetworkContext> networkCtx) {
-        this.dualState = dualState;
+        this.platformState = platformState;
         this.networkCtx = networkCtx;
         this.unzipAction = unzipAction;
         this.specialFiles = specialFiles;
@@ -154,7 +154,7 @@ public class UpgradeActions {
     private void catchUpOnMissedFreezeScheduling() {
         final var isUpgradePrepared = networkCtx.get().hasPreparedUpgrade();
         if (isFreezeScheduled() && isUpgradePrepared) {
-            writeMarker(FREEZE_SCHEDULED_MARKER, dualState.get().getFreezeTime());
+            writeMarker(FREEZE_SCHEDULED_MARKER, platformState.get().getFreezeTime());
         }
         /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
         But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
@@ -183,8 +183,8 @@ public class UpgradeActions {
         extractSoftwareUpgrade(archiveData).join();
     }
 
-    private void withNonNullDualState(final String actionDesc, final Consumer<SwirldDualState> action) {
-        final var curDualState = dualState.get();
+    private void withNonNullDualState(final String actionDesc, final Consumer<PlatformState> action) {
+        final var curDualState = platformState.get();
         Objects.requireNonNull(curDualState, "Cannot " + actionDesc + " without access to the dual state");
         action.accept(curDualState);
     }

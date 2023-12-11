@@ -23,8 +23,6 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPar
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -32,8 +30,6 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
@@ -45,17 +41,11 @@ import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
-import com.swirlds.platform.test.fixtures.event.EventUtils;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import com.swirlds.test.framework.ResourceLoader;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -537,23 +527,6 @@ public final class ConsensusTestDefinitions {
 
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);
-        orchestrator.validateAndClear(
-                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
-    }
-
-    public static void migrationTest(@NonNull final TestInput input)
-            throws URISyntaxException, ConstructableRegistryException, IOException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        final Path ssPath = ResourceLoader.getFile("modified-mainnet-state.swh.bin");
-        final SignedState state = SignedStateFileReader.readSignedStateOnly(
-                TestPlatformContextBuilder.create().build(), ssPath);
-        EventUtils.convertEvents(state);
-
-        final ConsensusTestOrchestrator orchestrator =
-                OrchestratorBuilder.builder().setTestInput(input).build();
-        orchestrator.loadSignedState(state);
-
-        orchestrator.generateEvents(1);
         orchestrator.validateAndClear(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
