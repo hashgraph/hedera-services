@@ -16,13 +16,21 @@
 
 package com.hedera.node.app.records;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
+import com.hedera.node.app.records.impl.codec.BlockInfoTranslator;
+import com.hedera.node.app.records.impl.codec.RunningHashesTranslator;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.io.IOException;
 import java.util.Set;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +54,9 @@ public final class BlockRecordService implements Service {
     /** The original hash, only used at genesis */
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
 
+    private RecordsRunningHashLeaf fs;
+    private MerkleNetworkContext mnc;
+
     @NonNull
     @Override
     public String getServiceName() {
@@ -54,7 +65,8 @@ public final class BlockRecordService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        // BBM: reducing version just for testing
+        registry.register(new Schema(SemanticVersion.newBuilder().minor(43).build()) {
             /** {@inheritDoc} */
             @NonNull
             @Override
@@ -84,5 +96,39 @@ public final class BlockRecordService implements Service {
                 // TODO : seems there should be something done here to match hash of the state after loading on restart
             }
         });
+
+//        if(true)return;
+        // BBM: reducing version just for testing
+        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                System.out.println("BBM: doing block record migration");
+
+                // first migrate the hashes
+                final var toHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
+                final var toRunningHashes = RunningHashesTranslator.runningHashesFromRecordsRunningHashLeaf(fs);
+                toHashState.put(toRunningHashes);
+                if (toHashState.isModified()) ((WritableSingletonStateBase) toHashState).commit();
+
+                // then migrate the latest block info
+                final var toBlockState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
+
+                try {
+                    final BlockInfo toBlockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(mnc);
+                    toBlockState.put(toBlockInfo);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                if (toBlockState.isModified()) ((WritableSingletonStateBase) toBlockState).commit();
+
+                System.out.println("BBM: finished block record migration");
+            }
+        });
+    }
+
+    public void setFs(RecordsRunningHashLeaf fs, MerkleNetworkContext mnc) {
+        this.fs = fs;
+        this.mnc = mnc;
     }
 }

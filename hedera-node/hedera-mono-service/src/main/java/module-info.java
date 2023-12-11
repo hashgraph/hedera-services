@@ -236,6 +236,7 @@ module com.hedera.node.app.service.mono {
             com.swirlds.common;
 
     exports com.hedera.node.app.service.mono.fees.calculation.meta;
+    exports com.hedera.node.app.service.mono.files.store;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;

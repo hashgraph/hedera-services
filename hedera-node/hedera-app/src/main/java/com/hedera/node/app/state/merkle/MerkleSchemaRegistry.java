@@ -168,6 +168,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
         for (final var schema : schemasToApply) {
+            System.out.println("registry:applyingSchema: " + schema.getVersion());
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap

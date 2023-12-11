@@ -19,6 +19,7 @@ package com.hedera.node.app.throttle;
 import static com.hedera.node.app.service.file.impl.schemas.FileGenesisSchema.readThrottleDefinitionsBytes;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -49,7 +50,8 @@ public class CongestionThrottleService implements Service {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new Schema(RELEASE_045_VERSION) {
+        // BBM: reducing version just for testing
+        registry.register(new Schema(SemanticVersion.newBuilder().minor(44).build()) {
             /** {@inheritDoc} */
             @NonNull
             @Override

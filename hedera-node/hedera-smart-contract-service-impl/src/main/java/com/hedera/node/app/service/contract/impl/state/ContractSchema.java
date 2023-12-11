@@ -34,8 +34,9 @@ public class ContractSchema extends Schema {
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 500_000_000;
+    // BBM: increasing version just for testing
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(40).build();
+            SemanticVersion.newBuilder().minor(43).build();
 
     public ContractSchema() {
         super(CURRENT_VERSION);

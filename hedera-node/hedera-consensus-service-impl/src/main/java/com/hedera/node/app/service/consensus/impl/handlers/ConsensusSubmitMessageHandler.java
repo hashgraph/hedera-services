@@ -52,6 +52,10 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -69,6 +73,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusSubmitMessageHandler implements TransactionHandler {
+    static Logger log = LogManager.getLogger(ConsensusSubmitMessageHandler.class);
+
     @Inject
     public ConsensusSubmitMessageHandler() {
         // Exists for injection
@@ -97,10 +103,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
+        log.info("BBM:consensus handle called {}", Instant.now());
         requireNonNull(handleContext);
 
         final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
+        log.info("BBM:handling submitted message: (time {}) [{}]", Instant.now(), handleContext.body().consensusSubmitMessageOrThrow().message());
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
