@@ -70,9 +70,10 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
             if (ownerId != null) {
                 List<AccountApprovalForAllAllowance> accountApprovalForAllAllowances = enhancement
                         .nativeOperations()
-                        .getAccount(ownerId.accountNum()).approveForAllNftAllowances();
+                        .getAccount(ownerId.accountNum())
+                        .approveForAllNftAllowances();
                 if (accountApprovalForAllAllowances != null) {
-                    for (var approvedForAll : accountApprovalForAllAllowances ) {
+                    for (var approvedForAll : accountApprovalForAllAllowances) {
                         if (approvedForAll.tokenId().equals(token)) {
                             return buildCryptoApproveAllowance(approveDelegate(ownerId, approvedForAll.spenderId()));
                         }
@@ -100,14 +101,14 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
 
     private CryptoApproveAllowanceTransactionBody approveDelegate(AccountID ownerId, AccountID delegateSpenderId) {
         return CryptoApproveAllowanceTransactionBody.newBuilder()
-                        .nftAllowances(NftAllowance.newBuilder()
-                                .tokenId(token)
-                                .spender(spender)
-                                .delegatingSpender(delegateSpenderId)
-                                .owner(ownerId)
-                                .serialNumbers(amount.longValue())
-                                .build())
-                        .build();
+                .nftAllowances(NftAllowance.newBuilder()
+                        .tokenId(token)
+                        .spender(spender)
+                        .delegatingSpender(delegateSpenderId)
+                        .owner(ownerId)
+                        .serialNumbers(amount.longValue())
+                        .build())
+                .build();
     }
 
     private CryptoApproveAllowanceTransactionBody approve(AccountID ownerId) {
