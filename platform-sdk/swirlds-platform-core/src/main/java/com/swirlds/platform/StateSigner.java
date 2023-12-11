@@ -8,23 +8,39 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusGetter;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
+/**
+ * This class is responsible for signing states and producing {@link StateSignatureTransaction}s.
+ */
 public class StateSigner {
-    /**
-     * An object responsible for signing states with this node's key.
-     */
+    /** An object responsible for signing states with this node's key. */
     private final HashSigner signer;
     /** provides the current platform status */
     private final PlatformStatusGetter platformStatusGetter;
 
-    public StateSigner(final HashSigner signer, final PlatformStatusGetter platformStatusGetter) {
-        this.signer = signer;
-        this.platformStatusGetter = platformStatusGetter;
+    /**
+     * Create a new {@link StateSigner} instance.
+     *
+     * @param signer               an object responsible for signing states with this node's key
+     * @param platformStatusGetter provides the current platform status
+     */
+    public StateSigner(@NonNull final HashSigner signer, @NonNull final PlatformStatusGetter platformStatusGetter) {
+        this.signer = Objects.requireNonNull(signer);
+        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
     }
 
-    public StateSignatureTransaction signState(@NonNull final ReservedSignedState reservedSignedState) {
-        try(reservedSignedState) {
+    /**
+     * Sign the given state and produce a {@link StateSignatureTransaction} containing the signature. This method
+     * assumes that the given {@link ReservedSignedState} is reserved by the caller and will release the state when
+     * done.
+     *
+     * @param reservedSignedState the state to sign
+     * @return a {@link StateSignatureTransaction} containing the signature, or null if the state should not be signed
+     */
+    public @Nullable StateSignatureTransaction signState(@NonNull final ReservedSignedState reservedSignedState) {
+        try (reservedSignedState) {
             if (platformStatusGetter.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
                 // the only time we don't want to submit signatures is during PCES replay
                 return null;
