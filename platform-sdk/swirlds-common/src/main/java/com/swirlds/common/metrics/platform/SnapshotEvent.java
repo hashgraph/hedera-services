@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.util.Collection;
 
 public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {

@@ -20,12 +20,10 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
@@ -39,6 +37,9 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
@@ -109,9 +110,15 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
-        clearAllInternalPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(Pair.of(intakeQueue, "intakeQueue"), Pair.of(shadowGraph, "shadowGraph")));
+        if (platformContext.getConfiguration().getConfigData(EventConfig.class).useLegacyIntake()) {
+            // legacy intake clears these things as part of gossip
+            clearAllInternalPipelines = new LoggingClearables(
+                    RECONNECT.getMarker(),
+                    List.of(Pair.of(intakeQueue, "intakeQueue"), Pair.of(shadowGraph, "shadowGraph")));
+        } else {
+            // the new intake pipeline clears everything from the top level, rather than delegating to gossip
+            clearAllInternalPipelines = null;
+        }
     }
 
     /**
@@ -151,7 +158,9 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllInternalPipelines.clear();
+        if (clearAllInternalPipelines != null) {
+            clearAllInternalPipelines.clear();
+        }
     }
 
     /**

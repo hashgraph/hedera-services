@@ -23,7 +23,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
-import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;

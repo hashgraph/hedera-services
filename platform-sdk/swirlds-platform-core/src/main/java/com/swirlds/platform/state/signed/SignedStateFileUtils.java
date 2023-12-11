@@ -18,7 +18,7 @@ package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import java.nio.file.Path;
 
 /**

@@ -19,13 +19,13 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

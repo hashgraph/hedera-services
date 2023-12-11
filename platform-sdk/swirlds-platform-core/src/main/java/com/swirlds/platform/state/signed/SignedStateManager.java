@@ -20,13 +20,13 @@ import static com.swirlds.platform.state.signed.ReservedSignedState.createNullRe
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

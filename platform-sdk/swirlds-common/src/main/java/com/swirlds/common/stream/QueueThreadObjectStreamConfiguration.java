@@ -17,8 +17,8 @@
 package com.swirlds.common.stream;
 
 import com.swirlds.common.crypto.RunningHashable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -30,16 +30,18 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.EventStreamManager;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -54,6 +56,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,19 +89,25 @@ public final class RecoveryTestUtils {
             transactions[transactionIndex] = new SwirldTransaction(contents);
         }
 
+        final NodeId selfId = new NodeId(random.nextLong(Long.MAX_VALUE));
+        final NodeId otherId = new NodeId(random.nextLong(Long.MAX_VALUE));
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(
+                randomHash(random), selfId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor = new EventDescriptor(
+                randomHash(random), otherId, random.nextLong(), EventConstants.BIRTH_ROUND_UNDEFINED);
+
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                new NodeId(random.nextLong(Long.MAX_VALUE)),
-                random.nextLong(),
-                random.nextLong(),
-                randomHash(random),
-                randomHash(random),
+                selfId,
+                selfDescriptor,
+                Collections.singletonList(otherDescriptor),
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 now,
                 transactions);
 
-        final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData(
-                new NodeId(random.nextLong(Long.MAX_VALUE)),
-                randomSignature(random).getSignatureBytes());
+        final BaseEventUnhashedData baseEventUnhashedData =
+                new BaseEventUnhashedData(otherId, randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);
