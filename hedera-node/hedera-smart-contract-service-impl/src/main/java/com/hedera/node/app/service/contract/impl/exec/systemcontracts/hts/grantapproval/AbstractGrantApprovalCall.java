@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grant
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.List;
 
 public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     protected final VerificationStrategy verificationStrategy;
@@ -64,6 +66,20 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     public TransactionBody callGrantApproval() {
         if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE) {
             var ownerId = getOwnerId();
+
+            if (ownerId != null) {
+                List<AccountApprovalForAllAllowance> accountApprovalForAllAllowances = enhancement
+                        .nativeOperations()
+                        .getAccount(ownerId.accountNum()).approveForAllNftAllowances();
+                if (accountApprovalForAllAllowances != null) {
+                    for (var approvedForAll : accountApprovalForAllAllowances ) {
+                        if (approvedForAll.tokenId().equals(token)) {
+                            return buildCryptoApproveAllowance(approveDelegate(ownerId, approvedForAll.spenderId()));
+                        }
+                    }
+                }
+            }
+
             return isNftApprovalRevocation()
                     ? buildCryptoDeleteAllowance(remove(ownerId))
                     : buildCryptoApproveAllowance(approve(ownerId));
@@ -80,6 +96,18 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                         .serialNumbers(amount.longValue())
                         .build())
                 .build();
+    }
+
+    private CryptoApproveAllowanceTransactionBody approveDelegate(AccountID ownerId, AccountID delegateSpenderId) {
+        return CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .nftAllowances(NftAllowance.newBuilder()
+                                .tokenId(token)
+                                .spender(spender)
+                                .delegatingSpender(delegateSpenderId)
+                                .owner(ownerId)
+                                .serialNumbers(amount.longValue())
+                                .build())
+                        .build();
     }
 
     private CryptoApproveAllowanceTransactionBody approve(AccountID ownerId) {

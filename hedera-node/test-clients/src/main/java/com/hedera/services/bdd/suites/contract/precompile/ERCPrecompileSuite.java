@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -1716,14 +1717,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                         //                                .via("B")
                         //                                .gas(1_000_000))
                         //                        // These should work because the contract is an operator for aCivilian
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        DO_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        asHeadlongAddress(bCivilianMirrorAddr.get()),
-                        //                                        BigInteger.TWO)
-                        //                                .via("C")
-                        //                                .gas(1_000_000))
+                                                sourcing(() -> contractCall(
+                                                                SOME_ERC_721_SCENARIOS,
+                                                                DO_SPECIFIC_APPROVAL,
+                                                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                                                asHeadlongAddress(bCivilianMirrorAddr.get()),
+                                                                BigInteger.TWO)
+                                                        .via("C")
+                                                        .gas(1_000_000)),
                         sourcing(() -> contractCall(
                                         SOME_ERC_721_SCENARIOS,
                                         "iMustOwnAfterReceiving",
@@ -1744,18 +1745,18 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .addNftAllowance(B_CIVILIAN, NF_TOKEN, SOME_ERC_721_SCENARIOS, true, List.of())
                                 .signedBy(DEFAULT_PAYER, B_CIVILIAN)
                                 .fee(ONE_HBAR),
-                        //                        sourcing(() -> contractCall(
-                        //                                        SOME_ERC_721_SCENARIOS,
-                        //                                        DO_SPECIFIC_APPROVAL,
-                        //                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                        //                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                        //                                        BigInteger.valueOf(3))
-                        //                                .gas(1_000_000))
-                        //                        cryptoTransfer(movingUniqueWithAllowance(NF_TOKEN,
-                        // 3L).between(B_CIVILIAN, A_CIVILIAN))
-                        //                                .payingWith(A_CIVILIAN)
-                        //                                .fee(ONE_HBAR),
-                        //                        getTokenNftInfo(NF_TOKEN, 3L).hasAccountID(A_CIVILIAN),
+                                                sourcing(() -> contractCall(
+                                                                SOME_ERC_721_SCENARIOS,
+                                                                DO_SPECIFIC_APPROVAL,
+                                                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                                                BigInteger.valueOf(3))
+                                                        .gas(1_000_000)),
+                                                cryptoTransfer(movingUniqueWithAllowance(NF_TOKEN,
+                         3L).between(B_CIVILIAN, A_CIVILIAN))
+                                                        .payingWith(A_CIVILIAN)
+                                                        .fee(ONE_HBAR),
+                                                getTokenNftInfo(NF_TOKEN, 3L).hasAccountID(A_CIVILIAN),
                         cryptoApproveAllowance()
                                 .payingWith(B_CIVILIAN)
                                 .addNftAllowance(B_CIVILIAN, NF_TOKEN, A_CIVILIAN, false, List.of(5L))
