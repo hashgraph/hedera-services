@@ -107,6 +107,7 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(VALUE));
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
         given(frame.readMutableMemory(anyLong(), anyLong())).willReturn(MUTABLE_INITCODE);
+        given(frame.getContractAddress()).willReturn(ORIGINATOR_ADDRESS);
         given(featureFlags.isCreate2Enabled(frame)).willReturn(true);
         given(worldUpdater.isHollowAccount(EIP_1014_ADDRESS)).willReturn(true);
         given(featureFlags.isImplicitCreationEnabled(frame)).willReturn(true);
@@ -134,6 +135,6 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
         verify(frame).pushStackItem(Words.fromAddress(EIP_1014_ADDRESS));
-        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS);
+        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS, ORIGINATOR_ADDRESS);
     }
 }

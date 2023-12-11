@@ -59,6 +59,9 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,6 +100,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private SystemContractGasCalculator gasCalculator;
+
+    @Mock
+    private ReadableAccountStore readableAccountStore;
 
     private HandleHederaOperations subject;
 
@@ -452,18 +458,23 @@ class HandleHederaOperationsTest {
     @Test
     void externalizeHollowAccountMerge() {
         // given
-        given(context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class))
+        var parentAccount = Account.newBuilder().accountId(AccountID.DEFAULT).key(Key.DEFAULT).build();
+        var contractId = ContractID.newBuilder().contractNum(1001).build();
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(readableAccountStore.getContractById(ContractID.DEFAULT)).willReturn(parentAccount);
+        given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class), any(ExternalizedRecordCustomizer.class)))
                 .willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.contractID(ContractID.DEFAULT)).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractID(eq(contractId))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.status(any())).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.transaction(any(Transaction.class))).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
                 .willReturn(contractCreateRecordBuilder);
 
         // when
-        subject.externalizeHollowAccountMerge(ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress());
+        subject.externalizeHollowAccountMerge(contractId, ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress());
 
         // then
-        verify(contractCreateRecordBuilder).contractID(ContractID.DEFAULT);
+        verify(contractCreateRecordBuilder).contractID(contractId);
         verify(contractCreateRecordBuilder).contractCreateResult(any(ContractFunctionResult.class));
     }
 }

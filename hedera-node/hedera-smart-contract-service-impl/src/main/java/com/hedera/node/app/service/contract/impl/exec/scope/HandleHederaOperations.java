@@ -352,11 +352,7 @@ public class HandleHederaOperations implements HederaOperations {
         recordBuilder
                 .contractID(contractId)
                 .status(SUCCESS)
-                // add dummy transaction, because SingleTransactionRecord require NonNull on build
-                .transaction(Transaction.newBuilder()
-                        .signedTransactionBytes(Bytes.EMPTY)
-                        .build())
-
+                .transaction(Transaction.DEFAULT)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
