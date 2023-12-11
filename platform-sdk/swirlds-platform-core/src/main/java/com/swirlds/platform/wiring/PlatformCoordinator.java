@@ -67,32 +67,36 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
-        // pause the linked event intake and event creator, to prevent any new events from making it through the intake
-        // pipeline
+        // Phase 1: pause
+        // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
+        // pipeline.
         linkedEventIntakeWiring.pauseInput().inject(true);
         eventCreationManagerWiring.pauseInput().inject(true);
         linkedEventIntakeWiring.flushRunnable().run();
         eventCreationManagerWiring.flush();
 
-        // flush everything remaining in the intake pipeline out into the void
+        // Phase 2: flush
+        // Flush everything remaining in the intake pipeline out into the void.
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
 
-        // once everything has been flushed out of the system, it's safe to unpause event intake and creation
-        linkedEventIntakeWiring.pauseInput().inject(false);
-        eventCreationManagerWiring.pauseInput().inject(false);
-
-        // data is no longer moving through the system. clear all the internal data structures in the wiring objects
+        // Phase 3: clear
+        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
         eventDeduplicatorWiring.flushRunnable().run();
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         orphanBufferWiring.flushRunnable().run();
-        eventCreationManagerWiring.flush();
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.flushRunnable().run();
+
+        // Phase 4: unpause
+        // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.
+        linkedEventIntakeWiring.pauseInput().inject(false);
+        eventCreationManagerWiring.pauseInput().inject(false);
     }
 }
