@@ -31,12 +31,12 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 /**
  * An {@link EventAddedObserver} that maintains all metrics which need to be updated on a new event
@@ -126,11 +126,13 @@ public class AddedEventMetrics implements EventAddedObserver {
      * 		the {@link NodeId} of this node
      * @param metrics
      * 		a reference to the metrics-system
-     * @throws IllegalArgumentException if one of the parameters is {@code null}
+     * @throws NullPointerException in case {@code selfId} parameter is {@code null}
+     * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {
-        this.selfId = CommonUtils.throwArgNull(selfId, "selfId");
-        CommonUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(selfId, String.format("The supplied argument '%s' cannot be null!", "selfId"));
+        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        this.selfId = selfId;
 
         eventsCreatedPerSecond = metrics.getOrCreate(EVENTS_CREATED_PER_SECOND_CONFIG);
         averageOtherParentAgeDiff = new AverageStat(

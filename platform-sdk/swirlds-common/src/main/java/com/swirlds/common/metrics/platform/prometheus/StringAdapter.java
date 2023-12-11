@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
@@ -48,12 +47,13 @@ public class StringAdapter extends AbstractMetricAdapter {
      * 		The {@link Metric} which value should be reported to Prometheus
      * @param adapterType
      * 		Scope of the {@link Metric}, either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
-     * @throws IllegalArgumentException if one of the parameters is {@code null}
+     * @throws NullPointerException in case {@code registry} parameter is {@code null}
+     * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
     public StringAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
-        throwArgNull(registry, "registry");
-        throwArgNull(metric, "metric");
+        Objects.requireNonNull(registry, String.format("The supplied argument '%s' cannot be null!", "registry"));
+        Objects.requireNonNull(metric, String.format("The supplied argument '%s' cannot be null!", "metric"));
         final Info.Builder builder = new Info.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
@@ -69,12 +69,12 @@ public class StringAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
-        throwArgNull(snapshot, "snapshot");
+        Objects.requireNonNull(snapshot, String.format("The supplied argument '%s' cannot be null!", "snapshot"));
         final String newValue = Objects.toString(snapshot.getValue());
         if (adapterType == GLOBAL) {
             info.info("value", newValue);
         } else {
-            throwArgNull(nodeId, "nodeId");
+            Objects.requireNonNull(nodeId, String.format("The supplied argument '%s' cannot be null!", "nodeId"));
             final Info.Child child = info.labels(nodeId.toString());
             child.info("value", newValue);
         }

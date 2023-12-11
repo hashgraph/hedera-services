@@ -16,8 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -42,10 +41,11 @@ public class MetricsEventBus<T> {
      *
      * @param executor
      * 		An {@link Executor} that is used to notify subscribers
-     * @throws IllegalArgumentException if {@code executor} is {@code null}
+     * @throws NullPointerException in case {@code executor} parameter is {@code null}
      */
     public MetricsEventBus(final Executor executor) {
-        this.executor = throwArgNull(executor, "executor");
+        Objects.requireNonNull(executor, String.format("The supplied argument '%s' cannot be null!", "executor"));
+        this.executor = executor;
     }
 
     /**
@@ -59,11 +59,13 @@ public class MetricsEventBus<T> {
      * 		A {@link Supplier} of previous events. To ensure, that we do not miss events, this will be evaluated
      * 		after the subscriber was added.
      * @return a {@link Runnable} with which the subscriber can be unsubscribed
-     * @throws IllegalArgumentException if one of the arguments is {@code null}
+     * @throws NullPointerException in case {@code subscriber} parameter is {@code null}
+     * @throws NullPointerException in case {@code previousEvents} parameter is {@code null}
      */
     public Runnable subscribe(final Consumer<? super T> subscriber, final Supplier<Stream<T>> previousEvents) {
-        throwArgNull(subscriber, "subscriber");
-        throwArgNull(previousEvents, "previousEvents");
+        Objects.requireNonNull(subscriber, String.format("The supplied argument '%s' cannot be null!", "subscriber"));
+        Objects.requireNonNull(
+                previousEvents, String.format("The supplied argument '%s' cannot be null!", "previousEvents"));
         subscribers.add(subscriber);
         executor.execute(() -> previousEvents.get().forEach(subscriber));
         return () -> subscribers.remove(subscriber);
@@ -76,9 +78,10 @@ public class MetricsEventBus<T> {
      *
      * @param event
      * 		The Event that will be sent to all subscribers
+     * @throws NullPointerException in case {@code event} parameter is {@code null}
      */
     public void submit(final T event) {
-        throwArgNull(event, "event");
+        Objects.requireNonNull(event, String.format("The supplied argument '%s' cannot be null!", "event"));
         executor.execute(() -> subscribers.forEach(subscriber -> subscriber.accept(event)));
     }
 }

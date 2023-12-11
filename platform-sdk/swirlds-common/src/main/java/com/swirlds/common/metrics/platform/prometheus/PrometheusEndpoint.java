@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
@@ -44,6 +43,7 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,8 +93,9 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      */
     @Deprecated(forRemoval = true)
     public PrometheusEndpoint(final HttpServer httpServer, final CollectorRegistry registry) throws IOException {
-        throwArgNull(httpServer, "httpServer");
-        this.registry = throwArgNull(registry, "registry");
+        Objects.requireNonNull(httpServer, String.format("The supplied argument '%s' cannot be null!", "httpServer"));
+        Objects.requireNonNull(registry, String.format("The supplied argument '%s' cannot be null!", "registry"));
+        this.registry = registry;
 
         logger.info(
                 STARTUP.getMarker(),
@@ -113,9 +114,11 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      *
      * @param notification
      * 		the {@link MetricsEvent}
+     * @throws NullPointerException in case {@code notification} parameter is {@code null}
      */
     public void handleMetricsChange(final MetricsEvent notification) {
-        throwArgNull(notification, "notification");
+        Objects.requireNonNull(
+                notification, String.format("The supplied argument '%s' cannot be null!", "notification"));
 
         final Metric metric = notification.metric();
         final String metricKey = calculateMetricKey(metric);
@@ -145,7 +148,8 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      * 		the {@link SnapshotEvent}
      */
     public void handleSnapshots(final SnapshotEvent notification) {
-        throwArgNull(notification, "notification");
+        Objects.requireNonNull(
+                notification, String.format("The supplied argument '%s' cannot be null!", "notification"));
 
         for (final Snapshot snapshot : notification.snapshots()) {
             final String metricKey = calculateMetricKey(snapshot.metric());

@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
@@ -29,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
+import java.util.Objects;
 
 /**
  * Adapter that synchronizes a {@link Metric} with a single numeric value
@@ -47,12 +47,13 @@ public class NumberAdapter extends AbstractMetricAdapter {
      * 		The {@link Metric} which value should be reported to Prometheus
      * @param adapterType
      * 		Scope of the {@link Metric}, either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
-     * @throws IllegalArgumentException if one of the parameters is {@code null}
+     * @throws NullPointerException in case {@code registry} parameter is {@code null}
+     * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
     public NumberAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
-        throwArgNull(registry, "registry");
-        throwArgNull(metric, "metric");
+        Objects.requireNonNull(registry, String.format("The supplied argument '%s' cannot be null!", "registry"));
+        Objects.requireNonNull(metric, String.format("The supplied argument '%s' cannot be null!", "metric"));
         final Gauge.Builder builder = new Gauge.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
@@ -69,12 +70,12 @@ public class NumberAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
-        throwArgNull(snapshot, "snapshot");
+        Objects.requireNonNull(snapshot, String.format("The supplied argument '%s' cannot be null!", "snapshot"));
         final double newValue = ((Number) snapshot.getValue()).doubleValue();
         if (adapterType == GLOBAL) {
             gauge.set(newValue);
         } else {
-            throwArgNull(nodeId, "nodeId");
+            Objects.requireNonNull(nodeId, String.format("The supplied argument '%s' cannot be null!", "nodeId"));
             final Gauge.Child child = gauge.labels(nodeId.toString());
             child.set(newValue);
         }

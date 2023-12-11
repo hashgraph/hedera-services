@@ -16,10 +16,9 @@
 
 package com.swirlds.common.metrics.statistics;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
+import java.util.Objects;
 
 /**
  * This class measures how many times per second the cycle() method is called. It is recalculated every
@@ -134,11 +133,13 @@ public class StatsSpeedometer implements StatsBuffered {
      * 		half of the exponential weighting comes from the last halfLife seconds
      * @param time
      * 		the {@code Clock} implementation, typically a mock when testing
+     * @throws NullPointerException in case {@code time} parameter is {@code null}
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
     public StatsSpeedometer(final double halfLife, final boolean saveHistory, final Time time) {
-        this.time = throwArgNull(time, "time");
+        Objects.requireNonNull(time, String.format("The supplied argument '%s' cannot be null!", "time"));
+        this.time = time;
         final long now = time.nanoTime();
         this.startTime = now;
         this.lastTime = now;
