@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
@@ -69,7 +70,7 @@ public class MixedOperations {
             inParallel(IntStream.range(0, 2 * numSubmissions)
                     .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
                             .logging()
-                            .signedBy(SENDER))
+                            .signedBy(SENDER, DEFAULT_PAYER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
@@ -86,10 +87,7 @@ public class MixedOperations {
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             inParallel(IntStream.range(0, numSubmissions)
-                    .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i)
-                            .logging()
-                            .payingWith(SENDER)
-                            .signedBy(SENDER))
+                    .mapToObj(i -> tokenAssociate(SENDER, TOKEN + i).logging().signedBy(SENDER, DEFAULT_PAYER))
                     .toArray(HapiSpecOperation[]::new)),
             sleepFor(10000),
             submitMessageTo(TOPIC)
@@ -105,8 +103,7 @@ public class MixedOperations {
                     .mapToObj(ignore -> scheduleCreate(
                                     "schedule" + scheduleId.incrementAndGet(),
                                     cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, r.nextInt(100000000))))
-                            .payingWith(SENDER)
-                            .signedBy(SENDER)
+                            .signedBy(SENDER, DEFAULT_PAYER)
                             .adminKey(SENDER)
                             .logging())
                     .toArray(HapiSpecOperation[]::new)),

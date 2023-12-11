@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.T
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -53,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * shuts one node,and starts it back after some time. Node will reconnect, and once reconnect is completed
  * submits the same burst of mixed operations again.
  */
-// @HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
+@HapiTestSuite // This should be enabled once there is a different tag to be run in CI, since it shuts down nodes
 public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsNodeDeathReconnectTest.class);
 
@@ -91,18 +92,23 @@ public class MixedOpsNodeDeathReconnectTest extends HapiSuite {
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        // Kill node 2
                         shutDownNode("Carol"),
+                        // Wait for it to shut down
                         waitForNodeToShutDown("Carol", 75))
                 .when(
+                        // Submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
                         // start all nodes
                         startNode("Carol"),
-                        // wait for all nodes to be ACTIVE
+                        // wait for node 2 to go BEHIND
                         waitForNodeToBeBehind("Carol", 60),
+                        // Node 2 will try to reconnect and comes to RECONNECT_COMPLETE
                         waitForNodeToFinishReconnect("Carol", 60),
+                        // Node 2 successfully reconnects and becomes ACTIVE
                         waitForNodeToBecomeActive("Carol", 60))
                 .then(
-                        // Once nodes come back ACTIVE, submit some operations again
+                        // Once node 2 come back ACTIVE, submit some operations again
                         cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(SENDER).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER).balance(ONE_MILLION_HBARS),

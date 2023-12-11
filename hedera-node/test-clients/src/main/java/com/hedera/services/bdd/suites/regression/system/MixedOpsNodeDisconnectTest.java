@@ -91,14 +91,18 @@ public class MixedOpsNodeDisconnectTest extends HapiSuite {
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY),
+                        // Block network port on node 2
                         disconnectNode("Carol", 75))
                 .when(
+                        // submit operations when node 2 is down
                         inParallel(mixedOpsBurst.get()),
-                        // start all nodes
+                        // Unblock network port on  node 2
                         reviveNode("Carol", 75),
-                        // wait for all nodes to be ACTIVE
+                        // wait for node 2 to go to BEHIND
                         waitForNodeToBeBehind("Carol", 60),
+                        // Allow node 2 to reconnect to other nodes and goes to RECONNECT_COMPLETE
                         waitForNodeToFinishReconnect("Carol", 60),
+                        // Once node 2 reconnects successfully it goes to ACTIVE
                         waitForNodeToBecomeActive("Carol", 60))
                 .then(
                         // Once nodes come back ACTIVE, submit some operations again
