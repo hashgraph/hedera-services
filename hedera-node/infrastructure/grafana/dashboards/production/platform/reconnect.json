@@ -1,0 +1,961 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus",
+      "usage": {
+        "libraryPanels": [
+          {
+            "name": "conns Changes",
+            "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d"
+          }
+        ]
+      }
+    }
+  ],
+  "__elements": {
+    "c0f06e60-0fcc-44e7-af5a-bf436e1fbe98": {
+      "name": "Platform Status",
+      "uid": "c0f06e60-0fcc-44e7-af5a-bf436e1fbe98",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "super-light-blue",
+                    "index": 0,
+                    "text": "Starting Up"
+                  },
+                  "2": {
+                    "color": "semi-dark-green",
+                    "index": 1,
+                    "text": "Active"
+                  },
+                  "3": {
+                    "color": "#808080",
+                    "index": 10,
+                    "text": "Disconnected"
+                  },
+                  "4": {
+                    "color": "semi-dark-orange",
+                    "index": 2,
+                    "text": "Behind"
+                  },
+                  "5": {
+                    "color": "purple",
+                    "index": 3,
+                    "text": "Freezing"
+                  },
+                  "6": {
+                    "color": "dark-purple",
+                    "index": 4,
+                    "text": "Freeze Complete"
+                  },
+                  "7": {
+                    "color": "blue",
+                    "index": 5,
+                    "text": "Replaying Events"
+                  },
+                  "8": {
+                    "color": "super-light-green",
+                    "index": 6,
+                    "text": "Observing"
+                  },
+                  "9": {
+                    "color": "light-yellow",
+                    "index": 7,
+                    "text": "Checking"
+                  },
+                  "10": {
+                    "color": "light-orange",
+                    "index": 8,
+                    "text": "Reconnect Complete"
+                  },
+                  "11": {
+                    "color": "dark-red",
+                    "index": 9,
+                    "text": "Catastrophic Failure"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "10.3.0-63137",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "exemplar": false,
+            "expr": "platform_PlatformStatus{environment=\"$network\"}",
+            "format": "time_series",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Platform Status",
+        "type": "stat"
+      }
+    },
+    "a5c5c524-a234-4292-85ae-9fb58f7a863a": {
+      "name": "syncGenDiff",
+      "uid": "a5c5c524-a234-4292-85ae-9fb58f7a863a",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        },
+        "description": "The number of generation ahead (positive) or behind (negative) when syncing.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "generations",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "semi-dark-red",
+                  "value": null
+                },
+                {
+                  "color": "semi-dark-yellow",
+                  "value": -5000
+                },
+                {
+                  "color": "semi-dark-green",
+                  "value": -3000
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "internal_syncGenDiff{environment=\"$network\", node_id=~\"$NodeID\"}",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "syncGenDiff",
+        "type": "timeseries"
+      }
+    },
+    "ef64b104-def4-4374-ba11-df4fb2a8ec2d": {
+      "name": "conns Changes",
+      "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+        },
+        "description": "The increase in the number of TLS connections established by a node per second.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "libraryPanel": {
+          "name": "conns Changes",
+          "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d"
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "increase(platform_conns{environment=\"$network\", type=\"mean\", node_id=~\"$NodeID\"}[$__rate_interval])",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "conns Changes",
+        "type": "timeseries"
+      }
+    }
+  },
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.3.0-63588"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "Platform"
+      ],
+      "targetBlank": false,
+      "title": "Platform Dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 7,
+      "libraryPanel": {
+        "uid": "c0f06e60-0fcc-44e7-af5a-bf436e1fbe98",
+        "name": "Platform Status"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 5,
+      "libraryPanel": {
+        "uid": "a5c5c524-a234-4292-85ae-9fb58f7a863a",
+        "name": "syncGenDiff"
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decmbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "platform_directMemInMB{environment=\"$network\", node_id=~\"$NodeID\", type=\"mean\"}",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "directMem",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "platform_memTot{environment=\"$network\", node_id=~\"$NodeID\", type=\"mean\"}",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "memTot",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "changes(Reconnect_startsReconnectAsReceiver_total{environment=\"$network\", node_id=~\"$NodeID\"}[1m])",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}} starts",
+          "range": true,
+          "refId": "starts",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "changes(Reconnect_endsReconnectAsReceiver_total{environment=\"$network\", node_id=~\"$NodeID\"}[1m])",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}} ends",
+          "range": true,
+          "refId": "ends",
+          "useBackend": false
+        }
+      ],
+      "title": "Reconnect Learners",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "changes(Reconnect_startsReconnectAsSender_total{environment=\"$network\", node_id=~\"$NodeID\"}[1m])",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}} starts",
+          "range": true,
+          "refId": "starts",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "changes(Reconnect_endsReconnectAsSender_total{environment=\"$network\", node_id=~\"$NodeID\"}[1m])",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{node_id}} ends",
+          "range": true,
+          "refId": "ends",
+          "useBackend": false
+        }
+      ],
+      "title": "Reconnect Teachers",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 9,
+      "libraryPanel": {
+        "uid": "ef64b104-def4-4374-ba11-df4fb2a8ec2d",
+        "name": "conns Changes"
+      }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": [
+    "Platform"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        },
+        "definition": "label_values(platform_trans_per_sec{environment!~\"nmt.*\"},environment)",
+        "description": "The network to pull data from (i.e. mainnet, testnet, etc).",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Network",
+        "multi": false,
+        "name": "network",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(platform_trans_per_sec{environment!~\"nmt.*\"},environment)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
+        },
+        "definition": "label_values(node_id)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "NodeID",
+        "multi": true,
+        "name": "NodeID",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(node_id)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Reconnects",
+  "uid": "a11737aa-3390-4951-8ddb-0b1b3f06aebc",
+  "version": 20,
+  "weekStart": ""
+}
