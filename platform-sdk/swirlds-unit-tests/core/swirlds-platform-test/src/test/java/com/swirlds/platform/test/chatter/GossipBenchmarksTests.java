@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.test.chatter.simulator.GossipSimulation;
 import com.swirlds.platform.test.chatter.simulator.GossipSimulationBuilder;
 import java.time.Duration;

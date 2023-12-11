@@ -17,14 +17,12 @@
 package com.swirlds.common.crypto;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.internal.HashUtils;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
@@ -75,25 +73,16 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Constructs an immutable Ed25519 signature using the provided signature pointer, public key pointer, and original
      * message pointer.
      *
-     * @param contents
-     * 		a pointer to a byte buffer containing the message, signature, and public key
-     * @param signatureOffset
-     * 		the index where the signature begins in the contents array
-     * @param signatureLength
-     * 		the length of the signature (in bytes)
-     * @param publicKeyOffset
-     * 		the index where the public key begins in the contents array
-     * @param publicKeyLength
-     * 		the length of the public key (in bytes)
-     * @param messageOffset
-     * 		the index where the message begins in the contents array
-     * @param messageLength
-     * 		the length of the message (in bytes)
-     * @throws NullPointerException
-     * 		if the {@code contents} array is null or zero length
-     * @throws IllegalArgumentException
-     * 		if any of the offsets or lengths fall outside the bounds of the {@code contents}
-     * 		array.
+     * @param contents        a pointer to a byte buffer containing the message, signature, and public key
+     * @param signatureOffset the index where the signature begins in the contents array
+     * @param signatureLength the length of the signature (in bytes)
+     * @param publicKeyOffset the index where the public key begins in the contents array
+     * @param publicKeyLength the length of the public key (in bytes)
+     * @param messageOffset   the index where the message begins in the contents array
+     * @param messageLength   the length of the message (in bytes)
+     * @throws NullPointerException     if the {@code contents} array is null or zero length
+     * @throws IllegalArgumentException if any of the offsets or lengths fall outside the bounds of the {@code contents}
+     *                                  array.
      */
     public TransactionSignature(
             final byte[] contents,
@@ -118,27 +107,17 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Constructs an immutable Ed25519 signature using the provided signature pointer, public key pointer, and original
      * message pointer.
      *
-     * @param contents
-     * 		a pointer to a byte buffer containing the message, signature, and public key
-     * @param signatureOffset
-     * 		the index where the signature begins in the contents array
-     * @param signatureLength
-     * 		the length of the signature (in bytes)
-     * @param expandedPublicKey
-     * 		an optional byte array from which retrieve the public key
-     * @param publicKeyOffset
-     * 		the index where the public key begins in the contents array
-     * @param publicKeyLength
-     * 		the length of the public key (in bytes)
-     * @param messageOffset
-     * 		the index where the message begins in the contents array
-     * @param messageLength
-     * 		the length of the message (in bytes)
-     * @throws NullPointerException
-     * 		if the {@code contents} array is null or zero length
-     * @throws IllegalArgumentException
-     * 		if any of the offsets or lengths fall outside the bounds of the {@code contents}
-     * 		array
+     * @param contents          a pointer to a byte buffer containing the message, signature, and public key
+     * @param signatureOffset   the index where the signature begins in the contents array
+     * @param signatureLength   the length of the signature (in bytes)
+     * @param expandedPublicKey an optional byte array from which retrieve the public key
+     * @param publicKeyOffset   the index where the public key begins in the contents array
+     * @param publicKeyLength   the length of the public key (in bytes)
+     * @param messageOffset     the index where the message begins in the contents array
+     * @param messageLength     the length of the message (in bytes)
+     * @throws NullPointerException     if the {@code contents} array is null or zero length
+     * @throws IllegalArgumentException if any of the offsets or lengths fall outside the bounds of the {@code contents}
+     *                                  array
      */
     public TransactionSignature(
             final byte[] contents,
@@ -165,27 +144,17 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Constructs an immutable signature of the given cryptographic algorithm using the provided signature pointer,
      * public key pointer, and original message pointer.
      *
-     * @param contents
-     * 		a pointer to a byte buffer containing the message, signature, and public key
-     * @param signatureOffset
-     * 		the index where the signature begins in the contents array
-     * @param signatureLength
-     * 		the length of the signature (in bytes)
-     * @param publicKeyOffset
-     * 		the index where the public key begins in the contents array
-     * @param publicKeyLength
-     * 		the length of the public key (in bytes)
-     * @param messageOffset
-     * 		the index where the message begins in the contents array
-     * @param messageLength
-     * 		the length of the message (in bytes)
-     * @param signatureType
-     * 		the cryptographic algorithm used to create the signature
-     * @throws NullPointerException
-     * 		if the {@code contents} array is null or zero length
-     * @throws IllegalArgumentException
-     * 		if any of the offsets or lengths fall outside the bounds of the {@code contents}
-     * 		array
+     * @param contents        a pointer to a byte buffer containing the message, signature, and public key
+     * @param signatureOffset the index where the signature begins in the contents array
+     * @param signatureLength the length of the signature (in bytes)
+     * @param publicKeyOffset the index where the public key begins in the contents array
+     * @param publicKeyLength the length of the public key (in bytes)
+     * @param messageOffset   the index where the message begins in the contents array
+     * @param messageLength   the length of the message (in bytes)
+     * @param signatureType   the cryptographic algorithm used to create the signature
+     * @throws NullPointerException     if the {@code contents} array is null or zero length
+     * @throws IllegalArgumentException if any of the offsets or lengths fall outside the bounds of the {@code contents}
+     *                                  array
      */
     public TransactionSignature(
             final byte[] contents,
@@ -212,29 +181,18 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Constructs an immutable signature of the given cryptographic algorithm using the provided signature pointer,
      * public key pointer, and original message pointer.
      *
-     * @param contents
-     * 		a pointer to a byte buffer containing the message, signature, and public key
-     * @param signatureOffset
-     * 		the index where the signature begins in the contents array
-     * @param signatureLength
-     * 		the length of the signature (in bytes)
-     * @param expandedPublicKey
-     * 		an optional byte array from which retrieve the public key
-     * @param publicKeyOffset
-     * 		the index where the public key begins in the contents array
-     * @param publicKeyLength
-     * 		the length of the public key (in bytes)
-     * @param messageOffset
-     * 		the index where the message begins in the contents array
-     * @param messageLength
-     * 		the length of the message (in bytes)
-     * @param signatureType
-     * 		the cryptographic algorithm used to create the signature
-     * @throws NullPointerException
-     * 		if the {@code contents} array is null or zero length
-     * @throws IllegalArgumentException
-     * 		if any of the offsets or lengths fall outside the bounds of the {@code contents}
-     * 		array
+     * @param contents          a pointer to a byte buffer containing the message, signature, and public key
+     * @param signatureOffset   the index where the signature begins in the contents array
+     * @param signatureLength   the length of the signature (in bytes)
+     * @param expandedPublicKey an optional byte array from which retrieve the public key
+     * @param publicKeyOffset   the index where the public key begins in the contents array
+     * @param publicKeyLength   the length of the public key (in bytes)
+     * @param messageOffset     the index where the message begins in the contents array
+     * @param messageLength     the length of the message (in bytes)
+     * @param signatureType     the cryptographic algorithm used to create the signature
+     * @throws NullPointerException     if the {@code contents} array is null or zero length
+     * @throws IllegalArgumentException if any of the offsets or lengths fall outside the bounds of the {@code contents}
+     *                                  array
      */
     public TransactionSignature(
             final byte[] contents,
@@ -300,21 +258,14 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Constructs a shallow copy of an existing signature replacing the public key indices and original message indices
      * with the provided values.
      *
-     * @param other
-     * 		the Signature to be copied
-     * @param publicKeyOffset
-     * 		an updated public key offset
-     * @param publicKeyLength
-     * 		an updated public key length
-     * @param messageOffset
-     * 		an updated message offset
-     * @param messageLength
-     * 		an updated message length
-     * @throws NullPointerException
-     * 		if the {@code other} parameter is null
-     * @throws IllegalArgumentException
-     * 		if any of the offsets or lengths fall outside the bounds of the {@code contents}
-     * 		array
+     * @param other           the Signature to be copied
+     * @param publicKeyOffset an updated public key offset
+     * @param publicKeyLength an updated public key length
+     * @param messageOffset   an updated message offset
+     * @param messageLength   an updated message length
+     * @throws NullPointerException     if the {@code other} parameter is null
+     * @throws IllegalArgumentException if any of the offsets or lengths fall outside the bounds of the {@code contents}
+     *                                  array
      */
     public TransactionSignature(
             final TransactionSignature other,
@@ -329,23 +280,15 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Constructs a shallow copy of an existing signature replacing the public key source, public key indices and
      * original message indices with the provided values.
      *
-     * @param other
-     * 		the Signature to be copied
-     * @param expandedPublicKey
-     * 		an optional byte array from which retrieve the public key
-     * @param publicKeyOffset
-     * 		an updated public key offset
-     * @param publicKeyLength
-     * 		an updated public key length
-     * @param messageOffset
-     * 		an updated message offset
-     * @param messageLength
-     * 		an updated message length
-     * @throws NullPointerException
-     * 		if the {@code other} parameter is null
-     * @throws IllegalArgumentException
-     * 		if any of the offsets or lengths fall outside the bounds of the {@code contents}
-     * 		array
+     * @param other             the Signature to be copied
+     * @param expandedPublicKey an optional byte array from which retrieve the public key
+     * @param publicKeyOffset   an updated public key offset
+     * @param publicKeyLength   an updated public key length
+     * @param messageOffset     an updated message offset
+     * @param messageLength     an updated message length
+     * @throws NullPointerException     if the {@code other} parameter is null
+     * @throws IllegalArgumentException if any of the offsets or lengths fall outside the bounds of the {@code contents}
+     *                                  array
      */
     public TransactionSignature(
             final TransactionSignature other,
@@ -395,10 +338,8 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
     /**
      * Constructs a shallow copy of an existing signature.
      *
-     * @param other
-     * 		the Signature to be copied
-     * @throws NullPointerException
-     * 		if the {@code other} parameter is null
+     * @param other the Signature to be copied
+     * @throws NullPointerException if the {@code other} parameter is null
      */
     public TransactionSignature(final TransactionSignature other) {
         if (other == null) {
@@ -419,23 +360,18 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
 
     /**
      * Writes a binary representation of this signature, public key, and message to a {@link DataOutputStream}.
-     *
+     * <p>
      * Maximum number of bytes written is represented by the formula: signature.length + publicKey.length +
      * message.length + (7 * Integer.BYTES)
-     *
+     * <p>
      * The minimum number of bytes written is represented by the formula: signature.length + (7 * Integer.BYTES)
      *
-     * @param signature
-     * 		the {@link TransactionSignature} object to be serialized
-     * @param dos
-     * 		the {@link DataOutputStream} to which the binary representation should be written
-     * @param byteCount
-     * 		returns the number of bytes written as the first element in the array or increments the existing
-     * 		value by the number of bytes written
-     * @throws IOException
-     * 		if any error occurs while writing to the {@link DataOutputStream}
-     * @throws NullPointerException
-     * 		if the {@code signature} or {@code dos} parameters are null
+     * @param signature the {@link TransactionSignature} object to be serialized
+     * @param dos       the {@link DataOutputStream} to which the binary representation should be written
+     * @param byteCount returns the number of bytes written as the first element in the array or increments the existing
+     *                  value by the number of bytes written
+     * @throws IOException          if any error occurs while writing to the {@link DataOutputStream}
+     * @throws NullPointerException if the {@code signature} or {@code dos} parameters are null
      */
     private static void serialize(
             final TransactionSignature signature, final DataOutputStream dos, final int[] byteCount)
@@ -484,22 +420,16 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
     }
 
     /**
-     * Reconstructs a {@link TransactionSignature} object from a binary representation read from a {@link
-     * DataInputStream}.
+     * Reconstructs a {@link TransactionSignature} object from a binary representation read from a
+     * {@link DataInputStream}.
      *
-     * @param dis
-     * 		the {@link DataInputStream} from which to read
-     * @param byteCount
-     * 		returns the number of bytes written as the first element in the array or increments the existing
-     * 		value by the number of bytes written
+     * @param dis       the {@link DataInputStream} from which to read
+     * @param byteCount returns the number of bytes written as the first element in the array or increments the existing
+     *                  value by the number of bytes written
      * @return the {@link TransactionSignature} that was read from the input stream
-     * @throws IOException
-     * 		if any error occurs while reading from the {@link DataInputStream}
-     * @throws NullPointerException
-     * 		if the {@code dis} parameter is null
-     * @throws BadIOException
-     * 		if the internal checksum cannot be
-     * 		validated
+     * @throws IOException          if any error occurs while reading from the {@link DataInputStream}
+     * @throws NullPointerException if the {@code dis} parameter is null
+     * @throws BadIOException       if the internal checksum cannot be validated
      */
     public static TransactionSignature deserialize(final SerializableDataInputStream dis, final int[] byteCount)
             throws IOException {
@@ -573,7 +503,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
 
     /**
      * Returns the transaction payload. This method returns a copy of the original payload.
-     *
+     * <p>
      * This method is thread-safe and guaranteed to be atomic in nature.
      *
      * @return the transaction payload
@@ -586,7 +516,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Internal use accessor that returns a direct (mutable) reference to the transaction contents/payload. Care must be
      * taken to never modify the array returned by this accessor. Modifying the array will result in undefined behaviors
      * and will result in a violation of the immutability contract provided by the {@link TransactionSignature} object.
-     *
+     * <p>
      * This method exists solely to allow direct access by the platform for performance reasons.
      *
      * @return a direct reference to the transaction content/payload
@@ -608,7 +538,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * Internal use accessor that returns a direct (mutable) reference to the expanded public key. Care must be taken to
      * never modify the array returned by this accessor. Modifying the array will result in undefined behaviors and will
      * result in a violation of the immutability contract provided by the {@link TransactionSignature} object.
-     *
+     * <p>
      * This method exists solely to allow direct access by the platform for performance reasons.
      *
      * @return a direct reference to the transaction content/payload
@@ -685,8 +615,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
     /**
      * Internal use only setter for assigning or updating the {@link Future} attached to this signature.
      *
-     * @param future
-     * 		the future to be linked to this signature
+     * @param future the future to be linked to this signature
      */
     public synchronized void setFuture(final Future<Void> future) {
         this.future = future;
@@ -716,8 +645,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
     /**
      * Internal use only setter for assigning or updating the validity of this signature .
      *
-     * @param signatureStatus
-     * 		the new state of the signature verification
+     * @param signatureStatus the new state of the signature verification
      */
     public void setSignatureStatus(final VerificationStatus signatureStatus) {
         this.signatureStatus = signatureStatus;
@@ -730,9 +658,8 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * </p>
      *
      * @return a future linked to the signature verification state
-     * @throws InterruptedException
-     * 		if any thread interrupted the current thread before or
-     * 		while the current thread was waiting
+     * @throws InterruptedException if any thread interrupted the current thread before or while the current thread was
+     *                              waiting
      */
     public synchronized Future<Void> waitForFuture() throws InterruptedException {
         // Block until future becomes available
@@ -744,41 +671,15 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
     }
 
     /**
-     * Updates a cryptographic digest with the signature, public key and optional message value.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param digest
-     * 		the message digest to update
-     * @throws NullPointerException
-     * 		if the {@code digest} parameter is null
-     */
-    public void computeDigest(final MessageDigest digest) {
-        if (digest == null) {
-            throw new NullPointerException("digest");
-        }
-
-        HashUtils.update(digest, signatureType.ordinal());
-        HashUtils.update(digest, contents, signatureOffset, signatureLength);
-        HashUtils.update(
-                digest, (expandedPublicKey != null) ? expandedPublicKey : contents, publicKeyOffset, publicKeyLength);
-        HashUtils.update(digest, contents, messageOffset, messageLength);
-    }
-
-    /**
      * Convenience method for serializing this signature to a {@link DataOutputStream}. Utilizes the
      * {@link #serialize(TransactionSignature, DataOutputStream, int[])} method directly.
      *
-     * @param dos
-     * 		the {@link DataOutputStream} to which the binary representation should be written
-     * @param byteCount
-     * 		returns the number of bytes written as the first element in the array or increments the existing
-     * 		value by the number of bytes written
+     * @param dos       the {@link DataOutputStream} to which the binary representation should be written
+     * @param byteCount returns the number of bytes written as the first element in the array or increments the existing
+     *                  value by the number of bytes written
      * @return the cumulative number of bytes written to the output stream
-     * @throws IOException
-     * 		if any error occurs while writing to the {@link DataOutputStream}
-     * @throws NullPointerException
-     * 		if the {@code dos} parameter is null
+     * @throws IOException          if any error occurs while writing to the {@link DataOutputStream}
+     * @throws NullPointerException if the {@code dos} parameter is null
      */
     public int writeTo(final DataOutputStream dos, int[] byteCount) throws IOException {
         if (byteCount == null || byteCount.length == 0) {
@@ -817,8 +718,7 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * so as to maintain the general contract for the {@code hashCode} method, which states that equal objects must have
      * equal hash codes.
      *
-     * @param obj
-     * 		the reference object with which to compare.
+     * @param obj the reference object with which to compare.
      * @return {@code true} if this object is the same as the obj argument; {@code false} otherwise.
      * @see #hashCode()
      * @see HashMap
@@ -912,14 +812,11 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
      * <i>signum</i> function, which is defined to return one of {@code -1}, {@code 0}, or {@code 1} according to
      * whether the value of <i>expression</i> is negative, zero, or positive, respectively.
      *
-     * @param that
-     * 		the object to be compared.
+     * @param that the object to be compared.
      * @return a negative integer, zero, or a positive integer as this object is less than, equal to, or greater than
-     * 		the specified object.
-     * @throws NullPointerException
-     * 		if the specified object is null
-     * @throws ClassCastException
-     * 		if the specified object's type prevents it from being compared to this object.
+     * the specified object.
+     * @throws NullPointerException if the specified object is null
+     * @throws ClassCastException   if the specified object's type prevents it from being compared to this object.
      */
     @Override
     public int compareTo(final TransactionSignature that) {

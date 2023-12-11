@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.info.NodeInfo;
-import com.swirlds.common.system.address.Address;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record NodeInfoImpl(
