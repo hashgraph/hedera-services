@@ -37,6 +37,7 @@ import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -126,6 +127,12 @@ class ConverterService implements ConfigLifecycle {
         }
         if (Objects.equals(targetClass, String.class)) {
             return (T) value;
+        }
+        // FUTURE WORK: remove this once ConfigurationHolder is removed
+        // this is a workaround that is needed because of ConfigurationHolder which scans all types when invoked and
+        // throws if it encounters an enum. This breaks all unit tests that use it.
+        if (targetClass.isEnum()) {
+            return (T) Enum.valueOf((Class<Enum>) targetClass, value);
         }
         final ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(targetClass);
         if (converter == null) {

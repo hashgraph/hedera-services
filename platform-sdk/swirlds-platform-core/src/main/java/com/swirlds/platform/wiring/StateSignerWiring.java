@@ -1,12 +1,12 @@
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record StateSignerWiring(

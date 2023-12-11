@@ -3,10 +3,10 @@ package com.swirlds.platform;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.HashSigner;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

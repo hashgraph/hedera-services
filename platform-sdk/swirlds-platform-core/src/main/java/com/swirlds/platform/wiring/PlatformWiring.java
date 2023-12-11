@@ -231,7 +231,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param signedStateFileManager the signed state file manager to bind
      */
-    public void bind(@NonNull final SignedStateFileManager signedStateFileManager, StateSigner stateSigner) {
+    public void bind(@NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
 
