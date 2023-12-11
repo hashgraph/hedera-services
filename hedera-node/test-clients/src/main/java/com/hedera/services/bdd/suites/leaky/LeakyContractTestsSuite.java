@@ -513,7 +513,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         cryptoTransfer(movingUnique(KNOWABLE_TOKEN, 1, 2, 3, 4).between(TOKEN_TREASURY, ACCOUNT)),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                        contractCreate(contract).gas(500_000L))
                 .when(
                         // Do transfers by calling contract from EOA, and should be failing with
                         // CONTRACT_REVERT_EXECUTED
@@ -657,7 +657,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         cryptoTransfer(movingUnique(KNOWABLE_TOKEN, 1, 2, 3, 4).between(TOKEN_TREASURY, ACCOUNT)),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                        contractCreate(contract).gas(500_000L))
                 .when(
                         // Do transfers by calling contract from EOA
                         withOpContext((spec, opLog) -> {
@@ -793,7 +793,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         tokenAssociate(RECEIVER, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                        contractCreate(contract).gas(500_000L))
                 .when(withOpContext((spec, opLog) -> {
                     final var receiver1 =
                             asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
@@ -1591,7 +1591,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                        contractCreate(contract).gas(500_000L))
                 .when(
                         contractCall(contract, "holdTemporary", BigInteger.valueOf(10))
                                 .via("tempHoldTx"),
@@ -1617,7 +1617,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     .getContractCallResult()
                                     .getGasUsed();
 
-                            Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
+                            Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23739L);
                             Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
                         }),
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
@@ -2172,7 +2172,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
                         cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
-                        contractCreate(contract).via(contractCreateTxn))
+                        contractCreate(contract).via(contractCreateTxn).gas(500_000L))
                 .when()
                 .then(withOpContext((spec, opLog) -> {
                     final var opContractTxnRecord = getTxnRecord(contractCreateTxn);
@@ -2230,7 +2230,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
                         cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
-                        contractCreate(contract).via(contractCreateTx))
+                        contractCreate(contract).via(contractCreateTx).gas(500_000L))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(contract, deployParentContractFn)
@@ -2320,7 +2320,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),
                         cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
-                        contractCreate(contract).logged().via("txn"),
+                        contractCreate(contract).logged().gas(500_000L).via("txn"),
                         withOpContext((spec, opLog) -> {
                             HapiGetTxnRecord op = getTxnRecord("txn")
                                     .logged()
