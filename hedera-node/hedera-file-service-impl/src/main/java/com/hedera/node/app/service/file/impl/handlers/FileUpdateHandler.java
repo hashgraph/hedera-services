@@ -195,7 +195,7 @@ public class FileUpdateHandler implements TransactionHandler {
                 .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
                 .memo(fileUpdate.memo())
                 .build();
-        fileStore.add(file, fileId);
+        fileStore.add(file);
     }
 
     private void resolveMutableBuilderAttributes(

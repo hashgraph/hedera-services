@@ -37,7 +37,7 @@ class WritableUpgradeFileStoreTest extends FileTestBase {
     @Test
     void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableUpgradeFileStore(null));
-        assertThrows(NullPointerException.class, () -> writableUpgradeFileStore.add(null, null));
+        assertThrows(NullPointerException.class, () -> writableUpgradeFileStore.add(null));
     }
 
     @Test
