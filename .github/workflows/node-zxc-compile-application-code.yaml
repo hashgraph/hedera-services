@@ -459,6 +459,20 @@ jobs:
           }}
         run: ${GRADLE_EXEC} sonar --info --scan --no-parallel ${{ steps.sonar-cloud.outputs.options }}
 
+      - name: Disable Gradle Configuration Cache
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
+        run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties
+
       - name: Setup Snyk
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
@@ -490,7 +504,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --policy-path=.snyk --json-file-output=snyk-test.json
 
       - name: Snyk Code
         id: snyk-code

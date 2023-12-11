@@ -80,6 +80,11 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
     }
 
     @Override
+    public boolean contains(@NonNull AccountID accountID) {
+        return accounts.contains(accountID);
+    }
+
+    @Override
     @Nullable
     public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
         return aliases.get(new ProtoBytes(alias));

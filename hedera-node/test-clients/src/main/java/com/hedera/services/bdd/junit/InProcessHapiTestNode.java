@@ -25,10 +25,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -41,6 +41,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 /**
  * An implementation of {@link HapiTestNode} that runs the node in this JVM process. The advantage of the in-process
@@ -268,15 +269,13 @@ public class InProcessHapiTestNode implements HapiTestNode {
         }
 
         final var saved = workingDir.resolve("data/saved").toAbsolutePath().normalize();
-        try {
-            if (Files.exists(saved)) {
-                Files.walk(saved)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+        if (Files.exists(saved)) {
+            try (Stream<Path> paths = Files.walk(saved)) {
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+
+            } catch (IOException e) {
+                throw new RuntimeException("Could not delete saved state " + saved, e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not delete saved state " + saved, e);
         }
     }
 
