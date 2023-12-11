@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -73,6 +74,7 @@ public class TargetNetworkPrep extends HapiSuite {
         return List.of(ensureSystemStateAsExpectedWithSystemDefaultFiles());
     }
 
+    @HapiTest
     private HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
