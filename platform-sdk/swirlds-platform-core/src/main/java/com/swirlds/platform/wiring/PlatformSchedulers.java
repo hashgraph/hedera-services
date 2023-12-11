@@ -123,7 +123,6 @@ public record PlatformSchedulers(
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
                         .build()
-                        .cast()
-                );
+                        .cast());
     }
 }

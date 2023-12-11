@@ -189,9 +189,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateFileManagerWiring
                 .stateSavingResultOutputWire()
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
-        stateSignerWiring
-                .stateSignature()
-                .solderTo("transaction pool", transactionPool::submitSystemTransaction);
+        stateSignerWiring.stateSignature().solderTo("transaction pool", transactionPool::submitSystemTransaction);
     }
 
     /**
@@ -231,7 +229,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param signedStateFileManager the signed state file manager to bind
      */
-    public void bind(@NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
+    public void bind(
+            @NonNull final SignedStateFileManager signedStateFileManager, @NonNull final StateSigner stateSigner) {
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
 

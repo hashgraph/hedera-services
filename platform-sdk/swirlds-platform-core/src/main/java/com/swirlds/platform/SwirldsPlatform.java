@@ -182,7 +182,6 @@ import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -512,10 +511,7 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring = components.add(new PlatformWiring(platformContext, time));
         platformWiring.wireExternalComponents(
-                preconsensusEventWriter,
-                platformStatusManager,
-                appCommunicationComponent,
-                transactionPool);
+                preconsensusEventWriter, platformStatusManager, appCommunicationComponent, transactionPool);
 
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
         platformWiring.bind(signedStateFileManager, stateSigner);
