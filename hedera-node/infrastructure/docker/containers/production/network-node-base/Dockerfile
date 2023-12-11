@@ -30,7 +30,10 @@ ADD checksums/* /tmp/checksums/
 RUN apt-get update && \
 	apt-get install -y tar gzip wget dos2unix gnupg2 hashdeep && \
     apt-get install -y build-essential flex bison zlib1g-dev libssl-dev libpam0g-dev && \
-    apt-get install -y libreadline-dev libxml2-dev libxslt-dev libxml2-utils xsltproc
+    apt-get install -y libreadline-dev libxml2-dev libxslt-dev libxml2-utils xsltproc && \
+    apt-get autoclean && \
+    apt-get clean all && \
+    rm -rf /var/cache/apt
 
 ##########################
 ####    Java Setup    ####
@@ -47,9 +50,9 @@ RUN sha256sum -c /tmp/checksums/openjdk-${OPENJDK_VERSION}_linux-x64_bin.tar.gz.
 RUN mkdir -p /usr/local/java && \
 	tar -zxf openjdk-${OPENJDK_VERSION}_linux-x64_bin.tar.gz -C /usr/local/java
 
+WORKDIR /usr/local/java/jdk-${OPENJDK_VERSION}
 # Validate Java Files
-RUN	cd /usr/local/java/jdk-${OPENJDK_VERSION} && \
-	hashdeep -rlx -k /tmp/checksums/openjdk-${OPENJDK_VERSION}_linux-x64_bin.chkd *
+RUN	hashdeep -rlx -k /tmp/checksums/openjdk-${OPENJDK_VERSION}_linux-x64_bin.chkd *
 
 
 ########################################################################################################################
@@ -77,7 +80,8 @@ RUN apt-get update && \
 	apt-get install -y tar gzip openssl zlib1g libsodium23 libreadline7 sudo netcat && \
 	apt-get autoremove && \
 	apt-get autoclean && \
-	apt-get clean all
+	apt-get clean all && \
+	rm -rf /var/cache/apt
 
 # Install Java Alternatives
 RUN update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/jdk-${OPENJDK_VERSION}/bin/java" 1500 && \

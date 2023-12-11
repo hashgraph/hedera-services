@@ -17,7 +17,7 @@
 package com.hedera.node.app.metrics;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
+import com.swirlds.platform.system.Platform;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;

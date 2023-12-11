@@ -20,13 +20,13 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.throttle.Throttle;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.nft.config.NftConfig;
 import com.swirlds.demo.platform.nft.config.NftQueryConfig;
 import com.swirlds.demo.platform.nft.config.NftQueryType;
+import com.swirlds.platform.system.Platform;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.logging.log4j.LogManager;

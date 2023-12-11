@@ -37,7 +37,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -68,8 +68,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         // two maps for aggregating the changes to the token balances and allowances.
-        final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new HashMap<>();
-        final Map<EntityIDPair, Long> allowanceTransfers = new HashMap<>();
+        final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
+        final Map<EntityIDPair, Long> allowanceTransfers = new LinkedHashMap<>();
 
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.

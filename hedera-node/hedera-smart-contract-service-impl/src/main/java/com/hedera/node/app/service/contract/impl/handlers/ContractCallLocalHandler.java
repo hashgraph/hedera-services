@@ -106,7 +106,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
 
-        var component = provider.get().create(context, Instant.now(), CONTRACT_CALL_LOCAL);
+        final var component = provider.get().create(context, Instant.now(), CONTRACT_CALL_LOCAL);
         final var outcome = component.contextQueryProcessor().call();
 
         final var responseHeader = outcome.isSuccess()

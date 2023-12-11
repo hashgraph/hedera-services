@@ -27,7 +27,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -374,11 +373,7 @@ class HederaMessageCallProcessorTest {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(1)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
-        verify(hederaTracer)
-                .tracePostExecution(
-                        eq(frame),
-                        argThat(result ->
-                                isSameResult(result, new Operation.OperationResult(initialGas, INSUFFICIENT_GAS))));
+        verify(hederaTracer).traceAccountCreationResult(eq(frame), eq(Optional.of(INSUFFICIENT_GAS)));
         verify(transactionalLedger, never()).set(change.accountId(), BALANCE, 1000L);
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());

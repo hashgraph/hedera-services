@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 
