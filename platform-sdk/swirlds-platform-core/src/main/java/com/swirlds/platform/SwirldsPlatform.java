@@ -503,6 +503,9 @@ public class SwirldsPlatform implements Platform {
                 actualMainClassName,
                 selfId,
                 swirldName);
+
+        transactionPool = new TransactionPool(platformContext);
+
         // FUTURE WORK: at some point this should be part of the unified platform wiring
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
         components.add(model);
@@ -512,7 +515,7 @@ public class SwirldsPlatform implements Platform {
                 preconsensusEventWriter,
                 platformStatusManager,
                 appCommunicationComponent,
-                txn -> this.createSystemTransaction(txn, true));
+                transactionPool);
 
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
         platformWiring.bind(signedStateFileManager, stateSigner);
@@ -597,8 +600,6 @@ public class SwirldsPlatform implements Platform {
 
         final TransactionConfig transactionConfig =
                 platformContext.getConfiguration().getConfigData(TransactionConfig.class);
-
-        transactionPool = new TransactionPool(platformContext);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = new SwirldStateManager(
@@ -925,19 +926,6 @@ public class SwirldsPlatform implements Platform {
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * Stores a new system transaction that will be added to an event in the future.
-     *
-     * @param systemTransaction the new system transaction to be included in a future event
-     * @return {@code true} if successful, {@code false} otherwise
-     */
-    private boolean createSystemTransaction(
-            @NonNull final SystemTransaction systemTransaction, final boolean priority) {
-        //TODO get rid of this
-        Objects.requireNonNull(systemTransaction);
-        return transactionPool.submitTransaction(systemTransaction, priority);
     }
 
     /**

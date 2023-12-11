@@ -30,7 +30,6 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
-import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -40,6 +39,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
@@ -176,7 +176,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter) {
+            @NonNull final TransactionPool transactionPool) {
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
@@ -191,7 +191,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo("app communication", appCommunicationComponent::stateSavedToDisk);
         stateSignerWiring
                 .stateSignature()
-                .solderTo("priority system transaction submitter", prioritySystemTransactionSubmitter::submit);
+                .solderTo("transaction pool", transactionPool::submitSystemTransaction);
     }
 
     /**
