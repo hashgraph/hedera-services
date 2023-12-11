@@ -18,12 +18,10 @@ package com.swirlds.merkle.map;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldMain;
 
 /**
  * Singleton factory for loading and registering {@link MerkleMap} statistics. This is the primary entry point for all
- * {@link SwirldMain} implementations that wish to track {@link MerkleMap} statistics.
+ * SwirldMain implementations that wish to track {@link MerkleMap} statistics.
  */
 public final class MerkleMapMetrics {
 
@@ -64,7 +62,7 @@ public final class MerkleMapMetrics {
     private MerkleMapMetrics() {}
 
     /**
-     * Gets a value indicating whether the {@link SwirldMain} has called the {@link
+     * Gets a value indicating whether the SwirldMain has called the {@link
      * #register(Metrics)} method on this factory.
      *
      * @return true if these statistics have been registered by the application; otherwise false
@@ -74,7 +72,7 @@ public final class MerkleMapMetrics {
     }
 
     /**
-     * Registers the {@link MerkleMap} statistics with the specified {@link Platform} instance.
+     * Registers the {@link MerkleMap} statistics with the specified Platform instance.
      *
      * @param metrics
      * 		the metrics-system

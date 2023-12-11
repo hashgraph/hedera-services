@@ -29,7 +29,6 @@ import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
-import com.hedera.node.app.workflows.handle.ConsensusTimeHook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -45,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  * the corresponding synthetic records when a consensus time becomes available.
  */
 @Singleton
-public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, ConsensusTimeHook {
+public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
     private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHook.class);
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
@@ -66,7 +65,6 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
      * <p>
      * It would be great if we could find a way to not have to invoke this method multiple times...
      */
-    @Override
     public void process(@NonNull final TokenContext context) {
         final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
 
