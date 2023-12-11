@@ -194,11 +194,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
-        logger.info("Now we have a mono-service state, e.g. child {} is {}",
-                StateChildIndices.NETWORK_CTX, getChild(StateChildIndices.NETWORK_CTX).getClass().getSimpleName());
-        if (true) {
-            throw new AssertionError("Not implemented");
+        var testNode = getChild(StateChildIndices.NETWORK_CTX);
+        if (testNode != null) {
+            logger.info("Now we have a mono-service state, e.g. child {} is {}",
+                    StateChildIndices.NETWORK_CTX, testNode.getClass().getSimpleName());
+        } else {
+            throw new IllegalStateException("Unexpectedly couldn't load state...");
         }
+
         // At some point this method will no longer be defined on SwirldState2, because we want to move
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,

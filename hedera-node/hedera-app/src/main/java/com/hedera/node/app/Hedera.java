@@ -29,6 +29,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -48,6 +49,7 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
@@ -405,13 +407,12 @@ public final class Hedera implements SwirldMain {
                 () -> previousVersion == null ? "<NONE>" : previousVersion);
 
         // We do not support downgrading from one version to an older version.
-        final var deserializedVersion = (HederaSoftwareVersion) previousVersion;
-        if (isDowngrade(version, deserializedVersion)) {
-            logger.fatal(
-                    "Fatal error, state source version {} is higher than node software version {}",
-                    deserializedVersion,
-                    version);
-            System.exit(1);
+        final HederaSoftwareVersion deserializedVersion;
+        if (previousVersion instanceof SerializableSemVers semVersVersion) {
+            // Hack to get the node to load
+            deserializedVersion = new HederaSoftwareVersion(SemanticVersion.newBuilder().minor(semVersVersion.getVersion()).build(), SemanticVersion.newBuilder().minor(semVersVersion.getVersion()).build());
+        } else {
+            deserializedVersion = (HederaSoftwareVersion) previousVersion;
         }
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!

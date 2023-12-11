@@ -119,7 +119,9 @@ public class SerializableSemVers implements SoftwareVersion {
         if (other instanceof SerializableSemVers that) {
             return this.isAfter(that) && haveDifferentNonBuildVersions(this, that);
         } else {
-            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
+            // Hack to get the node to load
+            return true;
+//            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
         }
     }
 
@@ -161,7 +163,9 @@ public class SerializableSemVers implements SoftwareVersion {
         if (other instanceof SerializableSemVers that) {
             return FULL_COMPARATOR.compare(this, that);
         } else {
-            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
+            // Hack to get the node to load
+            return 1;
+//            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
         }
     }
 

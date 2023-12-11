@@ -23,9 +23,12 @@ app,		HederaNode.jar
 # app, 		PlatformTestingDemo.jar, FCM1KFreeze.json
 # ** END REMOVE FROM SDK RELEASES **
 
- address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
-# address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
+# We're going to load this node's address with 'node1' to work with a mainnet state
+address, 0,  0,  node1,  19, 127.0.0.1,    50211, 127.0.0.1,    50211, 0.0.3
 
+# Other example addresses:
+# address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
+# address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
 # address,  2, C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
 # address,  3,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
 
@@ -38,7 +41,8 @@ app,		HederaNode.jar
 # address,   10, K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214
 # address,   11, L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215
 
-nextNodeId, 1
+# Hacking this value in order to load a mainnet state (which has 28 nodes)
+nextNodeId, 29
 
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.
