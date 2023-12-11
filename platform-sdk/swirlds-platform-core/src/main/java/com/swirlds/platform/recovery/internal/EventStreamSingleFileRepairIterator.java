@@ -22,7 +22,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.event.EventImpl;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * An iterator over events streams that will compute a running hash and add a final hash if it is missing from the event
- * stream.  The expected pattern for events streams is a Hash followed by one or more DetailedConsensusEvents followed
+ * stream.  The expected pattern for events streams is a Hash followed by one or more EventImpls followed
  * by a final hash.  The behavior of this class is indeterminate for any sequence of events that is not a prefix of the
  * expected pattern for event streams.
  */
@@ -49,7 +49,7 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
     /**
      * The running hash calculator for computing the final hash.
      */
-    private final RunningHashCalculatorForStream<DetailedConsensusEvent> runningHashCalculator;
+    private final RunningHashCalculatorForStream<EventImpl> runningHashCalculator;
     /**
      * The next event to return in the event stream.
      */
@@ -104,7 +104,7 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
                         // seed running hash calculator with first hash.
                         runningHashCalculator.setRunningHash(hash);
                     }
-                } else if (next instanceof DetailedConsensusEvent dce) {
+                } else if (next instanceof EventImpl dce) {
                     eventCount++;
                     // update running hash calculator with event.
                     runningHashCalculator.addObject(dce);
@@ -128,7 +128,7 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
             if (hashCount == 1 && eventCount == 0) {
                 logger.error(EXCEPTION.getMarker(), "No events in sequence.");
             }
-        } else if (prev instanceof DetailedConsensusEvent dce) {
+        } else if (prev instanceof EventImpl dce) {
             // the final hash is the running hash of the last event returned.
             try {
                 next = dce.getRunningHash().getFutureHash().getAndRethrow();
@@ -186,7 +186,7 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
     }
 
     /**
-     * Indicates the number of DetailedConsensusEvents iterated over in the event stream.
+     * Indicates the number of EventImpls iterated over in the event stream.
      *
      * @return the number of events iterated over so far.
      */

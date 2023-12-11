@@ -24,10 +24,10 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.units.TimeUnit;
+import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.MultiFileRunningHashIterator;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class EventStreamScanner {
 
     // These variables store data for the higher granularity reports
     private final List<EventStreamInfo> granularInfo = new ArrayList<>();
-    private DetailedConsensusEvent granularFirstEvent;
+    private EventImpl granularFirstEvent;
     private long granularStartingFileCount = 0;
     private long previousFileCount = 0;
     private long previousDamagedFileCount = 0;
@@ -66,7 +66,7 @@ public class EventStreamScanner {
     private final boolean enableProgressReport;
 
     private final EventStreamMultiFileIterator fileIterator;
-    private final IOIterator<DetailedConsensusEvent> eventIterator;
+    private final IOIterator<EventImpl> eventIterator;
 
     public EventStreamScanner(
             @NonNull final Path eventStreamDirectory,
@@ -87,7 +87,7 @@ public class EventStreamScanner {
      * Time is split into "chunks". For each chunk of time we generate a mini-report. When this method is called
      * we gather all the data from a single chunk of time.
      */
-    private void reportGranularData(final DetailedConsensusEvent lastEventInPeriod) {
+    private void reportGranularData(final EventImpl lastEventInPeriod) {
         final long granularRoundCount = lastEventInPeriod.getConsensusData().getRoundReceived()
                 - granularFirstEvent.getConsensusData().getRoundReceived();
 
@@ -109,7 +109,7 @@ public class EventStreamScanner {
     /**
      * This should be called between each "chunk" of time for which we collect granular data.
      */
-    private void resetGranularData(final DetailedConsensusEvent mostRecentEvent) {
+    private void resetGranularData(final EventImpl mostRecentEvent) {
         granularFirstEvent = mostRecentEvent;
         granularEventCount = 0;
         granularTransactionCount = 0;
@@ -123,7 +123,7 @@ public class EventStreamScanner {
     /**
      * Collect data from an event.
      */
-    private void collectEventData(final DetailedConsensusEvent mostRecentEvent) {
+    private void collectEventData(final EventImpl mostRecentEvent) {
         eventCount++;
         granularEventCount++;
         for (final ConsensusTransactionImpl transaction :
@@ -143,8 +143,7 @@ public class EventStreamScanner {
     /**
      * Write information to the console that let's a human know of the progress of the scan.
      */
-    private void writeConsoleSummary(
-            final DetailedConsensusEvent firstEvent, final DetailedConsensusEvent mostRecentEvent) {
+    private void writeConsoleSummary(final EventImpl firstEvent, final EventImpl mostRecentEvent) {
 
         if (enableProgressReport && eventCount % PROGRESS_INTERVAL == 0) {
             // This is intended to be used in a terminal with a human in the loop, intentionally not logged.
@@ -172,11 +171,11 @@ public class EventStreamScanner {
             throw new IllegalStateException("No events found in the event stream");
         }
 
-        final DetailedConsensusEvent firstEvent = eventIterator.peek();
+        final EventImpl firstEvent = eventIterator.peek();
         granularFirstEvent = firstEvent;
 
-        DetailedConsensusEvent mostRecentEvent = null;
-        DetailedConsensusEvent previousEvent;
+        EventImpl mostRecentEvent = null;
+        EventImpl previousEvent;
         while (eventIterator.hasNext()) {
             previousEvent = mostRecentEvent;
             mostRecentEvent = eventIterator.next();

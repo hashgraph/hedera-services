@@ -28,10 +28,9 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
- * information.
+ * Code used for serializing EventImpls. Should not be used independently of EventImpl.
  */
-public class DetailedConsensusEvent extends AbstractSerializableHashable
+public class EventImplSerializationHelper extends AbstractSerializableHashable
         implements OptionalSelfSerializable<EventSerializationOptions>, RunningHashable {
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
@@ -49,7 +48,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     /**
      * Creates an empty instance
      */
-    public DetailedConsensusEvent() {}
+    public EventImplSerializationHelper() {}
 
     /**
      * Create a new instance with the provided data.
@@ -61,7 +60,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      * @param consensusData
      * 		the consensus data for this event
      */
-    public DetailedConsensusEvent(
+    public EventImplSerializationHelper(
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
             final ConsensusData consensusData) {
@@ -180,7 +179,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
+        final EventImplSerializationHelper that = (EventImplSerializationHelper) other;
         return Objects.equals(baseEventHashedData, that.baseEventHashedData)
                 && Objects.equals(baseEventUnhashedData, that.baseEventUnhashedData)
                 && Objects.equals(consensusData, that.consensusData);

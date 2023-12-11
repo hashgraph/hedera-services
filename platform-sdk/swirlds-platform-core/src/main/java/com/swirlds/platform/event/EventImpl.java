@@ -39,7 +39,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.EventImplSerializationHelper;
 import com.swirlds.platform.system.events.EventSerializationOptions;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -455,7 +455,7 @@ public class EventImpl
     }
 
     /**
-     * This class serializes itself as a {@link DetailedConsensusEvent} object
+     * This class serializes itself as a {@link EventImplSerializationHelper} object
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
@@ -468,7 +468,7 @@ public class EventImpl
     @Override
     public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
             throws IOException {
-        DetailedConsensusEvent.serialize(
+        EventImplSerializationHelper.serialize(
                 out, baseEvent.getHashedData(), baseEvent.getUnhashedData(), consensusData, option);
     }
 
@@ -477,7 +477,7 @@ public class EventImpl
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final DetailedConsensusEvent consensusEvent = new DetailedConsensusEvent();
+        final EventImplSerializationHelper consensusEvent = new EventImplSerializationHelper();
         consensusEvent.deserialize(in, version);
         buildFromConsensusEvent(consensusEvent);
     }
@@ -487,7 +487,7 @@ public class EventImpl
      *
      * @param consensusEvent the consensus event to build from
      */
-    void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
+    void buildFromConsensusEvent(final EventImplSerializationHelper consensusEvent) {
         baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getBaseEventUnhashedData());
         consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
@@ -502,7 +502,7 @@ public class EventImpl
      */
     @Override
     public long getClassId() {
-        return DetailedConsensusEvent.CLASS_ID;
+        return EventImplSerializationHelper.CLASS_ID;
     }
 
     /**
@@ -510,7 +510,7 @@ public class EventImpl
      */
     @Override
     public int getVersion() {
-        return DetailedConsensusEvent.CLASS_VERSION;
+        return EventImplSerializationHelper.CLASS_VERSION;
     }
 
     /**

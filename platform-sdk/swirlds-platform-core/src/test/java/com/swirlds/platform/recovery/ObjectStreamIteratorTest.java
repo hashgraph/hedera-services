@@ -37,7 +37,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -87,7 +86,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent event) {
+                } else if (object instanceof EventImpl event) {
 
                     // Convert to event impl to allow comparison
                     final EventImpl e = new EventImpl(
@@ -159,7 +158,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent event) {
+                } else if (object instanceof EventImpl event) {
 
                     // Convert to event impl to allow comparison
                     final EventImpl e = new EventImpl(
@@ -218,7 +217,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent event) {
+                } else if (object instanceof EventImpl event) {
 
                     // Convert to event impl to allow comparison
                     final EventImpl e = new EventImpl(

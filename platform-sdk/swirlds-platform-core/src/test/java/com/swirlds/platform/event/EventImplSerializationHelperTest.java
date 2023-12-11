@@ -26,13 +26,13 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.EventImplSerializationHelper;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class DetailedConsensusEventTest {
+public class EventImplSerializationHelperTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -42,19 +42,19 @@ public class DetailedConsensusEventTest {
 
     @Test
     public void serializeAndDeserializeConsensusEvent() throws IOException {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
+        EventImpl consensusEvent = generateConsensusEvent();
         try (final InputOutputStream io = new InputOutputStream()) {
             io.getOutput().writeSerializable(consensusEvent, true);
             io.startReading();
 
-            final DetailedConsensusEvent deserialized = io.getInput().readSerializable();
+            final EventImplSerializationHelper deserialized = io.getInput().readSerializable();
             assertEquals(consensusEvent, deserialized);
         }
     }
 
     @Test
     public void EventImplGetHashTest() {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
+        EventImpl consensusEvent = generateConsensusEvent();
         EventImpl event = new EventImpl(
                 consensusEvent.getBaseEventHashedData(),
                 consensusEvent.getBaseEventUnhashedData(),
@@ -65,11 +65,11 @@ public class DetailedConsensusEventTest {
         assertEquals(expectedHash, event.getHash());
     }
 
-    private DetailedConsensusEvent generateConsensusEvent() {
+    private EventImpl generateConsensusEvent() {
         Random random = new Random(68651684861L);
         BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
         BaseEventUnhashedData unhashedData = DetGenerateUtils.generateBaseEventUnhashedData(random);
         ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
-        return new DetailedConsensusEvent(hashedData, unhashedData, consensusData);
+        return new EventImpl(hashedData, unhashedData, consensusData);
     }
 }

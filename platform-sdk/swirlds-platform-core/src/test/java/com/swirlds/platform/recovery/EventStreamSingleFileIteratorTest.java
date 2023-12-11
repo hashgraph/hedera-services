@@ -34,7 +34,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -75,8 +74,8 @@ class EventStreamSingleFileIteratorTest {
             int eventIndex = 0;
 
             while (iterator.hasNext()) {
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final EventImpl peekObject = iterator.peek();
+                final EventImpl event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
@@ -120,8 +119,8 @@ class EventStreamSingleFileIteratorTest {
             int eventIndex = 0;
 
             while (iterator.hasNext()) {
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final EventImpl peekObject = iterator.peek();
+                final EventImpl event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
@@ -167,8 +166,8 @@ class EventStreamSingleFileIteratorTest {
 
             while (iterator.hasNext()) {
                 count++;
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final EventImpl peekObject = iterator.peek();
+                final EventImpl event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison
@@ -220,8 +219,8 @@ class EventStreamSingleFileIteratorTest {
 
             while (iterator.hasNext()) {
                 count++;
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final EventImpl peekObject = iterator.peek();
+                final EventImpl event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
 
                 // Convert to event impl to allow comparison

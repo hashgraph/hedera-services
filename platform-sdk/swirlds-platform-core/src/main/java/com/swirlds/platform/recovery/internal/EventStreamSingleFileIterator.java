@@ -19,7 +19,8 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.event.EventImpl;
+import com.swirlds.platform.system.events.EventImplSerializationHelper;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,7 +29,7 @@ import java.util.NoSuchElementException;
 /**
  * An iterator that walks over events in a single event stream file.
  */
-public class EventStreamSingleFileIterator implements IOIterator<DetailedConsensusEvent> {
+public class EventStreamSingleFileIterator implements IOIterator<EventImpl> {
 
     private final ObjectStreamIterator<SelfSerializable> iterator;
 
@@ -117,7 +118,7 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
             return false;
         }
 
-        if (next.getClassId() != DetailedConsensusEvent.CLASS_ID) {
+        if (next.getClassId() != EventImplSerializationHelper.CLASS_ID) { // TODO
             throw new IOException(
                     "Invalid object type found in event stream file `%s`: ".formatted(filePath) + next.getClass());
         }
@@ -129,22 +130,22 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
      * {@inheritDoc}
      */
     @Override
-    public DetailedConsensusEvent peek() throws IOException {
+    public EventImpl peek() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        return (DetailedConsensusEvent) iterator.peek();
+        return (EventImpl) iterator.peek();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public DetailedConsensusEvent next() throws IOException {
+    public EventImpl next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        return (DetailedConsensusEvent) iterator.next();
+        return (EventImpl) iterator.next();
     }
 
     /**

@@ -19,16 +19,16 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.event.EventImpl;
 import java.io.IOException;
 
 /**
  * A wrapper around {@link EventStreamMultiFileIterator}
  * that computes a running hash of the iterated events.
  */
-public class MultiFileRunningHashIterator implements IOIterator<DetailedConsensusEvent> {
+public class MultiFileRunningHashIterator implements IOIterator<EventImpl> {
     private final EventStreamMultiFileIterator iterator;
-    private final RunningHashCalculatorForStream<DetailedConsensusEvent> runningHashCalculator;
+    private final RunningHashCalculatorForStream<EventImpl> runningHashCalculator;
 
     /**
      * @param iterator
@@ -40,7 +40,7 @@ public class MultiFileRunningHashIterator implements IOIterator<DetailedConsensu
         this.runningHashCalculator = new RunningHashCalculatorForStream<>();
 
         runningHashCalculator.setRunningHash(iterator.getStartHash());
-        for (final DetailedConsensusEvent skippedEvent : iterator.getSkippedEvents()) {
+        for (final EventImpl skippedEvent : iterator.getSkippedEvents()) {
             runningHashCalculator.addObject(skippedEvent);
         }
     }
@@ -51,14 +51,14 @@ public class MultiFileRunningHashIterator implements IOIterator<DetailedConsensu
     }
 
     @Override
-    public DetailedConsensusEvent next() throws IOException {
-        final DetailedConsensusEvent next = iterator.next();
+    public EventImpl next() throws IOException {
+        final EventImpl next = iterator.next();
         runningHashCalculator.addObject(next);
         return next;
     }
 
     @Override
-    public DetailedConsensusEvent peek() throws IOException {
+    public EventImpl peek() throws IOException {
         return iterator.peek();
     }
 

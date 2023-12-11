@@ -20,7 +20,6 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.event.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -60,8 +59,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
             throws IOException {
         this(
                 consensusRoster,
-                new EventStreamMultiFileIterator(eventStreamDirectory, new EventStreamRoundLowerBound(startingRound))
-                        .transform(EventStreamRoundIterator::convertToEventImpl),
+                new EventStreamMultiFileIterator(eventStreamDirectory, new EventStreamRoundLowerBound(startingRound)),
                 allowPartialRound);
     }
 
@@ -78,17 +76,6 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
         this.eventIterator = Objects.requireNonNull(eventIterator);
         this.allowPartialRound = allowPartialRound;
-    }
-
-    /**
-     * Convert a {@link DetailedConsensusEvent} to an {@link EventImpl}.
-     *
-     * @param event the event to convert
-     * @return an event impl with the same data as the detailed consensus event
-     */
-    private static EventImpl convertToEventImpl(final DetailedConsensusEvent event) {
-        return new EventImpl(
-                event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
     }
 
     /**
