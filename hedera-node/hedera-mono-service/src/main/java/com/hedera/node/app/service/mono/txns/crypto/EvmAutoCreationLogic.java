@@ -61,7 +61,7 @@ public class EvmAutoCreationLogic extends AbstractAutoCreationLogic {
             throw new UnsupportedOperationException("Stacked alias manager cannot link aliases with size != 20.");
         }
         if (isMirror(alias.toByteArray())) {
-            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ALIAS_KEY);
         }
         contractAliases.link(Address.wrap(Bytes.of(alias.toByteArray())), EntityIdUtils.asTypedEvmAddress(newId));
     }
