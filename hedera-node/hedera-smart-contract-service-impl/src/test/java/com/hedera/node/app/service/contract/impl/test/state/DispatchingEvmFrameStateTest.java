@@ -472,7 +472,7 @@ class DispatchingEvmFrameStateTest {
     @Test
     void noHaltIfLazyCreationOk() {
         given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
-                .willReturn(ResponseCodeEnum.OK);
+                .willReturn(ResponseCodeEnum.SUCCESS);
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
         assertTrue(reasonLazyCreationFailed.isEmpty());

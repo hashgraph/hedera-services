@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -31,7 +32,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -39,7 +39,7 @@ public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
     public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
     public static final String TINYBAR_VALUES_CONTEXT_VARIABLE = "tinybarValues";
-    public static final String RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE = "receiverSigRequiredFailed";
+    public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
 
     private FrameUtils() {
@@ -72,38 +72,33 @@ public class FrameUtils {
     }
 
     /**
-     * Returns whether the transaction executing the given frame just experienced a message call
-     * fail due to a missing receiver signature requirement.
+     * Sets a context variable with a Hedera-specific propagated failure reason indicating that the transaction
+     * executing the given frame just experienced such a message call failure.
      *
      * @param frame a frame in the transaction of interest
-     * @return true if the transaction just hit a missing receiver signature requirement
+     * @param failure the propagated failure reason
      */
-    public static boolean messageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
-        return receiverSigReqFailureContextVariableFor(frame).get();
+    public static void setPropagatedCallFailure(
+            @NonNull final MessageFrame frame, @NonNull final HevmPropagatedCallFailure failure) {
+        requireNonNull(frame);
+        requireNonNull(failure);
+        propagatedCallFailureReference(frame).set(failure);
     }
 
     /**
-     * Sets a context variable that indicates the transaction executing the given frame just experienced
-     * a message call fail due to a missing receiver signature requirement.
+     * Gets and clears any propagated call failure from the context variable in the transaction containing
+     * the given frame.
      *
      * @param frame a frame in the transaction of interest
      */
-    public static void setMessageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
-        receiverSigReqFailureContextVariableFor(frame).set(true);
+    public static @NonNull HevmPropagatedCallFailure getAndClearPropagatedCallFailure(
+            @NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        return propagatedCallFailureReference(frame).getAndClear();
     }
 
-    /**
-     * Clears a context variable that indicates the transaction executing the given frame just experienced
-     * a message call fail due to a missing receiver signature requirement.
-     *
-     * @param frame a frame in the transaction of interest
-     */
-    public static void clearMessageCallHaltedForMissingReceiverSigReq(@NonNull final MessageFrame frame) {
-        receiverSigReqFailureContextVariableFor(frame).set(false);
-    }
-
-    private static AtomicBoolean receiverSigReqFailureContextVariableFor(@NonNull final MessageFrame frame) {
-        return initialFrameOf(frame).getContextVariable(RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE);
+    private static PropagatedCallFailureReference propagatedCallFailureReference(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).getContextVariable(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE);
     }
 
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {

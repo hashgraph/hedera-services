@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
@@ -35,7 +35,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -121,7 +120,7 @@ public class FrameBuilder {
         contextEntries[1] = Map.entry(TINYBAR_VALUES_CONTEXT_VARIABLE, context.tinybarValues());
         contextEntries[2] =
                 Map.entry(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE, context.systemContractGasCalculator());
-        contextEntries[3] = Map.entry(RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE, new AtomicBoolean());
+        contextEntries[3] = Map.entry(PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE, new PropagatedCallFailureReference());
         if (needsStorageTracker) {
             contextEntries[4] = Map.entry(TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         }

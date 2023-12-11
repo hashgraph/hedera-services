@@ -1047,23 +1047,25 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testDispatchPrecedingWithNonEmptyStackDoesntFail() {
             // given
+            given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
+            given(selfNodeInfo.nodeId()).willReturn(0L);
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.createSavepoint();
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+                            AccountID.DEFAULT));
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
+                            AccountID.DEFAULT));
+            verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)

@@ -46,8 +46,10 @@ import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.PropagatedCallFailureReference;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -57,7 +59,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -92,7 +93,7 @@ class FrameRunnerTest {
     @Mock
     private CustomGasCalculator gasCalculator;
 
-    private final AtomicBoolean receiverSigCheckFailed = new AtomicBoolean();
+    private final PropagatedCallFailureReference propagatedCallFailure = new PropagatedCallFailureReference();
 
     private FrameRunner subject;
 
@@ -245,7 +246,9 @@ class FrameRunnerTest {
         doAnswer(invocation -> {
                     messageFrameStack.pop();
                     messageFrameStack.push(childFrame);
-                    receiverSigCheckFailed.set(true);
+                    if (receiverSigCheckFailure) {
+                        propagatedCallFailure.set(HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE);
+                    }
                     return null;
                 })
                 .when(contractCreationProcessor)
@@ -265,10 +268,9 @@ class FrameRunnerTest {
                 .withValue("contracts.maxRefundPercentOfGasLimit", HEDERA_MAX_REFUND_PERCENTAGE)
                 .getOrCreateConfig();
         given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
-        given(frame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE))
-                .willReturn(receiverSigCheckFailed);
-        given(childFrame.getContextVariable(FrameUtils.RECEIVER_SIG_REQ_FAILURE_CONTEXT_VARIABLE))
-                .willReturn(receiverSigCheckFailed);
+        given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(null);
+        given(childFrame.getContextVariable(FrameUtils.PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE))
+                .willReturn(propagatedCallFailure);
         given(frame.getGasPrice()).willReturn(Wei.of(NETWORK_GAS_PRICE));
         if (success) {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);

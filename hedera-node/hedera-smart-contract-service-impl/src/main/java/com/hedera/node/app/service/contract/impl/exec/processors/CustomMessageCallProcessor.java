@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setMessageCallHaltedForMissingReceiverSigReq;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
@@ -216,7 +219,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                     acquiredSenderAuthorizationViaDelegateCall(frame));
             maybeReasonToHalt.ifPresent(reason -> {
                 if (reason == INVALID_SIGNATURE) {
-                    setMessageCallHaltedForMissingReceiverSigReq(frame);
+                    setPropagatedCallFailure(frame, MISSING_RECEIVER_SIGNATURE);
                 }
                 doHalt(frame, reason, operationTracer);
             });
@@ -261,6 +264,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         frame.setExceptionalHaltReason(Optional.of(reason));
         if (forLazyCreation == ForLazyCreation.YES) {
             frame.decrementRemainingGas(frame.getRemainingGas());
+            if (reason == INSUFFICIENT_CHILD_RECORDS) {
+                setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+            }
         }
         if (operationTracer != null) {
             if (forLazyCreation == ForLazyCreation.YES) {
