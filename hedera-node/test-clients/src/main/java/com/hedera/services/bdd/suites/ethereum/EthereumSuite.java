@@ -433,7 +433,6 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest
     HapiSpec etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";

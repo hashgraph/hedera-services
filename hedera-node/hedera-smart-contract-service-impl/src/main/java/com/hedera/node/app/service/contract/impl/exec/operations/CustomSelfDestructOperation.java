@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -64,16 +63,9 @@ public class CustomSelfDestructOperation extends AbstractOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var beneficiaryAddress = Words.toAddress(frame.popStackItem());
-
-            final boolean isBeneficiarySameAsCaller =
-                    beneficiaryAddress.equals(asLongZeroAddress(((ProxyWorldUpdater) frame.getWorldUpdater())
-                            .getHederaContractId(frame.getContractAddress())
-                            .contractNum()));
-
             // Enforce Hedera-specific checks on the beneficiary address
             if (addressChecks.isSystemAccount(beneficiaryAddress)
-                    || !addressChecks.isPresent(beneficiaryAddress, frame)
-                    || isBeneficiarySameAsCaller) {
+                    || !addressChecks.isPresent(beneficiaryAddress, frame)) {
                 return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
             }
 
