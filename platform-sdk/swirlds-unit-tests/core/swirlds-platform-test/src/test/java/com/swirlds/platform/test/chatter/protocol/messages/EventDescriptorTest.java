@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventConstants;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 

@@ -86,7 +86,10 @@ public class ERC1155ContractInteractions extends HapiSuite {
                         uploadInitCode(CONTRACT))
                 .when()
                 .then(
-                        contractCreate(CONTRACT).via("contractCreate").payingWith(ACCOUNT2),
+                        contractCreate(CONTRACT)
+                                .gas(500_000L)
+                                .via("contractCreate")
+                                .payingWith(ACCOUNT2),
                         getTxnRecord("contractCreate").logged(),
                         getAccountBalance(ACCOUNT2).logged(),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),

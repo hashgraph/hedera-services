@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.orphan;
 
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

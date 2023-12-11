@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBook;
 
 /**
  * Validates a signed state received via reconnect.

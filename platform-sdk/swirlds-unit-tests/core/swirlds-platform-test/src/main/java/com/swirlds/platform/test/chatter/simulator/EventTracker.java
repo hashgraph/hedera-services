@@ -23,10 +23,10 @@ import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 
 import com.swirlds.common.formatting.TextTable;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
