@@ -286,21 +286,6 @@ public class CommonUtils {
     }
 
     /**
-     * Throw an {@link IllegalArgumentException} if the supplied argument is {@code null}.
-     *
-     * @param arg     the argument checked
-     * @param argName the name of the argument
-     * @deprecated use {@link java.util.Objects#requireNonNull(Object, String)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static <T> T throwArgNull(final T arg, final String argName) {
-        if (arg == null) {
-            throw new IllegalArgumentException(String.format(ERROR_ARGUMENT_NULL, argName));
-        }
-        return arg;
-    }
-
-    /**
      * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
      *
      * @param arg     the argument checked
