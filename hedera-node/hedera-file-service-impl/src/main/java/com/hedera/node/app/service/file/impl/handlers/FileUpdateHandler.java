@@ -185,10 +185,12 @@ public class FileUpdateHandler implements TransactionHandler {
         // empty old upgrade file
         FileID fileId = fileUpdate.fileIDOrThrow();
 
-        fileStore.resetFileContents(fileId);
+        if (fileUpdate.contents() != null && fileUpdate.contents().length() > 0) {
+            fileStore.resetFileContents(fileId);
+            fileStore.addUpgradeContent(fileId, fileUpdate.contents());
+        }
         final var file = new File.Builder()
                 .fileId(fileId)
-                .contents(fileUpdate.contents())
                 .deleted(false)
                 .expirationSecond(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
                 .memo(fileUpdate.memo())

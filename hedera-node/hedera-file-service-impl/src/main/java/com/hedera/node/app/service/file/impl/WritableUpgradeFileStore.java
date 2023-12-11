@@ -59,9 +59,12 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
     public void add(@NonNull final File file, @NonNull final FileID fileID) {
         requireNonNull(file);
         requireNonNull(fileID);
-        final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
-        upgradeState.add(new ProtoBytes(file.contents()));
         writableUpgradeFileState.put(file.fileIdOrThrow(), file);
+    }
+
+    public void addUpgradeContent(@NonNull final FileID fileID, Bytes content) {
+        final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
+        upgradeState.add(new ProtoBytes(content));
     }
 
     public void append(@NonNull final Bytes bytes, @NonNull final FileID fileID) {
