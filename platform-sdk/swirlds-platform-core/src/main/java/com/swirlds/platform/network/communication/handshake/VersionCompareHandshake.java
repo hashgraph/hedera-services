@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.network.communication.handshake;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.SelfSerializable;
@@ -53,7 +54,7 @@ public class VersionCompareHandshake implements ProtocolRunnable {
      * @throws NullPointerException in case {@code version} parameter is {@code null}
      */
     public VersionCompareHandshake(final SoftwareVersion version, final boolean throwOnMismatch) {
-        Objects.requireNonNull(version, String.format("The supplied argument '%s' cannot be null!", "version"));
+        Objects.requireNonNull(version, String.format(ERROR_ARGUMENT_NULL, "version"));
         this.version = version;
         this.throwOnMismatch = throwOnMismatch;
     }

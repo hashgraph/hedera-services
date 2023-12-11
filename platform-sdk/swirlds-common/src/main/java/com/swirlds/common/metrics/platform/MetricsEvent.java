@@ -16,6 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.platform.NodeId;
 import java.util.Objects;
@@ -31,7 +33,7 @@ public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {
      * @throws NullPointerException in case {@code metric} parameter is {@code null}
      */
     public MetricsEvent {
-        Objects.requireNonNull(type, String.format("The supplied argument '%s' cannot be null!", "type"));
-        Objects.requireNonNull(metric, String.format("The supplied argument '%s' cannot be null!", "metric"));
+        Objects.requireNonNull(type, String.format(ERROR_ARGUMENT_NULL, "type"));
+        Objects.requireNonNull(metric, String.format(ERROR_ARGUMENT_NULL, "metric"));
     }
 }

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.config.legacy;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.platform.NodeId;
@@ -73,7 +74,7 @@ public final class LegacyConfigPropertiesLoader {
      * @throws ConfigurationException in case {@code configPath} cannot be found in the system
      */
     public static LegacyConfigProperties loadConfigFile(@NonNull final Path configPath) throws ConfigurationException {
-        Objects.requireNonNull(configPath, String.format("The supplied argument '%s' cannot be null!", "configPath"));
+        Objects.requireNonNull(configPath, String.format(ERROR_ARGUMENT_NULL, "configPath"));
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         if (!Files.exists(configPath)) {

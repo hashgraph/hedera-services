@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -130,7 +131,7 @@ public class MerkleDbStatistics {
      * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
     public MerkleDbStatistics(final String label) {
-        Objects.requireNonNull(label, String.format("The supplied argument '%s' cannot be null!", "label"));
+        Objects.requireNonNull(label, String.format(ERROR_ARGUMENT_NULL, "label"));
         this.label = label;
         this.hashesStoreCompactionTimeMsList = new ArrayList<>();
         this.hashesStoreCompactionSavedSpaceMbList = new ArrayList<>();
@@ -172,7 +173,7 @@ public class MerkleDbStatistics {
      * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
     public void registerMetrics(final Metrics metrics) {
-        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
 
         // Queries per second
         hashReads = buildLongAccumulator(

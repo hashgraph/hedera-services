@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.dispatch;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.base.state.Mutable;
 import com.swirlds.base.state.Startable;
@@ -73,8 +75,7 @@ public class DispatchBuilder implements Mutable, Startable {
      * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
     public DispatchBuilder(final DispatchConfiguration configuration) {
-        Objects.requireNonNull(
-                configuration, String.format("The supplied argument '%s' cannot be null!", "configuration"));
+        Objects.requireNonNull(configuration, String.format(ERROR_ARGUMENT_NULL, "configuration"));
         if (configuration.flowchartEnabled()) {
             flowchart = new DispatchFlowchart(configuration);
         } else {
@@ -164,9 +165,8 @@ public class DispatchBuilder implements Mutable, Startable {
                     final String comment) {
 
         throwIfImmutable("observer can only be registered while this object is mutable");
-        Objects.requireNonNull(
-                triggerClass, String.format("The supplied argument '%s' cannot be null!", "triggerClass"));
-        Objects.requireNonNull(observer, String.format("The supplied argument '%s' cannot be null!", "observer"));
+        Objects.requireNonNull(triggerClass, String.format(ERROR_ARGUMENT_NULL, "triggerClass"));
+        Objects.requireNonNull(observer, String.format(ERROR_ARGUMENT_NULL, "observer"));
 
         if (flowchart != null && isMutable()) {
             flowchart.registerObserver(owner, triggerClass, comment);
@@ -188,7 +188,7 @@ public class DispatchBuilder implements Mutable, Startable {
      */
     public DispatchBuilder registerObservers(final Object object) {
         throwIfImmutable("observers can only be registered while this object is mutable");
-        Objects.requireNonNull(object, String.format("The supplied argument '%s' cannot be null!", "object"));
+        Objects.requireNonNull(object, String.format(ERROR_ARGUMENT_NULL, "object"));
 
         for (final Method method : object.getClass().getDeclaredMethods()) {
 
@@ -304,9 +304,8 @@ public class DispatchBuilder implements Mutable, Startable {
             BASE_INTERFACE getDispatcher(
                     final Object owner, final Class<DISPATCHER_TYPE> triggerClass, final String comment) {
 
-        Objects.requireNonNull(owner, String.format("The supplied argument '%s' cannot be null!", "owner"));
-        Objects.requireNonNull(
-                triggerClass, String.format("The supplied argument '%s' cannot be null!", "dispatchType"));
+        Objects.requireNonNull(owner, String.format(ERROR_ARGUMENT_NULL, "owner"));
+        Objects.requireNonNull(triggerClass, String.format(ERROR_ARGUMENT_NULL, "dispatchType"));
 
         if (flowchart != null && isMutable()) {
             flowchart.registerDispatcher(owner, triggerClass, comment);

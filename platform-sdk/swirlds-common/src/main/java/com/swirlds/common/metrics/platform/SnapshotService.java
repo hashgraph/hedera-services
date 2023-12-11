@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 
 import com.swirlds.base.state.Startable;
@@ -93,11 +94,10 @@ public class SnapshotService implements Startable {
             final ScheduledExecutorService executor,
             final Duration interval,
             final Time time) {
-        Objects.requireNonNull(
-                globalMetrics, String.format("The supplied argument '%s' cannot be null!", "globalMetrics"));
-        Objects.requireNonNull(executor, String.format("The supplied argument '%s' cannot be null!", "executor"));
-        Objects.requireNonNull(interval, String.format("The supplied argument '%s' cannot be null!", "interval"));
-        Objects.requireNonNull(time, String.format("The supplied argument '%s' cannot be null!", "time"));
+        Objects.requireNonNull(globalMetrics, String.format(ERROR_ARGUMENT_NULL, "globalMetrics"));
+        Objects.requireNonNull(executor, String.format(ERROR_ARGUMENT_NULL, "executor"));
+        Objects.requireNonNull(interval, String.format(ERROR_ARGUMENT_NULL, "interval"));
+        Objects.requireNonNull(time, String.format(ERROR_ARGUMENT_NULL, "time"));
         this.globalMetrics = globalMetrics;
         if (!globalMetrics.isGlobalMetrics()) {
             throw new IllegalArgumentException("Trying to create SnapshotService with non-global Metrics");
@@ -118,8 +118,7 @@ public class SnapshotService implements Startable {
      * 		if {@code platformMetrics} is {@code null} or not platform-specific
      */
     public void addPlatformMetric(final DefaultMetrics platformMetrics) {
-        Objects.requireNonNull(
-                platformMetrics, String.format("The supplied argument '%s' cannot be null!", "platformMetric"));
+        Objects.requireNonNull(platformMetrics, String.format(ERROR_ARGUMENT_NULL, "platformMetric"));
         if (!platformMetrics.isPlatformMetrics()) {
             throw new IllegalArgumentException("Trying to add non-platform Metrics");
         }
@@ -137,8 +136,7 @@ public class SnapshotService implements Startable {
      * 		if {@code platformMetrics} is {@code null} or not platform-specific
      */
     public void removePlatformMetric(final DefaultMetrics platformMetrics) {
-        Objects.requireNonNull(
-                platformMetrics, String.format("The supplied argument '%s' cannot be null!", "platformMetric"));
+        Objects.requireNonNull(platformMetrics, String.format(ERROR_ARGUMENT_NULL, "platformMetric"));
         if (!platformMetrics.isPlatformMetrics()) {
             throw new IllegalArgumentException("Trying to remove non-platform Metrics");
         }

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.util;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.io.utility.FileUtils;
@@ -66,11 +67,9 @@ public final class MetricsDocUtils {
             final Metrics globalMetrics,
             final Collection<SwirldsPlatform> platforms,
             final Configuration configuration) {
-        Objects.requireNonNull(
-                globalMetrics, String.format("The supplied argument '%s' cannot be null!", "globalMetrics"));
-        Objects.requireNonNull(platforms, String.format("The supplied argument '%s' cannot be null!", "platforms"));
-        Objects.requireNonNull(
-                configuration, String.format("The supplied argument '%s' cannot be null!", "configuration"));
+        Objects.requireNonNull(globalMetrics, String.format(ERROR_ARGUMENT_NULL, "globalMetrics"));
+        Objects.requireNonNull(platforms, String.format(ERROR_ARGUMENT_NULL, "platforms"));
+        Objects.requireNonNull(configuration, String.format(ERROR_ARGUMENT_NULL, "configuration"));
 
         // Combine global metrics and platform metrics without duplicates
         final Set<Metric> combinedMetrics = new HashSet<>(globalMetrics.getAll());
@@ -100,7 +99,7 @@ public final class MetricsDocUtils {
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     private static String generateMetricsDocContentsInTSV(final Collection<Metric> metrics) {
-        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
 
         final List<Metric> sortedMetrics = metrics.stream()
                 .sorted((x, y) -> x.getIdentifier().compareToIgnoreCase(y.getIdentifier()))

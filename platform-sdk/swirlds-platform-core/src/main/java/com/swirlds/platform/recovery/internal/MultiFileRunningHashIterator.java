@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
@@ -36,7 +38,7 @@ public class MultiFileRunningHashIterator implements IOIterator<DetailedConsensu
      * @throws NullPointerException in case {@code iterator} parameter is {@code null}
      */
     public MultiFileRunningHashIterator(final EventStreamMultiFileIterator iterator) {
-        Objects.requireNonNull(iterator, String.format("The supplied argument '%s' cannot be null!", "iterator"));
+        Objects.requireNonNull(iterator, String.format(ERROR_ARGUMENT_NULL, "iterator"));
         this.iterator = iterator;
         this.runningHashCalculator = new RunningHashCalculatorForStream<>();
 

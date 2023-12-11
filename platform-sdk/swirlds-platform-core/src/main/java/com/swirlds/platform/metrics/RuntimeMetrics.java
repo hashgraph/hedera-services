@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.metrics;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_0;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_1_4;
@@ -155,7 +156,7 @@ public final class RuntimeMetrics {
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     private RuntimeMetrics(final Metrics metrics) {
-        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
         this.osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         this.thbean = ManagementFactory.getThreadMXBean();
 

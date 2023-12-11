@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_THRESHOLD;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
@@ -63,7 +64,7 @@ class MetricsUpdateService implements Startable {
      * @throws NullPointerException in case {@code executor} parameter is {@code null}
      */
     MetricsUpdateService(final ScheduledExecutorService executor, final long period, final TimeUnit unit) {
-        Objects.requireNonNull(executor, String.format("The supplied argument '%s' cannot be null!", "executor"));
+        Objects.requireNonNull(executor, String.format(ERROR_ARGUMENT_NULL, "executor"));
         this.executor = executor;
         this.period = period;
         this.unit = unit;
@@ -79,7 +80,7 @@ class MetricsUpdateService implements Startable {
      * 		if {@code updater} is {@code null}
      */
     public void addUpdater(final Runnable updater) {
-        Objects.requireNonNull(updater, String.format("The supplied argument '%s' cannot be null!", "updater"));
+        Objects.requireNonNull(updater, String.format(ERROR_ARGUMENT_NULL, "updater"));
         updaters.add(updater);
     }
 
@@ -92,7 +93,7 @@ class MetricsUpdateService implements Startable {
      * 		if {@code updater} is {@code null}
      */
     public void removeUpdater(final Runnable updater) {
-        Objects.requireNonNull(updater, String.format("The supplied argument '%s' cannot be null!", "updater"));
+        Objects.requireNonNull(updater, String.format(ERROR_ARGUMENT_NULL, "updater"));
         updaters.remove(updater);
     }
 

@@ -16,6 +16,8 @@
 
 package com.swirlds.common.metrics.statistics;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import java.util.Objects;
@@ -138,7 +140,7 @@ public class StatsSpeedometer implements StatsBuffered {
      */
     @Deprecated(forRemoval = true)
     public StatsSpeedometer(final double halfLife, final boolean saveHistory, final Time time) {
-        Objects.requireNonNull(time, String.format("The supplied argument '%s' cannot be null!", "time"));
+        Objects.requireNonNull(time, String.format(ERROR_ARGUMENT_NULL, "time"));
         this.time = time;
         final long now = time.nanoTime();
         this.startTime = now;

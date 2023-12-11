@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_THRESHOLD;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
@@ -93,8 +94,8 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      */
     @Deprecated(forRemoval = true)
     public PrometheusEndpoint(final HttpServer httpServer, final CollectorRegistry registry) throws IOException {
-        Objects.requireNonNull(httpServer, String.format("The supplied argument '%s' cannot be null!", "httpServer"));
-        Objects.requireNonNull(registry, String.format("The supplied argument '%s' cannot be null!", "registry"));
+        Objects.requireNonNull(httpServer, String.format(ERROR_ARGUMENT_NULL, "httpServer"));
+        Objects.requireNonNull(registry, String.format(ERROR_ARGUMENT_NULL, "registry"));
         this.registry = registry;
 
         logger.info(
@@ -117,8 +118,7 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      * @throws NullPointerException in case {@code notification} parameter is {@code null}
      */
     public void handleMetricsChange(final MetricsEvent notification) {
-        Objects.requireNonNull(
-                notification, String.format("The supplied argument '%s' cannot be null!", "notification"));
+        Objects.requireNonNull(notification, String.format(ERROR_ARGUMENT_NULL, "notification"));
 
         final Metric metric = notification.metric();
         final String metricKey = calculateMetricKey(metric);
@@ -148,8 +148,7 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
      * 		the {@link SnapshotEvent}
      */
     public void handleSnapshots(final SnapshotEvent notification) {
-        Objects.requireNonNull(
-                notification, String.format("The supplied argument '%s' cannot be null!", "notification"));
+        Objects.requireNonNull(notification, String.format(ERROR_ARGUMENT_NULL, "notification"));
 
         for (final Snapshot snapshot : notification.snapshots()) {
             final String metricKey = calculateMetricKey(snapshot.metric());

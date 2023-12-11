@@ -16,6 +16,8 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import java.util.Objects;
 
 /**
@@ -35,7 +37,7 @@ public final class NameConverter {
      * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
     public static String fix(final String label) {
-        Objects.requireNonNull(label, String.format("The supplied argument '%s' cannot be null!", "label"));
+        Objects.requireNonNull(label, String.format(ERROR_ARGUMENT_NULL, "label"));
         return label.strip()
                 .replace('.', ':')
                 .replace('-', '_')

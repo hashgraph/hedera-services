@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.ADDED;
 import static com.swirlds.common.metrics.platform.MetricsEvent.Type.REMOVED;
 
@@ -100,12 +101,10 @@ public class DefaultMetrics implements PlatformMetrics {
             final ScheduledExecutorService executor,
             final PlatformMetricsFactory factory,
             final MetricsConfig metricsConfig) {
-        Objects.requireNonNull(
-                metricKeyRegistry, String.format("The supplied argument '%s' cannot be null!", "metricsKeyRegistry"));
-        Objects.requireNonNull(executor, String.format("The supplied argument '%s' cannot be null!", "executor"));
-        Objects.requireNonNull(factory, String.format("The supplied argument '%s' cannot be null!", "factory"));
-        Objects.requireNonNull(
-                metricsConfig, String.format("The supplied argument '%s' cannot be null!", "metricsConfig"));
+        Objects.requireNonNull(metricKeyRegistry, String.format(ERROR_ARGUMENT_NULL, "metricsKeyRegistry"));
+        Objects.requireNonNull(executor, String.format(ERROR_ARGUMENT_NULL, "executor"));
+        Objects.requireNonNull(factory, String.format(ERROR_ARGUMENT_NULL, "factory"));
+        Objects.requireNonNull(metricsConfig, String.format(ERROR_ARGUMENT_NULL, "metricsConfig"));
         this.selfId = selfId;
         this.metricKeyRegistry = metricKeyRegistry;
         this.factory = factory;
@@ -128,8 +127,8 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public Metric getMetric(final String category, final String name) {
-        Objects.requireNonNull(category, String.format("The supplied argument '%s' cannot be null!", CATEGORY));
-        Objects.requireNonNull(name, String.format("The supplied argument '%s' cannot be null!", NAME));
+        Objects.requireNonNull(category, String.format(ERROR_ARGUMENT_NULL, CATEGORY));
+        Objects.requireNonNull(name, String.format(ERROR_ARGUMENT_NULL, NAME));
         return metricMap.get(calculateMetricKey(category, name));
     }
 
@@ -138,7 +137,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public Collection<Metric> findMetricsByCategory(final String category) {
-        Objects.requireNonNull(category, String.format("The supplied argument '%s' cannot be null!", CATEGORY));
+        Objects.requireNonNull(category, String.format(ERROR_ARGUMENT_NULL, CATEGORY));
         final String start = category + ".";
         // The character '/' is the successor of '.' in Unicode. We use it to define the first metric-key,
         // which is not part of the result set anymore.
@@ -177,7 +176,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config) {
-        Objects.requireNonNull(config, String.format("The supplied argument '%s' cannot be null!", "config"));
+        Objects.requireNonNull(config, String.format(ERROR_ARGUMENT_NULL, "config"));
 
         // first we check the happy path, if the metric is already registered
         final String key = calculateMetricKey(config);
@@ -217,8 +216,8 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void remove(final String category, final String name) {
-        Objects.requireNonNull(category, String.format("The supplied argument '%s' cannot be null!", CATEGORY));
-        Objects.requireNonNull(name, String.format("The supplied argument '%s' cannot be null!", NAME));
+        Objects.requireNonNull(category, String.format(ERROR_ARGUMENT_NULL, CATEGORY));
+        Objects.requireNonNull(name, String.format(ERROR_ARGUMENT_NULL, NAME));
         final String metricKey = calculateMetricKey(category, name);
         throwIfGlobal(metricKey);
         final Metric metric = metricMap.remove(metricKey);
@@ -234,7 +233,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void remove(final Metric metric) {
-        Objects.requireNonNull(metric, String.format("The supplied argument '%s' cannot be null!", "metric"));
+        Objects.requireNonNull(metric, String.format(ERROR_ARGUMENT_NULL, "metric"));
         final String metricKey = calculateMetricKey(metric);
         throwIfGlobal(metricKey);
         final boolean removed = metricMap.remove(metricKey, metric);
@@ -250,7 +249,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void remove(final MetricConfig<?, ?> config) {
-        Objects.requireNonNull(config, String.format("The supplied argument '%s' cannot be null!", "config"));
+        Objects.requireNonNull(config, String.format(ERROR_ARGUMENT_NULL, "config"));
         final String metricKey = calculateMetricKey(config);
         throwIfGlobal(metricKey);
         metricMap.computeIfPresent(metricKey, (key, oldValue) -> {
@@ -276,7 +275,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void addUpdater(final Runnable updater) {
-        Objects.requireNonNull(updater, String.format("The supplied argument '%s' cannot be null!", "updater"));
+        Objects.requireNonNull(updater, String.format(ERROR_ARGUMENT_NULL, "updater"));
         if (updateService != null) {
             updateService.addUpdater(updater);
         }
@@ -287,7 +286,7 @@ public class DefaultMetrics implements PlatformMetrics {
      */
     @Override
     public void removeUpdater(final Runnable updater) {
-        Objects.requireNonNull(updater, String.format("The supplied argument '%s' cannot be null!", "updater"));
+        Objects.requireNonNull(updater, String.format(ERROR_ARGUMENT_NULL, "updater"));
         if (updateService != null) {
             updateService.removeUpdater(updater);
         }

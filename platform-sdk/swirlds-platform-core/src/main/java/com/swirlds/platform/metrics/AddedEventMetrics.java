@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.metrics;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_13_2;
@@ -130,8 +131,8 @@ public class AddedEventMetrics implements EventAddedObserver {
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {
-        Objects.requireNonNull(selfId, String.format("The supplied argument '%s' cannot be null!", "selfId"));
-        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        Objects.requireNonNull(selfId, String.format(ERROR_ARGUMENT_NULL, "selfId"));
+        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
         this.selfId = selfId;
 
         eventsCreatedPerSecond = metrics.getOrCreate(EVENTS_CREATED_PER_SECOND_CONFIG);

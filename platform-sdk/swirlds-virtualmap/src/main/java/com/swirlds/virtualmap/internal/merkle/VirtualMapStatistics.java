@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
@@ -96,7 +98,7 @@ public class VirtualMapStatistics {
      * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
     public VirtualMapStatistics(final String label) {
-        Objects.requireNonNull(label, String.format("The supplied argument '%s' cannot be null!", "label"));
+        Objects.requireNonNull(label, String.format(ERROR_ARGUMENT_NULL, "label"));
         this.label = label;
     }
 
@@ -108,7 +110,7 @@ public class VirtualMapStatistics {
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public void registerMetrics(final Metrics metrics) {
-        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
 
         // Generic
         size = metrics.getOrCreate(new LongGauge.Config(STAT_CATEGORY, VMAP_PREFIX + "size_" + label)

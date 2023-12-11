@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 
 import java.awt.Dialog;
@@ -294,7 +295,7 @@ public class CommonUtils {
     @Deprecated(forRemoval = true)
     public static <T> T throwArgNull(final T arg, final String argName) {
         if (arg == null) {
-            throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be null!", argName));
+            throw new IllegalArgumentException(String.format(ERROR_ARGUMENT_NULL, argName));
         }
         return arg;
     }

@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.stats.signing.algorithms;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import java.util.Objects;
 
 /**
@@ -72,7 +74,7 @@ public final class ExtendedSignature {
      * @throws NullPointerException in case {@code signature} parameter is {@code null}
      */
     public ExtendedSignature(final byte[] signature, final byte[] r, final byte[] s) {
-        Objects.requireNonNull(signature, String.format("The supplied argument '%s' cannot be null!", "signature"));
+        Objects.requireNonNull(signature, String.format(ERROR_ARGUMENT_NULL, "signature"));
 
         this.signature = signature;
         this.r = r;

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.crypto;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
@@ -63,7 +65,7 @@ public class PlatformSigner implements Signer, HashSigner {
 
     @Override
     public com.swirlds.common.crypto.Signature sign(final Hash hash) {
-        Objects.requireNonNull(hash, String.format("The supplied argument '%s' cannot be null!", "hash"));
+        Objects.requireNonNull(hash, String.format(ERROR_ARGUMENT_NULL, "hash"));
         return sign(hash.getValue());
     }
 }

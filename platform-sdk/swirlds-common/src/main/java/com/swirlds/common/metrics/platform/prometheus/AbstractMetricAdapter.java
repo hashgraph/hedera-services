@@ -16,6 +16,8 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +30,7 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
      * @throws NullPointerException in case {@code adapterType} parameter is {@code null}
      */
     protected AbstractMetricAdapter(final PrometheusEndpoint.AdapterType adapterType) {
-        Objects.requireNonNull(adapterType, String.format("The supplied argument '%s' cannot be null!", "adapterType"));
+        Objects.requireNonNull(adapterType, String.format(ERROR_ARGUMENT_NULL, "adapterType"));
         this.adapterType = adapterType;
     }
 

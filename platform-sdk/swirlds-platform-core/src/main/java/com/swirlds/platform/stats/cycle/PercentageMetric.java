@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.stats.cycle;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
+
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
@@ -41,7 +43,7 @@ public class PercentageMetric {
             final String description,
             final BiFunction<Integer, Integer, Double> resultFunction) {
 
-        Objects.requireNonNull(name, String.format("The supplied argument '%s' cannot be null!", "name"));
+        Objects.requireNonNull(name, String.format(ERROR_ARGUMENT_NULL, "name"));
         container = metrics.getOrCreate(
                 new IntegerPairAccumulator.Config<>(category, name + APPENDIX, Double.class, resultFunction)
                         .withDescription(description)

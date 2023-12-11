@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.metrics;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
@@ -69,7 +70,7 @@ public class ConsensusHandlingMetrics {
      * @throws NullPointerException in case {@code metrics} parameter is {@code null}
      */
     public ConsensusHandlingMetrics(final Metrics metrics, final Time time) {
-        Objects.requireNonNull(metrics, String.format("The supplied argument '%s' cannot be null!", "metrics"));
+        Objects.requireNonNull(metrics, String.format(ERROR_ARGUMENT_NULL, "metrics"));
         this.time = time;
 
         consensusCycleTiming = new CycleTimingStat(

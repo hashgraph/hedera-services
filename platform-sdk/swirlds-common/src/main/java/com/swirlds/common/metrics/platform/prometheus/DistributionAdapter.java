@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
+import static com.swirlds.base.ArgumentUtils.ERROR_ARGUMENT_NULL;
 import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
@@ -53,8 +54,8 @@ public class DistributionAdapter extends AbstractMetricAdapter {
      */
     public DistributionAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
-        Objects.requireNonNull(registry, String.format("The supplied argument '%s' cannot be null!", "registry"));
-        Objects.requireNonNull(metric, String.format("The supplied argument '%s' cannot be null!", "metric"));
+        Objects.requireNonNull(registry, String.format(ERROR_ARGUMENT_NULL, "registry"));
+        Objects.requireNonNull(metric, String.format(ERROR_ARGUMENT_NULL, "metric"));
         final Gauge.Builder builder = new Gauge.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
@@ -73,9 +74,9 @@ public class DistributionAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
-        Objects.requireNonNull(snapshot, String.format("The supplied argument '%s' cannot be null!", "snapshot"));
+        Objects.requireNonNull(snapshot, String.format(ERROR_ARGUMENT_NULL, "snapshot"));
         if (adapterType != GLOBAL) {
-            Objects.requireNonNull(nodeId, String.format("The supplied argument '%s' cannot be null!", "nodeId"));
+            Objects.requireNonNull(nodeId, String.format(ERROR_ARGUMENT_NULL, "nodeId"));
         }
         for (final Snapshot.SnapshotEntry entry : snapshot.entries()) {
             final String valueType =
