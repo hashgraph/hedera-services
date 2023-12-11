@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.records;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,6 +73,11 @@ public interface ContractCallRecordBuilder extends GasFeeRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
+
+
+    ContractCallRecordBuilder transactionID(@NonNull final TransactionID transactionId);
+
+    TransactionID transactionID();
 
     /**
      * Gets the newly minted serial numbers.

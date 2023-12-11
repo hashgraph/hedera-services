@@ -21,16 +21,22 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.unqualifiedDelegateDetected;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -108,12 +114,17 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
                 if (responseCode == SUCCESS) {
                     final var output = pricedResult.fullResult().result().getOutput();
+                    var result = contractFunctionResultSuccessFor(
+                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID);
+                    result = result.copyBuilder().functionParameters(tuweniToPbjBytes(input)).gas(1L).build();
+
                     enhancement
                             .systemOperations()
                             .externalizeResult(
-                                    contractFunctionResultSuccessFor(
-                                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
-                                    responseCode);
+                                    result,
+                                    responseCode,
+                                    ((HandleSystemContractOperations)enhancement.systemOperations())
+                                            .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 } else {
                     enhancement
                             .systemOperations()
@@ -122,7 +133,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                                             pricedResult.fullResult().gasRequirement(),
                                             responseCode.toString(),
                                             HTS_CONTRACT_ID),
-                                    responseCode);
+                                    responseCode,
+                                    ((HandleSystemContractOperations)enhancement.systemOperations())
+                                            .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 }
             }
         } catch (final HandleException handleException) {

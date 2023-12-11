@@ -33,7 +33,6 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -44,10 +43,8 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -342,14 +339,24 @@ public class HandleHederaOperations implements HederaOperations {
     }
 
     @Override
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
-        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
+
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var parentAccount = accountStore.getContractById(parentId);
+
+        final var impliedContractCreation = synthContractCreationFromParent(
+                ContractID.newBuilder().contractNum(contractId.contractNum()).build(),
+                parentAccount);
+
+        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class, contractBodyCustomizerFor(impliedContractCreation));
         recordBuilder
                 .contractID(contractId)
+                .status(SUCCESS)
                 // add dummy transaction, because SingleTransactionRecord require NonNull on build
                 .transaction(Transaction.newBuilder()
                         .signedTransactionBytes(Bytes.EMPTY)
                         .build())
+
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
@@ -406,9 +413,10 @@ public class HandleHederaOperations implements HederaOperations {
                             transaction.signedTransactionBytes().toReadableSequentialData());
                     final var body = TransactionBody.PROTOBUF.parseStrict(
                             signedTransaction.bodyBytes().toReadableSequentialData());
-                    if (!body.hasCryptoCreateAccount()) {
-                        throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
-                    }
+                    //todo add check for hollow accounts
+//                    if (!body.hasCryptoCreateAccount()) {
+//                        throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
+//                    }
                     final var finishedBody =
                             body.copyBuilder().contractCreateInstance(op).build();
                     final var finishedSignedTransaction = signedTransaction

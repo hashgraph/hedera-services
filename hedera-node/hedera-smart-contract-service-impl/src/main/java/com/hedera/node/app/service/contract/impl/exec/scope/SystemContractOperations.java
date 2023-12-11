@@ -19,11 +19,14 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.function.Predicate;
 
 public interface SystemContractOperations {
@@ -77,6 +80,13 @@ public interface SystemContractOperations {
     void externalizeResult(
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus);
 
+    /**
+     * Attempts to create a child record of the current record, with the given {@code result}
+     *
+     * @param result    contract function result
+     */
+    void externalizeResult(
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus, @Nullable Transaction transaction);
     /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
      * to dollars

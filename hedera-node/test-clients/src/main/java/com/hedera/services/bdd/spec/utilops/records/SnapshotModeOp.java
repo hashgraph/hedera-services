@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_INFO;
@@ -733,7 +734,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private boolean shouldSkip(@NonNull final String expectedName, @NonNull final Class<?> expectedType) {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
-        if ("contractCallResult".equals(expectedName) && ByteString.class.isAssignableFrom(expectedType)) {
+        if ("contractCallResult".equals(expectedName) /* && ByteString.class.isAssignableFrom(expectedType)*/) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
@@ -750,6 +751,10 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         } else if ("logInfo".equals(expectedName)) {
             //skip logs checking (we have logs containing EVM addresses on contract create)
             return matchModes.contains(NONDETERMINISTIC_LOG_INFO);
+        } else if ("constructorParameters".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS);
+        } else if ("etereum_data".equals(expectedName)) {
+            return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }

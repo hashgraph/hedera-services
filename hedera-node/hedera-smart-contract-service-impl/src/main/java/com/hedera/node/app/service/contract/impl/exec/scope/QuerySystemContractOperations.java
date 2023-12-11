@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -26,6 +27,8 @@ import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -73,12 +76,17 @@ public class QuerySystemContractOperations implements SystemContractOperations {
         throw new UnsupportedOperationException("Cannot compute a signature test");
     }
 
+    @Override
+    public void externalizeResult(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {
+
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void externalizeResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
+            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus, @Nullable Transaction transaction) {
         // no-op
     }
 

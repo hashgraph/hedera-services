@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeO
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -179,7 +180,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         contractId = enhancement.operations().shardAndRealmValidated(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
-            address = pbjToBesuAddress(contractId.evmAddressOrThrow());
+            if(isLongZeroAddress(contractId.evmAddressOrThrow().toByteArray())) {
+                var contractNum = numberOfLongZero(contractId.evmAddressOrThrow().toByteArray());
+                address = evmFrameState.getAddress(contractNum);
+            } else {
+                address = pbjToBesuAddress(contractId.evmAddressOrThrow());
+            }
         } else {
             try {
                 address = evmFrameState.getAddress(contractId.contractNumOrElse(0L));
@@ -283,13 +289,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias) {
+    public void finalizeHollowAccount(@NonNull final Address alias, @NonNull final Address parent) {
         evmFrameState.finalizeHollowAccount(alias);
         // add child record on merge
         pendingCreation = null;
         var contractId = getHederaContractId(alias);
+        var parentId = getHederaContractId(parent);
         var evmAddress = aliasFrom(alias);
-        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
+        enhancement.operations().externalizeHollowAccountMerge(contractId, parentId, evmAddress);
     }
 
     @Override
@@ -495,7 +502,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @Nullable final Address origin,
             @Nullable final ContractCreateTransactionBody body,
             @Nullable final Address alias) {
-        final var number = enhancement.operations().peekNextEntityNumber();
+        long number;
+        if(alias != null && isHollowAccount(alias)) {
+            var contractID = getHederaContractId(alias);
+            number = contractID.contractNum();
+        } else {
+            number = enhancement.operations().peekNextEntityNumber();
+        }
         pendingCreation = new PendingCreation(
                 alias == null ? asLongZeroAddress(number) : alias,
                 number,

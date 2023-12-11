@@ -638,6 +638,8 @@ public interface HandleContext {
     @NonNull
     <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
+    @NonNull
+    <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass, ExternalizedRecordCustomizer customizer);
     /**
      * Returns the current {@link SavepointStack}.
      *

@@ -828,6 +828,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     @NonNull
+    public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass, ExternalizedRecordCustomizer customizer) {
+        final var result = recordListBuilder.addRemovableChildWithExternalizationCustomizer(configuration(), customizer);
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    @Override
+    @NonNull
     public SavepointStack savepointStack() {
         return stack;
     }

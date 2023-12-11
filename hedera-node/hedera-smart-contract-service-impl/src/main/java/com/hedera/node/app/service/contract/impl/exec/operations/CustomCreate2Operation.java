@@ -69,7 +69,7 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
     protected void onSuccess(@NonNull final MessageFrame frame, @NonNull final Address creation) {
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
         if (updater.isHollowAccount(creation)) {
-            updater.finalizeHollowAccount(creation);
+            updater.finalizeHollowAccount(creation, frame.getContractAddress());
         }
     }
 

@@ -56,6 +56,7 @@ public interface SingleTransactionRecordBuilder {
         final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
         return Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
+                .body(body)
                 .build();
     }
 }
