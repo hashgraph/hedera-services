@@ -147,21 +147,6 @@ tasks.register<Test>("hapiTestTimeConsuming") {
     modularity.inferModulePath.set(false)
 }
 
-// Runs restart test
-tasks.register<Test>("hapiTestRestart") {
-    testClassesDirs = sourceSets.main.get().output.classesDirs
-    classpath = sourceSets.main.get().runtimeClasspath
-
-    useJUnitPlatform { includeTags("RESTART") }
-
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task.
     // We should maybe remove them from src/test into src/eet,

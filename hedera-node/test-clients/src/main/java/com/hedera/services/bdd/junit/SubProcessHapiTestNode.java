@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.InProcessHapiTestNode.START_PORT;
+import static com.hedera.services.bdd.junit.InProcessHapiTestNode.STOP_PORT;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -44,6 +46,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link HapiTestNode} that will shell-out to a sub-process for running the node. The advantage
@@ -55,6 +59,7 @@ import java.util.stream.Stream;
  * The {@code stdout} and {@code stderr} files will be written into the working directory.
  */
 final class SubProcessHapiTestNode implements HapiTestNode {
+    private static final Logger logger = LogManager.getLogger(SubProcessHapiTestNode.class);
     private static final Pattern PROM_PLATFORM_STATUS_HELP_PATTERN =
             Pattern.compile("# HELP platform_PlatformStatus (.*)");
     private static final Pattern PROM_PLATFORM_STATUS_PATTERN =
@@ -243,7 +248,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--dport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;",
                 "sudo",
@@ -254,12 +259,13 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--sport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;"
             };
             try {
-                final Process process = new ProcessBuilder(cmd).start();
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
                 process.waitFor(75, TimeUnit.SECONDS);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
@@ -278,7 +284,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--dport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;",
                 "sudo",
@@ -289,12 +295,13 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--sport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;"
             };
             try {
-                final Process process = new ProcessBuilder(cmd).start();
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);
                 process.waitFor(75, TimeUnit.SECONDS);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);

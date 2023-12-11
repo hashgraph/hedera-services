@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link HapiTestNode} that runs the node in this JVM process. The advantage of the in-process
@@ -66,6 +68,7 @@ import java.util.stream.Stream;
  * variable, which we cannot do when running in process. See ConfigProviderBase.
  */
 public class InProcessHapiTestNode implements HapiTestNode {
+    private static final Logger logger = LogManager.getLogger(InProcessHapiTestNode.class);
     /** The thread in which the Hedera node will run */
     private WorkerThread th;
     /** The name of the node, such as Alice or Bob */
@@ -78,6 +81,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
     private final Path workingDir;
     /** The port on which the grpc server will be listening */
     private final int grpcPort;
+
+    public static final int START_PORT = 10000;
+    public static final int STOP_PORT = 65535;
 
     /**
      * Create a new in-process node.
@@ -184,7 +190,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--dport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;",
                 "sudo",
@@ -195,15 +201,24 @@ public class InProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--sport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;"
             };
             try {
-                final Process process = new ProcessBuilder(cmd).start();
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Blocking Network port {} for node {}", grpcPort, nodeId);
                 process.waitFor(75, TimeUnit.SECONDS);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
+            }
+
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(
+                        "node " + nodeId + ": Interrupted while sleeping in waitForActive busy loop", e);
             }
         }
     }
@@ -219,7 +234,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--dport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;",
                 "sudo",
@@ -230,12 +245,13 @@ public class InProcessHapiTestNode implements HapiTestNode {
                 "-p",
                 "tcp",
                 "--sport",
-                format("%d:%d", grpcPort, grpcPort),
+                format("%d:%d", START_PORT, STOP_PORT),
                 "-j",
                 "DROP;"
             };
             try {
-                final Process process = new ProcessBuilder(cmd).start();
+                final Process process = Runtime.getRuntime().exec(cmd);
+                logger.info("Unblocking Network port {} for node {}", grpcPort, nodeId);
                 process.waitFor(75, TimeUnit.SECONDS);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);

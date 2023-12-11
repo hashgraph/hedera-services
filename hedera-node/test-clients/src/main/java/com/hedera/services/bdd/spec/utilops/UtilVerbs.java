@@ -299,6 +299,10 @@ public class UtilVerbs {
         return new DisconnectNodeOp(byName(name), waitSeconds);
     }
 
+    public static DisconnectNodeOp disconnectAllNodes(int waitSeconds) {
+        return new DisconnectNodeOp(allNodes(), waitSeconds);
+    }
+
     public static ReviveNodeOp reviveNode(String name, int waitSeconds) {
         return new ReviveNodeOp(byName(name), waitSeconds);
     }
