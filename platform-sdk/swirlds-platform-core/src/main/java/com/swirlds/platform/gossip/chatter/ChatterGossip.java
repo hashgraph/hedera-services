@@ -68,7 +68,6 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.PlatformVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
@@ -232,9 +231,6 @@ public class ChatterGossip extends AbstractGossip {
                             List.of(
                                     new VersionCompareHandshake(
                                             appVersion, !protocolConfig.tolerateMismatchedVersion()),
-                                    new VersionCompareHandshake(
-                                            PlatformVersion.locateOrDefault(),
-                                            !protocolConfig.tolerateMismatchedVersion()),
                                     new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
