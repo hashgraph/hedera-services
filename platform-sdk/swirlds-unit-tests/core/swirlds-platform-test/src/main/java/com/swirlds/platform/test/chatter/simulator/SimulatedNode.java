@@ -17,9 +17,10 @@
 package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.platform.test.chatter.simulator.EventSimulator.simulateEvent;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.chatter.GossipPayload;
 import com.swirlds.platform.test.chatter.SimulatedChatter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -112,7 +113,7 @@ public class SimulatedNode {
                 .collect(Collectors.toList());
     }
 
-    private void registerEvent(final ChatterEvent e) {
+    private void registerEvent(final GossipEvent e) {
         eventTracker.registerEvent(e.getDescriptor(), selfId, currentTime.get());
     }
 
@@ -136,7 +137,7 @@ public class SimulatedNode {
         final double averageEventsPerTimeStep = averageEventsPerSecond * (timeStep.getNano() * NANOSECONDS_TO_SECONDS);
         if (random.nextDouble() < averageEventsPerTimeStep) {
             final int size = (int) Math.max(1, random.nextGaussian(averageEventSize, eventSizeStandardDeviation));
-            final SimulatedEvent event = new SimulatedEvent(random, selfId, roundProvider.get(), size);
+            final GossipEvent event = simulateEvent(random, selfId, roundProvider.get(), size);
             event.setTimeReceived(now);
 
             if (debugEnabled) {
@@ -155,7 +156,7 @@ public class SimulatedNode {
     private void receiveMessages(final Instant now) {
         while (network.hasMessages(selfId)) {
             final SimulatedMessage message = network.nextMessage(selfId);
-            if (message.getPayload() instanceof SimulatedEvent se) {
+            if (message.getPayload() instanceof GossipEvent se) {
                 se.setTimeReceived(now);
             }
 

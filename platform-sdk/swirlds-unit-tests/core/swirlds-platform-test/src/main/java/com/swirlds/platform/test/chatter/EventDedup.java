@@ -19,28 +19,28 @@ package com.swirlds.platform.test.chatter;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.set.ConcurrentSequenceSet;
 import com.swirlds.common.sequence.set.SequenceSet;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
 import java.util.List;
 
-public class EventDedup implements MessageHandler<ChatterEvent>, Shiftable {
-    private final List<MessageHandler<ChatterEvent>> handlers;
+public class EventDedup implements MessageHandler<GossipEvent>, Shiftable {
+    private final List<MessageHandler<GossipEvent>> handlers;
     private final SequenceSet<EventDescriptor> knownEvents =
             new ConcurrentSequenceSet<>(0, 100_000, EventDescriptor::getGeneration);
     private long oldestEvent = 0;
 
-    public EventDedup(final List<MessageHandler<ChatterEvent>> handlers) {
+    public EventDedup(final List<MessageHandler<GossipEvent>> handlers) {
         this.handlers = handlers;
     }
 
     @Override
-    public void handleMessage(ChatterEvent event) {
+    public void handleMessage(GossipEvent event) {
         if (event.getGeneration() < oldestEvent) {
             throw new RuntimeException("received an old event");
         }
         if (knownEvents.add(event.getDescriptor())) {
-            for (MessageHandler<ChatterEvent> handler : handlers) {
+            for (MessageHandler<GossipEvent> handler : handlers) {
                 handler.handleMessage(event);
             }
         } // else duplicate

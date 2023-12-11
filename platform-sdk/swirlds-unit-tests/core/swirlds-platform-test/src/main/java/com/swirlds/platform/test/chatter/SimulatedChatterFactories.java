@@ -30,7 +30,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -67,9 +66,8 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
 
-        final ChatterCore<ChatterEvent> core = new ChatterCore<>(
+        final ChatterCore core = new ChatterCore(
                 Time.getCurrent(),
-                ChatterEvent.class,
                 e -> {},
                 chatterConfig,
                 (nodeId, ping) -> {},

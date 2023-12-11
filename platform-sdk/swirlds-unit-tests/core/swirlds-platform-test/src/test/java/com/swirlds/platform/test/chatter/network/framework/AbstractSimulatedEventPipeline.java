@@ -16,26 +16,24 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 /**
  * An abstraction of a pipeline component that takes care of invoking the next component.
- *
- * @param <T> the type of event
  */
-public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> implements SimulatedEventPipeline<T> {
+public abstract class AbstractSimulatedEventPipeline implements SimulatedEventPipeline {
 
     /** The next pipeline component */
-    protected SimulatedEventPipeline<T> next;
+    protected SimulatedEventPipeline next;
 
     /**
-     * Handle events previously added to the component with {@link #addEvent(ChatterEvent)}, if they should be handled.
+     * Handle events previously added to the component with {@link #addEvent(GossipEvent)}, if they should be handled.
      *
      * @param core the instance of core for this node used to handle events
      */
-    protected abstract void maybeHandleEvents(final ChatterCore<T> core);
+    protected abstract void maybeHandleEvents(final ChatterCore core);
 
     /**
      * Prints the status and/or current state of this event component and calls the next component in the pipeline.
@@ -47,7 +45,7 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      * {@inheritDoc}
      */
     @Override
-    public void setNext(final SimulatedEventPipeline<T> next) {
+    public void setNext(final SimulatedEventPipeline next) {
         this.next = next;
     }
 
@@ -55,7 +53,7 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      * {@inheritDoc}
      */
     @Override
-    public SimulatedEventPipeline<T> getNext() {
+    public SimulatedEventPipeline getNext() {
         return next;
     }
 
@@ -63,7 +61,7 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      * {@inheritDoc}
      */
     @Override
-    public void maybeHandleEventsAndCallNext(final ChatterCore<T> core) {
+    public void maybeHandleEventsAndCallNext(final ChatterCore core) {
         maybeHandleEvents(core);
         if (next != null) {
             next.maybeHandleEventsAndCallNext(core);

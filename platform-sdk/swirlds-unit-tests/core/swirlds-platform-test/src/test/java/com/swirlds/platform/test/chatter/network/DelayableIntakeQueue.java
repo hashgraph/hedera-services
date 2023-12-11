@@ -18,10 +18,9 @@ package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
-import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
@@ -32,9 +31,8 @@ import java.util.Queue;
 /**
  * Mimics the intake queue, including delay.
  *
- * @param <T>
  */
-public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends AbstractSimulatedEventPipeline<T> {
+public class DelayableIntakeQueue extends AbstractSimulatedEventPipeline {
 
     private static final Duration DEFAULT_DELAY = Duration.ZERO;
     private final NodeId nodeId;
@@ -43,7 +41,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     /** The amount of time each event must wait in the queue */
     private Duration intakeQueueDelay;
     /** The queue of intake tasks */
-    private final Queue<IntakeQueueTask<T>> intakeQueue = new ArrayDeque<>();
+    private final Queue<IntakeQueueTask> intakeQueue = new ArrayDeque<>();
 
     public DelayableIntakeQueue(final NodeId nodeId, final Time time) {
         this(nodeId, time, DEFAULT_DELAY);
@@ -62,7 +60,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     public void applyNodeConfig(final NodeConfig nodeConfig) {
         this.intakeQueueDelay = nodeConfig.intakeQueueDelay();
         // Update the delay for items currently in the queue
-        for (final IntakeQueueTask<T> task : intakeQueue) {
+        for (final IntakeQueueTask task : intakeQueue) {
             task.updateDelay(intakeQueueDelay);
         }
     }
@@ -73,9 +71,9 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
      * @param event the event to add
      */
     @Override
-    public void addEvent(final T event) {
+    public void addEvent(final GossipEvent event) {
         final Instant taskProcessTime = time.now().plusMillis(intakeQueueDelay.toMillis());
-        intakeQueue.add(new IntakeQueueTask<>(event, time.now(), taskProcessTime));
+        intakeQueue.add(new IntakeQueueTask(event, time.now(), taskProcessTime));
     }
 
     /**
@@ -84,9 +82,9 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
      * @param core
      */
     @Override
-    public void maybeHandleEvents(final ChatterCore<T> core) {
-        for (final Iterator<IntakeQueueTask<T>> iterator = intakeQueue.iterator(); iterator.hasNext(); ) {
-            final IntakeQueueTask<T> task = iterator.next();
+    public void maybeHandleEvents(final ChatterCore core) {
+        for (final Iterator<IntakeQueueTask> iterator = intakeQueue.iterator(); iterator.hasNext(); ) {
+            final IntakeQueueTask task = iterator.next();
             if (!time.now().isBefore(task.eventProcessTime())) {
                 iterator.remove();
                 next.addEvent(task.event());
@@ -106,7 +104,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     public void printCurrentState() {
         final StringBuilder sb = new StringBuilder();
         sb.append("\tIntake Queue (").append(intakeQueue.size()).append(")\n");
-        for (final IntakeQueueTask<T> task : intakeQueue) {
+        for (final IntakeQueueTask task : intakeQueue) {
             sb.append("\t\t").append(task).append("\n");
         }
         System.out.println(sb);
@@ -114,18 +112,14 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
 
     /**
      * A wrapper for events that sit in the intake queue.
-     *
-     * @param event            the event in the queue
-     * @param eventProcessTime the time at which the event may exit the queue
-     * @param <T>              the type of event
      */
-    private static class IntakeQueueTask<T extends ChatterEvent> {
+    private static class IntakeQueueTask {
 
-        private final T event;
+        private final GossipEvent event;
         private final Instant insertionTime;
         private Instant eventProcessTime;
 
-        public IntakeQueueTask(final T event, Instant insertionTime, Instant eventProcessTime) {
+        public IntakeQueueTask(final GossipEvent event, Instant insertionTime, Instant eventProcessTime) {
             this.event = event;
             this.insertionTime = insertionTime;
             this.eventProcessTime = eventProcessTime;
@@ -139,7 +133,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
             return eventProcessTime;
         }
 
-        public T event() {
+        public GossipEvent event() {
             return event;
         }
 

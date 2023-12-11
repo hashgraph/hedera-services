@@ -16,20 +16,17 @@
 
 package com.swirlds.platform.gossip.chatter.protocol.output;
 
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerGossipState;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
 
 /**
- * Prevents a {@link ChatterEvent} from being sent unless a specified amount of time has passed since we have received
+ * Prevents an event from being sent unless a specified amount of time has passed since we have received
  * this event. This excludes self events which should be sent immediately.
- *
- * @param <E>
- * 		the type of event
  */
-public class TimeDelay<E extends ChatterEvent> implements SendCheck<E> {
+public class TimeDelay implements SendCheck<GossipEvent> {
     private final long waitMillis;
     private final PeerGossipState state;
     private final Supplier<Instant> now;
@@ -52,7 +49,7 @@ public class TimeDelay<E extends ChatterEvent> implements SendCheck<E> {
      * {@inheritDoc}
      */
     @Override
-    public SendAction shouldSend(final E event) {
+    public SendAction shouldSend(final GossipEvent event) {
         if (state.getPeerKnows(event.getDescriptor())) {
             return SendAction.DISCARD;
         }

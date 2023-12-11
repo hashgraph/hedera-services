@@ -33,7 +33,7 @@ public class NetworkSimulator {
      * @param network the network to use in the simulation
      * @param params  defines the parameters of the simulation
      */
-    public static void executeNetworkSimulation(final Network<?> network, final NetworkSimulatorParams params) {
+    public static void executeNetworkSimulation(final Network network, final NetworkSimulatorParams params) {
         preflight(network);
 
         final FakeTime time = params.time();
@@ -60,7 +60,7 @@ public class NetworkSimulator {
      * @param network the network to update
      * @param params  the parameters of the network
      */
-    private static void maybeUpdateNetworkConfig(final Network<?> network, final NetworkSimulatorParams params) {
+    private static void maybeUpdateNetworkConfig(final Network network, final NetworkSimulatorParams params) {
         final FakeTime time = params.time();
 
         for (final Entry<Instant, NetworkConfig> entry : params.networkConfigs().entrySet()) {
@@ -92,7 +92,7 @@ public class NetworkSimulator {
      *
      * @param network the network to prepare for test execution
      */
-    private static void preflight(final Network<?> network) {
+    private static void preflight(final Network network) {
         // set communication state to allow chatter in all peers in all nodes
         network.enableChatter();
     }
@@ -103,7 +103,7 @@ public class NetworkSimulator {
      * @param network the network of nodes to advance one simulation step
      * @param params  defines the parameters of the simulation
      */
-    private static void advanceNetworkOneStep(final Network<?> network, final NetworkSimulatorParams params) {
+    private static void advanceNetworkOneStep(final Network network, final NetworkSimulatorParams params) {
         network.forEachChatterInstance(chatterInstance -> {
             chatterInstance.maybeCreateEvent();
             chatterInstance.maybeHandleEvents();

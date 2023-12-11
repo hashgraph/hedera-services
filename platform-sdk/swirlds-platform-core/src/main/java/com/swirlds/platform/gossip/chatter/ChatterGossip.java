@@ -87,7 +87,7 @@ import java.util.function.Supplier;
 public class ChatterGossip extends AbstractGossip {
 
     private final ReconnectController reconnectController;
-    private final ChatterCore<GossipEvent> chatterCore;
+    private final ChatterCore chatterCore;
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
     private final SequenceCycle<GossipEvent> intakeCycle;
 
@@ -167,9 +167,8 @@ public class ChatterGossip extends AbstractGossip {
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final ProtocolConfig protocolConfig = platformContext.getConfiguration().getConfigData(ProtocolConfig.class);
 
-        chatterCore = new ChatterCore<>(
+        chatterCore = new ChatterCore(
                 time,
-                GossipEvent.class,
                 new PrepareChatterEvent(CryptographyHolder.get()),
                 chatterConfig,
                 networkMetrics::recordPingTime,

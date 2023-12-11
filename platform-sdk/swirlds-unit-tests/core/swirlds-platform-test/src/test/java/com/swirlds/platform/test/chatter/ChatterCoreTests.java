@@ -55,8 +55,8 @@ public class ChatterCoreTests {
         final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
         final Random random = RandomUtils.getRandomPrintSeed();
-        final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
-                Time.getCurrent(), GossipEvent.class, (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
+        final ChatterCore chatterCore =
+                new ChatterCore(Time.getCurrent(), (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
 
         chatterCore.newPeerInstance(new NodeId(0L), e -> {});
         chatterCore.newPeerInstance(new NodeId(1L), e -> {});
@@ -110,7 +110,7 @@ public class ChatterCoreTests {
         assertPeersDontKnow(chatterCore, eventsAboveWindow);
     }
 
-    private void loadSavedState(final ChatterCore<GossipEvent> chatterCore, final long stateMinGen) {
+    private void loadSavedState(final ChatterCore chatterCore, final long stateMinGen) {
         final SignedState signedState = mock(SignedState.class);
         when(signedState.getMinRoundGeneration()).thenReturn(stateMinGen);
         chatterCore.loadFromSignedState(signedState);
@@ -139,23 +139,23 @@ public class ChatterCoreTests {
         return events;
     }
 
-    private void shiftWindow(final ChatterCore<GossipEvent> chatterCore, final long newLowestGeneration) {
+    private void shiftWindow(final ChatterCore chatterCore, final long newLowestGeneration) {
         chatterCore.getPeerInstances().forEach(p -> p.state().shiftWindow(newLowestGeneration));
     }
 
-    private void setPeersKnow(final ChatterCore<GossipEvent> chatterCore, final List<GossipEvent> events) {
+    private void setPeersKnow(final ChatterCore chatterCore, final List<GossipEvent> events) {
         events.forEach(e -> setPeersKnow(chatterCore, e));
     }
 
-    private void setPeersKnow(final ChatterCore<GossipEvent> chatterCore, final GossipEvent event) {
+    private void setPeersKnow(final ChatterCore chatterCore, final GossipEvent event) {
         chatterCore.getPeerInstances().forEach(p -> p.state().setPeerKnows(event.getDescriptor()));
     }
 
-    private void assertPeersKnow(final ChatterCore<GossipEvent> chatterCore, final List<GossipEvent> events) {
+    private void assertPeersKnow(final ChatterCore chatterCore, final List<GossipEvent> events) {
         events.forEach(e -> assertPeersKnow(chatterCore, e));
     }
 
-    private void assertPeersKnow(final ChatterCore<GossipEvent> chatterCore, final GossipEvent event) {
+    private void assertPeersKnow(final ChatterCore chatterCore, final GossipEvent event) {
         chatterCore
                 .getPeerInstances()
                 .forEach(p -> assertTrue(
@@ -163,11 +163,11 @@ public class ChatterCoreTests {
                         "Peer " + p + " should know event " + event.getDescriptor()));
     }
 
-    private void assertPeersDontKnow(final ChatterCore<GossipEvent> chatterCore, final List<GossipEvent> events) {
+    private void assertPeersDontKnow(final ChatterCore chatterCore, final List<GossipEvent> events) {
         events.forEach(e -> assertPeersDontKnow(chatterCore, e));
     }
 
-    private void assertPeersDontKnow(final ChatterCore<GossipEvent> chatterCore, final GossipEvent event) {
+    private void assertPeersDontKnow(final ChatterCore chatterCore, final GossipEvent event) {
         chatterCore
                 .getPeerInstances()
                 .forEach(p -> assertFalse(

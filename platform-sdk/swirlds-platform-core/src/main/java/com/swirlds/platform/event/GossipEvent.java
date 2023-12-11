@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -33,7 +33,7 @@ import java.util.Objects;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements ChatterEvent {
+public class GossipEvent implements SelfSerializable {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private static final int MAX_SIG_LENGTH = 384;
 
@@ -126,9 +126,11 @@ public class GossipEvent implements ChatterEvent {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the descriptor of the event.
+     *
+     * @return the descriptor
      */
-    @Override
+    @NonNull
     public EventDescriptor getDescriptor() {
         if (descriptor == null) {
             throw new IllegalStateException("Can not get descriptor until event has been hashed");
@@ -144,17 +146,30 @@ public class GossipEvent implements ChatterEvent {
         this.descriptor = hashedData.createEventDescriptor();
     }
 
-    @Override
+    /**
+     * Get the generation of the event
+     *
+     * @return the generation of the event
+     */
     public long getGeneration() {
         return hashedData.getGeneration();
     }
 
     /**
-     * {@inheritDoc}
+     * @return the time at which the event has been received
      */
-    @Override
-    public @NonNull Instant getTimeReceived() {
+    @NonNull
+    public Instant getTimeReceived() {
         return timeReceived;
+    }
+
+    /**
+     * Set the time at which the event has been received
+     *
+     * @param timeReceived the time at which the event has been received
+     */
+    public void setTimeReceived(@NonNull final Instant timeReceived) {
+        this.timeReceived = Objects.requireNonNull(timeReceived);
     }
 
     /**

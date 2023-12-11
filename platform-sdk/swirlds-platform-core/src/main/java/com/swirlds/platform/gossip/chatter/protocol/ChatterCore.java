@@ -22,13 +22,13 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.Shiftable;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
 import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegate;
 import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegateBuilder;
 import com.swirlds.platform.gossip.chatter.protocol.input.MessageTypeHandlerBuilder;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.gossip.chatter.protocol.output.MessageOutput;
 import com.swirlds.platform.gossip.chatter.protocol.output.OtherEventDelay;
 import com.swirlds.platform.gossip.chatter.protocol.output.PriorityOutputAggregator;
@@ -56,21 +56,18 @@ import java.util.function.BiConsumer;
 
 /**
  * Links all components of chatter together. Constructs and keeps track of peer instances.
- *
- * @param <E> the type of {@link ChatterEvent} used
  */
-public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableFromSignedState {
+public class ChatterCore implements Shiftable, LoadableFromSignedState {
     /** the number of milliseconds to sleep while waiting for the chatter protocol to stop */
     private static final int STOP_WAIT_SLEEP_MILLIS = 10;
     /** the name of the metrics category */
     private static final String METRICS_CATEGORY = "chatter";
 
-    private final Class<E> eventClass;
-    private final MessageHandler<E> prepareReceivedEvent;
+    private final MessageHandler<GossipEvent> prepareReceivedEvent;
     private final ChatterConfig config;
     private final BiConsumer<NodeId, Long> pingConsumer;
-    private final MessageOutput<E> selfEventOutput;
-    private final MessageOutput<E> otherEventOutput;
+    private final MessageOutput<GossipEvent> selfEventOutput;
+    private final MessageOutput<GossipEvent> otherEventOutput;
     private final MessageOutput<EventDescriptor> hashOutput;
     private final Map<NodeId, PeerInstance> peerInstances;
 
@@ -83,7 +80,6 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * @param time                 provides wall clock time
-     * @param eventClass           the class of the type of event used
      * @param prepareReceivedEvent the first handler to be called when an event is received, this should do any
      *                             preparation work that might be needed by other handlers (such as hashing)
      * @param config               chatter config
@@ -93,15 +89,13 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      */
     public ChatterCore(
             @NonNull final Time time,
-            @NonNull final Class<E> eventClass,
-            @NonNull final MessageHandler<E> prepareReceivedEvent,
+            @NonNull final MessageHandler<GossipEvent> prepareReceivedEvent,
             @NonNull final ChatterConfig config,
             @NonNull final BiConsumer<NodeId, Long> pingConsumer,
             @NonNull final Metrics metrics) {
         Objects.requireNonNull(metrics);
 
         this.time = Objects.requireNonNull(time);
-        this.eventClass = Objects.requireNonNull(eventClass);
         this.prepareReceivedEvent = Objects.requireNonNull(prepareReceivedEvent);
         this.config = Objects.requireNonNull(config);
         this.pingConsumer = Objects.requireNonNull(pingConsumer);
@@ -133,7 +127,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      * @param peerId       the peer's ID
      * @param eventHandler a handler that will send the event outside of chatter
      */
-    public void newPeerInstance(final NodeId peerId, final MessageHandler<E> eventHandler) {
+    public void newPeerInstance(final NodeId peerId, final MessageHandler<GossipEvent> eventHandler) {
 
         final PeerGossipState state = new PeerGossipState(config.futureGenerationLimit());
         final CommunicationState communicationState = new CommunicationState();
@@ -151,7 +145,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                 );
         final MessageProvider otherEventPeerInstance = otherEventOutput.createPeerInstance(
                 communicationState,
-                new VariableTimeDelay<>(
+                new VariableTimeDelay(
                         new OtherEventDelay(
                                 heartbeat::getLastRoundTripNanos,
                                 processingTimeSendReceive::getPeerProcessingTime,
@@ -168,7 +162,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                         otherEventPeerInstance),
                 msgsPerSecWrit);
         final InputDelegate inputDelegate = InputDelegateBuilder.builder()
-                .addHandler(MessageTypeHandlerBuilder.builder(eventClass)
+                .addHandler(MessageTypeHandlerBuilder.builder(GossipEvent.class)
                         .addHandler(prepareReceivedEvent)
                         .addHandler(state::handleEvent)
                         .addHandler(eventHandler)
@@ -210,7 +204,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      *
      * @param event the new event
      */
-    public void eventCreated(final E event) {
+    public void eventCreated(final GossipEvent event) {
         selfEventOutput.send(event);
         recordProcessingTime(event);
     }
@@ -221,13 +215,13 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      *
      * @param event the event received
      */
-    public void eventReceived(final E event) {
+    public void eventReceived(final GossipEvent event) {
         hashOutput.send(event.getDescriptor());
         otherEventOutput.send(event);
         recordProcessingTime(event);
     }
 
-    private void recordProcessingTime(final E event) {
+    private void recordProcessingTime(final GossipEvent event) {
         selfProcessingTime.set(Duration.between(event.getTimeReceived(), time.now()));
     }
 

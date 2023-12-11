@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedEventCreator;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
@@ -27,9 +27,8 @@ import java.util.function.Supplier;
 /**
  * Creates events at a set interval.
  *
- * @param <T> the type of event to create
  */
-public class TimedEventCreator<T extends SimulatedChatterEvent> implements SimulatedEventCreator<T> {
+public class TimedEventCreator implements SimulatedEventCreator {
 
     private static final Duration DEFAULT_CREATION_INTERVAL = Duration.ofMillis(500);
     /** The instance of time used by the simulation */
@@ -37,15 +36,16 @@ public class TimedEventCreator<T extends SimulatedChatterEvent> implements Simul
     /** The amount of time to wait before creating the next event */
     private Duration createEvery;
     /** A supplier of a new event */
-    private final Supplier<T> newEventSupplier;
+    private final Supplier<GossipEvent> newEventSupplier;
     /** The time at which the next event should be created */
     private Instant nextEventCreation;
 
-    public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier) {
+    public TimedEventCreator(final Time time, final Supplier<GossipEvent> newEventSupplier) {
         this(time, newEventSupplier, DEFAULT_CREATION_INTERVAL);
     }
 
-    public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier, final Duration createEvery) {
+    public TimedEventCreator(
+            final Time time, final Supplier<GossipEvent> newEventSupplier, final Duration createEvery) {
         this.time = time;
         this.createEvery = createEvery;
         this.newEventSupplier = newEventSupplier;
@@ -64,12 +64,12 @@ public class TimedEventCreator<T extends SimulatedChatterEvent> implements Simul
      * {@inheritDoc}
      */
     @Override
-    public T maybeCreateEvent() {
+    public GossipEvent maybeCreateEvent() {
         if (createEvery.isZero() || time.now().isBefore(nextEventCreation)) {
             return null;
         }
         nextEventCreation = nextEventCreation.plus(createEvery);
-        final T newEvent = newEventSupplier.get();
+        final GossipEvent newEvent = newEventSupplier.get();
         newEvent.setTimeReceived(time.now());
         return newEvent;
     }

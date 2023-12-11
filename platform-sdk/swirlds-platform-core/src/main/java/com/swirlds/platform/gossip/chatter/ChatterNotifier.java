@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.chatter;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventImpl;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -29,9 +28,9 @@ import com.swirlds.platform.observers.EventAddedObserver;
  */
 public class ChatterNotifier implements EventAddedObserver, ConsensusRoundObserver {
     private final NodeId selfId;
-    private final ChatterCore<GossipEvent> chatterCore;
+    private final ChatterCore chatterCore;
 
-    public ChatterNotifier(final NodeId selfId, final ChatterCore<GossipEvent> chatterCore) {
+    public ChatterNotifier(final NodeId selfId, final ChatterCore chatterCore) {
         this.selfId = selfId;
         this.chatterCore = chatterCore;
     }

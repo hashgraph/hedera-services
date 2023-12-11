@@ -25,22 +25,20 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 /**
  * Builds a node for a simulated chatter test.
  *
- * @param <T> the type of event this node gossips
  */
-public class NodeBuilder<T extends SimulatedChatterEvent> {
+public class NodeBuilder {
 
     private NodeId nodeId;
     private NetworkSimulatorParams networkParams;
-    private Class<T> eventClass;
-    private SimulatedEventCreator<T> newEventCreator;
-    private SimulatedEventPipeline<T> eventPipeline;
+    private SimulatedEventCreator newEventCreator;
+    private SimulatedEventPipeline eventPipeline;
 
     /**
      * Sets the node id for this node
      *
      * @return {@code this}
      */
-    public NodeBuilder<T> nodeId(final NodeId nodeId) {
+    public NodeBuilder nodeId(final NodeId nodeId) {
         this.nodeId = nodeId;
         return this;
     }
@@ -51,18 +49,8 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
      *
      * @return {@code this}
      */
-    public NodeBuilder<T> networkParams(final NetworkSimulatorParams networkParams) {
+    public NodeBuilder networkParams(final NetworkSimulatorParams networkParams) {
         this.networkParams = networkParams;
-        return this;
-    }
-
-    /**
-     * Sets the class of events gossiped by this network
-     *
-     * @return {@code this}
-     */
-    public NodeBuilder<T> eventClass(final Class<T> eventClass) {
-        this.eventClass = eventClass;
         return this;
     }
 
@@ -71,7 +59,7 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
      *
      * @return {@code this}
      */
-    public NodeBuilder<T> eventCreator(final SimulatedEventCreator<T> newEventCreator) {
+    public NodeBuilder eventCreator(final SimulatedEventCreator newEventCreator) {
         this.newEventCreator = newEventCreator;
         return this;
     }
@@ -81,7 +69,7 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
      *
      * @return {@code this}
      */
-    public NodeBuilder<T> eventPipeline(final SimulatedEventPipeline<T> eventPipeline) {
+    public NodeBuilder eventPipeline(final SimulatedEventPipeline eventPipeline) {
         this.eventPipeline = eventPipeline;
         return this;
     }
@@ -91,12 +79,12 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
      *
      * @return the new node
      */
-    public Node<T> build() {
+    public Node build() {
         if (newEventCreator == null) {
             throw new IllegalArgumentException("an event creator must be supplied");
         }
         if (eventPipeline == null) {
-            eventPipeline = new NoOpSimulatedEventPipeline<>();
+            eventPipeline = new NoOpSimulatedEventPipeline();
         }
 
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
@@ -104,15 +92,14 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
                 .withValue(ChatterConfig_.PROCESSING_TIME_INTERVAL, networkParams.procTimeInterval())
                 .withValue(ChatterConfig_.HEARTBEAT_INTERVAL, networkParams.heartbeatInterval());
 
-        final ChatterInstance<T> chatterInstance = new ChatterInstance<>(
+        final ChatterInstance chatterInstance = new ChatterInstance(
                 networkParams.numNodes(),
                 nodeId,
-                eventClass,
                 networkParams.time(),
                 configBuilder.getOrCreateConfig().getConfigData(ChatterConfig.class),
                 newEventCreator,
                 eventPipeline);
 
-        return new Node<>(nodeId, chatterInstance);
+        return new Node(nodeId, chatterInstance);
     }
 }

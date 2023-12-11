@@ -42,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ChatterNotifierTest {
 
     @Mock
-    ChatterCore<GossipEvent> chatterCore;
+    ChatterCore chatterCore;
 
     @Mock
     GossipEvent gossipEvent;

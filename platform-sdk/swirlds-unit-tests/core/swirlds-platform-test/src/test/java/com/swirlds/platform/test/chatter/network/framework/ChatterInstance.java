@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
@@ -43,18 +44,17 @@ import java.util.List;
  * of events received from a peer, or the number of duplicate events received.
  * </p>
  *
- * @param <T> the type of event sent and received by this node
  */
-public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipMessageHandler, NodeConfigurable {
+public class ChatterInstance implements GossipMessageHandler, NodeConfigurable {
 
     /** This node's id */
     private final NodeId selfId;
     /** The time instances used by the simulation */
     private final Time time;
     /** This node's chatter core instance */
-    private final ChatterCore<T> core;
+    private final ChatterCore core;
     /** Creator of self events */
-    private final SimulatedEventCreator<T> newEventCreator;
+    private final SimulatedEventCreator newEventCreator;
     /** List of all peers in the network */
     private final List<NodeId> peerIds = new ArrayList<>();
     /**
@@ -62,22 +62,21 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
      * the event to the next component when it is time to do so. This first component provided events as they are
      * received via {@link #handleMessageFromWire(SelfSerializable, NodeId)}
      */
-    private final SimulatedEventPipeline<T> eventPipeline;
+    private final SimulatedEventPipeline eventPipeline;
 
     public ChatterInstance(
             final int numNodes,
             final NodeId selfId,
-            final Class<T> clazz,
             final Time time,
             final ChatterConfig config,
-            final SimulatedEventCreator<T> newEventCreator,
-            final SimulatedEventPipeline<T> eventPipeline) {
+            final SimulatedEventCreator newEventCreator,
+            final SimulatedEventPipeline eventPipeline) {
         this.selfId = selfId;
         this.time = time;
         this.newEventCreator = newEventCreator;
         this.eventPipeline = eventPipeline;
 
-        core = new ChatterCore<>(time, clazz, e -> {}, config, (id, ping) -> {}, new NoOpMetrics());
+        core = new ChatterCore(time, e -> {}, config, (id, ping) -> {}, new NoOpMetrics());
 
         for (long peerId = 0; peerId < numNodes; peerId++) {
             // Don't create a peer instance for self
@@ -98,8 +97,8 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
      * @return the pipeline component, or {@code null} if none match
      */
     @SuppressWarnings("unchecked")
-    public <R extends SimulatedEventPipeline<T>> R getPipelineComponent(final Class<R> clazz) {
-        SimulatedEventPipeline<T> pipelineComponent = eventPipeline;
+    public <R extends SimulatedEventPipeline> R getPipelineComponent(final Class<R> clazz) {
+        SimulatedEventPipeline pipelineComponent = eventPipeline;
         while (pipelineComponent != null) {
             if (clazz.isAssignableFrom(eventPipeline.getClass())) {
                 return (R) pipelineComponent;
@@ -134,7 +133,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
      * Maybe create an event (depends on the creation rules and creation rate) and send it to the provided consumers
      */
     public void maybeCreateEvent() {
-        final T event = newEventCreator.maybeCreateEvent();
+        final GossipEvent event = newEventCreator.maybeCreateEvent();
         if (event != null) {
             eventPipeline.addEvent(event);
         }
@@ -180,9 +179,9 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     @Override
     public void handleMessageFromWire(final SelfSerializable msg, final NodeId fromPeer) {
         try {
-            if (msg instanceof final SimulatedChatterEvent event) {
+            if (msg instanceof final GossipEvent event) {
                 // Create a copy so that each node sets its own time received
-                final SimulatedChatterEvent eventCopy = event.copy();
+                final GossipEvent eventCopy = new GossipEvent(event.getHashedData(), event.getUnhashedData());
                 eventCopy.setTimeReceived(time.now());
                 core.getPeerInstance(fromPeer).inputHandler().handleMessage(eventCopy);
             } else {

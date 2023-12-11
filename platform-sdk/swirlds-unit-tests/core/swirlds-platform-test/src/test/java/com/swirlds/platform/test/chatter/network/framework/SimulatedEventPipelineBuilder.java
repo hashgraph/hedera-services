@@ -22,10 +22,9 @@ import java.util.List;
 /**
  * A utility class that allows for fluent-style creation of event pipelines.
  *
- * @param <T> the type of event to process
  */
-public class SimulatedEventPipelineBuilder<T extends SimulatedChatterEvent> {
-    private final List<SimulatedEventPipeline<T>> pipelineList = new LinkedList<>();
+public class SimulatedEventPipelineBuilder {
+    private final List<SimulatedEventPipeline> pipelineList = new LinkedList<>();
 
     /**
      * Sets the next event processor in the pipeline.
@@ -34,7 +33,7 @@ public class SimulatedEventPipelineBuilder<T extends SimulatedChatterEvent> {
      * @param <R>  the type of the next event processor
      * @return this
      */
-    public <R extends SimulatedEventPipeline<T>> SimulatedEventPipelineBuilder<T> next(final R next) {
+    public <R extends SimulatedEventPipeline> SimulatedEventPipelineBuilder next(final R next) {
         pipelineList.add(next);
         return this;
     }
@@ -44,13 +43,13 @@ public class SimulatedEventPipelineBuilder<T extends SimulatedChatterEvent> {
      *
      * @return the first event processor in the pipeline
      */
-    public SimulatedEventPipeline<T> build() {
+    public SimulatedEventPipeline build() {
         if (pipelineList.isEmpty()) {
             return null;
         }
-        SimulatedEventPipeline<T> curr = pipelineList.get(0);
+        SimulatedEventPipeline curr = pipelineList.get(0);
         for (int i = 1; i < pipelineList.size(); i++) {
-            final SimulatedEventPipeline<T> next = pipelineList.get(i);
+            final SimulatedEventPipeline next = pipelineList.get(i);
             curr.setNext(next);
             curr = next;
         }

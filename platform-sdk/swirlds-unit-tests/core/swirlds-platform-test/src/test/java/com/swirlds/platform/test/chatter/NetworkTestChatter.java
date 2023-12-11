@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.test.chatter;
 
+import static com.swirlds.platform.test.chatter.simulator.EventSimulator.simulateEvent;
+
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.test.chatter.simulator.SimulatedEvent;
+import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -48,7 +49,7 @@ public class NetworkTestChatter implements SimulatedChatter {
     }
 
     @Override
-    public void newEvent(final ChatterEvent event) {}
+    public void newEvent(final GossipEvent event) {}
 
     @Override
     public void shiftWindow(final long firstSequenceNumberInWindow) {}
@@ -69,7 +70,7 @@ public class NetworkTestChatter implements SimulatedChatter {
             lastPayload = now;
             return new GossipPayload(
                     // The round value doesn't seem to matter, setting to -1.
-                    new SimulatedEvent(new Random(), selfId, -1, payloadSizeInBytes), destination);
+                    simulateEvent(new Random(), selfId, -1, payloadSizeInBytes), destination);
         }
         return null;
     }

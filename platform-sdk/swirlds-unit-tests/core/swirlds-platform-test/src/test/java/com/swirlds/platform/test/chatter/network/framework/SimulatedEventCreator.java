@@ -16,17 +16,18 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
+import com.swirlds.platform.event.GossipEvent;
+
 /**
  * A class that creates simulated events.
  *
- * @param <T>
  */
-public interface SimulatedEventCreator<T extends SimulatedChatterEvent> extends NodeConfigurable {
+public interface SimulatedEventCreator extends NodeConfigurable {
 
     /**
      * Creates and returns a new event, or {@code null} if no event should be created.
      *
      * @return the event, or {@code null} if no event should be created.
      */
-    T maybeCreateEvent();
+    GossipEvent maybeCreateEvent();
 }

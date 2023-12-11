@@ -23,6 +23,5 @@ import com.swirlds.common.platform.NodeId;
  *
  * @param id              this node's id
  * @param chatterInstance the chatter instance of the node
- * @param <T>             the event gossiped by this node
  */
-public record Node<T extends SimulatedChatterEvent>(NodeId id, ChatterInstance<T> chatterInstance) {}
+public record Node(NodeId id, ChatterInstance chatterInstance) {}

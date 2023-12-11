@@ -31,7 +31,7 @@ class TimeDelayTest {
     private final Duration delayTime = Duration.ofMillis(100);
     private final PeerGossipState state = new PeerGossipState(100_000);
     private final AtomicReference<Instant> now = new AtomicReference<>(Instant.now());
-    private final TimeDelay<GossipEvent> eventTimeDelay = new TimeDelay<>(delayTime, state, now::get);
+    private final TimeDelay eventTimeDelay = new TimeDelay(delayTime, state, now::get);
 
     @Test
     void testPeerKnows() {

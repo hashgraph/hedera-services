@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 /**
@@ -25,23 +25,22 @@ import com.swirlds.platform.test.simulated.config.NodeConfig;
  * component in the pipeline is provided an event and can decide when and if to pass that event on to the next component
  * in the pipeline. These components can be used to track events, create bottlenecks, etc.
  *
- * @param <T> the type of event
  */
-public interface SimulatedEventPipeline<T extends ChatterEvent> extends NodeConfigurable {
+public interface SimulatedEventPipeline extends NodeConfigurable {
 
     /**
      * Add an event to this pipeline component
      *
      * @param event the event to add
      */
-    void addEvent(final T event);
+    void addEvent(final GossipEvent event);
 
     /**
      * Handle any events that should be handled, then invoke the next component in the pipeline
      *
      * @param core the instance of core for this node
      */
-    void maybeHandleEventsAndCallNext(final ChatterCore<T> core);
+    void maybeHandleEventsAndCallNext(final ChatterCore core);
 
     /**
      * Apply the supplied node configuration., then invoke the next component in the pipeline
@@ -61,12 +60,12 @@ public interface SimulatedEventPipeline<T extends ChatterEvent> extends NodeConf
      *
      * @param next the next event component
      */
-    void setNext(final SimulatedEventPipeline<T> next);
+    void setNext(final SimulatedEventPipeline next);
 
     /**
      * Gets the next event component
      *
      * @return the next event component
      */
-    SimulatedEventPipeline<T> getNext();
+    SimulatedEventPipeline getNext();
 }

@@ -16,23 +16,22 @@
 
 package com.swirlds.platform.test.chatter.network;
 
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedEventPipeline;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 /**
  * An event pipeline component that does nothing
  *
- * @param <T> the type of event this pipeline component uses
  */
-public class NoOpSimulatedEventPipeline<T extends ChatterEvent> implements SimulatedEventPipeline<T> {
+public class NoOpSimulatedEventPipeline implements SimulatedEventPipeline {
 
     @Override
-    public void addEvent(final T event) {}
+    public void addEvent(final GossipEvent event) {}
 
     @Override
-    public void maybeHandleEventsAndCallNext(final ChatterCore<T> core) {}
+    public void maybeHandleEventsAndCallNext(final ChatterCore core) {}
 
     @Override
     public void applyNodeConfigAndCallNext(final NodeConfig nodeConfig) {}
@@ -41,10 +40,10 @@ public class NoOpSimulatedEventPipeline<T extends ChatterEvent> implements Simul
     public void printCurrentStateAndCallNext() {}
 
     @Override
-    public void setNext(final SimulatedEventPipeline<T> next) {}
+    public void setNext(final SimulatedEventPipeline next) {}
 
     @Override
-    public SimulatedEventPipeline<T> getNext() {
+    public SimulatedEventPipeline getNext() {
         return null;
     }
 }

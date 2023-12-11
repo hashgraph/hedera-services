@@ -17,20 +17,18 @@
 package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
-import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 /**
  * An event pipeline component that drops duplicate events.
- *
- * @param <T> the type of event
  */
-public class EventDeduper<T extends SimulatedChatterEvent> extends AbstractSimulatedEventPipeline<T> {
+public class EventDeduper extends AbstractSimulatedEventPipeline {
 
     private final NodeId selfId;
     private final Set<EventDescriptor> eventsReceived = new HashSet<>();
@@ -44,7 +42,7 @@ public class EventDeduper<T extends SimulatedChatterEvent> extends AbstractSimul
      * {@inheritDoc}
      */
     @Override
-    public void addEvent(final T event) {
+    public void addEvent(final GossipEvent event) {
         if (Objects.equals(event.getDescriptor().getCreator(), selfId)) {
             next.addEvent(event);
             return;
@@ -62,7 +60,7 @@ public class EventDeduper<T extends SimulatedChatterEvent> extends AbstractSimul
      * {@inheritDoc}
      */
     @Override
-    public void maybeHandleEvents(final ChatterCore<T> core) {
+    public void maybeHandleEvents(final ChatterCore core) {
         // Do nothing, this class only passes along events this class has not already encountered
     }
 

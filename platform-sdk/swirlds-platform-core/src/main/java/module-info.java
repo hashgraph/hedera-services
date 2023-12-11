@@ -11,7 +11,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.gossip.chatter.config;
     exports com.swirlds.platform.gossip.chatter.protocol;
     exports com.swirlds.platform.gossip.chatter.protocol.input;
-    exports com.swirlds.platform.gossip.chatter.protocol.messages;
     exports com.swirlds.platform.gossip.chatter.protocol.output;
     exports com.swirlds.platform.gossip.chatter.protocol.peer;
     exports com.swirlds.platform.gossip.chatter.protocol.heartbeat;

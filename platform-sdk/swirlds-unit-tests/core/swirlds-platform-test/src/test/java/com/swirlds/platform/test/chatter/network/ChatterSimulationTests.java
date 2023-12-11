@@ -86,7 +86,7 @@ public class ChatterSimulationTests {
                 .build();
 
         // Step 2: Create the network
-        final Network<CountingChatterEvent> network = createCountingEventNetwork(params);
+        final Network network = createCountingEventNetwork(params);
 
         // Step 3: Execute the test
         NetworkSimulator.executeNetworkSimulation(network, params);
@@ -173,7 +173,7 @@ public class ChatterSimulationTests {
                 .networkConfig(slowNodeRecoversNetworkConfig)
                 .build();
 
-        final Network<CountingChatterEvent> network = createCountingEventNetwork(params);
+        final Network network = createCountingEventNetwork(params);
 
         // Execute the test
         NetworkSimulator.executeNetworkSimulation(network, params);
@@ -187,18 +187,18 @@ public class ChatterSimulationTests {
     }
 
     /**
-     * Creates a network that gossips {@link CountingChatterEvent}s.
+     * Creates a network that gossips.
      *
      * @param params parameters describing how the network and simulation should operate
      * @return the newly constructed network
      */
-    private Network<CountingChatterEvent> createCountingEventNetwork(@NonNull final NetworkSimulatorParams params) {
+    private Network createCountingEventNetwork(@NonNull final NetworkSimulatorParams params) {
         // Create the gossip model
         final SimpleSimulatedGossip gossip =
                 new SimpleSimulatedGossip(params.numNodes(), params.networkLatency(), params.time());
 
         // Create the network
-        final Network<CountingChatterEvent> network = new Network<>(gossip);
+        final Network network = new Network(gossip);
 
         // Create the nodes and add them to the network
         params.nodeIds().forEach((id) -> network.addNode(createCountingEventNode(id, params)));
@@ -207,45 +207,41 @@ public class ChatterSimulationTests {
     }
 
     /**
-     * Create a node that gossips {@link CountingChatterEvent}s with a chatter instance, delayable intake queue, and
+     * Create a node that gossips with a chatter instance, delayable intake queue, and
      * counting event creator.
      *
      * @param nodeId the node id of the node to create
      * @param params the parameters of the network simulation
      * @return the newly created node
      */
-    private Node<CountingChatterEvent> createCountingEventNode(
-            final NodeId nodeId, final NetworkSimulatorParams params) {
+    private Node createCountingEventNode(final NodeId nodeId, final NetworkSimulatorParams params) {
 
         // An event creator that creates events with a monotonically increasing event number across all nodes
-        final TimedEventCreator<CountingChatterEvent> eventCreator =
-                new TimedEventCreator<>(params.time(), () -> new CountingChatterEvent(nodeId));
+        final TimedEventCreator eventCreator =
+                new TimedEventCreator(params.time(), () -> null /* FUTURE WORK should not be null */);
 
         // Keeps track of all events coming out of chatter and passes it straight to the intake queue
         final GossipEventTracker gossipRecorder = new GossipEventTracker(nodeId);
 
         // An intake queue that will delay events before sending them to the orphan buffer
-        final DelayableIntakeQueue<CountingChatterEvent> intakeQueue =
-                new DelayableIntakeQueue<>(nodeId, params.time());
+        final DelayableIntakeQueue intakeQueue = new DelayableIntakeQueue(nodeId, params.time());
 
         // Discards any duplicate events
-        final EventDeduper<CountingChatterEvent> eventDeduper = new EventDeduper<>(nodeId);
+        final EventDeduper eventDeduper = new EventDeduper(nodeId);
 
         // An orphan buffer that releases events once all prior events have been released
         final InOrderOrphanBuffer orphanBuffer = new InOrderOrphanBuffer(nodeId);
 
-        final SimulatedEventPipeline<CountingChatterEvent> pipeline = new SimulatedEventPipelineBuilder<
-                        CountingChatterEvent>()
+        final SimulatedEventPipeline pipeline = new SimulatedEventPipelineBuilder()
                 .next(gossipRecorder)
                 .next(intakeQueue)
                 .next(eventDeduper)
                 .next(orphanBuffer)
                 .build();
 
-        return new NodeBuilder<CountingChatterEvent>()
+        return new NodeBuilder()
                 .nodeId(nodeId)
                 .networkParams(params)
-                .eventClass(CountingChatterEvent.class)
                 .eventCreator(eventCreator)
                 .eventPipeline(pipeline)
                 .build();

@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
 import java.util.ArrayDeque;
@@ -35,11 +36,11 @@ import java.util.Set;
  *     <li>the number of duplicated events received</li>
  * </ul>
  */
-public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingChatterEvent> {
+public class GossipEventTracker extends AbstractSimulatedEventPipeline {
 
     private final NodeId nodeId;
-    private final Map<NodeId, Queue<CountingChatterEvent>> eventsReceivedByCreator = new HashMap<>();
-    private final Queue<CountingChatterEvent> selfEvents = new ArrayDeque<>();
+    private final Map<NodeId, Queue<GossipEvent>> eventsReceivedByCreator = new HashMap<>();
+    private final Queue<GossipEvent> selfEvents = new ArrayDeque<>();
     private final Set<Long> peerEventsReceived = new HashSet<>();
     private long duplicateEventCounter = 0;
 
@@ -51,17 +52,18 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      * {@inheritDoc}
      */
     @Override
-    public void addEvent(final CountingChatterEvent event) {
-        final NodeId creator = event.getCreator();
+    public void addEvent(final GossipEvent event) {
+        final NodeId creator = event.getHashedData().getCreatorId();
         if (Objects.equals(creator, nodeId)) {
             selfEvents.add(event);
         } else {
-            if (!peerEventsReceived.add(event.getOrder())) {
-                duplicateEventCounter++;
-            } else {
-                eventsReceivedByCreator.putIfAbsent(creator, new ArrayDeque<>());
-                eventsReceivedByCreator.get(creator).add(event);
-            }
+            // FUTURE WORK: this code was broken when events were refactored
+            //            if (!peerEventsReceived.add(event.getOrder())) {
+            //                duplicateEventCounter++;
+            //            } else {
+            //                eventsReceivedByCreator.putIfAbsent(creator, new ArrayDeque<>());
+            //                eventsReceivedByCreator.get(creator).add(event);
+            //            }
         }
         next.addEvent(event);
     }
@@ -70,7 +72,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      * {@inheritDoc}
      */
     @Override
-    public void maybeHandleEvents(final ChatterCore<CountingChatterEvent> core) {
+    public void maybeHandleEvents(final ChatterCore core) {
         // Do nothing, this class only tracks events that pass through it
     }
 

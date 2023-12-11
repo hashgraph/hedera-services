@@ -20,7 +20,7 @@ import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
 
 /**
@@ -89,7 +89,7 @@ public class PeerGossipState implements Shiftable {
      *
      * @param event the event received
      */
-    public synchronized void handleEvent(final ChatterEvent event) {
+    public synchronized void handleEvent(final GossipEvent event) {
         setPeerKnows(event.getDescriptor());
     }
 }

@@ -19,9 +19,9 @@ package com.swirlds.platform.test.chatter;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.Shiftable;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -29,16 +29,16 @@ import java.util.List;
 import java.util.Objects;
 
 public class ChatterWrapper implements SimulatedChatter {
-    final ChatterCore<ChatterEvent> core;
+    final ChatterCore core;
     final List<Shiftable> shiftables;
 
-    public ChatterWrapper(final ChatterCore<ChatterEvent> core, final List<Shiftable> shiftables) {
+    public ChatterWrapper(final ChatterCore core, final List<Shiftable> shiftables) {
         this.core = core;
         this.shiftables = shiftables;
     }
 
     @Override
-    public void newEvent(final ChatterEvent event) {
+    public void newEvent(final GossipEvent event) {
         core.eventCreated(event);
     }
 

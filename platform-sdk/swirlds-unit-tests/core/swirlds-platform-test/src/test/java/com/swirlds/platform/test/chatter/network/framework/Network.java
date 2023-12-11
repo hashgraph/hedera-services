@@ -28,12 +28,10 @@ import java.util.function.Consumer;
 
 /**
  * A network of simulated nodes that gossip using chatter.
- *
- * @param <T> the type of chatter event gossiped by this network
  */
-public class Network<T extends SimulatedChatterEvent> {
+public class Network {
     /** A map of nodes in the network keys by node id */
-    private final Map<NodeId, Node<T>> nodes = new HashMap<>();
+    private final Map<NodeId, Node> nodes = new HashMap<>();
     /** The gossip simulator to use for this network */
     private final SimpleSimulatedGossip gossip;
     /** The current configuration of the network */
@@ -53,7 +51,7 @@ public class Network<T extends SimulatedChatterEvent> {
      *
      * @param node the node to add
      */
-    public void addNode(final Node<T> node) {
+    public void addNode(final Node node) {
         Objects.requireNonNull(node);
         if (nodes.containsKey(node.id())) {
             throw new IllegalArgumentException("Node with id " + node.id() + " already exists");
@@ -85,7 +83,7 @@ public class Network<T extends SimulatedChatterEvent> {
      *
      * @param consumer the consumer to invoke
      */
-    public void forEachChatterInstance(final Consumer<ChatterInstance<T>> consumer) {
+    public void forEachChatterInstance(final Consumer<ChatterInstance> consumer) {
         nodes.values().forEach(n -> consumer.accept(n.chatterInstance()));
     }
 
@@ -95,7 +93,7 @@ public class Network<T extends SimulatedChatterEvent> {
      * @param id the id of the node whose chatter instance should be returned
      * @return the chatter instance
      */
-    public ChatterInstance<T> chatterInstance(final NodeId id) {
+    public ChatterInstance chatterInstance(final NodeId id) {
         return nodes.get(id).chatterInstance();
     }
 
