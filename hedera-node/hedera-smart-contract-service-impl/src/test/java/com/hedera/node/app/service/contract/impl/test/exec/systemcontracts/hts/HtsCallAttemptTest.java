@@ -426,7 +426,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "true,true,0x0a754de6",
         "true,true,0x5c9217e0",
     })
-    void constructsAssociations(boolean useExplicitCall, boolean isRedirect,String hexedSelector) {
+    void constructsAssociations(boolean useExplicitCall, boolean isRedirect, String hexedSelector) {
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
