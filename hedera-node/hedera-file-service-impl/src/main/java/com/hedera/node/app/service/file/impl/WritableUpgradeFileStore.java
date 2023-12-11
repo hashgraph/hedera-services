@@ -56,9 +56,8 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
         writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));
     }
 
-    public void add(@NonNull final File file, @NonNull final FileID fileID) {
+    public void add(@NonNull final File file) {
         requireNonNull(file);
-        requireNonNull(fileID);
         writableUpgradeFileState.put(file.fileIdOrThrow(), file);
     }
 

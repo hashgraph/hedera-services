@@ -53,6 +53,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -95,11 +96,11 @@ public class FileGenesisSchema extends Schema {
         Set<StateDefinition> definitions = new LinkedHashSet<>();
         definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
 
-        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        final var fileNums = filesConfig.softwareUpdateRange();
-        final var firstUpdateNum = fileNums.left();
-        final var lastUpdateNum = fileNums.right();
+        final FilesConfig filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final HederaConfig hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final LongPair fileNums = filesConfig.softwareUpdateRange();
+        final long firstUpdateNum = fileNums.left();
+        final long lastUpdateNum = fileNums.right();
 
         // initializing the files 150 -159
         for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
