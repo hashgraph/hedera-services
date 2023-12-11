@@ -305,6 +305,10 @@ public final class Hedera implements SwirldMain {
                 && daggerApp.grpcServerManager().isRunning();
     }
 
+    /**
+     * Get the current platform status
+     * @return current platform status
+     */
     public PlatformStatus getPlatformStatus() {
         return platformStatus;
     }
@@ -459,11 +463,14 @@ public final class Hedera implements SwirldMain {
      *
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
      * and thus all schemas will be executed.
+     * @param state current state
+     * @param deserializedVersion version deserialized
+     * @param trigger trigger that is calling migration
      */
     private void onMigrate(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            final InitTrigger trigger) {
+            @NonNull final InitTrigger trigger) {
         final var currentVersion = version.getServicesVersion();
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
         logger.info(
@@ -884,6 +891,12 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
+    /**
+     * The initialization needed for reconnect. It constructs all schemas appropriately.
+     * These are exactly the same steps done as restart trigger.
+     * @param state The current state
+     * @param deserializedVersion version of deserialized state
+     */
     private void reconnect(
             @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
         logger.debug("Reconnect Initialization");
@@ -942,6 +955,7 @@ public final class Hedera implements SwirldMain {
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         // Fully qualified so as to not confuse javadoc
+        // DaggerApp should be constructed every time we reach this point, even if exists. This is needed for reconnect
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
                 .configuration(configProvider)

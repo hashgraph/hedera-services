@@ -26,7 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Starts the selected node or nodes specified by the {@link NodeSelector}.
+ * Disconnects the selected node or nodes specified by the {@link NodeSelector}.
  */
 public class DisconnectNodeOp extends LifecycleOp {
     private static final Logger logger = LogManager.getLogger(DisconnectNodeOp.class);

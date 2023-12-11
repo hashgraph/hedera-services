@@ -25,7 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Blocks waiting until the selected node or nodes are active, or until a timeout of {@code waitSeconds} has happened.
+ * Blocks waiting until the selected node or nodes are in behind status, or until a timeout of {@code waitSeconds} has happened.
  */
 public class WaitForBehindOp extends LifecycleOp {
     private static final Logger logger = LogManager.getLogger(WaitForBehindOp.class);

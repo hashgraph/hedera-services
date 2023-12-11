@@ -116,6 +116,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         // calculated expiration time is never null...
         final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
+        // we should not be modifying the schedules list directly. This could cause ISS
         List<Schedule> byExpiration = inStateExpiration != null ? new ArrayList<>(inStateExpiration.schedules()) : null;
         if (byExpiration == null) {
             byExpiration = new LinkedList<>();

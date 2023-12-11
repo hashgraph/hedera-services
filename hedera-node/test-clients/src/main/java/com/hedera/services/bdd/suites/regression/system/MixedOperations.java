@@ -42,6 +42,10 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 
+/**
+ * Returns mixed operations that can be used for restart and reconnect tests.
+ * These operations will be further extended in the future
+ */
 public class MixedOperations {
 
     static final String SUBMIT_KEY = "submitKey";

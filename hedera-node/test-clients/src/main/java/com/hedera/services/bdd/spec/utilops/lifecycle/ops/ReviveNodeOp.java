@@ -26,7 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Starts the selected node or nodes specified by the {@link NodeSelector}.
+ * Unblocks grpc port on the selected node or nodes specified by the {@link NodeSelector}.
  */
 public class ReviveNodeOp extends LifecycleOp {
     private static final Logger logger = LogManager.getLogger(ReviveNodeOp.class);

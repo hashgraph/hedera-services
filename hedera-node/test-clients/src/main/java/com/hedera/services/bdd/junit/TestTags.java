@@ -26,5 +26,4 @@ public class TestTags {
     public static final String SMART_CONTRACT = "SMART_CONTRACT";
     public static final String TIME_CONSUMING = "TIME_CONSUMING";
     public static final String TOKEN = "TOKEN";
-    public static final String RESTART = "RESTART";
 }
