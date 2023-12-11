@@ -75,6 +75,13 @@ public class LinkedEventIntake {
     private final IntakeEventCounter intakeEventCounter;
 
     /**
+     * Whether or not the linked event intake is paused.
+     * <p>
+     * When paused, all received events will be tossed into the void
+     */
+    private boolean paused;
+
+    /**
      * Constructor
      *
      * @param platformContext    the platform context
@@ -103,6 +110,8 @@ public class LinkedEventIntake {
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
+        this.paused = false;
+
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
@@ -128,9 +137,16 @@ public class LinkedEventIntake {
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         Objects.requireNonNull(event);
 
+        if (paused) {
+            // If paused, throw everything into the void
+            event.clear();
+            return List.of();
+        }
+
         try {
             if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
                 // ancient events *may* be discarded, and stale events *must* be discarded
+                event.clear();
                 return List.of();
             }
 
@@ -160,6 +176,15 @@ public class LinkedEventIntake {
         } finally {
             intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }
+    }
+
+    /**
+     * Pause or unpause this object.
+     *
+     * @param paused whether or not this object should be paused
+     */
+    public void setPaused(final boolean paused) {
+        this.paused = paused;
     }
 
     /**

@@ -49,7 +49,7 @@ import java.util.function.Function;
 
 /**
  * Encapsulates access to commonly referenced parts of a {@link
- * com.swirlds.common.system.transaction.Transaction} whose contents is <i>supposed</i> to be a
+ * com.swirlds.platform.system.transaction.Transaction} whose contents is <i>supposed</i> to be a
  * Hedera Services gRPC {@link Transaction}. (The constructor of this class immediately tries to
  * parse the {@code byte[]} contents of the txn, and propagates any protobuf exceptions
  * encountered.)

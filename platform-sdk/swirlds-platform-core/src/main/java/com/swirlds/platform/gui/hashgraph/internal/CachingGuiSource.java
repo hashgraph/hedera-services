@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.gui.hashgraph.HashgraphGuiConstants;
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.PlatformEvent;
 
 /**
  * A {@link HashgraphGuiSource} that wraps another source but caches the results until {@link #refresh()} is called
