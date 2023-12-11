@@ -426,7 +426,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "true,true,0x0a754de6",
         "true,true,0x5c9217e0",
     })
-    void constructsAssociations(final boolean useExplicitCall, final boolean isRedirect, final String hexedSelector) {
+    void constructsAssociations(boolean useExplicitCall, boolean isRedirect,String hexedSelector) {
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
@@ -487,7 +487,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "0x15dacbea",
         "0x9b23d3d9",
     })
-    void constructsClassicTransfers(final String hexedSelector) {
+    void constructsClassicTransfers(String hexedSelector) {
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
@@ -545,7 +545,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         "0xe0f4059a,FUNGIBLE",
         "0xe0f4059a,NON_FUNGIBLE",
     })
-    void constructsMints(final String hexedSelector, final LinkedTokenType linkedTokenType) {
+    void constructsMints(String hexedSelector, LinkedTokenType linkedTokenType) {
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
                 .willReturn(strategy);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
