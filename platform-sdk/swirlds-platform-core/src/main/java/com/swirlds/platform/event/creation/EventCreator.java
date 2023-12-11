@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.creation;
 
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -31,7 +30,7 @@ public interface EventCreator {
      *
      * @param event the event to add
      */
-    void registerEvent(@NonNull EventImpl event);
+    void registerEvent(@NonNull GossipEvent event);
 
     /**
      * Update the minimum generation non-ancient.

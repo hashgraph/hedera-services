@@ -142,7 +142,7 @@ public class AsyncEventCreationManager implements Lifecycle {
      * @param event the event to pass
      */
     private void handleEvent(@NonNull final EventImpl event) {
-        eventCreator.registerEvent(event);
+        eventCreator.registerEvent(event.getBaseEvent());
     }
 
     /**

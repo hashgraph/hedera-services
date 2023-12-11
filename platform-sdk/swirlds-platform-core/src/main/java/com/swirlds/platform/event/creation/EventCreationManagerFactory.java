@@ -51,7 +51,7 @@ public final class EventCreationManagerFactory {
     private EventCreationManagerFactory() {}
 
     /**
-     * Create a new event creation manager.
+     * Create a new event creation manager (legacy pre-wiring version).
      *
      * @param platformContext           the platform's context
      * @param threadManager             manages the creation of new threads
@@ -68,7 +68,7 @@ public final class EventCreationManagerFactory {
      * @return a new event creation manager
      */
     @NonNull
-    public static AsyncEventCreationManager buildEventCreationManager(
+    public static AsyncEventCreationManager buildLegacyEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
@@ -128,5 +128,58 @@ public final class EventCreationManagerFactory {
                         + "non-ancient with tipset event creator"));
 
         return manager;
+    }
+
+    /**
+     * Create a new event creation manager.
+     *
+     * @param platformContext           the platform's context
+     * @param time                      provides the wall clock time
+     * @param signer                    can sign with this node's key
+     * @param addressBook               the current address book
+     * @param selfId                    the ID of this node
+     * @param appVersion                the current application version
+     * @param transactionPool           provides transactions to be added to new events
+     * @param platformStatusSupplier    provides the current platform status
+     * @param latestReconnectRound      provides the latest reconnect round
+     * @return a new event creation manager
+     */
+    @NonNull
+    public static EventCreationManager buildEventCreationManager(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
+            @NonNull final Signer signer,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final TransactionPool transactionPool,
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
+            @NonNull final Supplier<Long> latestReconnectRound) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(time);
+        Objects.requireNonNull(signer);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(appVersion);
+        Objects.requireNonNull(transactionPool);
+        Objects.requireNonNull(platformStatusSupplier);
+        Objects.requireNonNull(latestReconnectRound);
+
+        final EventCreator eventCreator = new TipsetEventCreator(
+                platformContext,
+                time,
+                new Random() /* does not need to be cryptographically secure */,
+                signer,
+                addressBook,
+                selfId,
+                appVersion,
+                transactionPool);
+
+        final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
+                new MaximumRateRule(platformContext, time),
+                new PlatformStatusRule(platformStatusSupplier, transactionPool));
+
+        return new EventCreationManager(platformContext, time, eventCreator, eventCreationRules);
     }
 }

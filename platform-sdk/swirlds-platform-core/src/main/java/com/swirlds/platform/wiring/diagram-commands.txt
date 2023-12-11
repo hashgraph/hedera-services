@@ -6,9 +6,11 @@ Groups high level grouping of components and component groups. Substitutes known
 pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
+    -s 'eventCreationManager:non-validated events:†' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBuffer_splitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntake_splitter,getMinimumGenerationNonAncient' \
+    -g 'State File Management:signedStateFileManager,extract oldestMinimumGenerationOnDisk,to StateWrittenToDiskAction' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake'
 
@@ -20,10 +22,13 @@ Same as "Uncollapsed" but with low level things collapsed. Attempts to hide thin
 pcli diagram \
     -s 'getMinimumGenerationNonAncient:minimum generation non ancient:*' \
     -s 'heartbeat:heartbeat:♡' \
+    -s 'eventCreationManager:non-validated events:†' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Orphan Buffer:orphanBuffer,orphanBuffer_splitter' \
     -g 'Linked Event Intake:linkedEventIntake,linkedEventIntake_splitter,getMinimumGenerationNonAncient' \
+    -g 'State File Management:signedStateFileManager,extract oldestMinimumGenerationOnDisk,to StateWrittenToDiskAction' \
     -g 'Intake Pipeline:Event Validation,Orphan Buffer' \
     -g 'Consensus Pipeline:inOrderLinker,Linked Event Intake' \
     -c "Orphan Buffer" \
-    -c "Linked Event Intake"
+    -c "Linked Event Intake" \
+    -c "State File Management"

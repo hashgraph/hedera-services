@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -29,6 +30,7 @@ public class PlatformCoordinator {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final LinkedEventIntakeWiring linkedEventIntakeWiring;
+    private final EventCreationManagerWiring eventCreationManagerWiring;
 
     /**
      * Constructor
@@ -39,6 +41,7 @@ public class PlatformCoordinator {
      * @param orphanBufferWiring            the orphan buffer wiring
      * @param inOrderLinkerWiring           the in order linker wiring
      * @param linkedEventIntakeWiring       the linked event intake wiring
+     * @param eventCreationManagerWiring    the event creation manager wiring
      */
     public PlatformCoordinator(
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
@@ -46,7 +49,8 @@ public class PlatformCoordinator {
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
-            @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring) {
+            @NonNull final LinkedEventIntakeWiring linkedEventIntakeWiring,
+            @NonNull final EventCreationManagerWiring eventCreationManagerWiring) {
 
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
@@ -54,6 +58,7 @@ public class PlatformCoordinator {
         this.orphanBufferWiring = Objects.requireNonNull(orphanBufferWiring);
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.linkedEventIntakeWiring = Objects.requireNonNull(linkedEventIntakeWiring);
+        this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
     }
 
     /**
@@ -62,27 +67,36 @@ public class PlatformCoordinator {
      * Future work: this method should be expanded to coordinate the clearing of the entire system
      */
     public void clear() {
-        // pause the linked event intake, to prevent any new events from making it through the intake pipeline
+        // Phase 1: pause
+        // Pause the linked event intake and event creator, to prevent any new events from making it through the intake
+        // pipeline.
         linkedEventIntakeWiring.pauseInput().inject(true);
+        eventCreationManagerWiring.pauseInput().inject(true);
         linkedEventIntakeWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
 
-        // flush everything remaining in the intake pipeline out into the void
+        // Phase 2: flush
+        // Flush everything remaining in the intake pipeline out into the void.
         internalEventValidatorWiring.flushRunnable().run();
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         linkedEventIntakeWiring.flushRunnable().run();
 
-        // once everything has been flushed out of the system, it's safe to unpause the linked event intake
-        linkedEventIntakeWiring.pauseInput().inject(false);
-
-        // data is no longer moving through the system. clear all the internal data structures in the wiring objects
+        // Phase 3: clear
+        // Data is no longer moving through the system. clear all the internal data structures in the wiring objects.
         eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
         eventDeduplicatorWiring.flushRunnable().run();
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         orphanBufferWiring.flushRunnable().run();
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.flushRunnable().run();
+
+        // Phase 4: unpause
+        // Once everything has been flushed out of the system, it's safe to unpause event intake and creation.
+        linkedEventIntakeWiring.pauseInput().inject(false);
+        eventCreationManagerWiring.pauseInput().inject(false);
     }
 }

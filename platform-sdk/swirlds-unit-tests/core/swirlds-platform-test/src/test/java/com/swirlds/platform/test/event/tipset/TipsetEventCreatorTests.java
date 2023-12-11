@@ -258,7 +258,7 @@ class TipsetEventCreatorTests {
             @NonNull final Map<NodeId, SimulatedNode> eventCreators, @NonNull final EventImpl eventImpl) {
 
         for (final SimulatedNode eventCreator : eventCreators.values()) {
-            eventCreator.eventCreator.registerEvent(eventImpl);
+            eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(), TipsetUtils.getParentDescriptors(eventImpl));
         }
@@ -693,30 +693,31 @@ class TipsetEventCreatorTests {
     }
 
     @NonNull
-    private EventImpl createMockEvent(
+    private GossipEvent createMockEvent(
             @NonNull final Random random,
             @NonNull final NodeId creator,
             long selfParentGeneration,
             @Nullable final NodeId otherParentId,
             final long otherParentGeneration) {
-        final EventImpl event = mock(EventImpl.class);
+        final GossipEvent event = mock(GossipEvent.class);
 
         final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
         when(hashedData.getCreatorId()).thenReturn(creator);
-        when(event.getCreatorId()).thenReturn(creator);
+        when(hashedData.getCreatorId()).thenReturn(creator);
         final long generation = Math.max(selfParentGeneration, otherParentGeneration) + 1;
         when(hashedData.getGeneration()).thenReturn(generation);
         when(event.getGeneration()).thenReturn(generation);
 
         final Hash hash = randomHash(random);
         when(hashedData.getHash()).thenReturn(hash);
-        when(event.getBaseHash()).thenReturn(hash);
 
-        when(hashedData.createEventDescriptor())
-                .thenReturn(new EventDescriptor(hash, creator, generation, -EventConstants.BIRTH_ROUND_UNDEFINED));
+        final EventDescriptor descriptor =
+                new EventDescriptor(hash, creator, generation, -EventConstants.BIRTH_ROUND_UNDEFINED);
+
+        when(hashedData.createEventDescriptor()).thenReturn(descriptor);
+        when(event.getDescriptor()).thenReturn(descriptor);
 
         when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getBaseEventHashedData()).thenReturn(hashedData);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getOtherId()).thenReturn(otherParentId);
@@ -757,11 +758,11 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final EventImpl eventB1 = createMockEvent(
+        final GossipEvent eventB1 = createMockEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final EventImpl eventC1 = createMockEvent(
+        final GossipEvent eventC1 = createMockEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final EventImpl eventD1 = createMockEvent(
+        final GossipEvent eventD1 = createMockEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -790,7 +791,7 @@ class TipsetEventCreatorTests {
         // but has not been updated in the current snapshot.
 
         final NodeId otherParentId = eventA2.getUnhashedData().getOtherId();
-        final EventImpl legalOtherParent = createMockEvent(random, otherParentId, 0, nodeA, 0);
+        final GossipEvent legalOtherParent = createMockEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);
 
@@ -830,13 +831,13 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final EventImpl eventB1 = createMockEvent(
+        final GossipEvent eventB1 = createMockEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final EventImpl eventC1 = createMockEvent(
+        final GossipEvent eventC1 = createMockEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final EventImpl eventD1 = createMockEvent(
+        final GossipEvent eventD1 = createMockEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final EventImpl eventE1 = createMockEvent(
+        final GossipEvent eventE1 = createMockEvent(
                 random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
