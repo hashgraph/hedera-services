@@ -232,7 +232,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 cryptoCreate(B_WELL_KNOWN_RECEIVER)
                         .exposingCreatedIdTo(id -> bReceiverAddr.set(idAsHeadlongAddress(id))),
                 uploadInitCode(WELL_KNOWN_TREASURY_CONTRACT),
-                contractCreate(WELL_KNOWN_TREASURY_CONTRACT),
+                contractCreate(WELL_KNOWN_TREASURY_CONTRACT).gas(500_000L),
                 tokenCreate(WELL_KNOWN_FUNGIBLE_TOKEN)
                         .exposingAddressTo(fungibleTokenMirrorAddr::set)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -359,7 +359,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         // Create an immutable contract with a method
                         // transferViaThresholdContractKey()
                         // that tries to transfer token units from a spender to a receiver
-                        contractCreate(managementContract).omitAdminKey(),
+                        contractCreate(managementContract).gas(500_000L).omitAdminKey(),
                         // Setup a 1/2 threshold key with this contract's ID as the first key
                         newKeyNamed(controlledSpenderKey)
                                 .shape(threshKeyShape.signedWith(sigs(managementContract, ON))),
@@ -407,9 +407,9 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 .given(
                         uploadInitCode(managementContract, PAY_RECEIVABLE_CONTRACT),
                         newKeyNamed(tmpAdminKey),
-                        contractCreate(managementContract).adminKey(tmpAdminKey),
+                        contractCreate(managementContract).gas(500_000L).adminKey(tmpAdminKey),
                         // Just create some other contract to be the real admin key
-                        contractCreate(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).gas(500_000L),
                         newKeyNamed(otherContractAsKey).shape(CONTRACT.signedWith(PAY_RECEIVABLE_CONTRACT)),
                         cryptoCreate(associatedAccount).keyShape(SECP256K1_ON).exposingEvmAddressTo(accountAddr::set),
                         tokenCreate(fungibleToken)

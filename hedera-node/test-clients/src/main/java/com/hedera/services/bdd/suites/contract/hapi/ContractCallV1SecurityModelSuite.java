@@ -374,7 +374,8 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                         BigInteger.valueOf(10000L),
                                         BigInteger.valueOf(1000000000000000L),
                                         BigInteger.valueOf(2500000000L))
-                                .bytecode(initcode)),
+                                .bytecode(initcode)
+                                .gas(500_000L)),
                         tokenCreate(sauce)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .initialSupply(300_000_000)

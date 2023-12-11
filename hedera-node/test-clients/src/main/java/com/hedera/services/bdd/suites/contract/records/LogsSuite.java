@@ -78,7 +78,7 @@ public class LogsSuite extends HapiSuite {
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith().noTopics().longValue(15)))
-                                        .gasUsed(22_285))));
+                                        .gasUsed(22_489))));
     }
 
     @HapiTest
@@ -95,7 +95,7 @@ public class LogsSuite extends HapiSuite {
                                                 .noData()
                                                 .withTopicsInOrder(List.of(
                                                         eventSignatureOf("Log1(uint256)"), parsedToByteString(15)))))
-                                        .gasUsed(22_583))));
+                                        .gasUsed(22_787))));
     }
 
     @HapiTest
@@ -114,7 +114,7 @@ public class LogsSuite extends HapiSuite {
                                                         eventSignatureOf("Log2(uint256,uint256)"),
                                                         parsedToByteString(1),
                                                         parsedToByteString(2)))))
-                                        .gasUsed(23_112))));
+                                        .gasUsed(23_456))));
     }
 
     @HapiTest
@@ -134,7 +134,7 @@ public class LogsSuite extends HapiSuite {
                                                         parsedToByteString(1),
                                                         parsedToByteString(2),
                                                         parsedToByteString(3)))))
-                                        .gasUsed(23_638))));
+                                        .gasUsed(24_122))));
     }
 
     @HapiTest
@@ -160,6 +160,6 @@ public class LogsSuite extends HapiSuite {
                                                         parsedToByteString(1),
                                                         parsedToByteString(2),
                                                         parsedToByteString(3)))))
-                                        .gasUsed(24_294))));
+                                        .gasUsed(24_918))));
     }
 }

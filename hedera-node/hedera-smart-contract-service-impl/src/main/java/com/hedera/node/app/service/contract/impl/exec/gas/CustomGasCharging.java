@@ -32,7 +32,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
@@ -114,7 +113,8 @@ public class CustomGasCharging {
         if (context.isNoopGasContext()) {
             return ZERO_CHARGES;
         }
-        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, transaction.isCreate());
+        final var intrinsicGas =
+                gasCalculator.transactionIntrinsicGasCost(transaction.evmPayload(), transaction.isCreate());
         validateTrue(transaction.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         if (transaction.isEthereumTransaction()) {
             final var allowanceUsed =

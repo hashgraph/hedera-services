@@ -209,7 +209,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                                     .getTransactionRecord(failedCall)
                                     .getContractCallResult()
                                     .getGasUsed();
-                            assertEquals(394209, gasUsed);
+                            assertEquals(394210, gasUsed);
                         }));
     }
 

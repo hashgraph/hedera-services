@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
@@ -48,7 +49,7 @@ public abstract class HederaEvmTxProcessor {
     protected BlockMetaSource blockMetaSource;
     protected HederaEvmMutableWorldState worldState;
 
-    protected final GasCalculator gasCalculator;
+    protected GasCalculator gasCalculator;
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
@@ -179,8 +180,8 @@ public abstract class HederaEvmTxProcessor {
         }
     }
 
-    public void setupFields(final boolean contractCreation) {
-        this.intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+    public void setupFields(final Bytes payload, final boolean contractCreation) {
+        this.intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         this.updater = worldState.updater();
         this.coinbase = dynamicProperties.fundingAccountAddress();
     }
@@ -222,5 +223,10 @@ public abstract class HederaEvmTxProcessor {
             case MESSAGE_CALL -> messageCallProcessor;
             case CONTRACT_CREATION -> contractCreationProcessor;
         };
+    }
+
+    @VisibleForTesting
+    public void setGasCalculator(GasCalculator gasCalculator) {
+        this.gasCalculator = gasCalculator;
     }
 }

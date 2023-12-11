@@ -276,7 +276,7 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).omitAdminKey().gas(300_000).via(txn),
+                        contractCreate(contract).omitAdminKey().gas(600_000).via(txn),
                         withOpContext((spec, opLog) -> {
                             final var op = getTxnRecord(txn);
                             allRunFor(spec, op);
