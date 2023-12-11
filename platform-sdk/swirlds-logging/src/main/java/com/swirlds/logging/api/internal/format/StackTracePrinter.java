@@ -67,4 +67,3 @@ public class StackTracePrinter {
         print(writer, throwable, new HashSet<>(), new StackTraceElement[0]);
     }
 }
-
