@@ -23,7 +23,7 @@ import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
