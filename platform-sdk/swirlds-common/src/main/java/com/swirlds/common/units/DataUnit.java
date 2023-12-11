@@ -16,7 +16,7 @@
 
 package com.swirlds.common.units;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 
 import com.swirlds.common.units.internal.UnitConverter;
 

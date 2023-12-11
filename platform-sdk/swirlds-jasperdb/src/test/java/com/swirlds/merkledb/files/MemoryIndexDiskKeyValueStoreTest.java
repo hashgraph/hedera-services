@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.threading.atomic.AtomicDouble;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;

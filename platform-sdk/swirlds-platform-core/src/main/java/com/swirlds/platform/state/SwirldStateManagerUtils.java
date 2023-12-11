@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.SoftwareVersion;

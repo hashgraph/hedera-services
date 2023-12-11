@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_MEBIBYTES;
 
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;

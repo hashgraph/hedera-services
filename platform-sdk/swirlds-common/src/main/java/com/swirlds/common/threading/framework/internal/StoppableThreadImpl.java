@@ -16,8 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.retryIfInterrupted;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.StackTrace.getStackTrace;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;

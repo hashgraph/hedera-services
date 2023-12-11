@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.stream;
 
-import static com.swirlds.common.units.UnitConstants.MB_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.MB_TO_BYTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.statistics.internal;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
 import java.util.concurrent.atomic.AtomicInteger;

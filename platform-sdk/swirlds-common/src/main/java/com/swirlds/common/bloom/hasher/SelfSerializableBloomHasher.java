@@ -16,7 +16,7 @@
 
 package com.swirlds.common.bloom.hasher;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_LONG;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
 

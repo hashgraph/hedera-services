@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.stream.RecordStreamManager.effectiveLogDir;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.google.common.cache.Cache;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
