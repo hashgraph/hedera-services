@@ -167,7 +167,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
             if (!startMode.equals("GENESIS")) {
-                blockRecordManager.switchBlockAt(FORCED_BLOCK_SWITCH_TIME);
+                blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
             // write a blocks & record files
             int transactionCount = 0;
@@ -250,7 +250,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
-            blockRecordManager.switchBlockAt(FORCED_BLOCK_SWITCH_TIME);
+            blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
             Bytes runningHash = STARTING_RUNNING_HASH_OBJ.hash();

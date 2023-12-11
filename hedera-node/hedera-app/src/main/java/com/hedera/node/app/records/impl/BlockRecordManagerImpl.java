@@ -79,10 +79,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private BlockInfo lastBlockInfo;
     /**
-     * The number of the current provisional block. "provisional" because the block is not yet complete.
-     */
-    private long provisionalCurrentBlockNumber;
-    /**
      * True when we have completed event recovery. This is not yet implemented properly.
      */
     private boolean eventRecoveryCompleted = false;
@@ -120,7 +116,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         this.lastBlockInfo = blockInfoState.get();
         assert this.lastBlockInfo != null : "Cannot be null, because this state is created at genesis";
-        this.provisionalCurrentBlockNumber = lastBlockInfo.lastBlockNumber() + 1; // We know what this will be
 
         // Initialize the stream file producer. NOTE, if the producer cannot be initialized, and a random exception is
         // thrown here, then startup of the node will fail. This is the intended behavior. We MUST be able to produce
@@ -179,8 +174,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             // Compute the state for the newly completed block. The `lastBlockHashBytes` is the running hash after
             // the last transaction
             final var lastBlockHashBytes = streamFileProducer.getRunningHash();
+            final var justFinishedBlockNumber = lastBlockInfo.lastBlockNumber() + 1;
             lastBlockInfo =
-                    infoOfJustFinished(lastBlockInfo, provisionalCurrentBlockNumber, lastBlockHashBytes, consensusTime);
+                    infoOfJustFinished(lastBlockInfo, justFinishedBlockNumber, lastBlockHashBytes, consensusTime);
 
             // Update BlockInfo state
             persistLastBlockInfo(state);
@@ -192,10 +188,10 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                                 --- BLOCK UPDATE ---
                                   Finished: #{} (started @ {}) with hash {}
                                   Starting: #{} @ {}""",
-                        provisionalCurrentBlockNumber,
+                        justFinishedBlockNumber,
                         lastBlockInfo.firstConsTimeOfCurrentBlock(),
                         new Hash(lastBlockHashBytes.toByteArray(), DigestType.SHA_384),
-                        provisionalCurrentBlockNumber + 1,
+                        justFinishedBlockNumber + 1,
                         consensusTime);
             }
 
@@ -210,15 +206,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * @param consensusTime the consensus time at which to switch to the current block
      */
     @VisibleForTesting
-    public void switchBlockAt(@NonNull final Instant consensusTime) {
-        streamFileProducer.switchBlocks(lastBlockInfo.lastBlockNumber(), provisionalCurrentBlockNumber, consensusTime);
-    }
-
-    private void switchBlocksAt(@NonNull final Instant consensusTime) {
-        // close all stream files for end of block and create signature files, then open new block record file
-        final var lastBlockNo = provisionalCurrentBlockNumber;
-        provisionalCurrentBlockNumber++;
-        streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
+    public void switchBlocksAt(@NonNull final Instant consensusTime) {
+        streamFileProducer.switchBlocks(
+                lastBlockInfo.lastBlockNumber(), lastBlockInfo.lastBlockNumber() + 1, consensusTime);
     }
 
     private void persistLastBlockInfo(@NonNull final HederaState state) {
