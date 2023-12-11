@@ -378,7 +378,6 @@ public class HandleHederaOperations implements HederaOperations {
                 (bodyToExternalize == null)
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
                         : contractBodyCustomizerFor(bodyToExternalize));
-
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         // add additional create record fields
         recordBuilder

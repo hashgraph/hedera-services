@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -33,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -114,7 +114,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .autoRenewAccountId("autoRenewAccount")
                         .signedBy("payer", "autoRenewAccount")
                         // In hedera-app, we will allow an immutable topic to have an auto-renew account
-                        .hasKnownStatusFrom(SUCCESS, AUTORENEW_ACCOUNT_NOT_ALLOWED));
+                        .hasKnownStatusFrom(AUTORENEW_ACCOUNT_NOT_ALLOWED));
     }
 
     @HapiTest
@@ -169,7 +169,7 @@ public class TopicCreateSuite extends HapiSuite {
                         // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
                         createTopic("nonExistentAutoRenewAccount")
                                 .autoRenewAccountId(contractWithAdminKey)
-                                .hasKnownStatusFrom(SUCCESS, INVALID_AUTORENEW_ACCOUNT),
+                                .hasKnownStatusFrom(INVALID_AUTORENEW_ACCOUNT),
                         // But contracts without admin keys will get INVALID_SIGNATURE (can't sign!)
                         createTopic("NotToBe")
                                 .autoRenewAccountId(PAY_RECEIVABLE_CONTRACT)
@@ -220,7 +220,7 @@ public class TopicCreateSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec allFieldsSetHappyCase() {
-        return defaultHapiSpec("AllFieldsSetHappyCase")
+        return defaultHapiSpec("AllFieldsSetHappyCase", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
                 .then(createTopic("testTopic")
