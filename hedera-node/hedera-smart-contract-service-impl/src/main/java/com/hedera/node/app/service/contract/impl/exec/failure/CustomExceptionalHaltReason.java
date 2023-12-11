@@ -24,6 +24,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
+    INVALID_ALIAS_KEY("Invalid alias key"),
     SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
     CONTRACT_IS_TREASURY("Token treasuries cannot be deleted"),
     INVALID_SIGNATURE("Invalid signature"),
@@ -58,6 +59,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
         } else if (reason == INVALID_SOLIDITY_ADDRESS) {
             return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+        } else if (reason == INVALID_ALIAS_KEY) {
+            return ResponseCodeEnum.INVALID_ALIAS_KEY;
         } else if (reason == INVALID_SIGNATURE) {
             return ResponseCodeEnum.INVALID_SIGNATURE;
         } else if (reason == CONTRACT_ENTITY_LIMIT_REACHED) {

@@ -65,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -78,7 +79,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-// @HapiTestSuite
+@HapiTestSuite
 public class Evm46ValidationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Evm46ValidationSuite.class);
@@ -282,6 +283,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec selfdestructToExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("selfdestructToExistingMirrorAddressResultsInSuccess")
@@ -304,6 +306,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
     }
 
+    @HapiTest
     private HapiSpec selfdestructToExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("selfdestructToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -328,6 +331,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasTinyBars(changeFromSnapshot("selfdestructTargetAccount", 100000000)));
     }
 
+    @HapiTest
     private HapiSpec selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
@@ -359,6 +363,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .contractCallResult(resultWith().gasUsed(900000))));
     }
 
+    @HapiTest
     private HapiSpec selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
         return defaultHapiSpec("selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress")
                 .given(
@@ -376,6 +381,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .contractCallResult(resultWith().gasUsed(900000))));
     }
 
+    @HapiTest
     private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
@@ -405,7 +411,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
+    HapiSpec directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp")
                 .given(withOpContext((spec, ctxLog) -> spec.registry()
@@ -654,6 +660,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)));
     }
 
+    @HapiTest
     private HapiSpec internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
@@ -743,6 +750,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
+    @HapiTest
     private HapiSpec internalSendToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalSendToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
@@ -846,6 +854,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
+    @HapiTest
     private HapiSpec internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
@@ -950,6 +959,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
+    @HapiTest
     private HapiSpec internalCallToDeletedContractReturnsSuccessfulNoop() {
         final AtomicLong calleeNum = new AtomicLong();
         return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
@@ -972,6 +982,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec callingDestructedContractReturnsStatusSuccess() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("callingDestructedContractReturnsStatusSuccess")
@@ -992,6 +1003,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec internalStaticCallNonExistingMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalStaticCallNonExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -1010,6 +1022,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))));
     }
 
+    @HapiTest
     private HapiSpec internalStaticCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("internalStaticCallExistingMirrorAddressResultsInSuccess")
@@ -1033,6 +1046,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalStaticCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
         return defaultHapiSpec("internalStaticCallNonExistingNonMirrorAddressResultsInSuccess")
@@ -1067,6 +1081,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalStaticCallExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalStaticCallExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1096,6 +1111,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalDelegateCallNonExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -1114,6 +1130,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(0)))));
     }
 
+    @HapiTest
     private HapiSpec internalDelegateCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("internalDelegateCallExistingMirrorAddressResultsInSuccess")
@@ -1137,6 +1154,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
         return defaultHapiSpec("internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess")
@@ -1171,6 +1189,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("contractBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalDelegateCallExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1200,6 +1219,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                         getAutoCreatedAccountBalance(ECDSA_KEY).hasTinyBars(changeFromSnapshot("targetSnapshot", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallWithValueToAccountWithReceiverSigRequiredTrue() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -1224,6 +1244,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallToSystemAccount564ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
@@ -1248,6 +1269,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(852L).build());
@@ -1272,6 +1294,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(852L).build());
@@ -1297,6 +1320,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
@@ -1321,6 +1345,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
+    @HapiTest
     private HapiSpec internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
@@ -1345,6 +1370,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("initialBalance", -1)));
     }
 
+    @HapiTest
     private HapiSpec internalCallToExistingSystemAccount800ResultsInSuccesNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());

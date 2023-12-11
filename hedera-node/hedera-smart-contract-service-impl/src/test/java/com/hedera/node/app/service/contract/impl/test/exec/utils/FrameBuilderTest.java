@@ -210,6 +210,88 @@ class FrameBuilderTest {
     }
 
     @Test
+    void callSucceedsWhenContractNotFoundIfPermitted() {
+        final var transaction = wellKnownRelayedHapiCall(VALUE);
+        givenContractExists();
+        given(worldUpdater.updater()).willReturn(stackedUpdater);
+        given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
+        given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
+        given(worldUpdater.contractMustBePresent()).willReturn(true);
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+
+        final var frame = subject.buildInitialFrameWith(
+                transaction,
+                worldUpdater,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                config,
+                featureFlags,
+                EIP_1014_ADDRESS,
+                NON_SYSTEM_LONG_ZERO_ADDRESS,
+                INTRINSIC_GAS);
+
+        assertEquals(1024, frame.getMaxStackSize());
+        assertSame(stackedUpdater, frame.getWorldUpdater());
+        assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
+        assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
+        assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.of(VALUE), frame.getValue());
+        assertEquals(Wei.of(VALUE), frame.getApparentValue());
+        assertSame(blockValues, frame.getBlockValues());
+        assertFalse(frame.isStatic());
+        assertEquals(asLongZeroAddress(DEFAULT_COINBASE), frame.getMiningBeneficiary());
+        final var hashLookup = frame.getBlockHashLookup();
+        assertSame(config, configOf(frame));
+        assertDoesNotThrow(frame::notifyCompletion);
+        assertEquals(MessageFrame.Type.MESSAGE_CALL, frame.getType());
+        assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getRecipientAddress());
+        assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getContractAddress());
+        assertEquals(transaction.evmPayload(), frame.getInputData());
+        assertSame(CodeV0.EMPTY_CODE, frame.getCode());
+        assertSame(tinybarValues, tinybarValuesFor(frame));
+    }
+
+    @Test
+    void callSucceedsWhenContractFoundButDeleted() {
+        final var transaction = wellKnownRelayedHapiCall(VALUE);
+        givenContractExists();
+        given(worldUpdater.updater()).willReturn(stackedUpdater);
+        given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
+        given(contract.deleted()).willReturn(true);
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+
+        final var frame = subject.buildInitialFrameWith(
+                transaction,
+                worldUpdater,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                config,
+                featureFlags,
+                EIP_1014_ADDRESS,
+                NON_SYSTEM_LONG_ZERO_ADDRESS,
+                INTRINSIC_GAS);
+
+        assertEquals(1024, frame.getMaxStackSize());
+        assertSame(stackedUpdater, frame.getWorldUpdater());
+        assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
+        assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
+        assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.of(VALUE), frame.getValue());
+        assertEquals(Wei.of(VALUE), frame.getApparentValue());
+        assertSame(blockValues, frame.getBlockValues());
+        assertFalse(frame.isStatic());
+        assertEquals(asLongZeroAddress(DEFAULT_COINBASE), frame.getMiningBeneficiary());
+        final var hashLookup = frame.getBlockHashLookup();
+        assertSame(config, configOf(frame));
+        assertDoesNotThrow(frame::notifyCompletion);
+        assertEquals(MessageFrame.Type.MESSAGE_CALL, frame.getType());
+        assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getRecipientAddress());
+        assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getContractAddress());
+        assertEquals(transaction.evmPayload(), frame.getInputData());
+        assertSame(CodeV0.EMPTY_CODE, frame.getCode());
+        assertSame(tinybarValues, tinybarValuesFor(frame));
+    }
+
+    @Test
     void constructsExpectedFrameForCallToMissingContract() {
         final var transaction = wellKnownRelayedHapiCall(VALUE);
         givenContractExists();

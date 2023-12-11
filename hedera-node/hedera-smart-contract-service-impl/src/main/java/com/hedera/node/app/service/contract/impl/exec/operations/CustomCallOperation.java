@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -66,23 +67,17 @@ public class CustomCallOperation extends CallOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var toAddress = to(frame);
-            final var addressIsInvalid =
-                    addressIsInvalid(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            return addressIsInvalid
+            if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
+                return new Operation.OperationResult(cost(frame), INVALID_ALIAS_KEY);
+            }
+
+            final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
+            return isMissing
                     ? new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS)
                     : super.execute(frame, evm);
         } catch (final FixedStack.UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
-    }
-
-    private boolean addressIsInvalid(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
-        final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-        // passing value to long zero addresses is not allowed unless it is a system account
-        final var valueToLongZero = isLongZero(toAddress)
-                && !addressChecks.isSystemAccount(toAddress)
-                && value(frame).greaterThan(Wei.ZERO);
-        return isMissing || valueToLongZero;
     }
 
     private boolean mustBePresent(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
@@ -99,6 +94,14 @@ public class CustomCallOperation extends CallOperation {
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
         return !isLongZero(toAddress)
                 && value(frame).greaterThan(Wei.ZERO)
+                && !addressChecks.isPresent(toAddress, frame);
+    }
+
+    private boolean isLazyCreateButInvalidateAlias(
+            @NonNull final MessageFrame frame, @NonNull final Address toAddress) {
+        return isLongZero(toAddress)
+                && value(frame).greaterThan(Wei.ZERO)
+                && !addressChecks.isSystemAccount(toAddress)
                 && !addressChecks.isPresent(toAddress, frame);
     }
 }

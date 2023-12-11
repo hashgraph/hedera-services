@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
@@ -83,14 +84,18 @@ class CustomCallOperationTest {
 
     @Test
     void withImplicitCreationEnabledDoesNoFurtherChecks() {
-        givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
-        given(frame.isStatic()).willReturn(true);
-        given(featureFlags.isImplicitCreationEnabled(frame)).willReturn(true);
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
+            given(frame.isStatic()).willReturn(true);
+            given(updater.contractMustBePresent()).willReturn(false);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
-        final var actual = subject.execute(frame, evm);
+            final var expected =
+                    new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
+            final var actual = subject.execute(frame, evm);
 
-        assertSameResult(expected, actual);
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
@@ -122,6 +127,7 @@ class CustomCallOperationTest {
     @Test
     void withSystemAccountContinuesAsExpected() {
         given(frame.getStackItem(1)).willReturn(SYSTEM_ADDRESS);
+        given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(0)));
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
 
         final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
@@ -134,10 +140,9 @@ class CustomCallOperationTest {
     void withLongZeroRejectsMissingAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            given(updater.contractMustBePresent()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
-            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_ALIAS_KEY);
             final var actual = subject.execute(frame, evm);
 
             assertSameResult(expected, actual);
