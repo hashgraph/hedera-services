@@ -54,6 +54,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DependencyMigrationTest extends MerkleTestBase {
+
+    private static final HederaSoftwareVersion version =
+            new HederaSoftwareVersion(RELEASE_045_VERSION, RELEASE_045_VERSION);
     private static final long INITIAL_ENTITY_ID = 5;
 
     @Mock
@@ -151,8 +154,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService)
-                .forEach(service -> servicesRegistry.register(service, new HederaSoftwareVersion()));
+        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service, version));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
@@ -248,7 +250,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         };
         // Intentionally register the services in a different order than the expected migration order
         List.of(dsService, serviceA, entityIdService, serviceB)
-                .forEach(service -> servicesRegistry.register(service, new HederaSoftwareVersion()));
+                .forEach(service -> servicesRegistry.register(service, version));
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator(servicesRegistry, mock(ThrottleAccumulator.class));
