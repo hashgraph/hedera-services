@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.services.bdd.junit.HapiTestEnv;
+import com.hedera.services.bdd.junit.HapiTestEngine;
 import com.hedera.services.bdd.junit.RecordStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
@@ -722,8 +722,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     private List<String> hapiTestStreamLocs() {
-        final List<String> locs = new ArrayList<>(HapiTestEnv.CLUSTER_SIZE);
-        for (int i = 0; i < HapiTestEnv.CLUSTER_SIZE; i++) {
+        final List<String> locs = new ArrayList<>(HapiTestEngine.NODE_COUNT);
+        for (int i = 0; i < HapiTestEngine.NODE_COUNT; i++) {
             locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
         }
         return locs;
