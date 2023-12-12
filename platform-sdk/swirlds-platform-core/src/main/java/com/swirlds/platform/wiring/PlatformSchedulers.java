@@ -107,7 +107,7 @@ public record PlatformSchedulers(
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventCreationManager")
-                        .withType(config.getEventCreationManagerSchedulerType())
+                        .withType(config.eventCreationManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
