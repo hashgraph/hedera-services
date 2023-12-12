@@ -18,7 +18,6 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;

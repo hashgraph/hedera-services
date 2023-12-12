@@ -1090,10 +1090,8 @@ public class SwirldsPlatform implements Platform {
 
             try {
                 preconsensusEventWriter.registerDiscontinuity(signedState.getRound());
-                preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
-                        .getState()
-                        .getPlatformState()
-                        .getMinimumGenerationNonAncient());
+                preconsensusEventWriter.setMinimumGenerationNonAncient(
+                        signedState.getState().getPlatformState().getMinimumGenerationNonAncient());
             } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("interrupted while loading updating PCES after reconnect", e);

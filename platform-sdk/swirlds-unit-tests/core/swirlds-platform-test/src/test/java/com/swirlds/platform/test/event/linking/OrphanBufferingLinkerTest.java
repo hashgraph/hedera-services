@@ -29,7 +29,6 @@ import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.state.MinGenInfo;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;

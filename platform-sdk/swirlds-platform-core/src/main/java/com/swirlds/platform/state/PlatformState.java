@@ -78,7 +78,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * the minimum generation of famous witnesses per round
      */
-//    private List<MinGenInfo> minGenInfo; // TOD make sure it's ok to remove this
+    //    private List<MinGenInfo> minGenInfo; // TOD make sure it's ok to remove this
 
     /**
      * The version of the application software that was responsible for creating this state.
@@ -186,8 +186,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-
-
 
         round = in.readLong();
         hashEventsCons = in.readSerializable(false, Hash::new);
