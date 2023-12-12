@@ -270,12 +270,13 @@ public interface ContractsV_0_38Module {
     @Provides
     @Singleton
     @V_0_38
-    static EVM provideV_0_38EVM(@V_0_38 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+    static EVM provideV_0_38EVM(
+            @V_0_38 Set<Operation> hederaOperations, GasCalculator gasCalculator, EvmConfiguration evmConfiguration) {
         var operationRegistry = new OperationRegistry();
         // ChainID will be overridden
         registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.SHANGHAI);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.SHANGHAI);
     }
 
     @Provides
