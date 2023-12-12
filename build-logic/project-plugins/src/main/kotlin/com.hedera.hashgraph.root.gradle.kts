@@ -69,10 +69,10 @@ tasks.register("versionAsPrefixedCommit") {
     inputs.property(
         "commit",
         providers
-            .exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+            .exec { commandLine("git", "rev-parse", "HEAD") }
             .standardOutput
             .asText
-            .map { it.trim() }
+            .map { it.trim().substring(0, 7) }
     )
     inputs.property("commitPrefix", providers.gradleProperty("commitPrefix").orElse("adhoc"))
     inputs.property("version", productVersion)
