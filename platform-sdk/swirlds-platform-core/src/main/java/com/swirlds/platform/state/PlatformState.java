@@ -128,6 +128,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private PlatformState(final PlatformState that) {
         super(that);
+        this.addressBook = that.addressBook.copy();
+        this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
         this.hashEventsCons = that.hashEventsCons;
         this.consensusTimestamp = that.consensusTimestamp;
@@ -136,6 +138,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;
         this.snapshot = that.snapshot;
+        this.freezeTime = that.freezeTime;
+        this.lastFrozenTime = that.lastFrozenTime;
+        this.uptimeData = that.uptimeData.copy();
     }
 
     /**
@@ -167,11 +172,11 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeSerializable(addressBook, false);
+        out.writeSerializable(previousAddressBook, true);
         out.writeLong(round);
         out.writeSerializable(hashEventsCons, false);
-
         out.writeInstant(consensusTimestamp);
-
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
@@ -186,7 +191,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-
+        addressBook = in.readSerializable(false, AddressBook::new);
+        previousAddressBook = in.readSerializable(true, AddressBook::new);
         round = in.readLong();
         hashEventsCons = in.readSerializable(false, Hash::new);
         consensusTimestamp = in.readInstant();
@@ -328,10 +334,11 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Get the minimum event generation for each node within this state.
      *
-     * @return minimum generation info list
+     * @return minimum generation info list, or null if this is a genesis state
      */
+    @Nullable
     public List<MinGenInfo> getMinGenInfo() {
-        return snapshot.minGens();
+        return snapshot == null ? null : snapshot.minGens();
     }
 
     /**
