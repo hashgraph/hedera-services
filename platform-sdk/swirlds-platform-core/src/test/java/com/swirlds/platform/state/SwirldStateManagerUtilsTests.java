@@ -43,9 +43,6 @@ public class SwirldStateManagerUtilsTests {
         when(platformState.copy()).thenReturn(platformState);
         state.setPlatformState(platformState);
 
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
-
         final SwirldState swirldState = new DummySwirldState();
         state.setSwirldState(swirldState);
 

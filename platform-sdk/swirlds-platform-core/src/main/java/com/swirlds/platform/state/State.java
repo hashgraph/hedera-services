@@ -95,10 +95,26 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         if (version < ClassVersion.REMOVE_DUAL_STATE) {
             final State newState = new State();
 
-            final DualStateImpl dualState = getChild(ChildIndices.DUAL_STATE);
-            getPlatformState().absorbDualState(dualState);
+            final PlatformState newPlatformState = new PlatformState();
 
-            newState.setPlatformState(getPlatformState());
+            final LegacyPlatformState platformState = getChild(ChildIndices.PLATFORM_STATE);
+            final PlatformData platformData = platformState.getPlatformData();
+            final DualStateImpl dualState = getChild(ChildIndices.DUAL_STATE);
+
+            newPlatformState.setAddressBook(platformState.getAddressBook());
+            newPlatformState.setPreviousAddressBook(platformState.getPreviousAddressBook());
+            newPlatformState.setHashEventsCons(platformData.getHashEventsCons());
+            newPlatformState.setConsensusTimestamp(platformData.getConsensusTimestamp());
+            newPlatformState.setCreationSoftwareVersion(platformData.getCreationSoftwareVersion());
+            newPlatformState.setEpochHash(platformData.getEpochHash());
+            newPlatformState.setNextEpochHash(platformData.getNextEpochHash());
+            newPlatformState.setRoundsNonAncient(platformData.getRoundsNonAncient());
+            newPlatformState.setSnapshot(platformData.getSnapshot());
+            newPlatformState.setFreezeTime(dualState.getFreezeTime());
+            newPlatformState.setLastFrozenTime(dualState.getLastFrozenTime());
+            newPlatformState.setUptimeData(dualState.getUptimeData());
+
+            newState.setPlatformState(newPlatformState);
             newState.setSwirldState(getSwirldState());
 
             return newState;
@@ -229,7 +245,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         final PlatformState platformState = getPlatformState();
         final Hash epochHash = platformState.getNextEpochHash();
         final Hash hashEventsCons = platformState.getHashEventsCons();
-        final List<MinGenInfo> minGenInfo = platformState.getPlatformData().getMinGenInfo();
+        final List<MinGenInfo> minGenInfo = platformState.getMinGenInfo();
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
 
         final StringBuilder sb = new StringBuilder();

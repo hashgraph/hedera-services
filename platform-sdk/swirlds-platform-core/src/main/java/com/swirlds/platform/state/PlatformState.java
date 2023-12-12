@@ -17,51 +17,140 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.uptime.UptimeDataImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
- * This subtree contains state data which is managed and used exclusively by the platform.
+ * State managed and used by the platform.
  */
-public class PlatformState extends PartialNaryMerkleInternal implements MerkleInternal {
+public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
 
-    public static final long CLASS_ID = 0x483ae5404ad0d0bfL;
+    // TODO refactor platform code to not directly call into this class
+    // TODO does this deserve to have an interface for getters and setters?
+
+    public static final long CLASS_ID = 0x52cef730a11cb6dfL;
+
+    /**
+     * The round of the genesis state.
+     */
+    public static final long GENESIS_ROUND = 0;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
-        public static final int ADDED_PREVIOUS_ADDRESS_BOOK = 2;
     }
 
-    private static final class ChildIndices {
-        public static final int PLATFORM_DATA = 0;
-        public static final int ADDRESS_BOOK = 1;
-        public static final int PREVIOUS_ADDRESS_BOOK = 2;
-    }
+    private AddressBook addressBook;
+    private AddressBook previousAddressBook;
+
+    /**
+     * The round of this state. This state represents the handling of all transactions that have reached consensus in
+     * all previous rounds. All transactions from this round will eventually be applied to this state. The first state
+     * (genesis state) has a round of 0 because the first round is defined as round 1, and the genesis state is before
+     * any transactions are handled.
+     */
+    private long round = GENESIS_ROUND;
+
+    /**
+     * running hash of the hashes of all consensus events have there been throughout all of history, up through the
+     * round received that this SignedState represents.
+     */
+    private Hash hashEventsCons;
+
+    /**
+     * the consensus timestamp for this signed state
+     */
+    private Instant consensusTimestamp;
+
+    /**
+     * the minimum generation of famous witnesses per round
+     */
+//    private List<MinGenInfo> minGenInfo; // TOD make sure it's ok to remove this
+
+    /**
+     * The version of the application software that was responsible for creating this state.
+     */
+    private SoftwareVersion creationSoftwareVersion;
+
+    /**
+     * The epoch hash of this state. Updated every time emergency recovery is performed.
+     */
+    private Hash epochHash;
+
+    /**
+     * The next epoch hash, used to update the epoch hash at the next round boundary. This field is not part of the hash
+     * and is not serialized.
+     */
+    private Hash nextEpochHash;
+
+    /**
+     * The number of non-ancient rounds.
+     */
+    private int roundsNonAncient;
+
+    /** A snapshot of the consensus state at the end of the round, used for restart/reconnect */
+    private ConsensusSnapshot snapshot;
+
+    /**
+     * the time when the freeze starts
+     */
+    private Instant freezeTime;
+
+    /**
+     * the last freezeTime based on which the nodes were frozen
+     */
+    private Instant lastFrozenTime;
+
+    /**
+     * Data on node uptime.
+     */
+    private UptimeDataImpl uptimeData = new UptimeDataImpl();
 
     public PlatformState() {}
 
     /**
      * Copy constructor.
      *
-     * @param that the node to copy
+     * @param that the object to copy
      */
     private PlatformState(final PlatformState that) {
         super(that);
-        if (that.getPlatformData() != null) {
-            this.setPlatformData(that.getPlatformData().copy());
-        }
-        if (that.getAddressBook() != null) {
-            this.setAddressBook(that.getAddressBook().copy());
-        }
-        if (that.getPreviousAddressBook() != null) {
-            this.setPreviousAddressBook(that.getPreviousAddressBook().copy());
+        this.round = that.round;
+        this.hashEventsCons = that.hashEventsCons;
+        this.consensusTimestamp = that.consensusTimestamp;
+        this.creationSoftwareVersion = that.creationSoftwareVersion;
+        this.epochHash = that.epochHash;
+        this.nextEpochHash = that.nextEpochHash;
+        this.roundsNonAncient = that.roundsNonAncient;
+        this.snapshot = that.snapshot;
+    }
+
+    /**
+     * Update the epoch hash if the next epoch hash is non-null and different from the current epoch hash.
+     */
+    public void updateEpochHash() {
+        throwIfImmutable();
+        if (nextEpochHash != null && !nextEpochHash.equals(epochHash)) {
+            // This is the first round after an emergency recovery round
+            // Set the epoch hash to the next value
+            epochHash = nextEpochHash;
+
+            // set this to null so the value is consistent with a
+            // state loaded from disk or received via reconnect
+            nextEpochHash = null;
         }
     }
 
@@ -77,8 +166,47 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * {@inheritDoc}
      */
     @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(round);
+        out.writeSerializable(hashEventsCons, false);
+
+        out.writeInstant(consensusTimestamp);
+
+        out.writeSerializable(creationSoftwareVersion, true);
+        out.writeSerializable(epochHash, false);
+        out.writeInt(roundsNonAncient);
+        out.writeSerializable(snapshot, false);
+        out.writeInstant(freezeTime);
+        out.writeInstant(lastFrozenTime);
+        out.writeSerializable(uptimeData, false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+
+
+
+        round = in.readLong();
+        hashEventsCons = in.readSerializable(false, Hash::new);
+        consensusTimestamp = in.readInstant();
+        creationSoftwareVersion = in.readSerializable();
+        epochHash = in.readSerializable(false, Hash::new);
+        roundsNonAncient = in.readInt();
+        snapshot = in.readSerializable(false, ConsensusSnapshot::new);
+        freezeTime = in.readInstant();
+        lastFrozenTime = in.readInstant();
+        uptimeData = in.readSerializable(false, UptimeDataImpl::new);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getVersion() {
-        return ClassVersion.ADDED_PREVIOUS_ADDRESS_BOOK;
+        return ClassVersion.ORIGINAL;
     }
 
     /**
@@ -90,67 +218,12 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
     }
 
     /**
-     * Get the address book.
-     */
-    public AddressBook getAddressBook() {
-        return getChild(ChildIndices.ADDRESS_BOOK);
-    }
-
-    /**
-     * Set the address book.
-     *
-     * @param addressBook an address book
-     */
-    public void setAddressBook(final AddressBook addressBook) {
-        setChild(ChildIndices.ADDRESS_BOOK, addressBook);
-    }
-
-    /**
-     * Get the object containing miscellaneous round information.
-     *
-     * @return round data
-     */
-    public PlatformData getPlatformData() {
-        PlatformData platformData = getChild(ChildIndices.PLATFORM_DATA);
-        if (platformData == null) {
-            platformData = new PlatformData();
-            setPlatformData(platformData);
-        }
-        return platformData;
-    }
-
-    /**
-     * Set the object containing miscellaneous platform information.
-     *
-     * @param round round data
-     */
-    public void setPlatformData(final PlatformData round) {
-        setChild(ChildIndices.PLATFORM_DATA, round);
-    }
-
-    /**
-     * Get the previous address book.
-     */
-    public AddressBook getPreviousAddressBook() {
-        return getChild(ChildIndices.PREVIOUS_ADDRESS_BOOK);
-    }
-
-    /**
-     * Set the previous address book.
-     *
-     * @param addressBook an address book
-     */
-    public void setPreviousAddressBook(final AddressBook addressBook) {
-        setChild(ChildIndices.PREVIOUS_ADDRESS_BOOK, addressBook);
-    }
-
-    /**
      * Get the software version of the application that created this state.
      *
      * @return the creation version
      */
     public SoftwareVersion getCreationSoftwareVersion() {
-        return getPlatformData().getCreationSoftwareVersion();
+        return creationSoftwareVersion;
     }
 
     /**
@@ -159,7 +232,41 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param creationVersion the creation version
      */
     public void setCreationSoftwareVersion(final SoftwareVersion creationVersion) {
-        getPlatformData().setCreationSoftwareVersion(creationVersion);
+        this.creationSoftwareVersion = creationVersion;
+    }
+
+    /**
+     * Get the address book.
+     */
+    @NonNull
+    public AddressBook getAddressBook() {
+        return addressBook;
+    }
+
+    /**
+     * Set the address book.
+     *
+     * @param addressBook an address book
+     */
+    public void setAddressBook(@NonNull final AddressBook addressBook) {
+        this.addressBook = Objects.requireNonNull(addressBook);
+    }
+
+    /**
+     * Get the previous address book.
+     */
+    @Nullable
+    public AddressBook getPreviousAddressBook() {
+        return previousAddressBook;
+    }
+
+    /**
+     * Set the previous address book.
+     *
+     * @param addressBook an address book
+     */
+    public void setPreviousAddressBook(@Nullable final AddressBook addressBook) {
+        this.previousAddressBook = addressBook;
     }
 
     /**
@@ -168,7 +275,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @return a round number
      */
     public long getRound() {
-        return getPlatformData().getRound();
+        return round;
     }
 
     /**
@@ -177,7 +284,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param round a round number
      */
     public void setRound(final long round) {
-        getPlatformData().setRound(round);
+        this.round = round;
     }
 
     /**
@@ -186,7 +293,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @return a running hash of events
      */
     public Hash getHashEventsCons() {
-        return getPlatformData().getHashEventsCons();
+        return hashEventsCons;
     }
 
     /**
@@ -195,7 +302,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param hashEventsCons a running hash of events
      */
     public void setHashEventsCons(final Hash hashEventsCons) {
-        getPlatformData().setHashEventsCons(hashEventsCons);
+        this.hashEventsCons = hashEventsCons;
     }
 
     /**
@@ -205,7 +312,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @return a consensus timestamp
      */
     public Instant getConsensusTimestamp() {
-        return getPlatformData().getConsensusTimestamp();
+        return consensusTimestamp;
     }
 
     /**
@@ -215,7 +322,47 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param consensusTimestamp a consensus timestamp
      */
     public void setConsensusTimestamp(final Instant consensusTimestamp) {
-        getPlatformData().setConsensusTimestamp(consensusTimestamp);
+        this.consensusTimestamp = consensusTimestamp;
+    }
+
+    // TODO remove methods that are not simple getters and setters
+
+    /**
+     * Get the minimum event generation for each node within this state.
+     *
+     * @return minimum generation info list
+     */
+    public List<MinGenInfo> getMinGenInfo() {
+        return snapshot.minGens();
+    }
+
+    /**
+     * The minimum generation of famous witnesses for the round specified. This method only looks at non-ancient rounds
+     * contained within this state.
+     *
+     * @param round the round whose minimum generation will be returned
+     * @return the minimum generation for the round specified
+     * @throws NoSuchElementException if the generation information for this round is not contained withing this state
+     */
+    public long getMinGen(final long round) {
+        for (final MinGenInfo info : getMinGenInfo()) {
+            if (info.round() == round) {
+                return info.minimumGeneration();
+            }
+        }
+        throw new NoSuchElementException("No minimum generation found for round: " + round);
+    }
+
+    /**
+     * Return the round generation of the oldest round in this state
+     *
+     * @return the generation of the oldest round
+     */
+    public long getMinRoundGeneration() {
+        return getMinGenInfo().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
+                .minimumGeneration();
     }
 
     /**
@@ -224,7 +371,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param epochHash the epoch hash of this state
      */
     public void setEpochHash(final Hash epochHash) {
-        getPlatformData().setEpochHash(epochHash);
+        this.epochHash = epochHash;
     }
 
     /**
@@ -234,7 +381,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      */
     @Nullable
     public Hash getEpochHash() {
-        return getPlatformData().getEpochHash();
+        return epochHash;
     }
 
     /**
@@ -243,7 +390,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param nextEpochHash the next epoch hash of this state
      */
     public void setNextEpochHash(final Hash nextEpochHash) {
-        getPlatformData().setNextEpochHash(nextEpochHash);
+        this.nextEpochHash = nextEpochHash;
     }
 
     /**
@@ -252,7 +399,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @return the next epoch hash of this state
      */
     public Hash getNextEpochHash() {
-        return getPlatformData().getNextEpochHash();
+        return nextEpochHash;
     }
 
     /**
@@ -261,7 +408,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param roundsNonAncient the number of non-ancient rounds
      */
     public void setRoundsNonAncient(final int roundsNonAncient) {
-        getPlatformData().setRoundsNonAncient(roundsNonAncient);
+        this.roundsNonAncient = roundsNonAncient;
     }
 
     /**
@@ -270,21 +417,30 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @return the number of non-ancient rounds
      */
     public int getRoundsNonAncient() {
-        return getPlatformData().getRoundsNonAncient();
+        return roundsNonAncient;
+    }
+
+    /**
+     * Gets the minimum generation of non-ancient events.
+     *
+     * @return the minimum generation of non-ancient events
+     */
+    public long getMinimumGenerationNonAncient() {
+        return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
     }
 
     /**
      * @return the consensus snapshot for this round
      */
     public ConsensusSnapshot getSnapshot() {
-        return getPlatformData().getSnapshot();
+        return snapshot;
     }
 
     /**
      * @param snapshot the consensus snapshot for this round
      */
     public void setSnapshot(final ConsensusSnapshot snapshot) {
-        getPlatformData().setSnapshot(snapshot);
+        this.snapshot = snapshot;
     }
 
     /**
@@ -294,7 +450,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      */
     @Nullable
     public Instant getFreezeTime() {
-        return getPlatformData().getFreezeTime();
+        return freezeTime;
     }
 
     /**
@@ -305,7 +461,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param freezeTime an Instant in UTC
      */
     public void setFreezeTime(@Nullable final Instant freezeTime) {
-        getPlatformData().setFreezeTime(freezeTime);
+        this.freezeTime = freezeTime;
     }
 
     /**
@@ -315,7 +471,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      */
     @Nullable
     public Instant getLastFrozenTime() {
-        return getPlatformData().getLastFrozenTime();
+        return lastFrozenTime;
     }
 
     /**
@@ -323,8 +479,9 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      *
      * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
      */
+    @Nullable
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
-        getPlatformData().setLastFrozenTime(lastFrozenTime);
+        this.lastFrozenTime = lastFrozenTime;
     }
 
     /**
@@ -334,7 +491,7 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      */
     @NonNull
     public UptimeDataImpl getUptimeData() {
-        return getPlatformData().getUptimeData();
+        return uptimeData;
     }
 
     /**
@@ -343,18 +500,6 @@ public class PlatformState extends PartialNaryMerkleInternal implements MerkleIn
      * @param uptimeData the uptime data
      */
     public void setUptimeData(@NonNull final UptimeDataImpl uptimeData) {
-        getPlatformData().setUptimeData(uptimeData);
-    }
-
-    /**
-     * Copy data from a dual state object into this object. Needed for the migration between states that had a dual
-     * state and states that no longer have a dual state.
-     *
-     * @param dualState the dual state object to copy data from
-     */
-    public void absorbDualState(@NonNull final DualStateImpl dualState) {
-        getPlatformData().setFreezeTime(dualState.getFreezeTime());
-        getPlatformData().setLastFrozenTime(dualState.getLastFrozenTime());
-        getPlatformData().setUptimeData(dualState.getUptimeData());
+        this.uptimeData = Objects.requireNonNull(uptimeData);
     }
 }

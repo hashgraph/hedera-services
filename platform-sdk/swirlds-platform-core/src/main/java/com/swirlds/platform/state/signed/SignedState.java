@@ -471,7 +471,7 @@ public class SignedState implements SignedStateInfo {
      * @return the minimum generation of famous witnesses per round
      */
     public @NonNull List<MinGenInfo> getMinGenInfo() {
-        return state.getPlatformState().getPlatformData().getMinGenInfo();
+        return state.getPlatformState().getMinGenInfo();
     }
 
     /**
@@ -483,7 +483,7 @@ public class SignedState implements SignedStateInfo {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        return getState().getPlatformState().getPlatformData().getMinGen(round);
+        return getState().getPlatformState().getMinGen(round);
     }
 
     /**
@@ -492,7 +492,7 @@ public class SignedState implements SignedStateInfo {
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
+        return getState().getPlatformState().getMinRoundGeneration();
     }
 
     /**

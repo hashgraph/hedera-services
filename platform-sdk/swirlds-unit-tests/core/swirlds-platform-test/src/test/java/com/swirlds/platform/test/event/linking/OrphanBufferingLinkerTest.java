@@ -228,13 +228,11 @@ class OrphanBufferingLinkerTest {
         final SignedState signedState = mock(SignedState.class);
         final State state = mock(State.class);
         final PlatformState platformState = mock(PlatformState.class);
-        final PlatformData platformData = mock(PlatformData.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
-        when(platformState.getPlatformData()).thenReturn(platformData);
         when(platformState.getRound()).thenReturn(roundGenStart);
-        when(platformData.getMinGen(Mockito.anyLong())).thenCallRealMethod();
-        when(platformData.getMinGenInfo()).thenReturn(minGenInfos);
+        when(platformState.getMinGen(Mockito.anyLong())).thenCallRealMethod();
+        when(platformState.getMinGenInfo()).thenReturn(minGenInfos);
         when(signedState.getRound()).thenReturn(roundGenEnd);
         when(signedState.getMinGenInfo()).thenReturn(minGenInfos);
         when(signedState.getMinGen(Mockito.anyLong())).thenCallRealMethod();

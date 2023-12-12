@@ -822,7 +822,7 @@ public class SwirldsPlatform implements Platform {
             initialMinimumGenerationNonAncient = 0;
         } else {
             initialMinimumGenerationNonAncient =
-                    initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
+                    initialState.getState().getPlatformState().getMinimumGenerationNonAncient();
 
             stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
             consensusRoundHandler.loadDataFromSignedState(initialState, false);
@@ -987,7 +987,7 @@ public class SwirldsPlatform implements Platform {
 
         try {
             eventCreator.setMinimumGenerationNonAncient(
-                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+                    signedState.getState().getPlatformState().getMinimumGenerationNonAncient());
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while loading state into event creator", e);
@@ -1093,7 +1093,6 @@ public class SwirldsPlatform implements Platform {
                 preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
                         .getPlatformState()
-                        .getPlatformData()
                         .getMinimumGenerationNonAncient());
             } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();

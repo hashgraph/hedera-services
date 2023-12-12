@@ -42,8 +42,6 @@ public final class GenesisStateBuilder {
             final AddressBook addressBook, final SoftwareVersion appVersion) {
 
         final PlatformState platformState = new PlatformState();
-        final PlatformData platformData = new PlatformData();
-        platformState.setPlatformData(platformData);
         platformState.setAddressBook(addressBook.copy());
 
         platformState.setCreationSoftwareVersion(appVersion);

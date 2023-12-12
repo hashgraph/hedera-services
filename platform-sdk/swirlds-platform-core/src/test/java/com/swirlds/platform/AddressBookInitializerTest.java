@@ -340,10 +340,8 @@ class AddressBookInitializerTest {
         final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
         when(signedState.getAddressBook()).thenReturn(stateAddressBook);
         when(signedState.getSwirldState()).thenReturn(swirldState);
-        final PlatformData platformData = mock(PlatformData.class);
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
-        when(platformState.getPlatformData()).thenReturn(platformData);
         final State state = mock(State.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);

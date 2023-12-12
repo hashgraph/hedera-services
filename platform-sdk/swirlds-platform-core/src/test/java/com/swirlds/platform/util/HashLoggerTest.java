@@ -155,15 +155,11 @@ public class HashLoggerTest {
         final AddressBook addressBook = new AddressBook();
         addressBook.setHash(merkleNode.getHash());
 
-        final PlatformData platformData = new PlatformData();
         final PlatformState platformState = new PlatformState();
-        platformState.setPlatformData(platformData);
 
         platformState.setRound(round);
         platformState.setHash(merkleNode.getHash());
-
-        platformState.setChild(0, platformData);
-        platformState.setChild(1, addressBook);
+        platformState.setAddressBook(addressBook);
 
         when(state.getPlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());

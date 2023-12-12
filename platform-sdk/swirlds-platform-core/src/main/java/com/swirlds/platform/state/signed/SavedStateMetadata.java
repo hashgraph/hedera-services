@@ -175,7 +175,6 @@ public record SavedStateMetadata(
         Objects.requireNonNull(now, "now must not be null");
 
         final PlatformState platformState = signedState.getState().getPlatformState();
-        final PlatformData platformData = platformState.getPlatformData();
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
@@ -190,7 +189,7 @@ public record SavedStateMetadata(
                 signedState.getConsensusTimestamp(),
                 platformState.getHashEventsCons(),
                 platformState.getHashEventsCons().toMnemonic(),
-                platformData.getMinimumGenerationNonAncient(),
+                platformState.getMinimumGenerationNonAncient(),
                 convertToString(platformState.getCreationSoftwareVersion()),
                 now,
                 selfId,

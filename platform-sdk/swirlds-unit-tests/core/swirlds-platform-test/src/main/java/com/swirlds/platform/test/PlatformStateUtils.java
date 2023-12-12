@@ -46,8 +46,6 @@ public final class PlatformStateUtils {
      */
     public static PlatformState randomPlatformState(final Random random) {
         final PlatformState platformState = new PlatformState();
-        final PlatformData platformData = new PlatformData();
-        platformState.setPlatformData(platformData);
 
         final AddressBook addressBook = new RandomAddressBookGenerator()
                 .setSize(4)

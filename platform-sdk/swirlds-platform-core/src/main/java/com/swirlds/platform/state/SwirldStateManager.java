@@ -262,7 +262,7 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private void updateEpoch() {
         final PlatformState platformState = stateRef.get().getPlatformState();
         if (platformState != null) {
-            platformState.getPlatformData().updateEpochHash();
+            platformState.updateEpochHash();
         }
     }
 

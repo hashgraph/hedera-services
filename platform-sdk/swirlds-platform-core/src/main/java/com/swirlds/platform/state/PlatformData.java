@@ -36,6 +36,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+// TODO revert changes in this class
+// TODO hunt for uses
+
 /**
  * A collection of miscellaneous platform data.
  */

@@ -224,7 +224,6 @@ class SavedStateMetadataTests {
         final State state = mock(State.class);
         when(state.getHash()).thenReturn(randomHash(random));
         final PlatformState platformState = mock(PlatformState.class);
-        final PlatformData platformData = mock(PlatformData.class);
         when(platformState.getHashEventsCons()).thenReturn(randomHash(random));
         when(platformState.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
         final AddressBook addressBook = mock(AddressBook.class);
@@ -232,7 +231,6 @@ class SavedStateMetadataTests {
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getAddressBook()).thenReturn(addressBook);
-        when(platformState.getPlatformData()).thenReturn(platformData);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())
                 .thenReturn(new ArrayList<>(List.of(new NodeId(3L), new NodeId(1L), new NodeId(2L))));

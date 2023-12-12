@@ -194,9 +194,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         state.setPlatformState(platformState);
 
-        final PlatformData platformData = mock(PlatformData.class);
-        when(platformState.getPlatformData()).thenReturn(platformData);
-
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.MAX_EVENT_QUEUE_FOR_CONS, 500)
                 .getOrCreateConfig();
