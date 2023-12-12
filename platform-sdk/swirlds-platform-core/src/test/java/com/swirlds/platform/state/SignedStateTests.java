@@ -281,7 +281,7 @@ class SignedStateTests {
         when(state.getPlatformState()).thenReturn(platformState);
         final PlatformData platformData = mock(PlatformData.class);
         when(platformState.getPlatformData()).thenReturn(platformData);
-        when(platformData.getRound()).thenReturn(0L);
+        when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState =
                 new SignedState(TestPlatformContextBuilder.create().build(), state, "test", false);
 

@@ -215,7 +215,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public long getRound() {
-        return state.getPlatformState().getPlatformData().getRound();
+        return state.getPlatformState().getRound();
     }
 
     /**
@@ -224,7 +224,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
-        return state.getPlatformState().getPlatformData().getRound() == GENESIS_ROUND;
+        return state.getPlatformState().getRound() == GENESIS_ROUND;
     }
 
     /**
@@ -437,7 +437,7 @@ public class SignedState implements SignedStateInfo {
      * @return the consensus timestamp for this signed state.
      */
     public @NonNull Instant getConsensusTimestamp() {
-        return state.getPlatformState().getPlatformData().getConsensusTimestamp();
+        return state.getPlatformState().getConsensusTimestamp();
     }
 
     /**
@@ -462,7 +462,7 @@ public class SignedState implements SignedStateInfo {
      * @return the hash of the consensus events in this state
      */
     public @NonNull Hash getHashEventsCons() {
-        return state.getPlatformState().getPlatformData().getHashEventsCons();
+        return state.getPlatformState().getHashEventsCons();
     }
 
     /**

@@ -436,8 +436,7 @@ public class SwirldsPlatform implements Platform {
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
             epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
         } else {
-            epochHash =
-                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
+            epochHash = initialState.getState().getPlatformState().getEpochHash();
         }
 
         StartupStateUtils.doRecoveryCleanup(
@@ -931,8 +930,7 @@ public class SwirldsPlatform implements Platform {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
         } else {
-            previousSoftwareVersion =
-                    signedState.getState().getPlatformState().getPlatformData().getCreationSoftwareVersion();
+            previousSoftwareVersion = signedState.getState().getPlatformState().getCreationSoftwareVersion();
             trigger = RESTART;
         }
 
@@ -1033,11 +1031,7 @@ public class SwirldsPlatform implements Platform {
                             this,
                             signedState.getState().getPlatformState(),
                             InitTrigger.RECONNECT,
-                            signedState
-                                    .getState()
-                                    .getPlatformState()
-                                    .getPlatformData()
-                                    .getCreationSoftwareVersion());
+                            signedState.getState().getPlatformState().getCreationSoftwareVersion());
             if (!Objects.equals(signedState.getState().getHash(), reconnectHash)) {
                 throw new IllegalStateException(
                         "State hash is not permitted to change during a reconnect init() call. Previous hash was "

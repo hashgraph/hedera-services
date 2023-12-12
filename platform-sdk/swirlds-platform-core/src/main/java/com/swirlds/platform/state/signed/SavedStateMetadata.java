@@ -180,18 +180,18 @@ public record SavedStateMetadata(
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
-        final Hash epochHash = platformData.getEpochHash();
+        final Hash epochHash = platformState.getEpochHash();
 
         return new SavedStateMetadata(
                 signedState.getRound(),
                 signedState.getState().getHash(),
                 signedState.getState().getHash().toMnemonic(),
-                platformData.getSnapshot().nextConsensusNumber(),
+                platformState.getSnapshot().nextConsensusNumber(),
                 signedState.getConsensusTimestamp(),
-                platformData.getHashEventsCons(),
-                platformData.getHashEventsCons().toMnemonic(),
+                platformState.getHashEventsCons(),
+                platformState.getHashEventsCons().toMnemonic(),
                 platformData.getMinimumGenerationNonAncient(),
-                convertToString(platformData.getCreationSoftwareVersion()),
+                convertToString(platformState.getCreationSoftwareVersion()),
                 now,
                 selfId,
                 signingNodes,

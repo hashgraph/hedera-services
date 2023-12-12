@@ -292,12 +292,7 @@ public final class EventRecoveryWorkflow {
                         platform,
                         initialState.get().getState().getPlatformState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
-                        initialState
-                                .get()
-                                .getState()
-                                .getPlatformState()
-                                .getPlatformData()
-                                .getCreationSoftwareVersion());
+                        initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
         appMain.init(platform, platform.getSelfId());
 
@@ -361,23 +356,20 @@ public final class EventRecoveryWorkflow {
         final State newState = previousState.get().getState().copy();
         final EventImpl lastEvent = (EventImpl) getLastEvent(round);
         CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
-        newState.getPlatformState()
-                .getPlatformData()
-                .setRound(round.getRoundNum())
-                .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
-                .setConsensusTimestamp(currentRoundTimestamp)
-                .setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
-                        round.getRoundNum(),
-                        lastEvent.getConsensusOrder(),
-                        currentRoundTimestamp,
-                        config,
-                        lastEvent.getBaseEvent()))
-                .setCreationSoftwareVersion(previousState
-                        .get()
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getCreationSoftwareVersion());
+
+        final PlatformState platformState = newState.getPlatformState();
+
+        platformState.setRound(round.getRoundNum());
+        platformState.setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round));
+        platformState.setConsensusTimestamp(currentRoundTimestamp);
+        platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
+                round.getRoundNum(),
+                lastEvent.getConsensusOrder(),
+                currentRoundTimestamp,
+                config,
+                lastEvent.getBaseEvent()));
+        platformState.setCreationSoftwareVersion(
+                previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),

@@ -232,7 +232,7 @@ class OrphanBufferingLinkerTest {
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getPlatformData()).thenReturn(platformData);
-        when(platformData.getRound()).thenReturn(roundGenStart);
+        when(platformState.getRound()).thenReturn(roundGenStart);
         when(platformData.getMinGen(Mockito.anyLong())).thenCallRealMethod();
         when(platformData.getMinGenInfo()).thenReturn(minGenInfos);
         when(signedState.getRound()).thenReturn(roundGenEnd);

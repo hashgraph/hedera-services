@@ -55,22 +55,20 @@ public final class PlatformStateUtils {
                 .build();
 
         platformState.setAddressBook(addressBook);
-        platformData.setHashEventsCons(randomHash(random));
-        platformData.setRound(random.nextLong());
-        platformData.setConsensusTimestamp(randomInstant(random));
+        platformState.setHashEventsCons(randomHash(random));
+        platformState.setRound(random.nextLong());
+        platformState.setConsensusTimestamp(randomInstant(random));
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));
         }
-        platformState
-                .getPlatformData()
-                .setSnapshot(new ConsensusSnapshot(
-                        random.nextLong(),
-                        List.of(randomHash(random), randomHash(random), randomHash(random)),
-                        minGenInfo,
-                        random.nextLong(),
-                        randomInstant(random)));
+        platformState.setSnapshot(new ConsensusSnapshot(
+                random.nextLong(),
+                List.of(randomHash(random), randomHash(random), randomHash(random)),
+                minGenInfo,
+                random.nextLong(),
+                randomInstant(random)));
 
         return platformState;
     }

@@ -46,11 +46,11 @@ public final class GenesisStateBuilder {
         platformState.setPlatformData(platformData);
         platformState.setAddressBook(addressBook.copy());
 
-        platformData.setCreationSoftwareVersion(appVersion);
-        platformData.setRound(0);
-        platformData.setHashEventsCons(null);
-        platformData.setEpochHash(null);
-        platformData.setConsensusTimestamp(Instant.ofEpochSecond(0L));
+        platformState.setCreationSoftwareVersion(appVersion);
+        platformState.setRound(0);
+        platformState.setHashEventsCons(null);
+        platformState.setEpochHash(null);
+        platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
         return platformState;
     }

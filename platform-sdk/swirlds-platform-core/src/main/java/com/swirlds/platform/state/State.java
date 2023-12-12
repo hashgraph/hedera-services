@@ -226,23 +226,23 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      * @param hashDepth the depth of the tree to visit and print
      */
     public String getInfoString(final int hashDepth) {
-        final PlatformData data = getPlatformState().getPlatformData();
-        final Hash epochHash = data.getNextEpochHash();
-        final Hash hashEventsCons = data.getHashEventsCons();
-        final List<MinGenInfo> minGenInfo = data.getMinGenInfo();
-        final ConsensusSnapshot snapshot = data.getSnapshot();
+        final PlatformState platformState = getPlatformState();
+        final Hash epochHash = platformState.getNextEpochHash();
+        final Hash hashEventsCons = platformState.getHashEventsCons();
+        final List<MinGenInfo> minGenInfo = platformState.getPlatformData().getMinGenInfo();
+        final ConsensusSnapshot snapshot = platformState.getSnapshot();
 
         final StringBuilder sb = new StringBuilder();
 
         new TextTable()
                 .setBordersEnabled(false)
-                .addRow("Round:", data.getRound())
-                .addRow("Timestamp:", data.getConsensusTimestamp())
+                .addRow("Round:", platformState.getRound())
+                .addRow("Timestamp:", platformState.getConsensusTimestamp())
                 .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
                 .addRow("Running event hash:", hashEventsCons)
                 .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Rounds non-ancient:", data.getRoundsNonAncient())
-                .addRow("Creation version:", data.getCreationSoftwareVersion())
+                .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
+                .addRow("Creation version:", platformState.getCreationSoftwareVersion())
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Epoch hash:", epochHash)
                 .addRow("Min gen hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())

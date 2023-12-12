@@ -47,6 +47,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -443,16 +444,17 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private void updatePlatformState(final ConsensusRound round) throws InterruptedException {
         final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
 
-        swirldStateManager
-                .getConsensusState()
-                .getPlatformState()
-                .getPlatformData()
-                .setRound(round.getRoundNum())
-                .setHashEventsCons(runningHash)
-                .setConsensusTimestamp(round.getConsensusTimestamp())
-                .setCreationSoftwareVersion(softwareVersion)
-                .setRoundsNonAncient(roundsNonAncient)
-                .setSnapshot(round.getSnapshot());
+        final PlatformState platformState =
+                swirldStateManager.getConsensusState().getPlatformState();
+
+        // TODO ensure things are set prior to handling of transactions
+
+        platformState.setRound(round.getRoundNum());
+        platformState.setHashEventsCons(runningHash);
+        platformState.setConsensusTimestamp(round.getConsensusTimestamp());
+        platformState.setCreationSoftwareVersion(softwareVersion);
+        platformState.setRoundsNonAncient(roundsNonAncient);
+        platformState.setSnapshot(round.getSnapshot());
     }
 
     private void createSignedState() throws InterruptedException {

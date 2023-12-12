@@ -39,7 +39,6 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -209,9 +208,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         reset();
-        final PlatformData platformData =
-                signedState.getState().getPlatformState().getPlatformData();
-        loadSnapshot(platformData.getSnapshot());
+        loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
     }
 
     /**
