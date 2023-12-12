@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertExpectedRels;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertNoUnexpectedRels;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -149,7 +150,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
                 || expectations.isPresent()
                 || registryEntry.isPresent()) {
             final var detailsLookup = QueryVerbs.getAccountDetails(
-                    "0.0." + actualInfo.getContractID().getContractNum());
+                            "0.0." + actualInfo.getContractID().getContractNum())
+                    .payingWith(GENESIS);
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             var actualTokenRels =

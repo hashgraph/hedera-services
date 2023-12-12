@@ -185,7 +185,9 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                                         ops.add(op);
                                         lastGoodAcct = acctName;
                                     }
-                                    ops.add(getAccountInfo(lastGoodAcct).payingWith(GENESIS).fee(ONE_HBAR));
+                                    ops.add(getAccountInfo(lastGoodAcct)
+                                            .payingWith(GENESIS)
+                                            .fee(ONE_HBAR));
                                     allRunFor(spec, ops);
                                     acctProcessed += batchSize;
                                 }
