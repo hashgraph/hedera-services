@@ -141,6 +141,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         given(txValues.transientStorage()).willReturn(undoTable);
         given(txValues.messageFrameStack()).willReturn(messageFrameStack);
         given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(txValues.maxStackSize()).willReturn(1024);
         given(undoTable.mark()).willReturn(1L);
 
         final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
@@ -172,6 +173,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         given(txValues.transientStorage()).willReturn(undoTable);
         given(txValues.messageFrameStack()).willReturn(messageFrameStack);
         given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(txValues.maxStackSize()).willReturn(1024);
         given(undoTable.mark()).willReturn(1L);
 
         final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");

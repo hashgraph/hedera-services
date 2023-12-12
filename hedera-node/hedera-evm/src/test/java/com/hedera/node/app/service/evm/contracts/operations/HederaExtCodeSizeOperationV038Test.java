@@ -32,7 +32,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +84,7 @@ class HederaExtCodeSizeOperationV038Test {
 
     @Test
     void executeThrows() {
-        given(mf.getStackItem(0)).willThrow(FixedStack.UnderflowException.class);
+        given(mf.getStackItem(0)).willThrow(UnderflowException.class);
 
         var opResult = subject.execute(mf, evm);
 

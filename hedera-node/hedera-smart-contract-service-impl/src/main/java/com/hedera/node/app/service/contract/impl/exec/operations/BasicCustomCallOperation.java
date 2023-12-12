@@ -26,7 +26,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
 
 /**
@@ -87,7 +87,7 @@ public interface BasicCustomCallOperation {
                 return new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
             }
             return executeUnchecked(frame, evm);
-        } catch (FixedStack.UnderflowException ignore) {
+        } catch (UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
     }

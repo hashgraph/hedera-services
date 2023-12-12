@@ -34,7 +34,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
+import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -103,7 +103,7 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             frame.addRefund(beneficiaryAddress, inheritance);
             frame.setState(MessageFrame.State.CODE_SUCCESS);
             return new OperationResult(cost, null);
-        } catch (FixedStack.UnderflowException ignore) {
+        } catch (UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
     }

@@ -73,10 +73,10 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
- * Provides the Services 0.34 EVM implementation, which consists of Paris operations and
- * Instanbul precompiles plus the Hedera gas calculator, system contracts, and operations
- * as they were configured in the 0.34 release (in particular, with the option for lazy
- * creation, but without special treatment for system addresses).
+ * Provides the Services 0.34 EVM implementation, which consists of Paris operations and Istanbul
+ * precompiles plus the Hedera gas calculator, system contracts, and operations as they were
+ * configured in the 0.34 release (in particular, with the option for lazy creation, but without
+ * special treatment for system addresses).
  */
 @Module
 public interface V034Module {
@@ -124,12 +124,14 @@ public interface V034Module {
     @Singleton
     @ServicesV034
     static EVM provideEVM(
-            @ServicesV034 @NonNull final Set<Operation> customOperations, @NonNull final GasCalculator gasCalculator) {
+            @ServicesV034 @NonNull final Set<Operation> customOperations,
+            @NonNull final EvmConfiguration evmConfiguration,
+            @NonNull final GasCalculator gasCalculator) {
         // Use Paris EVM with 0.34 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
+        return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.PARIS);
     }
 
     @Provides
