@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -35,7 +36,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -181,7 +182,11 @@ public class RandomSignedStateGenerator {
                         consensusTimestampInstance));
 
         final SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                new TestConfigBuilder()
+                        .withValue("state.stateHistoryEnabled", true)
+                        .withConfigDataType(StateConfig.class)
+                        .getOrCreateConfig()
+                        .getConfigData(StateConfig.class),
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance);

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.utility.throttle;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 /**
  * Each instance of this class can be used to throttle some kind of flow, to allow only a certain number of transactions

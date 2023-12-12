@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 
@@ -24,7 +23,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.SavedStateController;
@@ -103,11 +101,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SavedStateController savedStateController;
     private final Consumer<StateDumpRequest> stateDumpConsumer;
 
-    private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "roundSup")
-            .withDescription("latest round with state signed by a supermajority")
-            .withUnit("round");
-
     /**
      * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
@@ -162,10 +155,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 newLatestCompleteStateConsumer,
                 this::stateHasEnoughSignatures,
                 this::stateLacksSignatures);
-
-        final RunningAverageMetric avgRoundSupermajority =
-                platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
-        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
     /**
@@ -249,25 +238,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    @NonNull
-    public ReservedSignedState getLatestSignedState(@NonNull final String reason) {
-        return signedStateManager.getLatestSignedState(reason);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
         return signedStateManager.getLatestImmutableState(reason);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getLastCompleteRound() {
-        return signedStateManager.getLastCompleteRound();
     }
 
     /**

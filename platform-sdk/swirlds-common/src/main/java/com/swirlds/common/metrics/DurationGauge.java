@@ -19,7 +19,7 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.ArgumentUtils;
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.units.UnitConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

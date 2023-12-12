@@ -39,7 +39,6 @@ import com.swirlds.common.threading.utility.SequenceCycle;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
@@ -66,6 +65,7 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -112,7 +112,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
-     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param eventValidator                validates events and passes valid events along the intake pipeline
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
@@ -137,7 +137,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final StateManagementComponent stateManagementComponent,
+            @NonNull final SignedStateNexus latestCompleteState,
             @NonNull final EventValidator eventValidator,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
@@ -156,7 +156,7 @@ public class ChatterGossip extends AbstractGossip {
                 appVersion,
                 intakeQueue,
                 swirldStateManager,
-                stateManagementComponent,
+                latestCompleteState,
                 syncMetrics,
                 platformStatusManager,
                 loadReconnectState,
@@ -250,8 +250,7 @@ public class ChatterGossip extends AbstractGossip {
                                             threadManager,
                                             otherId,
                                             reconnectThrottle,
-                                            () -> stateManagementComponent.getLatestSignedState(
-                                                    "SwirldsPlatform: ReconnectProtocol"),
+                                            () -> latestCompleteState.getState("SwirldsPlatform: ReconnectProtocol"),
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,

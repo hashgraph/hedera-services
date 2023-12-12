@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.health;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.platform.health.clock.OSClockSourceSpeedCheck;
 import com.swirlds.platform.health.entropy.OSEntropyCheck;
 import com.swirlds.platform.health.filesystem.OSFileSystemCheck;

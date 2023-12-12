@@ -22,7 +22,7 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SI
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;

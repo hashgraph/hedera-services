@@ -16,9 +16,9 @@
 
 package com.swirlds.common.bloom;
 
-import static com.swirlds.common.units.UnitConstants.BITS_TO_BYTES;
-import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.units.UnitConstants.BITS_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
