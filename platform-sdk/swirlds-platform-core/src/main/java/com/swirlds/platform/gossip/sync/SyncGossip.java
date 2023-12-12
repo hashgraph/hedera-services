@@ -28,10 +28,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -40,7 +37,6 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -68,7 +64,11 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -79,6 +79,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Sync gossip using the protocol negotiator.
@@ -130,6 +131,7 @@ public class SyncGossip extends AbstractGossip {
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
+     * @param emergencyStateSupplier        returns the emergency state if available
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -152,7 +154,8 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
         super(
                 platformContext,
                 threadManager,
@@ -193,12 +196,18 @@ public class SyncGossip extends AbstractGossip {
                 false,
                 () -> {});
 
-        clearAllInternalPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
-                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-                        Pair.of(shadowGraph, "shadowGraph")));
+        if (eventConfig.useLegacyIntake()) {
+            // legacy intake clears these things as part of gossip
+            clearAllInternalPipelines = new LoggingClearables(
+                    RECONNECT.getMarker(),
+                    List.of(
+                            Pair.of(intakeQueue, "intakeQueue"),
+                            Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
+                            Pair.of(shadowGraph, "shadowGraph")));
+        } else {
+            // the new intake pipeline clears everything from the top level, rather than delegating to gossip
+            clearAllInternalPipelines = null;
+        }
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
@@ -243,9 +252,6 @@ public class SyncGossip extends AbstractGossip {
                             List.of(
                                     new VersionCompareHandshake(
                                             appVersion, !protocolConfig.tolerateMismatchedVersion()),
-                                    new VersionCompareHandshake(
-                                            PlatformVersion.locateOrDefault(),
-                                            !protocolConfig.tolerateMismatchedVersion()),
                                     new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new HeartbeatProtocol(
@@ -260,11 +266,10 @@ public class SyncGossip extends AbstractGossip {
                                             otherId,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
-                                            stateManagementComponent,
+                                            emergencyStateSupplier,
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager,
                                             platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
@@ -355,7 +360,10 @@ public class SyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllInternalPipelines.clear();
+        // this will be null if the new intake pipeline is being used
+        if (clearAllInternalPipelines != null) {
+            clearAllInternalPipelines.clear();
+        }
     }
 
     /**

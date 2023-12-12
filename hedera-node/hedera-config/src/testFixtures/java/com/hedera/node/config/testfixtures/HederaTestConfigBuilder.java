@@ -18,25 +18,7 @@ package com.hedera.node.config.testfixtures;
 
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.converter.AccountIDConverter;
-import com.hedera.node.config.converter.BytesConverter;
-import com.hedera.node.config.converter.CongestionMultipliersConverter;
-import com.hedera.node.config.converter.ContractIDConverter;
-import com.hedera.node.config.converter.EntityScaleFactorsConverter;
-import com.hedera.node.config.converter.EntityTypeConverter;
-import com.hedera.node.config.converter.FileIDConverter;
-import com.hedera.node.config.converter.FunctionalitySetConverter;
-import com.hedera.node.config.converter.HederaFunctionalityConverter;
-import com.hedera.node.config.converter.KeyValuePairConverter;
-import com.hedera.node.config.converter.KnownBlockValuesConverter;
-import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
-import com.hedera.node.config.converter.LongPairConverter;
-import com.hedera.node.config.converter.MapAccessTypeConverter;
-import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.RecomputeTypeConverter;
-import com.hedera.node.config.converter.ScaleFactorConverter;
-import com.hedera.node.config.converter.SemanticVersionConverter;
-import com.hedera.node.config.converter.SidecarTypeConverter;
+import com.hedera.node.config.converter.*;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -86,10 +68,10 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
-import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -199,6 +181,7 @@ public final class HederaTestConfigBuilder {
                 .withConverter(new LongPairConverter())
                 .withConverter(new FunctionalitySetConverter())
                 .withConverter(new BytesConverter())
+                .withConverter(new ProfileConverter())
                 .withValidator(new EmulatesMapValidator());
     }
 

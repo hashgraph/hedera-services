@@ -28,21 +28,14 @@ import java.time.Duration;
  *                                      directory, unless the provided path begins with "/", in which case it will be
  *                                      interpreted as an absolute path.
  * @param mainClassNameOverride         Typically, the fully qualified name of the application class implementing
- *                                      {@link com.swirlds.common.system.SwirldMain SwirldMain} is used as a directory
+ *                                      SwirldMain is used as a directory
  *                                      name when saving signed states. If this property is not the empty string then it
  *                                      overrides the main class name for signed states.
- * @param stateSavingQueueSize          The number of states permitted to sit in the signed state file manager's queue
- *                                      of states being written. If this queue backs up then some states may not be
- *                                      written to disk.
  * @param saveStatePeriod               The frequency of writes of a state to disk every this many seconds (0 to never
  *                                      write).
  * @param signedStateDisk               Keep at least this many of the old complete signed states on disk. This should
  *                                      be at least 2 so that  we don't delete an old state while a new one is in the
  *                                      process of writing to disk. set to 0 to not keep any states to disk.
- * @param dumpStateOnAnyISS             If true, save the state to disk when an ISS is detected. May negatively affect
- *                                      the performance of the node where the ISS occurs. This feature is for debugging
- *                                      purposes and should not be active in production systems.
- * @param dumpStateOnFatal              If true, then save the state to disk when there is a fatal exception.
  * @param haltOnAnyIss                  <p>
  *                                      Halt this node whenever any ISS in the network is detected. A halt causes the
  *                                      node to stop doing work, but does not shut down the JVM.
@@ -55,10 +48,6 @@ import java.time.Duration;
  * @param automatedSelfIssRecovery      If true, then attempt to recover automatically when a self ISS is detected.
  * @param haltOnCatastrophicIss         If true, then halt this node if a catastrophic ISS is detected. A halt causes
  *                                      the node to stop doing work, but does not shut down the JVM.
- * @param secondsBetweenISSDumps        If one ISS is detected, it is likely that others will be detected shortly
- *                                      afterward. Specify the minimum time, in seconds, that must transpire after
- *                                      dumping a state before another state dump is permitted. Ignored if
- *                                      dumpStateOnISS is false.
  * @param secondsBetweenIssLogs         The minimum time that must pass between log messages about ISS events. If ISS
  *                                      events happen with a higher frequency then they are squelched.
  * @param enableHashStreamLogging       When enabled, hashes for the nodes are logged per round.
@@ -100,15 +89,11 @@ import java.time.Duration;
 public record StateConfig(
         @ConfigProperty(defaultValue = "data/saved") Path savedStateDirectory,
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
-        @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
         @ConfigProperty(defaultValue = "900") int saveStatePeriod,
         @ConfigProperty(defaultValue = "5") int signedStateDisk,
-        @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
-        @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
         @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
         @ConfigProperty(defaultValue = "false") boolean automatedSelfIssRecovery,
         @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
-        @ConfigProperty(defaultValue = "21600") long secondsBetweenISSDumps,
         @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
         @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
@@ -126,8 +111,7 @@ public record StateConfig(
     /**
      * Get the main class name that should be used for signed states.
      *
-     * @param defaultMainClassName the default main class name derived from the
-     *                             {@link com.swirlds.common.system.SwirldMain SwirldMain} name.
+     * @param defaultMainClassName the default main class name derived from the SwirldMain name.
      * @return the main class name that should be used for signed states
      */
     public String getMainClassName(final String defaultMainClassName) {

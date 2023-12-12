@@ -16,15 +16,15 @@
 
 package com.swirlds.common.units;
 
-import static com.swirlds.common.units.UnitConstants.DAYS_TO_HOURS;
-import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECOND_UNIT;
-import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECOND_UNIT;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
-import static com.swirlds.common.units.UnitConstants.SECOND_UNIT;
+import static com.swirlds.base.units.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.base.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECOND_UNIT;
+import static com.swirlds.base.units.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECOND_UNIT;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.units.UnitConstants.SECOND_UNIT;
 
 import com.swirlds.common.units.internal.UnitConverter;
 

@@ -18,15 +18,16 @@ package com.swirlds.platform.test.sync;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.event.EventConstants;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptor;
 import java.time.Instant;
-import java.util.Random;
+import java.util.Collections;
 
 /**
  * A simple, deterministic factory for Event instances
@@ -52,19 +53,25 @@ public class EventFactory {
     }
 
     public static EventImpl makeEvent(final EventImpl selfParent, final EventImpl otherParent) {
+        final NodeId selfId = selfParent != null ? selfParent.getCreatorId() : new NodeId(0);
+        final NodeId otherId = otherParent != null ? otherParent.getCreatorId() : new NodeId(0);
+        final EventDescriptor selfDescriptor = selfParent == null
+                ? null
+                : new EventDescriptor(selfParent.getBaseHash(), selfId, selfParent.getGeneration(), -1);
+        final EventDescriptor otherDescriptor = otherParent == null
+                ? null
+                : new EventDescriptor(otherParent.getBaseHash(), otherId, otherParent.getGeneration(), -1);
         final BaseEventHashedData hashedEventData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                new NodeId(selfParent != null ? selfParent.getCreatorId().id() : 0),
-                (selfParent != null ? selfParent.getGeneration() : EventConstants.GENERATION_UNDEFINED),
-                (otherParent != null ? otherParent.getGeneration() : EventConstants.GENERATION_UNDEFINED),
-                (selfParent != null ? selfParent.getBaseHash() : null),
-                (otherParent != null ? otherParent.getBaseHash() : null),
+                selfId,
+                selfDescriptor,
+                otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
+                EventConstants.BIRTH_ROUND_UNDEFINED,
                 Instant.EPOCH,
                 null);
 
-        final BaseEventUnhashedData unhashedEventData = new BaseEventUnhashedData(
-                otherParent != null ? otherParent.getCreatorId() : new NodeId(Math.abs(new Random().nextLong())),
-                HashGenerator.random().getValue());
+        final BaseEventUnhashedData unhashedEventData =
+                new BaseEventUnhashedData(otherId, HashGenerator.random().getValue());
 
         final EventImpl e = new EventImpl(hashedEventData, unhashedEventData, selfParent, otherParent);
         e.getBaseEventHashedData().setHash(HashGenerator.random());

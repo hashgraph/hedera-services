@@ -134,4 +134,9 @@ public class AccountDetailsAsserts extends BaseErroringAssertsProvider<AccountDe
         registerProvider((spec, o) -> assertEquals(amount, ((AccountDetails) o).getBalance(), "Bad balance!"));
         return this;
     }
+
+    public AccountDetailsAsserts deleted(boolean deleted) {
+        registerProvider((spec, o) -> assertEquals(deleted, ((AccountDetails) o).getDeleted(), "Bad deleted!"));
+        return this;
+    }
 }

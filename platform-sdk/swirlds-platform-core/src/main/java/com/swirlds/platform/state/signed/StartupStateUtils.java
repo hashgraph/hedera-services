@@ -28,17 +28,17 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -522,7 +522,7 @@ public final class StartupStateUtils {
 
         if (oldHash.equals(newHash)) {
             logger.info(STARTUP.getMarker(), "Loaded state's hash is the same as when it was saved.");
-        } else if (loadedVersion.equals(currentSoftwareVersion)) {
+        } else if (loadedVersion.compareTo(currentSoftwareVersion) == 0) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "The saved state file {} was created with the current version of the software, "

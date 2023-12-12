@@ -16,8 +16,8 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
+import static com.swirlds.base.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

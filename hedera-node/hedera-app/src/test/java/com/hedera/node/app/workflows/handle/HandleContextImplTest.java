@@ -192,6 +192,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 .build();
     }
 
+    private static TransactionBody transactionBodyWithoutId() {
+        return TransactionBody.newBuilder()
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
+    }
+
     private HandleContextImpl createContext(final TransactionBody txBody) {
         final HederaFunctionality function;
         try {
@@ -647,6 +653,20 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
             assertSame(fees, result);
         }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void invokesComputeFeesDispatchWithNoTransactionId() {
+            given(recordBuilder.consensusNow()).willReturn(DEFAULT_CONSENSUS_NOW);
+            final var fees = new Fees(1L, 2L, 3L);
+            given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
+            final var captor = ArgumentCaptor.forClass(FeeContext.class);
+            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
+            verify(dispatcher).dispatchComputeFees(captor.capture());
+            final var feeContext = captor.getValue();
+            assertInstanceOf(ChildFeeContextImpl.class, feeContext);
+            assertSame(fees, result);
+        }
     }
 
     @Nested
@@ -1027,23 +1047,25 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testDispatchPrecedingWithNonEmptyStackDoesntFail() {
             // given
+            given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
+            given(selfNodeInfo.nodeId()).willReturn(0L);
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.createSavepoint();
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+                            AccountID.DEFAULT));
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
+                            AccountID.DEFAULT));
+            verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)

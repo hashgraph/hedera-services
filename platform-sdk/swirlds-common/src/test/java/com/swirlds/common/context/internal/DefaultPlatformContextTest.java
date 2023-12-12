@@ -22,7 +22,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
-import com.swirlds.common.system.NodeId;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.Test;

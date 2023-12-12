@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * TODO - a read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
@@ -40,10 +42,12 @@ import javax.inject.Inject;
 @QueryScope
 public class QueryHederaOperations implements HederaOperations {
     private final QueryContext context;
+    private final HederaConfig hederaConfig;
 
     @Inject
-    public QueryHederaOperations(@NonNull final QueryContext context) {
+    public QueryHederaOperations(@NonNull final QueryContext context, @NonNull final HederaConfig hederaConfig) {
         this.context = Objects.requireNonNull(context);
+        this.hederaConfig = Objects.requireNonNull(hederaConfig);
     }
 
     /**
@@ -125,7 +129,7 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public long lazyCreationCostInGas() {
+    public long lazyCreationCostInGas(@NonNull final Address recipient) {
         throw new UnsupportedOperationException("Queries cannot get lazy creation cost");
     }
 
@@ -250,6 +254,11 @@ public class QueryHederaOperations implements HederaOperations {
     @Override
     public long getOriginalSlotsUsed(final long contractNumber) {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
+    }
+
+    @Override
+    public ContractID shardAndRealmValidated(@NonNull ContractID contractId) {
+        return configValidated(contractId, hederaConfig);
     }
 
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {

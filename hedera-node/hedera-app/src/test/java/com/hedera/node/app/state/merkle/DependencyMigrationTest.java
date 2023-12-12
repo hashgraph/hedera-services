@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.spi.Service.RELEASE_045_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -34,6 +35,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
@@ -56,8 +58,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @Mock
     private ThrottleAccumulator accumulator;
 
-    @Mock
-    private VersionedConfigImpl versionedConfig;
+    private VersionedConfigImpl versionedConfig = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
     @Mock
     private NetworkInfo networkInfo;
@@ -96,8 +97,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         @Test
         void stateRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
-            Assertions.assertThatThrownBy(() ->
-                            subject.doMigrations(null, SemanticVersion.DEFAULT, null, versionedConfig, networkInfo))
+            Assertions.assertThatThrownBy(
+                            () -> subject.doMigrations(null, RELEASE_045_VERSION, null, versionedConfig, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -113,15 +114,15 @@ class DependencyMigrationTest extends MerkleTestBase {
         void versionedConfigRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
             Assertions.assertThatThrownBy(
-                            () -> subject.doMigrations(merkleTree, SemanticVersion.DEFAULT, null, null, networkInfo))
+                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, null, networkInfo))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void networkInfoRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry, accumulator);
-            Assertions.assertThatThrownBy(() ->
-                            subject.doMigrations(merkleTree, SemanticVersion.DEFAULT, null, versionedConfig, null))
+            Assertions.assertThatThrownBy(
+                            () -> subject.doMigrations(merkleTree, RELEASE_045_VERSION, null, versionedConfig, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -208,7 +209,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
             @Override
             public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(SemanticVersion.DEFAULT) {
+                registry.register(new Schema(RELEASE_045_VERSION) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("A-Service#migrate");
                     }
@@ -225,7 +226,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
             @Override
             public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(SemanticVersion.DEFAULT) {
+                registry.register(new Schema(RELEASE_045_VERSION) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("B-Service#migrate");
                     }
@@ -236,7 +237,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         final DependentService dsService = new DependentService() {
             @Override
             public void registerSchemas(@NonNull SchemaRegistry registry) {
-                registry.register(new Schema(SemanticVersion.DEFAULT) {
+                registry.register(new Schema(RELEASE_045_VERSION) {
                     public void migrate(@NonNull MigrationContext ctx) {
                         orderedInvocations.add("DependentService#migrate");
                     }
@@ -276,7 +277,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         public void registerSchemas(@NonNull SchemaRegistry registry) {
             // Schema #1 - initial schema
-            registry.register(new Schema(SemanticVersion.DEFAULT) {
+            registry.register(new Schema(RELEASE_045_VERSION) {
                 @NonNull
                 @Override
                 public Set<StateDefinition> statesToCreate() {

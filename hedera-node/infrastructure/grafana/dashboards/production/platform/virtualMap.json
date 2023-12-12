@@ -1,4 +1,35 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.3.0-63137"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,10 +49,10 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 95,
+  "id": null,
   "links": [
     {
-      "asDropdown": false,
+      "asDropdown": true,
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
@@ -29,7 +60,7 @@
         "Platform"
       ],
       "targetBlank": false,
-      "title": "Dashboards",
+      "title": "Platform Dashboards",
       "tooltip": "",
       "type": "dashboards",
       "url": ""
@@ -53,7 +84,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "",
       "fieldConfig": {
@@ -62,11 +93,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -133,11 +164,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "virtual_map_vmap_size_$Store{environment=\"$Environment\", node_id=\"0\"}",
+          "expr": "virtual_map_vmap_size_$Store{environment=\"$network\", node_id=\"0\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -153,7 +184,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "",
       "fieldConfig": {
@@ -162,14 +193,14 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "bars",
-            "fillOpacity": 0,
+            "fillOpacity": 100,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -233,11 +264,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "virtual_map_vmap_size_accountStore{environment=\"$Environment\", node_id=\"0\"}",
+          "expr": "virtual_map_vmap_size_accountStore{environment=\"$network\", node_id=\"0\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -249,10 +280,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_size_fileStore{environment=\"$Environment\", node_id=\"0\"}",
+          "expr": "virtual_map_vmap_size_fileStore{environment=\"$network\", node_id=\"0\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "fileStore",
@@ -262,10 +293,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_size_smartContractIterableKvStore{environment=\"$Environment\", node_id=\"0\"}",
+          "expr": "virtual_map_vmap_size_smartContractIterableKvStore{environment=\"$network\", node_id=\"0\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "smartContractIterableKvStore",
@@ -275,10 +306,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_size_tokenRelStore{environment=\"$Environment\", node_id=\"0\"}",
+          "expr": "virtual_map_vmap_size_tokenRelStore{environment=\"$network\", node_id=\"0\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "tokenRelStore",
@@ -288,10 +319,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_size_uniqueTokenStore{environment=\"$Environment\", node_id=\"0\"}",
+          "expr": "virtual_map_vmap_size_uniqueTokenStore{environment=\"$network\", node_id=\"0\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "uniqueTokenStore",
@@ -316,7 +347,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "",
       "fieldConfig": {
@@ -325,11 +356,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -396,11 +427,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "rate(virtual_map_vmap_queries_readEntities_$Store{environment=\"$Environment\"}[10m])",
+          "expr": "rate(virtual_map_vmap_queries_readEntities_$Store{environment=\"$network\"}[10m])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -416,7 +447,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "",
       "fieldConfig": {
@@ -425,11 +456,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -461,8 +492,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -496,11 +526,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "rate(virtual_map_vmap_queries_addedEntities_$Store{environment=\"$Environment\"}[10m]) + rate(virtual_map_vmap_queries_updatedEntities_$Store{environment=\"$Environment\"}[10m]) +\nrate(virtual_map_vmap_queries_removedEntities_$Store{environment=\"$Environment\"}[10m])",
+          "expr": "rate(virtual_map_vmap_queries_addedEntities_$Store{environment=\"$network\"}[10m]) + rate(virtual_map_vmap_queries_updatedEntities_$Store{environment=\"$network\"}[10m]) +\nrate(virtual_map_vmap_queries_removedEntities_$Store{environment=\"$network\"}[10m])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -517,7 +547,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -525,11 +555,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -561,8 +591,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -597,11 +626,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "virtual_map_vmap_lifecycle_nodeCacheSizeMb_$Store{environment=\"$Environment\"}",
+          "expr": "virtual_map_vmap_lifecycle_nodeCacheSizeMb_$Store{environment=\"$network\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -617,7 +646,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -625,11 +654,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -661,8 +690,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -697,11 +725,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "merkle_db_ds_files_totalSizeMb_$Store{environment=\"$Environment\"}",
+          "expr": "merkle_db_ds_files_totalSizeMb_$Store{environment=\"$network\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -717,7 +745,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -725,11 +753,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -761,8 +789,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -797,10 +824,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_lifecycle_hashDurationMs_$Store{environment=\"$Environment\"}",
+          "expr": "virtual_map_vmap_lifecycle_hashDurationMs_$Store{environment=\"$network\"}",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -813,7 +840,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -821,11 +848,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -857,8 +884,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -893,10 +919,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_lifecycle_flushDurationMs_$Store{environment=\"$Environment\"}",
+          "expr": "virtual_map_vmap_lifecycle_flushDurationMs_$Store{environment=\"$network\"}",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -909,7 +935,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "description": "",
       "fieldConfig": {
@@ -918,11 +944,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -954,8 +980,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -990,10 +1015,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_lifecycle_flushBackpressureMs_$Store{environment=\"$Environment\"}",
+          "expr": "virtual_map_vmap_lifecycle_flushBackpressureMs_$Store{environment=\"$network\"}",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -1006,7 +1031,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1014,11 +1039,11 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisShow": false,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -1050,8 +1075,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1086,10 +1110,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
           },
           "editorMode": "code",
-          "expr": "virtual_map_vmap_lifecycle_familySizeBackpressureMs_$Store{environment=\"$Environment\"}",
+          "expr": "virtual_map_vmap_lifecycle_familySizeBackpressureMs_$Store{environment=\"$network\"}",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -1101,7 +1125,7 @@
     }
   ],
   "refresh": "",
-  "schemaVersion": 38,
+  "schemaVersion": 39,
   "tags": [
     "Platform",
     "PlatformData"
@@ -1109,21 +1133,17 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": true,
-          "text": "performance",
-          "value": "performance"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "definition": "label_values(environment)",
         "hide": 0,
         "includeAll": false,
         "label": "Network",
         "multi": false,
-        "name": "Environment",
+        "name": "network",
         "options": [],
         "query": {
           "qryType": 1,
@@ -1137,14 +1157,10 @@
         "type": "query"
       },
       {
-        "current": {
-          "selected": true,
-          "text": "accountStore",
-          "value": "accountStore"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "grafanacloud-prom"
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
         },
         "definition": "metrics(virtual_map_vmap_size.*)",
         "hide": 0,
@@ -1167,13 +1183,13 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "VirtualMap",
   "uid": "d4dfeec8-23dc-48b9-931a-71e07a963ffc",
-  "version": 13,
+  "version": 19,
   "weekStart": ""
 }

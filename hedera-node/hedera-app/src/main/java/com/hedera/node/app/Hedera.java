@@ -18,12 +18,13 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
-import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static com.swirlds.common.system.InitTrigger.GENESIS;
-import static com.swirlds.common.system.InitTrigger.RESTART;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -52,6 +53,7 @@ import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
@@ -79,18 +81,18 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -186,6 +188,7 @@ public final class Hedera implements SwirldMain {
     private ThrottleAccumulator backendThrottle;
     private ThrottleAccumulator frontendThrottle;
     private CongestionMultipliers congestionMultipliers;
+    private final SyntheticRecordsGenerator recordsGenerator;
 
     /**
      * The application name from the platform's perspective. This is currently locked in at the old main class name and
@@ -228,7 +231,7 @@ public final class Hedera implements SwirldMain {
         // Let the user know which mode they are starting in (DEV vs. TEST vs. PROD).
         // NOTE: This bootstrapConfig is not entirely satisfactory. We probably need an alternative...
         final var hederaConfig = bootstrapConfig.getConfigData(HederaConfig.class);
-        final var activeProfile = Profile.valueOf(hederaConfig.activeProfile());
+        final var activeProfile = hederaConfig.activeProfile();
         logger.info("Starting in {} mode", activeProfile);
 
         // Read the software version. In addition to logging, we will use this software version to determine whether
@@ -241,7 +244,9 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(version.getServicesVersion()),
                 () -> HapiUtils.toString(version.getHapiVersion()));
 
-        // Create a record builder for any genesis records that need to be created
+        // Create a records generator for any synthetic records that need to be CREATED
+        this.recordsGenerator = new SyntheticRecordsGenerator();
+        // Create a records builder for any genesis records that need to be RECORDED
         this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
 
         // Create all the service implementations
@@ -257,7 +262,12 @@ public final class Hedera implements SwirldMain {
                         new FreezeServiceImpl(),
                         new NetworkServiceImpl(),
                         new ScheduleServiceImpl(),
-                        new TokenServiceImpl(),
+                        new TokenServiceImpl(
+                                recordsGenerator::sysAcctRecords,
+                                recordsGenerator::stakingAcctRecords,
+                                recordsGenerator::treasuryAcctRecords,
+                                recordsGenerator::multiUseAcctRecords,
+                                recordsGenerator::blocklistAcctRecords),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
@@ -354,8 +364,34 @@ public final class Hedera implements SwirldMain {
             @NonNull final SwirldDualState dualState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
+        // Initialize the configuration from disk. We must do this BEFORE we run migration, because the various
+        // migration methods may depend on configuration to do their work. For example, the token service migration code
+        // needs to know the token treasury account, which has an account ID specified in config. The initial config
+        // file in state, created by the file service migration, will match what we have here, so we don't have to worry
+        // about re-loading config after migration.
+        logger.info("Initializing configuration with trigger {}", trigger);
+        configProvider = new ConfigProviderImpl(trigger == GENESIS);
+        logConfiguration();
 
-        // We do nothing for EVENT_STREAM_RECOVERY. This is a special case that is handled by the platform.
+        // Determine if we need to create synthetic records for system entities
+        final var blockRecordState = state.createReadableStates(BlockRecordService.NAME);
+        boolean createSynthRecords = false;
+        if (!blockRecordState.isEmpty()) {
+            final var blockInfo = blockRecordState
+                    .<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
+                    .get();
+            if (blockInfo == null || blockInfo.consTimeOfLastHandledTxn() == null) {
+                createSynthRecords = true;
+            }
+        } else {
+            createSynthRecords = true;
+        }
+        if (createSynthRecords) {
+            recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
+        }
+
+        // We do nothing else for EVENT_STREAM_RECOVERY, which for now is broken. This is a special case that is handled
+        // by the platform, and we need to figure out how to make it work with the modular app.
         if (trigger == EVENT_STREAM_RECOVERY) {
             logger.debug("Skipping state initialization for trigger {}", trigger);
             return;
@@ -437,11 +473,18 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry, backendThrottle);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
 
-        // Now that the migrations have happened, we need to give the node a chance to publish any records that need to
-        // be created as a result of the migration. We'll do this by unsetting the `migrationRecordsStreamed` flag.
-        // Then, when the handle workflow has its first consensus timestamp, it will handle publishing these records (if
-        // needed), and re-set this flag to prevent duplicate publishing.
-        unmarkMigrationRecordsStreamed(state);
+        final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
+        if (isUpgrade) {
+            // When we upgrade to a higher version, after migrations are complete, we need to update
+            // migrationRecordsStreamed flag to false
+            // Now that the migrations have happened, we need to give the node a chance to publish any records that need
+            // to
+            // be created as a result of the migration. We'll do this by unsetting the `migrationRecordsStreamed` flag.
+            // Then, when the handle workflow has its first consensus timestamp, it will handle publishing these records
+            // (if
+            // needed), and re-set this flag to prevent duplicate publishing.
+            unmarkMigrationRecordsStreamed(state);
+        }
 
         logger.info("Migration complete");
     }
@@ -457,6 +500,10 @@ public final class Hedera implements SwirldMain {
         final var nextBlockInfo =
                 currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
         blockInfoState.put(nextBlockInfo);
+        logger.info(
+                "Unmarked migration records streamed with block info {} with hash {}",
+                nextBlockInfo,
+                blockInfoState.hashCode());
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 
@@ -526,27 +573,19 @@ public final class Hedera implements SwirldMain {
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                         startGrpcServer();
                     }
-                    case BEHIND -> {
-                        logger.info("Hederanode#{} is BEHIND", nodeId);
+
+                    case REPLAYING_EVENTS,
+                            STARTING_UP,
+                            OBSERVING,
+                            RECONNECT_COMPLETE,
+                            CHECKING,
+                            FREEZING,
+                            BEHIND -> logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
+
+                    case CATASTROPHIC_FAILURE, FREEZE_COMPLETE -> {
+                        logger.info("Hederanode#{} is {}", nodeId, platformStatus.name());
                         if (wasActive) shutdownGrpcServer();
                     }
-                    case FREEZE_COMPLETE -> logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
-                    case REPLAYING_EVENTS -> logger.info("Hederanode#{} is REPLAYING_EVENTS", nodeId);
-                    case STARTING_UP -> logger.info("Hederanode#{} is STARTING_UP", nodeId);
-                    case CATASTROPHIC_FAILURE -> {
-                        logger.info("Hederanode#{} is in CATASTROPHIC_FAILURE", nodeId);
-                        if (wasActive) shutdownGrpcServer();
-                    }
-                    case CHECKING -> {
-                        logger.info("Hederanode#{} is CHECKING", nodeId);
-                        if (wasActive) shutdownGrpcServer();
-                    }
-                    case OBSERVING -> logger.info("Hederanode#{} is OBSERVING", nodeId);
-                    case FREEZING -> {
-                        logger.info("Hederanode#{} is FREEZING", nodeId);
-                        if (wasActive) shutdownGrpcServer();
-                    }
-                    case RECONNECT_COMPLETE -> logger.info("Hederanode#{} is RECONNECT_COMPLETE", nodeId);
                 }
             });
 
@@ -706,15 +745,6 @@ public final class Hedera implements SwirldMain {
     private void genesis(@NonNull final MerkleHederaState state) {
         logger.debug("Genesis Initialization");
 
-        // Initialize the configuration from disk (genesis case). We must do this BEFORE we run migration, because
-        // the various migration methods may depend on configuration to do their work. For example, the token service
-        // migration code needs to know the token treasury account, which has an account ID specified in config.
-        // The initial config file in state, created by the file service migration, will match what we have here,
-        // so we don't have to worry about re-loading config after migration.
-        logger.info("Initializing genesis configuration");
-        this.configProvider = new ConfigProviderImpl(true);
-        logConfiguration();
-
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
@@ -727,7 +757,7 @@ public final class Hedera implements SwirldMain {
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
         logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager);
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
@@ -814,7 +844,7 @@ public final class Hedera implements SwirldMain {
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
         logger.info("Initializing FeeManager");
-        feeManager = new FeeManager(exchangeRateManager);
+        feeManager = new FeeManager(exchangeRateManager, congestionMultipliers);
 
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass

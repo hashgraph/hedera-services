@@ -22,10 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
@@ -43,12 +40,17 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.PlatformStatusManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,6 +89,7 @@ public final class GossipFactory {
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
+     * @param emergencyStateSupplier        returns the emergency state if available
      * @return the gossip engine
      */
     public static Gossip buildGossip(
@@ -112,7 +115,8 @@ public final class GossipFactory {
             @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -163,7 +167,8 @@ public final class GossipFactory {
                     eventLinker,
                     platformStatusManager,
                     loadReconnectState,
-                    clearAllPipelinesForReconnect);
+                    clearAllPipelinesForReconnect,
+                    emergencyStateSupplier);
         } else {
             if (addressBook.getSize() == 1) {
                 logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
@@ -206,7 +211,8 @@ public final class GossipFactory {
                         platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect,
-                        intakeEventCounter);
+                        intakeEventCounter,
+                        emergencyStateSupplier);
             }
         }
     }

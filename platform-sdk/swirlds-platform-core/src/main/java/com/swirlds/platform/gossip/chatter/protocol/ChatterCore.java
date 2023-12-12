@@ -20,9 +20,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.sequence.Shiftable;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
@@ -43,6 +42,7 @@ import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeMes
 import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeSendReceive;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;

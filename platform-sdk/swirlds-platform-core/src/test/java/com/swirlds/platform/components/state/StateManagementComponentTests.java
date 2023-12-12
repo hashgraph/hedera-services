@@ -26,16 +26,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.StateConfig_;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusGetter;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -46,6 +43,10 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.PlatformStatusGetter;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -413,8 +414,8 @@ class StateManagementComponentTests {
     @NonNull
     private TestConfigBuilder defaultConfigBuilder() {
         return new TestConfigBuilder()
-                .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
-                .withValue("state.saveStatePeriod", 1);
+                .withValue(StateConfig_.ROUNDS_TO_KEEP_FOR_SIGNING, roundsToKeepForSigning)
+                .withValue(StateConfig_.SAVE_STATE_PERIOD, 1);
     }
 
     @NonNull

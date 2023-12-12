@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * An implementation of a {@link com.swirlds.common.system.Round} used by streaming classes.
+ * An implementation of a {@link Round} used by streaming classes.
  */
 public class StreamedRound implements Round {
 
