@@ -30,6 +30,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -88,6 +90,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
+
+    @Mock
+    private ContractDeleteRecordBuilder contractDeleteRecordBuilder;
 
     @Mock
     private TinybarValues tinybarValues;
@@ -423,6 +428,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteUnaliasedContractUsesApi() {
+        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
+        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
+        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
         verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
@@ -430,6 +438,9 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteAliasedContractUsesApi() {
+        given(contractDeleteRecordBuilder.contractID(any(ContractID.class))).willReturn(contractDeleteRecordBuilder);
+        given(contractDeleteRecordBuilder.transaction(any(Transaction.class))).willReturn(contractDeleteRecordBuilder);
+        given(context.addChildRecordBuilder(ContractDeleteRecordBuilder.class)).willReturn(contractDeleteRecordBuilder);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)

@@ -36,6 +36,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import com.hedera.hapi.node.base.SubType;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -94,5 +100,16 @@ public class EthereumTransactionHandler implements TransactionHandler {
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
         throwIfUnsuccessful(outcome.status());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
+                        .usageGiven(fromPbj(body), sigValueObj, null));
     }
 }

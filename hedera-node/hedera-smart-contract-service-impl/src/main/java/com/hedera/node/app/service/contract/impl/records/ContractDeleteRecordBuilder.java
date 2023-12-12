@@ -21,6 +21,8 @@ import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBu
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+import com.hedera.hapi.node.base.Transaction;
+
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractDelete}.
  */
@@ -33,4 +35,7 @@ public interface ContractDeleteRecordBuilder extends DeleteCapableTransactionRec
      */
     @NonNull
     ContractDeleteRecordBuilder contractID(@Nullable ContractID contractId);
+
+    @NonNull
+    ContractDeleteRecordBuilder transaction(@NonNull final Transaction txn);
 }
