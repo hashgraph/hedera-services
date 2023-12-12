@@ -397,7 +397,9 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
     default <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass, @NonNull final Predicate<Key> verifier) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> verifier) {
         throwIfMissingPayerId(txBody);
         return dispatchPrecedingTransaction(
                 txBody,
@@ -479,7 +481,9 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
     default <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass, @NonNull final Predicate<Key> verifier) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> verifier) {
         throwIfMissingPayerId(txBody);
         return dispatchReversiblePrecedingTransaction(
                 txBody,
@@ -537,7 +541,9 @@ public interface HandleContext {
      */
     @NonNull
     default <T> T dispatchScheduledChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass, @NonNull final Predicate<Key> callback) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
         throwIfMissingPayerId(txBody);
         return dispatchChildTransaction(
                 txBody,
@@ -617,7 +623,9 @@ public interface HandleContext {
      */
     @NonNull
     default <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass, @NonNull final Predicate<Key> callback) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
         throwIfMissingPayerId(txBody);
         return dispatchRemovableChildTransaction(
                 txBody,

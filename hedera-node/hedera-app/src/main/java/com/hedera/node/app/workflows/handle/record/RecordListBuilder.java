@@ -406,7 +406,6 @@ public final class RecordListBuilder {
         if (checkPoint.firstPrecedingRecord() != null) {
             // revert preceding records
 
-
         }
     }
 
