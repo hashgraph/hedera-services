@@ -70,6 +70,7 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
@@ -151,6 +152,7 @@ import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
@@ -511,8 +513,17 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(signedStateFileManager);
 
+        final LatestCompleteStateNexus latestCompleteState =
+                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
         final SavedStateController savedStateController =
                 new SavedStateController(stateConfig, platformWiring.getSaveStateToDiskInput()::offer);
+        final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = ss -> {
+            // the app comm component will reserve the state, this should be done by the wiring in the future
+            appCommunicationComponent.newLatestCompleteStateEvent(ss);
+            // the nexus expects a state to be reserved for it
+            // in the future, all of these reservations will be done by the wiring
+            latestCompleteState.setState(ss.reserve("setting latest complete state"));
+        };
 
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
@@ -520,7 +531,7 @@ public class SwirldsPlatform implements Platform {
                 dispatchBuilder,
                 new PlatformSigner(keysAndCerts),
                 txn -> this.createSystemTransaction(txn, true),
-                appCommunicationComponent,
+                newLatestCompleteStateConsumer,
                 this::handleFatalError,
                 platformStatusManager,
                 savedStateController,
@@ -599,11 +610,16 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
+        final InterruptableConsumer<ReservedSignedState> newSignedStateFromTransactionsConsumer = rs -> {
+            latestCompleteState.newIncompleteState(rs.get().getRound());
+            stateManagementComponent.newSignedStateFromTransactions(rs);
+        };
+
         stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state-hash-sign")
-                .setHandler(stateManagementComponent::newSignedStateFromTransactions)
+                .setHandler(newSignedStateFromTransactionsConsumer)
                 .setCapacity(1)
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build());
@@ -806,7 +822,7 @@ public class SwirldsPlatform implements Platform {
                 consensusRef,
                 intakeQueue,
                 swirldStateManager,
-                stateManagementComponent,
+                latestCompleteState,
                 eventValidator,
                 eventObserverDispatcher,
                 syncMetrics,
@@ -891,6 +907,7 @@ public class SwirldsPlatform implements Platform {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+        GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteState);
     }
 
     /**
@@ -1360,17 +1377,6 @@ public class SwirldsPlatform implements Platform {
     @Override
     public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
         final ReservedSignedState wrapper = stateManagementComponent.getLatestImmutableState(reason);
-        return new AutoCloseableWrapper<>(
-                wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason) {
-        final ReservedSignedState wrapper = stateManagementComponent.getLatestSignedState(reason);
         return new AutoCloseableWrapper<>(
                 wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
     }
