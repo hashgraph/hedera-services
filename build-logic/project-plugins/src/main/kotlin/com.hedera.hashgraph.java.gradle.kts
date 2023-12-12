@@ -100,8 +100,8 @@ tasks.processResources { from(writeGitProperties) }
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
-    fileMode = 664
-    dirMode = 775
+    fileMode = 436 // octal: 0664
+    dirMode = 509 // octal: 0775
 }
 
 tasks.jar { exclude("**/classpath.index") }

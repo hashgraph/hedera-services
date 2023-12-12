@@ -50,15 +50,16 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldDualState;
+import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -72,7 +73,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SwirldState} and {@link HederaState}. The Hashgraph Platform
- * communicates with the application through {@link com.swirlds.common.system.SwirldMain} and {@link
+ * communicates with the application through {@link SwirldMain} and {@link
  * SwirldState}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
  *

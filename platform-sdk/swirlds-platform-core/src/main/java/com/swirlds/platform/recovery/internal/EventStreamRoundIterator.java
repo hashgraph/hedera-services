@@ -17,10 +17,10 @@
 package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;

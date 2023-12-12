@@ -75,7 +75,13 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var op = context.body().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
+            final var accountStore = context.createStore(ReadableAccountStore.class);
+            final var targetId = op.contractIDOrElse(ContractID.DEFAULT);
+            final var maybeContract = accountStore.getContractById(targetId);
+            if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
+                throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
+            }
+            context.requireKeyOrThrow(targetId, INVALID_CONTRACT_ID);
         }
         if (hasCryptoAdminKey(op)) {
             context.requireKey(op.adminKeyOrThrow());
