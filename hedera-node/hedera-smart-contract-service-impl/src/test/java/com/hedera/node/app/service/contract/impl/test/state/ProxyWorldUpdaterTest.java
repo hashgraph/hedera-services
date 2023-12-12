@@ -197,6 +197,7 @@ class ProxyWorldUpdaterTest {
                         asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
         given(hederaOperations.shardAndRealmValidated(aliasId)).willReturn(aliasId);
+        given(evmFrameState.getAddress(6)).willReturn(ADDRESS_6);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
     }
