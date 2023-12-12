@@ -50,11 +50,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 class ConverterService implements ConfigLifecycle {
-    private static final Logger logger = LogManager.getLogger(ConverterService.class);
     private final Map<Class<?>, ConfigConverter<?>> converters;
 
     private boolean initialized = false;
@@ -132,7 +129,8 @@ class ConverterService implements ConfigLifecycle {
         final ConfigConverter<T> converter = (ConfigConverter<T>) converters.get(targetClass);
 
         if (converter == null && targetClass.isEnum()) {
-            logger.warn("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
+            //FUTURE WORK: once logging is added to this module, log a warning here
+            // ("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
             return (T) Enum.valueOf((Class<Enum>) targetClass, value);
         }
 
