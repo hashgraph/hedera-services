@@ -82,6 +82,10 @@ class FreezeHandlerTest {
     private Account account;
 
     private final FileID fileUpgradeFileId = FileID.newBuilder().fileNum(150L).build();
+    private final FileID anotherFileUpgradeFileId =
+            FileID.newBuilder().fileNum(157).build();
+    private final FileID invalidFileUpgradeFileId =
+            FileID.newBuilder().fileNum(140).build();
 
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
@@ -288,6 +292,35 @@ class FreezeHandlerTest {
     }
 
     @Test
+    void rejectInvalidFileId() throws IOException {
+        // these freeze types require a valid update file to have been set via FileService
+        FreezeType[] freezeTypes = {PREPARE_UPGRADE, TELEMETRY_UPGRADE};
+
+        //        // set up the file store to return a fake upgrade file
+        //        given(upgradeFileStore.peek(invalidFileUpgradeFileId))
+        //                .willReturn(File.newBuilder().build());
+        //        given(upgradeFileStore.getFull(invalidFileUpgradeFileId)).willThrow(IOException.class);
+
+        for (FreezeType freezeType : freezeTypes) {
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .startTime(Timestamp.newBuilder().seconds(2000).build())
+                            .updateFile(invalidFileUpgradeFileId)
+                            .fileHash(Bytes.wrap(new byte[48]))
+                            .build())
+                    .build();
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+        }
+    }
+
+    @Test
     void happyPathFreezeAbort() {
         // freeze_abort always returns OK, to allow the node to send multiple commands to abort
         TransactionBody txn = TransactionBody.newBuilder()
@@ -340,7 +373,7 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void happyPathPrepareUpgrade() throws IOException {
+    void happyPathPrepareUpgradeFile150() throws IOException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // start time not required
         // set up the file store to return a fake upgrade file
@@ -357,6 +390,34 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(PREPARE_UPGRADE)
                         .updateFile(FileID.newBuilder().fileNum(150L))
+                        .fileHash(Bytes.wrap(new byte[48]))
+                        .build())
+                .build();
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
+    }
+
+    @Test
+    void happyPathPrepareUpgradeFile157() throws IOException {
+        // when using these freeze types, it is required to set an update file and file hash and they must match
+        // start time not required
+        // set up the file store to return a fake upgrade file
+        given(upgradeFileStore.peek(anotherFileUpgradeFileId))
+                .willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull(anotherFileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
+
+        TransactionID txnId = TransactionID.newBuilder()
+                .accountID(nonAdminAccount)
+                .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(PREPARE_UPGRADE)
+                        .updateFile(FileID.newBuilder().fileNum(157L))
                         .fileHash(Bytes.wrap(new byte[48]))
                         .build())
                 .build();
