@@ -131,7 +131,13 @@ class ConverterService implements ConfigLifecycle {
         if (converter == null && targetClass.isEnum()) {
             // FUTURE WORK: once logging is added to this module, log a warning here
             // ("No converter defined for type '" + targetClass + "'. Converting using backup enum converter.");
-            return (T) Enum.valueOf((Class<Enum>) targetClass, value);
+            try {
+                return (T) Enum.valueOf((Class<Enum>) targetClass, value);
+            } catch (final IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Can not convert value '%s' of Enum '%s' by default. Please add a custom config converter."
+                                .formatted(value, targetClass), e);
+            }
         }
 
         if (converter == null) {
