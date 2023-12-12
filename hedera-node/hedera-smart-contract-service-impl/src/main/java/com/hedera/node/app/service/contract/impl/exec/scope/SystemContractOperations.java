@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.util.function.Predicate;
 
@@ -87,6 +89,17 @@ public interface SystemContractOperations {
      */
     void externalizeResult(
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus, @Nullable Transaction transaction);
+
+    /**
+     * Generate synthetic transaction for child hts call
+     *
+     * @param input
+     * @param contractID
+     * @param isViewCall
+     * @return
+     */
+    Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall);
+
     /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
      * to dollars

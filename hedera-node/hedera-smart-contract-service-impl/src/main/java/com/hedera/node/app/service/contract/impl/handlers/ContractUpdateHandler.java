@@ -117,9 +117,14 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
-        //todo add null checks! target may have only evm address and this way can't pass fuzzy matching
-        var contractId = target.copyBuilder().contractNum(toBeUpdated.accountId().accountNum()).build();
-        context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(contractId);
+        //Target may have only evm address and this way can't pass fuzzy matching
+        if(target.contractNum() == null && toBeUpdated.accountId() != null) {
+            var contractId = target.copyBuilder().contractNum(toBeUpdated.accountId().accountNum()).build();
+            context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(contractId);
+        } else {
+            context.recordBuilder(ContractUpdateRecordBuilder.class).contractID(target);
+        }
+
     }
 
     private void validateSemantics(

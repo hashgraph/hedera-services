@@ -125,6 +125,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         }
     }
 
+    @Override
     public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
         var parentRecordBuilder = context.recordBuilder(ContractCallRecordBuilder.class);
         var functionParameters = tuweniToPbjBytes(input);

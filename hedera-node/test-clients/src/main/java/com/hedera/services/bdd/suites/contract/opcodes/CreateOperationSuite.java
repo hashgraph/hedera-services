@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_INFO;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -137,7 +138,7 @@ public class CreateOperationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
-        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", NONDETERMINISTIC_LOG_INFO)
+        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).logged().via("createRecord"),
@@ -173,7 +174,7 @@ public class CreateOperationSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec stackedFactoryWorks() {
-        return defaultHapiSpec("StackedFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("StackedFactoryWorks", FULLY_NONDETERMINISTIC)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
                         .gas(1_000_000)

@@ -114,16 +114,13 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
 
                 if (responseCode == SUCCESS) {
                     final var output = pricedResult.fullResult().result().getOutput();
-                    var result = contractFunctionResultSuccessFor(
-                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID);
-                    result = result.copyBuilder().functionParameters(tuweniToPbjBytes(input)).gas(1L).build();
-
                     enhancement
                             .systemOperations()
                             .externalizeResult(
-                                    result,
+                                    contractFunctionResultSuccessFor(
+                                            pricedResult.fullResult().gasRequirement(), output, HTS_CONTRACT_ID),
                                     responseCode,
-                                    ((HandleSystemContractOperations)enhancement.systemOperations())
+                                    enhancement.systemOperations()
                                             .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 } else {
                     enhancement
@@ -134,7 +131,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                                             responseCode.toString(),
                                             HTS_CONTRACT_ID),
                                     responseCode,
-                                    ((HandleSystemContractOperations)enhancement.systemOperations())
+                                    enhancement.systemOperations()
                                             .syntheticTransactionForHtsCall(input, HTS_CONTRACT_ID, true));
                 }
             }
