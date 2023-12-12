@@ -63,24 +63,6 @@ public interface MutableRosterEntry extends RosterEntry {
     MutableRosterEntry setPort(int port);
 
     /**
-     * Sets the external hostname of this roster entry.
-     *
-     * @param hostname the external hostname to set
-     * @return this mutable roster entry
-     */
-    @NonNull
-    MutableRosterEntry setExternalHostname(String hostname);
-
-    /**
-     * Sets the external port of this roster entry.
-     *
-     * @param port the external port to set
-     * @return this mutable roster entry
-     */
-    @NonNull
-    MutableRosterEntry setExternalPort(int port);
-
-    /**
      * Sets the signing certificate of this roster entry.
      *
      * @param signingCert the signing certificate to set
